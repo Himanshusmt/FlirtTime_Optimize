@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Medium.ttf">
+            <string>Fredoka-Medium</string>
+        </array>
+        <array key="Fredoka-Regular.ttf">
+            <string>Fredoka-Regular</string>
+        </array>
+    </customFonts>
+    <scenes>
+        <!--Image Selection MethodVC-->
+        <scene sceneID="0jb-qN-gIP">
+            <objects>
+                <viewController storyboardIdentifier="ImageSelectionMethodVC" useStoryboardIdentifierAsRestorationIdentifier="YES" id="3Ss-fm-aUS" customClass="ImageSelectionMethodVC" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Xe7-14-wbh">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="y5r-6P-UPV">
+                                <rect key="frame" x="0.0" y="59" width="393" height="793"/>
+                                <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="uvr-ky-pTv">
+                                        <rect key="frame" x="16" y="84" width="361" height="486"/>
+                                        <subviews>
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="iav-2P-t7J">
+                                                <rect key="frame" x="0.0" y="0.0" width="361" height="486"/>
+                                            </imageView>
+                                        </subviews>
+                                    </stackView>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="grT-Xz-Pob">
+                                        <rect key="frame" x="20" y="206.66666666666669" width="353" height="180"/>
+                                        <subviews>
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="UiJ-Ds-zke">
+                                                <rect key="frame" x="0.0" y="0.0" width="353" height="180"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="180" id="6zQ-sg-jPv"/>
+                                                </constraints>
+                                            </imageView>
+                                        </subviews>
+                                    </stackView>
+                                    <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="npE-QV-9yV">
+                                        <rect key="frame" x="0.0" y="590" width="393" height="203"/>
+                                        <subviews>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Tif-dr-w6a">
+                                                <rect key="frame" x="16" y="33" width="361" height="117"/>
+                                                <subviews>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="17" translatesAutoresizingMaskIntoConstraints="NO" id="IKj-l3-w94">
+                                                        <rect key="frame" x="0.0" y="0.0" width="361" height="117"/>
+                                                        <subviews>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KXt-6R-DWD">
+                                                                <rect key="frame" x="0.0" y="0.0" width="361" height="50"/>
+                                                                <color key="backgroundColor" name="#D92B2B"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="height" constant="50" id="viF-xC-gGM"/>
+                                                                </constraints>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="18"/>
+                                                                <color key="tintColor" name="#FFFFFF"/>
+                                                                <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                <state key="normal" title="Take Photo" image="CameraWhiteIcon"/>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                        <real key="value" value="25"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                                <connections>
+                                                                    <action selector="takePhotoButtonTapped:" destination="3Ss-fm-aUS" eventType="touchUpInside" id="KaM-Dv-7Ik"/>
+                                                                </connections>
+                                                            </button>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HZ2-sZ-ota">
+                                                                <rect key="frame" x="0.0" y="67" width="361" height="50"/>
+                                                                <color key="backgroundColor" name="#FFFFFF"/>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="18"/>
+                                                                <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                <state key="normal" title="Choose form Library" image="PlusIcon">
+                                                                    <color key="titleColor" name="#D92B2B"/>
+                                                                </state>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                        <real key="value" value="25"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                        <real key="value" value="1"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                    <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                        <color key="value" name="#D92B2B"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                                <connections>
+                                                                    <action selector="choseFromLibraryButtonTappped:" destination="3Ss-fm-aUS" eventType="touchUpInside" id="CFS-uM-SM5"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                    </stackView>
+                                                    <stackView hidden="YES" opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="17" translatesAutoresizingMaskIntoConstraints="NO" id="QjH-F9-vcB">
+                                                        <rect key="frame" x="0.0" y="0.0" width="361" height="50"/>
+                                                        <subviews>
+                                                            <stackView hidden="YES" opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="11" translatesAutoresizingMaskIntoConstraints="NO" id="ID5-RA-Yox">
+                                                                <rect key="frame" x="0.0" y="0.0" width="361" height="0.0"/>
+                                                                <subviews>
+                                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="emp-eZ-sKY">
+                                                                        <rect key="frame" x="0.0" y="0.0" width="175" height="0.0"/>
+                                                                        <color key="backgroundColor" name="#FFFFFF"/>
+                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="18"/>
+                                                                        <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                        <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                        <state key="normal" title="Take photo" image="redCameraIcon">
+                                                                            <color key="titleColor" name="#D92B2B"/>
+                                                                        </state>
+                                                                        <userDefinedRuntimeAttributes>
+                                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                                <real key="value" value="25"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                            <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                                <real key="value" value="1"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                            <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                                <color key="value" name="#D92B2B"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                        </userDefinedRuntimeAttributes>
+                                                                        <connections>
+                                                                            <action selector="takePhotoButtonAction:" destination="3Ss-fm-aUS" eventType="touchUpInside" id="7dB-WM-fV7"/>
+                                                                        </connections>
+                                                                    </button>
+                                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lsp-rN-r1a">
+                                                                        <rect key="frame" x="186" y="0.0" width="175" height="0.0"/>
+                                                                        <color key="backgroundColor" name="#FFFFFF"/>
+                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="18"/>
+                                                                        <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                        <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                        <state key="normal" title="Gallery" image="PlusIcon">
+                                                                            <color key="titleColor" name="#D92B2B"/>
+                                                                        </state>
+                                                                        <userDefinedRuntimeAttributes>
+                                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                                <real key="value" value="25"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                            <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                                <real key="value" value="1"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                            <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                                <color key="value" name="#D92B2B"/>
+                                                                            </userDefinedRuntimeAttribute>
+                                                                        </userDefinedRuntimeAttributes>
+                                                                        <connections>
+                                                                            <action selector="takePhotoFromGallery:" destination="3Ss-fm-aUS" eventType="touchUpInside" id="10u-5u-EgS"/>
+                                                                        </connections>
+                                                                    </button>
+                                                                </subviews>
+                                                            </stackView>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4NL-hH-SHY">
+                                                                <rect key="frame" x="0.0" y="0.0" width="361" height="50"/>
+                                                                <color key="backgroundColor" name="#D92B2B"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="height" constant="50" id="FY8-qP-1yP"/>
+                                                                </constraints>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="18"/>
+                                                                <color key="tintColor" name="#FFFFFF"/>
+                                                                <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                <state key="normal" title="Delete picture" image="whiteDeleteIcon"/>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                        <real key="value" value="25"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                                <connections>
+                                                                    <action selector="deletePictureButtonTapped:" destination="3Ss-fm-aUS" eventType="touchUpInside" id="PHS-IV-13n"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                    </stackView>
+                                                </subviews>
+                                            </stackView>
+                                        </subviews>
+                                        <color key="backgroundColor" name="#FFFFFF"/>
+                                        <constraints>
+                                            <constraint firstAttribute="bottom" secondItem="Tif-dr-w6a" secondAttribute="bottom" constant="53" id="4tO-iz-SQP"/>
+                                            <constraint firstAttribute="trailing" secondItem="Tif-dr-w6a" secondAttribute="trailing" constant="16" id="nKO-ye-Lt3"/>
+                                            <constraint firstItem="Tif-dr-w6a" firstAttribute="top" secondItem="npE-QV-9yV" secondAttribute="top" constant="33" id="wYm-2H-IkO"/>
+                                            <constraint firstItem="Tif-dr-w6a" firstAttribute="leading" secondItem="npE-QV-9yV" secondAttribute="leading" constant="16" id="xKj-Dj-XCI"/>
+                                        </constraints>
+                                    </view>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstItem="npE-QV-9yV" firstAttribute="top" secondItem="uvr-ky-pTv" secondAttribute="bottom" constant="20" id="4Yf-EG-maf"/>
+                                    <constraint firstItem="npE-QV-9yV" firstAttribute="leading" secondItem="y5r-6P-UPV" secondAttribute="leading" id="7ga-5a-DiV"/>
+                                    <constraint firstItem="uvr-ky-pTv" firstAttribute="top" secondItem="y5r-6P-UPV" secondAttribute="top" constant="84" id="7hz-gO-j9y"/>
+                                    <constraint firstItem="uvr-ky-pTv" firstAttribute="leading" secondItem="y5r-6P-UPV" secondAttribute="leading" constant="16" id="Qmq-XA-tj4"/>
+                                    <constraint firstAttribute="trailing" secondItem="grT-Xz-Pob" secondAttribute="trailing" constant="20" id="T37-cR-rTe"/>
+                                    <constraint firstAttribute="bottom" secondItem="npE-QV-9yV" secondAttribute="bottom" id="VfT-lI-UeM"/>
+                                    <constraint firstItem="grT-Xz-Pob" firstAttribute="centerY" secondItem="y5r-6P-UPV" secondAttribute="centerY" constant="-100" id="Zcl-f7-I8Z"/>
+                                    <constraint firstAttribute="trailing" secondItem="uvr-ky-pTv" secondAttribute="trailing" constant="16" id="egR-FL-Spj"/>
+                                    <constraint firstItem="grT-Xz-Pob" firstAttribute="leading" secondItem="y5r-6P-UPV" secondAttribute="leading" constant="20" id="jEI-oa-TXe"/>
+                                    <constraint firstItem="grT-Xz-Pob" firstAttribute="centerX" secondItem="y5r-6P-UPV" secondAttribute="centerX" id="m3l-7L-mZP"/>
+                                    <constraint firstAttribute="trailing" secondItem="npE-QV-9yV" secondAttribute="trailing" id="y27-BG-2wr"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="kbz-0Q-b4M"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="y5r-6P-UPV" firstAttribute="leading" secondItem="kbz-0Q-b4M" secondAttribute="leading" id="PnJ-dn-wPM"/>
+                            <constraint firstAttribute="bottom" secondItem="y5r-6P-UPV" secondAttribute="bottom" id="Zao-dV-s2s"/>
+                            <constraint firstItem="y5r-6P-UPV" firstAttribute="top" secondItem="Xe7-14-wbh" secondAttribute="topMargin" id="Zhg-Or-c6y"/>
+                            <constraint firstItem="kbz-0Q-b4M" firstAttribute="trailing" secondItem="y5r-6P-UPV" secondAttribute="trailing" id="owm-iT-8pv"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="deletePictureButton" destination="4NL-hH-SHY" id="OAW-uF-QA6"/>
+                        <outlet property="imgVWCover" destination="UiJ-Ds-zke" id="OVl-ly-shc"/>
+                        <outlet property="imgVWProfile" destination="iav-2P-t7J" id="gIU-IA-mGa"/>
+                        <outlet property="mainView" destination="npE-QV-9yV" id="5Iy-hU-tiO"/>
+                        <outlet property="stack1" destination="IKj-l3-w94" id="CKa-4H-p7T"/>
+                        <outlet property="stack2" destination="QjH-F9-vcB" id="8f8-Dj-2h6"/>
+                        <outlet property="takePhotoGalleryButton" destination="ID5-RA-Yox" id="YbU-B4-eC2"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="kSG-Cq-mlL" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-614.50381679389307" y="-2.1126760563380285"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="BackIcon" width="28" height="28"/>
+        <image name="CameraWhiteIcon" width="24" height="24"/>
+        <image name="PlusIcon" width="24" height="24"/>
+        <image name="aboutYouTransparentBottom" width="360" height="209"/>
+        <image name="blackHeart" width="62" height="62"/>
+        <image name="bottomTip" width="20" height="8"/>
+        <image name="image" width="38" height="38"/>
+        <image name="redCameraIcon" width="24" height="24"/>
+        <image name="whiteDeleteIcon" width="24" height="24"/>
+        <namedColor name="#000000">
+            <color red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#B4B6B8">
+            <color red="0.70588235294117652" green="0.71372549019607845" blue="0.72156862745098038" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#D92B2B">
+            <color red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#E3E5E5">
+            <color red="0.8901960784313725" green="0.89803921568627454" blue="0.89803921568627454" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#FFFFFF">
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

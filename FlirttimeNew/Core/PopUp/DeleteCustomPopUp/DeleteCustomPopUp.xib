@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22130"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Medium.ttf">
+            <string>Fredoka-Medium</string>
+        </array>
+    </customFonts>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="DeleteCustomPopUp" customModule="FlirttimeNew" customModuleProvider="target">
+            <connections>
+                <outlet property="button1" destination="5yC-fp-Jdw" id="Cum-t9-Jmp"/>
+                <outlet property="button2" destination="ejP-41-vnS" id="49N-Qq-DrB"/>
+                <outlet property="contentView" destination="iN0-l3-epB" id="UDk-Gr-I2e"/>
+                <outlet property="lblmessage" destination="uvh-T8-HOx" id="YCW-ri-G6d"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="iN0-l3-epB">
+            <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="eaN-pb-VIM">
+                    <rect key="frame" x="30" y="345.66666666666669" width="333" height="160.66666666666669"/>
+                    <subviews>
+                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Are you sure you want to delete ?" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uvh-T8-HOx">
+                            <rect key="frame" x="38" y="22" width="257" height="20.666666666666671"/>
+                            <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="17"/>
+                            <nil key="textColor"/>
+                            <nil key="highlightedColor"/>
+                        </label>
+                        <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="15" translatesAutoresizingMaskIntoConstraints="NO" id="7qZ-xt-bCQ">
+                            <rect key="frame" x="22" y="76.666666666666629" width="289" height="50"/>
+                            <subviews>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="5yC-fp-Jdw">
+                                    <rect key="frame" x="0.0" y="0.0" width="137" height="50"/>
+                                    <color key="backgroundColor" name="#FFFFFF"/>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="50" id="iEw-mq-zkM"/>
+                                    </constraints>
+                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="18"/>
+                                    <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                    <state key="normal" title="Cancel">
+                                        <color key="titleColor" name="#D92B2B"/>
+                                    </state>
+                                    <userDefinedRuntimeAttributes>
+                                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                            <real key="value" value="25"/>
+                                        </userDefinedRuntimeAttribute>
+                                        <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                            <real key="value" value="2"/>
+                                        </userDefinedRuntimeAttribute>
+                                        <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                            <color key="value" name="#D92B2B"/>
+                                        </userDefinedRuntimeAttribute>
+                                    </userDefinedRuntimeAttributes>
+                                    <connections>
+                                        <action selector="button1Action:" destination="-1" eventType="touchUpInside" id="PDr-Xe-cWv"/>
+                                    </connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ejP-41-vnS">
+                                    <rect key="frame" x="152" y="0.0" width="137" height="50"/>
+                                    <color key="backgroundColor" name="#D92B2B"/>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="50" id="jh3-mp-Au7"/>
+                                    </constraints>
+                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="18"/>
+                                    <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                    <state key="normal" title="Yes delete"/>
+                                    <userDefinedRuntimeAttributes>
+                                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                            <real key="value" value="25"/>
+                                        </userDefinedRuntimeAttribute>
+                                    </userDefinedRuntimeAttributes>
+                                    <connections>
+                                        <action selector="button2Action:" destination="-1" eventType="touchUpInside" id="XqM-c7-YjW"/>
+                                    </connections>
+                                </button>
+                            </subviews>
+                        </stackView>
+                    </subviews>
+                    <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    <constraints>
+                        <constraint firstAttribute="trailing" secondItem="uvh-T8-HOx" secondAttribute="trailing" constant="38" id="4XW-z7-qXA"/>
+                        <constraint firstAttribute="bottom" secondItem="7qZ-xt-bCQ" secondAttribute="bottom" constant="34" id="FIJ-20-elq"/>
+                        <constraint firstItem="7qZ-xt-bCQ" firstAttribute="leading" secondItem="eaN-pb-VIM" secondAttribute="leading" constant="22" id="THm-n8-8eT"/>
+                        <constraint firstItem="7qZ-xt-bCQ" firstAttribute="top" secondItem="uvh-T8-HOx" secondAttribute="bottom" constant="34" id="YUS-k1-p2y"/>
+                        <constraint firstItem="uvh-T8-HOx" firstAttribute="top" secondItem="eaN-pb-VIM" secondAttribute="top" constant="22" id="dRh-fI-uyZ"/>
+                        <constraint firstAttribute="trailing" secondItem="7qZ-xt-bCQ" secondAttribute="trailing" constant="22" id="gli-G9-26j"/>
+                        <constraint firstItem="uvh-T8-HOx" firstAttribute="leading" secondItem="eaN-pb-VIM" secondAttribute="leading" constant="38" id="rQg-bx-EHe"/>
+                    </constraints>
+                    <userDefinedRuntimeAttributes>
+                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                            <real key="value" value="15"/>
+                        </userDefinedRuntimeAttribute>
+                    </userDefinedRuntimeAttributes>
+                </view>
+            </subviews>
+            <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
+            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+            <constraints>
+                <constraint firstItem="vUN-kp-3ea" firstAttribute="trailing" secondItem="eaN-pb-VIM" secondAttribute="trailing" constant="30" id="f0p-fm-Mxu"/>
+                <constraint firstItem="eaN-pb-VIM" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" constant="30" id="j9p-io-2eh"/>
+                <constraint firstItem="eaN-pb-VIM" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="centerY" id="zEM-Am-fOo"/>
+            </constraints>
+            <point key="canvasLocation" x="140" y="20"/>
+        </view>
+    </objects>
+    <resources>
+        <namedColor name="#D92B2B">
+            <color red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#FFFFFF">
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Regular.ttf">
+            <string>Fredoka-Regular</string>
+        </array>
+    </customFonts>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="AboutYouCollectionViewCell" id="gTV-IL-0wX" customClass="AboutYouCollectionViewCell" customModule="FlirttimeNew" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="393" height="365"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="393" height="365"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="Vxe-eJ-9cv">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="365"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="Hag-0z-cdv">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="95.333333333333329"/>
+                                <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="14" translatesAutoresizingMaskIntoConstraints="NO" id="YdJ-Gn-Dj6">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="51"/>
+                                        <subviews>
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3Lb-Ga-HBI">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="51"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="To improve matching algorithms." textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Pvb-tl-p3X">
+                                                        <rect key="frame" x="0.0" y="0.0" width="349.66666666666669" height="51"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="349.67000000000002" id="bG4-ew-llE"/>
+                                                        </constraints>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="24"/>
+                                                        <color key="textColor" name="#000000"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="Pvb-tl-p3X" firstAttribute="top" secondItem="3Lb-Ga-HBI" secondAttribute="top" id="Fxh-ar-cXD"/>
+                                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Pvb-tl-p3X" secondAttribute="trailing" id="LOF-CI-OLd"/>
+                                                    <constraint firstItem="Pvb-tl-p3X" firstAttribute="leading" secondItem="3Lb-Ga-HBI" secondAttribute="leading" id="aQa-gu-6Zf"/>
+                                                    <constraint firstAttribute="bottom" secondItem="Pvb-tl-p3X" secondAttribute="bottom" id="loF-Cv-sIz"/>
+                                                </constraints>
+                                            </view>
+                                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="You can choose minimum 5" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="W0H-w0-Hu6">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="22"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="22" id="xSx-6x-ASw"/>
+                                                </constraints>
+                                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="14"/>
+                                                <color key="textColor" name="#B4B6B8"/>
+                                                <nil key="highlightedColor"/>
+                                            </label>
+                                        </subviews>
+                                    </stackView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="What are your interests?" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r1m-o8-CUO">
+                                        <rect key="frame" x="0.0" y="71" width="393" height="24.333333333333329"/>
+                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="20"/>
+                                        <color key="textColor" name="#000000"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                            </stackView>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="em1-sf-fSJ">
+                                <rect key="frame" x="0.0" y="119.33333333333333" width="393" height="245.66666666666669"/>
+                                <subviews>
+                                    <collectionView hidden="YES" clipsSubviews="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="none" translatesAutoresizingMaskIntoConstraints="NO" id="DPu-R5-hAl">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="0.0"/>
+                                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                        <collectionViewFlowLayout key="collectionViewLayout" automaticEstimatedItemSize="YES" minimumLineSpacing="10" minimumInteritemSpacing="10" id="hIK-Ow-cdZ">
+                                            <size key="itemSize" width="128" height="128"/>
+                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                            <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="60"/>
+                                        </collectionViewFlowLayout>
+                                        <cells/>
+                                    </collectionView>
+                                    <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" style="plain" separatorStyle="none" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="h5C-yn-Tao">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="245.66666666666666"/>
+                                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                        <inset key="scrollIndicatorInsets" minX="0.0" minY="0.0" maxX="0.0" maxY="80"/>
+                                    </tableView>
+                                </subviews>
+                            </stackView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="393" id="gTI-Y5-z0j"/>
+                        </constraints>
+                    </stackView>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstItem="Vxe-eJ-9cv" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="22S-0h-Uge"/>
+                <constraint firstAttribute="bottom" secondItem="Vxe-eJ-9cv" secondAttribute="bottom" id="Hf7-gK-ERQ"/>
+                <constraint firstAttribute="trailing" secondItem="Vxe-eJ-9cv" secondAttribute="trailing" id="uMV-eL-3td"/>
+                <constraint firstItem="Vxe-eJ-9cv" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="yBX-Fi-Y1x"/>
+            </constraints>
+            <size key="customSize" width="606" height="365"/>
+            <connections>
+                <outlet property="CellWidthConstraint" destination="gTI-Y5-z0j" id="0iV-OF-FkR"/>
+                <outlet property="aboutYouChoicesCollectionView" destination="DPu-R5-hAl" id="E4p-n3-7gH"/>
+                <outlet property="aboutYouChoicesTableView" destination="h5C-yn-Tao" id="c8a-r5-d6I"/>
+                <outlet property="aboutYouQuestionLabel" destination="r1m-o8-CUO" id="YRU-ad-CRl"/>
+                <outlet property="headerLabelOne" destination="Pvb-tl-p3X" id="iw0-GG-CIH"/>
+                <outlet property="headerLabelTwo" destination="W0H-w0-Hu6" id="Aq2-bZ-WS4"/>
+                <outlet property="headerlabelWidthConstraint" destination="bG4-ew-llE" id="OuT-oU-tBl"/>
+            </connections>
+            <point key="canvasLocation" x="-200" y="-6.6901408450704229"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <namedColor name="#000000">
+            <color red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#B4B6B8">
+            <color red="0.70588235294117652" green="0.71372549019607845" blue="0.72156862745098038" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

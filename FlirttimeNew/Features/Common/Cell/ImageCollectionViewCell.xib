@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Regular.ttf">
+            <string>Fredoka-Regular</string>
+        </array>
+    </customFonts>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ImageCollectionViewCell" id="gTV-IL-0wX" customClass="ImageCollectionViewCell" customModule="FlirttimeNew" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="v3f-gc-jEq">
+                        <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                <real key="value" value="15"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </imageView>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2lC-6p-BTL">
+                        <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Jwk-3Y-ARt" customClass="BlurView" customModule="FlirttimeNew" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="15"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="Jwk-3Y-ARt" firstAttribute="top" secondItem="2lC-6p-BTL" secondAttribute="top" id="33d-bm-YLS"/>
+                            <constraint firstAttribute="trailing" secondItem="Jwk-3Y-ARt" secondAttribute="trailing" id="Muh-iF-hlq"/>
+                            <constraint firstAttribute="bottom" secondItem="Jwk-3Y-ARt" secondAttribute="bottom" id="np3-wv-Ck9"/>
+                            <constraint firstItem="Jwk-3Y-ARt" firstAttribute="leading" secondItem="2lC-6p-BTL" secondAttribute="leading" id="wsL-vL-IsS"/>
+                        </constraints>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                <real key="value" value="15"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </view>
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="imageSelectPlaceHolder" translatesAutoresizingMaskIntoConstraints="NO" id="exW-Xy-CoP">
+                        <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                <real key="value" value="15"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </imageView>
+                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="anQ-Bk-dJr">
+                        <rect key="frame" x="0.0" y="0.0" width="25" height="25"/>
+                        <constraints>
+                            <constraint firstAttribute="width" secondItem="anQ-Bk-dJr" secondAttribute="height" multiplier="1:1" id="mr4-NZ-ykS"/>
+                            <constraint firstAttribute="height" constant="25" id="z3N-k8-O1b"/>
+                        </constraints>
+                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                        <state key="normal" backgroundImage="red_crossBtn"/>
+                        <connections>
+                            <action selector="deleteImageButtonTapped:" destination="gTV-IL-0wX" eventType="touchUpInside" id="hVm-YE-pcl"/>
+                        </connections>
+                    </button>
+                    <view hidden="YES" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qzL-9C-P9o">
+                        <rect key="frame" x="10" y="165" width="20" height="20"/>
+                        <subviews>
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="h8P-QA-6Nf" customClass="BlurView" customModule="FlirttimeNew" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="20" height="20"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ek9-cD-d9S">
+                                <rect key="frame" x="-5" y="-5" width="30" height="30"/>
+                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" image="editImage"/>
+                                <connections>
+                                    <action selector="editRestImagesButtonTapped:" destination="gTV-IL-0wX" eventType="touchUpInside" id="ac2-Gl-L7c"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="h8P-QA-6Nf" firstAttribute="leading" secondItem="qzL-9C-P9o" secondAttribute="leading" id="7ZY-UR-y3Y"/>
+                            <constraint firstAttribute="trailing" secondItem="h8P-QA-6Nf" secondAttribute="trailing" id="8Sq-gx-FKG"/>
+                            <constraint firstItem="Ek9-cD-d9S" firstAttribute="leading" secondItem="qzL-9C-P9o" secondAttribute="leading" constant="-5" id="9DB-QM-qDq"/>
+                            <constraint firstAttribute="trailing" secondItem="Ek9-cD-d9S" secondAttribute="trailing" constant="-5" id="ZAa-L3-tKI"/>
+                            <constraint firstAttribute="width" constant="20" id="bNO-bO-amS"/>
+                            <constraint firstItem="h8P-QA-6Nf" firstAttribute="top" secondItem="qzL-9C-P9o" secondAttribute="top" id="cXI-Ow-hFv"/>
+                            <constraint firstAttribute="bottom" secondItem="Ek9-cD-d9S" secondAttribute="bottom" constant="-5" id="ibd-kD-geS"/>
+                            <constraint firstItem="Ek9-cD-d9S" firstAttribute="top" secondItem="qzL-9C-P9o" secondAttribute="top" constant="-5" id="mfg-6a-ibM"/>
+                            <constraint firstAttribute="height" constant="20" id="nvX-Ge-SCi"/>
+                            <constraint firstAttribute="bottom" secondItem="h8P-QA-6Nf" secondAttribute="bottom" id="ouK-XC-SQ7"/>
+                        </constraints>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                <real key="value" value="10"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </view>
+                    <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="U20-HB-lIZ">
+                        <rect key="frame" x="10" y="160" width="60" height="25"/>
+                        <subviews>
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="o1i-6H-f2F">
+                                <rect key="frame" x="0.0" y="0.0" width="60" height="25"/>
+                                <color key="backgroundColor" name="#000020"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="15"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" pointerInteraction="YES" translatesAutoresizingMaskIntoConstraints="NO" id="YF8-Me-yNe">
+                                <rect key="frame" x="0.0" y="0.0" width="60" height="25"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="12"/>
+                                <color key="tintColor" name="#FFFFFF"/>
+                                <inset key="imageEdgeInsets" minX="-5" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                <state key="normal" title="Pofile"/>
+                                <connections>
+                                    <action selector="edit1stImageButtonTapped:" destination="gTV-IL-0wX" eventType="touchUpInside" id="2gX-M2-2YL"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstAttribute="bottom" secondItem="YF8-Me-yNe" secondAttribute="bottom" id="7X2-0E-2XH"/>
+                            <constraint firstItem="YF8-Me-yNe" firstAttribute="top" secondItem="U20-HB-lIZ" secondAttribute="top" id="BV8-hz-X2I"/>
+                            <constraint firstItem="o1i-6H-f2F" firstAttribute="top" secondItem="U20-HB-lIZ" secondAttribute="top" id="CL0-s2-wCg"/>
+                            <constraint firstAttribute="width" constant="60" id="Fyr-49-Vs9"/>
+                            <constraint firstItem="YF8-Me-yNe" firstAttribute="leading" secondItem="U20-HB-lIZ" secondAttribute="leading" id="O6Q-0h-Yb0"/>
+                            <constraint firstAttribute="height" constant="25" id="OEb-Za-DFA"/>
+                            <constraint firstItem="o1i-6H-f2F" firstAttribute="leading" secondItem="U20-HB-lIZ" secondAttribute="leading" id="Z1N-bj-bYr"/>
+                            <constraint firstAttribute="trailing" secondItem="YF8-Me-yNe" secondAttribute="trailing" id="gDM-A8-xiA"/>
+                            <constraint firstAttribute="bottom" secondItem="o1i-6H-f2F" secondAttribute="bottom" id="i8z-m5-Vbd"/>
+                            <constraint firstAttribute="trailing" secondItem="o1i-6H-f2F" secondAttribute="trailing" id="lbZ-KT-2y7"/>
+                        </constraints>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                <real key="value" value="11"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
+                    </view>
+                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="LLs-I6-PfR">
+                        <rect key="frame" x="200" y="-2" width="0.0" height="0.0"/>
+                        <subviews>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wZw-ay-741">
+                                <rect key="frame" x="0.0" y="0.0" width="49.666666666666664" height="0.0"/>
+                                <color key="tintColor" name="#D92B2B"/>
+                                <state key="normal" title="Button"/>
+                                <buttonConfiguration key="configuration" style="plain" image="minus.circle.fill" catalog="system"/>
+                                <connections>
+                                    <action selector="deleteImageButtonTapped:" destination="gTV-IL-0wX" eventType="touchUpInside" id="BcP-Ts-EKb"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                    </stackView>
+                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="fjZ-Ve-gfA">
+                        <rect key="frame" x="6" y="190" width="0.0" height="0.0"/>
+                        <subviews>
+                            <imageView hidden="YES" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="ProfileTag" translatesAutoresizingMaskIntoConstraints="NO" id="YGg-zQ-V69">
+                                <rect key="frame" x="0.0" y="0.0" width="41" height="0.0"/>
+                            </imageView>
+                        </subviews>
+                    </stackView>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <color key="backgroundColor" name="fwhite"/>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="v3f-gc-jEq" secondAttribute="bottom" id="31b-JX-Otf"/>
+                <constraint firstAttribute="bottom" secondItem="exW-Xy-CoP" secondAttribute="bottom" id="49r-Ji-N7e"/>
+                <constraint firstAttribute="bottom" secondItem="2lC-6p-BTL" secondAttribute="bottom" id="BXq-iO-M2i"/>
+                <constraint firstItem="anQ-Bk-dJr" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="K10-Y0-ZsD"/>
+                <constraint firstItem="anQ-Bk-dJr" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="Nu4-OW-cnf"/>
+                <constraint firstItem="v3f-gc-jEq" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="Oy3-3L-CbF"/>
+                <constraint firstAttribute="trailing" secondItem="exW-Xy-CoP" secondAttribute="trailing" id="SFH-4s-1zw"/>
+                <constraint firstAttribute="bottom" secondItem="qzL-9C-P9o" secondAttribute="bottom" constant="10" id="XKE-Ds-7HO"/>
+                <constraint firstItem="fjZ-Ve-gfA" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="6" id="ahg-Ej-h8e"/>
+                <constraint firstAttribute="trailing" secondItem="2lC-6p-BTL" secondAttribute="trailing" id="blT-e0-rDF"/>
+                <constraint firstItem="LLs-I6-PfR" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="-2" id="c14-iZ-hhF"/>
+                <constraint firstAttribute="trailing" secondItem="v3f-gc-jEq" secondAttribute="trailing" id="d2d-kz-HWP"/>
+                <constraint firstItem="v3f-gc-jEq" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="hXg-eP-Re5"/>
+                <constraint firstItem="exW-Xy-CoP" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="k6E-na-GxA"/>
+                <constraint firstItem="U20-HB-lIZ" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="10" id="kie-rN-iky"/>
+                <constraint firstItem="2lC-6p-BTL" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="pc7-Vi-ABI"/>
+                <constraint firstItem="qzL-9C-P9o" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="10" id="pcX-hY-ecd"/>
+                <constraint firstAttribute="bottom" secondItem="U20-HB-lIZ" secondAttribute="bottom" constant="10" id="rWK-wc-djs"/>
+                <constraint firstItem="2lC-6p-BTL" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="xoD-2d-hMe"/>
+                <constraint firstItem="exW-Xy-CoP" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="yHW-7P-ic5"/>
+                <constraint firstAttribute="trailing" secondItem="LLs-I6-PfR" secondAttribute="trailing" constant="-12" id="yXE-pn-GXv"/>
+                <constraint firstAttribute="bottom" secondItem="fjZ-Ve-gfA" secondAttribute="bottom" constant="5" id="z8E-Fp-RCs"/>
+            </constraints>
+            <size key="customSize" width="188" height="195"/>
+            <userDefinedRuntimeAttributes>
+                <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                    <real key="value" value="11"/>
+                </userDefinedRuntimeAttribute>
+            </userDefinedRuntimeAttributes>
+            <connections>
+                <outlet property="backgroundImage" destination="v3f-gc-jEq" id="aIB-nE-FqB"/>
+                <outlet property="deleteButton" destination="wZw-ay-741" id="6AQ-Bd-ZH7"/>
+                <outlet property="editImage1View" destination="U20-HB-lIZ" id="fKh-g0-oMy"/>
+                <outlet property="editOtherImagesView" destination="qzL-9C-P9o" id="2s7-aI-upe"/>
+                <outlet property="imageDeleButton" destination="anQ-Bk-dJr" id="9Ak-Ca-v1y"/>
+                <outlet property="imgProfile" destination="YGg-zQ-V69" id="BmP-ql-yQv"/>
+                <outlet property="userProfileImage" destination="exW-Xy-CoP" id="A6P-if-dcE"/>
+            </connections>
+            <point key="canvasLocation" x="-104" y="17"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <image name="ProfileTag" width="41" height="20"/>
+        <image name="editImage" width="8" height="8"/>
+        <image name="imageSelectPlaceHolder" width="100" height="100"/>
+        <image name="minus.circle.fill" catalog="system" width="128" height="123"/>
+        <image name="red_crossBtn" width="15" height="15"/>
+        <namedColor name="#000020">
+            <color red="0.0" green="0.0" blue="0.0" alpha="0.20000000298023224" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#D92B2B">
+            <color red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#FFFFFF">
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="fwhite">
+            <color red="0.99215686274509807" green="0.99215686274509807" blue="0.99215686274509807" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+        </namedColor>
+    </resources>
+</document>

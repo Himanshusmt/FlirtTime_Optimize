@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "material-symbols_contact-page-outline-rounded.svg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

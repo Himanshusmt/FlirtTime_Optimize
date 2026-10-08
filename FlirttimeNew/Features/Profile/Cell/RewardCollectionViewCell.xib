@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="32700.99.1234" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22685"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Medium.ttf">
+            <string>Fredoka-Medium</string>
+        </array>
+        <array key="Fredoka-Regular.ttf">
+            <string>Fredoka-Regular</string>
+        </array>
+    </customFonts>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="RewardCollectionViewCell" id="gTV-IL-0wX" customClass="RewardCollectionViewCell" customModule="FlirttimeNew" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="369" height="101"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="369" height="101"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gml-J4-dSP">
+                        <rect key="frame" x="0.0" y="0.0" width="369" height="101"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Gvk-8p-uqC">
+                                <rect key="frame" x="0.0" y="0.0" width="369" height="101"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="googleReward" translatesAutoresizingMaskIntoConstraints="NO" id="J26-tX-vWQ">
+                                        <rect key="frame" x="5" y="5" width="0.0" height="91"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" id="LBO-BS-PC2"/>
+                                        </constraints>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="1"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </imageView>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="Oib-3u-Dru">
+                                        <rect key="frame" x="110" y="12.333333333333336" width="189" height="76.333333333333314"/>
+                                        <subviews>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="1" translatesAutoresizingMaskIntoConstraints="NO" id="NfB-94-aiP">
+                                                <rect key="frame" x="0.0" y="0.0" width="189" height="33.333333333333336"/>
+                                                <subviews>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oUS-Ze-u77">
+                                                        <rect key="frame" x="0.0" y="0.0" width="189" height="19"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Google connected" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tSE-Qb-ROq">
+                                                                <rect key="frame" x="0.0" y="0.0" width="131" height="19"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="height" constant="19" id="XQx-YR-5Pv"/>
+                                                                </constraints>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
+                                                                <color key="textColor" name="#252525"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="OE0-l7-4vR">
+                                                                <rect key="frame" x="138" y="4.6666666666666661" width="10" height="10"/>
+                                                                <color key="backgroundColor" name="#D92B2B"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="height" constant="10" id="bm9-R4-zoF"/>
+                                                                    <constraint firstAttribute="width" constant="10" id="u2s-uT-zwo"/>
+                                                                </constraints>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                        <real key="value" value="5"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                            </view>
+                                                        </subviews>
+                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="bottom" secondItem="tSE-Qb-ROq" secondAttribute="bottom" id="DNe-oS-vNl"/>
+                                                            <constraint firstItem="tSE-Qb-ROq" firstAttribute="leading" secondItem="oUS-Ze-u77" secondAttribute="leading" id="MqZ-cE-dTV"/>
+                                                            <constraint firstItem="OE0-l7-4vR" firstAttribute="leading" secondItem="tSE-Qb-ROq" secondAttribute="trailing" constant="7" id="Q0Z-gw-i59"/>
+                                                            <constraint firstItem="tSE-Qb-ROq" firstAttribute="top" secondItem="oUS-Ze-u77" secondAttribute="top" id="TpT-HD-2Gl"/>
+                                                            <constraint firstItem="OE0-l7-4vR" firstAttribute="centerY" secondItem="tSE-Qb-ROq" secondAttribute="centerY" id="p1y-8E-4XF"/>
+                                                        </constraints>
+                                                    </view>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Add Google as a login method" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2tZ-fH-RUd">
+                                                        <rect key="frame" x="0.0" y="20" width="189" height="13.333333333333336"/>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="11"/>
+                                                        <color key="textColor" name="#252525"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                </subviews>
+                                            </stackView>
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="X8L-DA-Bln">
+                                                <rect key="frame" x="0.0" y="43.333333333333329" width="189" height="33"/>
+                                                <subviews>
+                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KGw-CE-9V1">
+                                                        <rect key="frame" x="0.0" y="0.0" width="125" height="33"/>
+                                                        <color key="backgroundColor" name="#D92B2B"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="125" id="IqS-J3-mwB"/>
+                                                            <constraint firstAttribute="height" constant="33" id="t47-fN-D7R"/>
+                                                        </constraints>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="14"/>
+                                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                        <state key="normal" title="Claim reward"/>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="16.5"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </button>
+                                                </subviews>
+                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="bottom" secondItem="KGw-CE-9V1" secondAttribute="bottom" id="TDJ-3f-3yx"/>
+                                                    <constraint firstItem="KGw-CE-9V1" firstAttribute="top" secondItem="X8L-DA-Bln" secondAttribute="top" id="nmJ-m7-t0Z"/>
+                                                    <constraint firstItem="KGw-CE-9V1" firstAttribute="leading" secondItem="X8L-DA-Bln" secondAttribute="leading" id="pVY-PL-Fya"/>
+                                                </constraints>
+                                            </view>
+                                        </subviews>
+                                    </stackView>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="delete-16" translatesAutoresizingMaskIntoConstraints="NO" id="ZD6-MU-xz6">
+                                        <rect key="frame" x="314" y="29.666666666666671" width="42" height="42"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="42" id="H3N-mt-a4m"/>
+                                            <constraint firstAttribute="width" constant="42" id="Ver-PS-k9g"/>
+                                        </constraints>
+                                    </imageView>
+                                </subviews>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstItem="Oib-3u-Dru" firstAttribute="centerY" secondItem="Gvk-8p-uqC" secondAttribute="centerY" id="2m9-o1-eOz"/>
+                                    <constraint firstAttribute="trailing" secondItem="ZD6-MU-xz6" secondAttribute="trailing" constant="13" id="4KD-Ln-cUJ"/>
+                                    <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="Oib-3u-Dru" secondAttribute="bottom" constant="8" id="6dE-Jt-rsw"/>
+                                    <constraint firstItem="J26-tX-vWQ" firstAttribute="top" secondItem="Gvk-8p-uqC" secondAttribute="top" constant="5" id="7rR-bC-dec"/>
+                                    <constraint firstAttribute="bottom" secondItem="J26-tX-vWQ" secondAttribute="bottom" constant="5" id="J5q-9n-J3V"/>
+                                    <constraint firstItem="Oib-3u-Dru" firstAttribute="top" relation="greaterThanOrEqual" secondItem="Gvk-8p-uqC" secondAttribute="top" constant="8" id="TpZ-bW-NvS"/>
+                                    <constraint firstItem="J26-tX-vWQ" firstAttribute="leading" secondItem="Gvk-8p-uqC" secondAttribute="leading" constant="5" id="aGd-36-tEN"/>
+                                    <constraint firstItem="ZD6-MU-xz6" firstAttribute="centerY" secondItem="Gvk-8p-uqC" secondAttribute="centerY" id="bzk-cx-PhR"/>
+                                    <constraint firstAttribute="trailing" secondItem="J26-tX-vWQ" secondAttribute="trailing" constant="5" id="c6q-ae-Iiz"/>
+                                    <constraint firstItem="ZD6-MU-xz6" firstAttribute="leading" secondItem="Oib-3u-Dru" secondAttribute="trailing" constant="15" id="ejD-AZ-AlZ"/>
+                                    <constraint firstItem="Oib-3u-Dru" firstAttribute="leading" secondItem="Gvk-8p-uqC" secondAttribute="leading" constant="110" id="lqs-Yx-qrD"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstAttribute="trailing" secondItem="Gvk-8p-uqC" secondAttribute="trailing" id="2ep-fO-rcG"/>
+                            <constraint firstAttribute="bottom" secondItem="Gvk-8p-uqC" secondAttribute="bottom" id="3Zk-MA-WEc"/>
+                            <constraint firstItem="Gvk-8p-uqC" firstAttribute="leading" secondItem="gml-J4-dSP" secondAttribute="leading" id="4Wb-WA-gCc"/>
+                            <constraint firstItem="Gvk-8p-uqC" firstAttribute="top" secondItem="gml-J4-dSP" secondAttribute="top" id="q1u-wh-2MR"/>
+                        </constraints>
+                    </view>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="gml-J4-dSP" secondAttribute="bottom" id="3Aj-vt-EE7"/>
+                <constraint firstAttribute="trailing" secondItem="gml-J4-dSP" secondAttribute="trailing" id="K9u-S4-qrj"/>
+                <constraint firstItem="gml-J4-dSP" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="fZG-or-iPN"/>
+                <constraint firstItem="gml-J4-dSP" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="lbt-M8-AxC"/>
+            </constraints>
+            <size key="customSize" width="369" height="101"/>
+            <connections>
+                <outlet property="imageView" destination="J26-tX-vWQ" id="J78-3e-mHr"/>
+                <outlet property="imageViewWidth" destination="LBO-BS-PC2" id="sgD-Ea-HgR"/>
+            </connections>
+            <point key="canvasLocation" x="269.46564885496184" y="36.971830985915496"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <image name="delete-16" width="44" height="42"/>
+        <image name="googleReward" width="333" height="104"/>
+        <namedColor name="#252525">
+            <color red="0.14509803921568629" green="0.14509803921568629" blue="0.14509803921568629" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="#D92B2B">
+            <color red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>

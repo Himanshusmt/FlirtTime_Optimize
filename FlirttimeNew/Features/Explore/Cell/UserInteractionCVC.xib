@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Medium.ttf">
+            <string>Fredoka-Medium</string>
+        </array>
+    </customFonts>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="UserInteractionCVC" id="gTV-IL-0wX" customClass="UserInteractionCVC" customModule="FlirttimeNew" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="165" height="226"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">
+                <rect key="frame" x="0.0" y="0.0" width="165" height="226"/>
+                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                <subviews>
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="y1a-aY-bDe">
+                        <rect key="frame" x="0.0" y="0.0" width="165" height="226"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="165" id="1VJ-Uv-BPw"/>
+                            <constraint firstAttribute="height" constant="226" id="mU9-M1-nsG"/>
+                        </constraints>
+                    </imageView>
+                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="8SU-Pj-5qd">
+                        <rect key="frame" x="5" y="187" width="72.333333333333329" height="34"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FKc-bW-NWj">
+                                <rect key="frame" x="0.0" y="0.0" width="72.333333333333329" height="34"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Blur-Effect-Img" translatesAutoresizingMaskIntoConstraints="NO" id="snw-6q-Dah">
+                                        <rect key="frame" x="0.0" y="7" width="72.333333333333329" height="20"/>
+                                    </imageView>
+                                    <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="Ku4-Mv-HsO">
+                                        <rect key="frame" x="9" y="9.6666666666666572" width="44.666666666666664" height="15"/>
+                                        <subviews>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="SIF-oW-ep7">
+                                                <rect key="frame" x="0.0" y="0.66666666666668561" width="29.666666666666668" height="13.333333333333334"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Christ" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="5Yf-cE-cpK">
+                                                        <rect key="frame" x="0.0" y="0.0" width="29.666666666666668" height="13.333333333333334"/>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="11"/>
+                                                        <color key="textColor" name="#FFFFFF"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="5Yf-cE-cpK" firstAttribute="width" secondItem="SIF-oW-ep7" secondAttribute="width" id="0hI-Xa-Bmg"/>
+                                                </constraints>
+                                            </stackView>
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="verifyIcon" translatesAutoresizingMaskIntoConstraints="NO" id="img-d9-vRf">
+                                                <rect key="frame" x="34.666666666666664" y="0.0" width="10" height="15"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" constant="10" id="8gt-c3-R1m"/>
+                                                </constraints>
+                                            </imageView>
+                                        </subviews>
+                                    </stackView>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="34" id="Nxg-HY-Oww"/>
+                                    <constraint firstItem="Ku4-Mv-HsO" firstAttribute="centerY" secondItem="FKc-bW-NWj" secondAttribute="centerY" id="Tqg-w6-h7L"/>
+                                    <constraint firstAttribute="trailing" secondItem="snw-6q-Dah" secondAttribute="trailing" id="XaM-rN-caW"/>
+                                    <constraint firstItem="snw-6q-Dah" firstAttribute="top" secondItem="FKc-bW-NWj" secondAttribute="top" constant="7" id="Yzj-iz-J2C"/>
+                                    <constraint firstAttribute="bottom" secondItem="snw-6q-Dah" secondAttribute="bottom" constant="7" id="mWt-x8-7LG"/>
+                                    <constraint firstItem="snw-6q-Dah" firstAttribute="leading" secondItem="FKc-bW-NWj" secondAttribute="leading" id="tRJ-Ff-Vtb"/>
+                                    <constraint firstItem="Ku4-Mv-HsO" firstAttribute="leading" secondItem="FKc-bW-NWj" secondAttribute="leading" constant="9" id="zqr-l9-Gkn"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <constraints>
+                            <constraint firstAttribute="width" secondItem="Ku4-Mv-HsO" secondAttribute="width" multiplier="1.6194" id="otV-iB-dyX"/>
+                        </constraints>
+                    </stackView>
+                    <imageView hidden="YES" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="superLike" translatesAutoresizingMaskIntoConstraints="NO" id="rGq-JH-2Vh">
+                        <rect key="frame" x="120" y="10" width="35" height="35"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="35" id="9QS-KK-UwO"/>
+                            <constraint firstAttribute="width" secondItem="rGq-JH-2Vh" secondAttribute="height" multiplier="1:1" id="Prh-jg-E55"/>
+                        </constraints>
+                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" scale="small"/>
+                    </imageView>
+                </subviews>
+            </view>
+            <viewLayoutGuide key="safeArea" id="ZTg-uK-7eu"/>
+            <constraints>
+                <constraint firstItem="y1a-aY-bDe" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" id="90b-9J-myx"/>
+                <constraint firstAttribute="bottom" secondItem="8SU-Pj-5qd" secondAttribute="bottom" constant="5" id="A9n-O7-S8d"/>
+                <constraint firstAttribute="trailing" secondItem="y1a-aY-bDe" secondAttribute="trailing" id="Cis-1P-MRy"/>
+                <constraint firstAttribute="bottom" secondItem="y1a-aY-bDe" secondAttribute="bottom" id="HGK-jT-qxS"/>
+                <constraint firstItem="y1a-aY-bDe" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" id="KId-PJ-lAn"/>
+                <constraint firstItem="rGq-JH-2Vh" firstAttribute="top" secondItem="gTV-IL-0wX" secondAttribute="top" constant="10" id="aBK-IG-O5l"/>
+                <constraint firstItem="8SU-Pj-5qd" firstAttribute="leading" secondItem="gTV-IL-0wX" secondAttribute="leading" constant="5" id="dJl-rQ-QCl"/>
+                <constraint firstAttribute="trailing" secondItem="rGq-JH-2Vh" secondAttribute="trailing" constant="10" id="goS-wO-K7U"/>
+            </constraints>
+            <userDefinedRuntimeAttributes>
+                <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                    <real key="value" value="15"/>
+                </userDefinedRuntimeAttribute>
+            </userDefinedRuntimeAttributes>
+            <connections>
+                <outlet property="imgVerify" destination="img-d9-vRf" id="ela-iZ-SMG"/>
+                <outlet property="lblName" destination="5Yf-cE-cpK" id="ZU6-4B-E4c"/>
+                <outlet property="superLikeImgView" destination="rGq-JH-2Vh" id="heP-A8-T9L"/>
+                <outlet property="userImage" destination="y1a-aY-bDe" id="jim-qX-0ZW"/>
+                <outlet property="vwBack" destination="FKc-bW-NWj" id="gFr-Cb-zvc"/>
+                <outlet property="wdImg" destination="1VJ-Uv-BPw" id="fah-cg-BP6"/>
+            </connections>
+            <point key="canvasLocation" x="67.938931297709928" y="10.563380281690142"/>
+        </collectionViewCell>
+    </objects>
+    <resources>
+        <image name="Blur-Effect-Img" width="71.5" height="17"/>
+        <image name="superLike" width="27" height="27"/>
+        <image name="verifyIcon" width="15" height="15"/>
+        <namedColor name="#FFFFFF">
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document>
