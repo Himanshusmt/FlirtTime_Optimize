@@ -8,6 +8,8 @@
 		<string>Fredoka-Regular.ttf</string>
 		<string>Fredoka-SemiBold.ttf</string>
 	</array>
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

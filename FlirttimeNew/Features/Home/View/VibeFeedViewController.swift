@@ -69,6 +69,13 @@ final class VibeFeedViewController: BaseViewController {
         return button
     }()
 
+    private lazy var notificationButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.setImage(UIImage(named: "Notification"), for: .normal)
+        button.accessibilityLabel = "Notifications"
+        button.addTarget(self, action: #selector(notificationTapped), for: .touchUpInside)
+        return button
+    }()
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.separatorStyle = .none
@@ -129,7 +136,7 @@ final class VibeFeedViewController: BaseViewController {
     // MARK: - UI
 
     private func setUI() {
-        [logoImageView, newVibeButton].forEach {
+        [logoImageView, notificationButton, newVibeButton].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             topBarView.addSubview($0)
         }
@@ -150,10 +157,15 @@ final class VibeFeedViewController: BaseViewController {
             logoImageView.heightAnchor.constraint(equalToConstant: 24),
             logoImageView.widthAnchor.constraint(equalToConstant: 100),
 
-            newVibeButton.trailingAnchor.constraint(equalTo: topBarView.trailingAnchor, constant: -10),
+            newVibeButton.trailingAnchor.constraint(equalTo: topBarView.trailingAnchor, constant: -6),
             newVibeButton.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
             newVibeButton.widthAnchor.constraint(equalToConstant: 44),
             newVibeButton.heightAnchor.constraint(equalToConstant: 44),
+
+            notificationButton.trailingAnchor.constraint(equalTo: newVibeButton.leadingAnchor, constant: 8),
+            notificationButton.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
+            notificationButton.widthAnchor.constraint(equalToConstant: 44),
+            notificationButton.heightAnchor.constraint(equalToConstant: 44),
 
             uploadingBarView.topAnchor.constraint(equalTo: topBarView.bottomAnchor),
             uploadingBarView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -388,6 +400,10 @@ final class VibeFeedViewController: BaseViewController {
         navigationController?.pushViewController(aAddMomentViewController, animated: true)
     }
 
+    @objc private func notificationTapped() {
+        let aNotificationViewController: NotificationViewController = NotificationViewController.instantiateFromStoryboard()
+        navigationController?.pushViewController(aNotificationViewController, animated: true)
+    }
     private func presentAsSheet(_ viewController: UIViewController, detents: [UISheetPresentationController.Detent]) {
         viewController.modalPresentationStyle = .pageSheet
         if let sheet = viewController.sheetPresentationController {

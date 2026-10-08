@@ -24,7 +24,6 @@ class ExploreViewController: BaseViewController {
     @IBOutlet weak var vwMatches: UIView!
     @IBOutlet weak var vwCompliment: UIView!
     @IBOutlet weak var vwNoDataFound: UIView!
-    
     @IBOutlet weak var lineViewLike : UIView!
     @IBOutlet weak var lineViewYouLike : UIView!
     @IBOutlet weak var lineViewMatch : UIView!
@@ -262,7 +261,8 @@ class ExploreViewController: BaseViewController {
     }
 
     @IBAction func notificationButtonTapped(_ sender: UIButton) {
-        self.showComingSoon("Notifications")
+        let aNotificationViewController:NotificationViewController = NotificationViewController.instantiateFromStoryboard()
+        self.navigationController?.pushViewController(aNotificationViewController, animated: true)
     }
 
     @IBAction func applyFilterButtonTapped(_ sender: UIButton) {

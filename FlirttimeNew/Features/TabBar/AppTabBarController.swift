@@ -25,6 +25,7 @@ class AppTabBarController: UITabBarController, Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         UITabBar.appearance().unselectedItemTintColor = AppColor.Punch
+        self.tabBar.tintColor = AppColor.Punch
         UITabBarItem.appearance().setTitleTextAttributes([NSAttributedString.Key.foregroundColor: AppColor.Punch], for: .normal)
         UITabBarItem.appearance().setTitleTextAttributes([NSAttributedString.Key.font: UIFont.fredoka(.regular, size: 13)], for: .selected)
         self.selectedIndex = 2
