@@ -2,6 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ChatBaseURL</key>
+	<string>$(CHAT_BASE_URL)</string>
+	<key>ChatSocketURL</key>
+	<string>$(CHAT_SOCKET_URL)</string>
+	<key>ChatSocketPath</key>
+	<string>$(CHAT_SOCKET_PATH)</string>
+	<key>GoogleMapsAPIKey</key>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
+	<key>ChatMediaBaseURL</key>
+	<string>$(CHAT_MEDIA_BASE_URL)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>voip</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Fredoka-Medium.ttf</string>

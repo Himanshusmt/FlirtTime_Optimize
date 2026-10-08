@@ -312,6 +312,7 @@ extension String {
 
 extension UIViewController {
     func navigateToLoginScreen(){
+        ChatAuthStore.shared.logout()
         UserDataManager.shared.removeUserData()
         MockDataStore.shared.reset()
         let aLoginViewController = LoginOptionsViewController.instantiateFromStoryboard()

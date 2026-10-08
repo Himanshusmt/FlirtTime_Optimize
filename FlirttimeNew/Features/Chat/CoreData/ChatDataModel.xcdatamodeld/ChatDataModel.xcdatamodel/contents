@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25C56" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="CDConversation" representedClassName="CDConversation" syncable="YES" codeGenerationType="class">
+        <attribute name="conversationIsArchived" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="String" indexed="YES"/>
+        <attribute name="lastMessageAt" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES"/>
+        <attribute name="lastMessageContent" optional="YES" attributeType="String"/>
+        <attribute name="lastMessageSender" optional="YES" attributeType="String"/>
+        <attribute name="lastMessageStatus" optional="YES" attributeType="String"/>
+        <attribute name="lastMessageTimestamp" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES"/>
+        <attribute name="lastMessageType" optional="YES" attributeType="String"/>
+        <attribute name="lastSyncedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="newestCachedMessageDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="oldestCachedMessageDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <attribute name="type" optional="YES" attributeType="String" indexed="YES"/>
+        <attribute name="unreadCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="participantsCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDMessage" inverseName="conversation" inverseEntity="CDMessage"/>
+        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDParticipant" inverseName="conversation" inverseEntity="CDParticipant"/>
+        <relationship name="settings" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="CDConversationSettings" inverseName="conversation" inverseEntity="CDConversationSettings"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="CDConversationSettings" representedClassName="CDConversationSettings" syncable="YES" codeGenerationType="class">
+        <attribute name="conversationId" attributeType="String" indexed="YES"/>
+        <attribute name="disappearingMessages" optional="YES" attributeType="String"/>
+        <attribute name="label" optional="YES" attributeType="String"/>
+        <attribute name="settingsIsArchived" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="settingsIsBlocked" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="settingsIsMuted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="settingsIsPinned" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" indexed="YES"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDConversation" inverseName="settings" inverseEntity="CDConversation"/>
+    </entity>
+    <entity name="CDMessage" representedClassName="CDMessage" syncable="YES" codeGenerationType="class">
+        <attribute name="content" optional="YES" attributeType="String"/>
+        <attribute name="conversationId" attributeType="String" indexed="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES"/>
+        <attribute name="id" attributeType="String" indexed="YES"/>
+        <attribute name="mediaURLs" optional="YES" attributeType="String"/>
+        <attribute name="messageIsDeleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" indexed="YES"/>
+        <attribute name="messageIsEdited" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="messageIsPinned" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES" indexed="YES"/>
+        <attribute name="messageType" optional="YES" attributeType="String" indexed="YES"/>
+        <attribute name="metadata" optional="YES" attributeType="String"/>
+        <attribute name="postData" optional="YES" attributeType="String"/>
+        <attribute name="reelData" optional="YES" attributeType="String"/>
+        <attribute name="replyToId" optional="YES" attributeType="String"/>
+        <attribute name="replyToJSON" optional="YES" attributeType="String"/>
+        <attribute name="senderId" optional="YES" attributeType="String" indexed="YES"/>
+        <attribute name="senderFullName" optional="YES" attributeType="String"/>
+        <attribute name="senderUserName" optional="YES" attributeType="String"/>
+        <attribute name="senderAvatar" optional="YES" attributeType="String"/>
+        <attribute name="storyData" optional="YES" attributeType="String"/>
+        <attribute name="pollData" optional="YES" attributeType="String"/>
+        <attribute name="locationData" optional="YES" attributeType="String"/>
+        <attribute name="reactionsJSON" optional="YES" attributeType="String"/>
+        <attribute name="renderedHeight" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="statusesJSON" optional="YES" attributeType="String"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDConversation" inverseName="messages" inverseEntity="CDConversation"/>
+        <relationship name="senderUser" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDUser" inverseName="messages" inverseEntity="CDUser"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+        <compoundIndexes>
+            <compoundIndex>
+                <index value="conversationId"/>
+                <index value="createdAt"/>
+            </compoundIndex>
+        </compoundIndexes>
+    </entity>
+    <entity name="CDChannel" representedClassName="CDChannel" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="String" indexed="YES"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="channelDescription" optional="YES" attributeType="String"/>
+        <attribute name="icon" optional="YES" attributeType="String"/>
+        <attribute name="createdByUserId" optional="YES" attributeType="String"/>
+        <attribute name="createdByUserName" optional="YES" attributeType="String"/>
+        <attribute name="hasFollowed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isOwner" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isAdmin" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="shareLink" optional="YES" attributeType="String"/>
+        <attribute name="followerCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="adminCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" indexed="YES"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="id"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="CDParticipant" representedClassName="CDParticipant" syncable="YES" codeGenerationType="class">
+        <attribute name="conversationId" attributeType="String" indexed="YES"/>
+        <attribute name="fullName" optional="YES" attributeType="String"/>
+        <attribute name="id" attributeType="String" indexed="YES"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES" indexed="YES"/>
+        <attribute name="joinedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="leftAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="profilePicture" optional="YES" attributeType="String"/>
+        <attribute name="role" optional="YES" attributeType="String"/>
+        <attribute name="userId" attributeType="String" indexed="YES"/>
+        <attribute name="userName" optional="YES" attributeType="String"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDConversation" inverseName="participants" inverseEntity="CDConversation"/>
+        <compoundIndexes>
+            <compoundIndex>
+                <index value="conversationId"/>
+                <index value="userId"/>
+            </compoundIndex>
+        </compoundIndexes>
+    </entity>
+    <entity name="CDUser" representedClassName="CDUser" syncable="YES" codeGenerationType="class">
+        <attribute name="userId" attributeType="String" indexed="YES"/>
+        <attribute name="fullName" optional="YES" attributeType="String"/>
+        <attribute name="userName" optional="YES" attributeType="String"/>
+        <attribute name="profilePicture" optional="YES" attributeType="String"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CDMessage" inverseName="senderUser" inverseEntity="CDMessage"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="userId"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+</model>

@@ -611,10 +611,10 @@
             </objects>
             <point key="canvasLocation" x="2171" y="-219"/>
         </scene>
-        <!--Messages Placeholder-->
+        <!--Chat List Container View Controller-->
         <scene sceneID="fpL-kR-Jz1">
             <objects>
-                <viewController storyboardIdentifier="MessagesPlaceholderViewController" id="OB9-5g-IfE" customClass="TabPlaceholderViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="ChatListContainerViewController" id="OB9-5g-IfE" customClass="ChatListContainerViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ms1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -622,10 +622,6 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <navigationItem key="navigationItem" id="Ms1-v1-003"/>
-                    <userDefinedRuntimeAttributes>
-                        <userDefinedRuntimeAttribute type="string" keyPath="screenTitle" value="Messages"/>
-                        <userDefinedRuntimeAttribute type="boolean" keyPath="showsLogout" value="NO"/>
-                    </userDefinedRuntimeAttributes>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ms1-v1-004" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>

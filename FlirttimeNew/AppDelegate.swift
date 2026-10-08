@@ -7,6 +7,7 @@
 
 import UIKit
 import IQKeyboardManagerSwift
+import GoogleMaps
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,7 +18,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         IQKeyboardManager.shared.toolbarConfiguration.tintColor = AppColor.Punch
         UITextField.appearance().tintColor = AppColor.Punch
         UITextView.appearance().tintColor = AppColor.Punch
+        startChat()
         return true
+    }
+
+    private func startChat() {
+        let mapsKey = ChatConfig.googleMapsAPIKey
+        if !mapsKey.isEmpty {
+            GMSServices.provideAPIKey(mapsKey)
+        }
+        _ = CallKitManager.shared
+        _ = CoreDataManager.shared.viewContext
+        ChatSocketSessionCoordinator.shared.start()
+        Task { @MainActor in
+            AgoraCallService.shared.start()
+        }
+    }
+
+    func applicationWillTerminate(_ application: UIApplication) {
+        ChatSocketSessionCoordinator.shared.handleApplicationWillTerminate()
     }
 
     // MARK: UISceneSession Lifecycle

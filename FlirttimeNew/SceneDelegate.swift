@@ -18,6 +18,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         showSplashAsRoot()
     }
 
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        ChatSocketSessionCoordinator.shared.handleApplicationWillEnterForeground()
+    }
+
     private func showSplashAsRoot() {
         let splashVC = SplashScreenVC.instantiateFromStoryboard()
         let navController = UINavigationController(rootViewController: splashVC)
