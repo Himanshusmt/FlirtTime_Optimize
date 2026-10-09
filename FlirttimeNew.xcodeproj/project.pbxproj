@@ -7,7 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */; };
+		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
+		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
+		557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */; };
+		56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */; };
+		5E12006DD0F17692527E52ED /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */; };
+		615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098437D832448245A93BC7F2 /* AppEndPoint.swift */; };
+		9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */; };
+		9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D763521B7C6B71DF206B5DDF /* AppConfig.swift */; };
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
+		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
+		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
+		C5985349FE87952A818AADA2 /* AppJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBD7FA8B044481320A3CEFA /* AppJSON.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -601,9 +613,21 @@
 		E3E889383078C1AA0026295C /* emoji.json in Resources */ = {isa = PBXBuildFile; fileRef = E3E888833078C1AA0026295C /* emoji.json */; };
 		E3E889393078C1AA0026295C /* incoming_ringtone.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888843078C1AA0026295C /* incoming_ringtone.caf */; };
 		E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888853078C1AA0026295C /* outgoing_ringback.caf */; };
+		F27CA4D6AF153AE5B5E78AA3 /* AppApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9245D839B28892219B9F8D4 /* AppApiClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		098437D832448245A93BC7F2 /* AppEndPoint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEndPoint.swift; sourceTree = "<group>"; };
+		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
+		22661A208F524B403C3887C7 /* AppContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		2DBD7FA8B044481320A3CEFA /* AppJSON.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppJSON.swift; sourceTree = "<group>"; };
+		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
+		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
+		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
+		D2353406368B559954CF0295 /* AppSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSessionManager.swift; sourceTree = "<group>"; };
+		D763521B7C6B71DF206B5DDF /* AppConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		D9245D839B28892219B9F8D4 /* AppApiClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppApiClient.swift; sourceTree = "<group>"; };
 		DF560E8030764A3500FA3C0D /* FlirttimeNew.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlirttimeNew.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A2D6D730776627008D1551 /* BaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseViewController.swift; sourceTree = "<group>"; };
 		E3A2D6D930776627008D1551 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
@@ -1192,6 +1216,8 @@
 		E3E8888E3078C1AA0026295C /* ChatDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel.xcdatamodel; sourceTree = "<group>"; };
 		E3E8888F3078C1AA0026295C /* ChatDataModel_v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v2.xcdatamodel; sourceTree = "<group>"; };
 		E3E888903078C1AA0026295C /* ChatDataModel_v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v3.xcdatamodel; sourceTree = "<group>"; };
+		E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppTokenStore.swift; sourceTree = "<group>"; };
+		EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppBackendClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1215,6 +1241,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		09B86A59C6A48407F822839F /* Api */ = {
+			isa = PBXGroup;
+			children = (
+				CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */,
+			);
+			name = Api;
+			path = Api;
+			sourceTree = "<group>";
+		};
+		5474E43D425E3AB7845D4F7D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				09B86A59C6A48407F822839F /* Api */,
+			);
+			name = Model;
+			path = Model;
+			sourceTree = "<group>";
+		};
 		DF560E7730764A3500FA3C0D = {
 			isa = PBXGroup;
 			children = (
@@ -1259,6 +1303,15 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D6E330776627008D1551 /* ApiName.swift */,
+				D9245D839B28892219B9F8D4 /* AppApiClient.swift */,
+				EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */,
+				D763521B7C6B71DF206B5DDF /* AppConfig.swift */,
+				22661A208F524B403C3887C7 /* AppContainer.swift */,
+				098437D832448245A93BC7F2 /* AppEndPoint.swift */,
+				2DBD7FA8B044481320A3CEFA /* AppJSON.swift */,
+				37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */,
+				D2353406368B559954CF0295 /* AppSessionManager.swift */,
+				E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -1888,6 +1941,7 @@
 			children = (
 				E3A2D79830776627008D1551 /* LoginViewController.swift */,
 				E3A2D79930776627008D1551 /* SignUpOption.swift */,
+				4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */,
 			);
 			path = Login;
 			sourceTree = "<group>";
@@ -1905,6 +1959,7 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D79E30776627008D1551 /* VerifyOTPViewController.swift */,
+				13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */,
 			);
 			path = OTP;
 			sourceTree = "<group>";
@@ -1939,6 +1994,7 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D7A830776627008D1551 /* UserDetailsViewController.swift */,
+				B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */,
 			);
 			path = UserDetails;
 			sourceTree = "<group>";
@@ -2314,6 +2370,7 @@
 				E3A2D8C630776627008D1551 /* Info.plist */,
 				E3A2D8C830776627008D1551 /* LaunchScreen.storyboard */,
 				E3A2D8C930776627008D1551 /* SceneDelegate.swift */,
+				5474E43D425E3AB7845D4F7D /* Model */,
 			);
 			path = FlirttimeNew;
 			sourceTree = "<group>";
@@ -2804,6 +2861,25 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
+				ar,
+				"zh-Hans",
+				ja,
+				uk,
+				es,
+				it,
+				kk,
+				ko,
+				tr,
+				pl,
+				ru,
+				uz,
+				fr,
+				pt,
+				"pt-PT",
+				"uz-UZ",
+				hi,
+				zh,
 			);
 			mainGroup = DF560E7730764A3500FA3C0D;
 			minimizedProjectReferenceProxies = 1;
@@ -3427,6 +3503,19 @@
 				E3A2DA6730776627008D1551 /* Constants.swift in Sources */,
 				E3A2DA6830776627008D1551 /* AppDelegate.swift in Sources */,
 				E3A2DA6930776627008D1551 /* SceneDelegate.swift in Sources */,
+				F27CA4D6AF153AE5B5E78AA3 /* AppApiClient.swift in Sources */,
+				557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */,
+				9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */,
+				245517BB47B75C7557C83725 /* AppContainer.swift in Sources */,
+				615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */,
+				C5985349FE87952A818AADA2 /* AppJSON.swift in Sources */,
+				174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */,
+				BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */,
+				2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */,
+				5E12006DD0F17692527E52ED /* LoginViewModel.swift in Sources */,
+				56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */,
+				9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */,
+				AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

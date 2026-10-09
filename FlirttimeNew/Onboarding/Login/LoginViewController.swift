@@ -37,6 +37,7 @@ class LoginViewController: BaseViewController,Instantiable {
     var selectedRegionCode:String?
     var topConstraintEqual: NSLayoutConstraint?
     var topConstraintGreaterThanOrEqual: NSLayoutConstraint?
+    private let viewModel = LoginViewModel()
     
     static var storyboardName: StringConvertible {
         return StoryboardName.login
@@ -55,6 +56,19 @@ class LoginViewController: BaseViewController,Instantiable {
         self.setUI()
         super.viewDidLoad()
         lastSignUpOption = signUpOption
+        self.bindViewModel()
+    }
+
+    private func bindViewModel() {
+        viewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        viewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        viewModel.onOTPSent = { [weak self] otp in
+            self?.navigateToOTPScreen(otp: otp)
+        }
     }
     
     func setUI(){
@@ -127,7 +141,10 @@ class LoginViewController: BaseViewController,Instantiable {
     
     @IBAction func continueButton(_ sender: UIButton) {
         self.view.endEditing(true)
-        self.navigateToOTPScreen()
+        viewModel.requestOTP(signUpOption: signUpOption,
+                             email: emailTextField.text,
+                             countryCode: countryCodeLabel.text,
+                             phone: phoneNumberTextField.text)
     }
     
     @IBAction func actionPrivacyPolicy(_ sender: UIButton) {
@@ -165,9 +182,11 @@ class LoginViewController: BaseViewController,Instantiable {
 //        }
     }
     
-    func navigateToOTPScreen() {
+    func navigateToOTPScreen(otp: OTPResponse) {
         let aVerifyOTPViewController = VerifyOTPViewController.instantiateFromStoryboard()
         let countryCode = self.countryCodeLabel.text?.dropFirst()
+        aVerifyOTPViewController.verificationId = otp.verificationId
+        aVerifyOTPViewController.resendAfter = otp.resendAfter
         aVerifyOTPViewController.signUpOption = self.signUpOption
         aVerifyOTPViewController.phoneCode = String(countryCode ?? "")
         aVerifyOTPViewController.phoneNumber = self.phoneNumberTextField.text

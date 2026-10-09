@@ -32,6 +32,16 @@ class BaseViewController: UIViewController {
         }
     }
     
+    /// `ActivityIndicator.show()` finishes asynchronously, so `hide()` is queued after it
+    /// to avoid a stuck loader when an API fails synchronously (e.g. no internet).
+    func setLoading(_ isLoading: Bool) {
+        if isLoading {
+            aActivityIndicator.show()
+        } else {
+            DispatchQueue.main.async { self.aActivityIndicator.hide() }
+        }
+    }
+
     func showNewAlertPopUp(Title:String, Msg:String, isSuccess:Bool, CompletionHandler:@escaping CompletionHandler) {
         let customView = CustomAlertVW(frame: CGRect(x: 0, y: 44, width: self.view.frame.width , height: 82))
         customView.setView(Title: Title, Msg: Msg, isSuccess: isSuccess)

@@ -39,6 +39,7 @@ class UserDetailsViewController: BaseViewController,Instantiable{
     var genderID:Int?
     var validNickName:Bool = false
     var countAboutMe:Int = 0
+    private let viewModel = UserDetailsViewModel()
 
     static var storyboardName: StringConvertible {
         return StoryboardName.signUp
@@ -53,6 +54,20 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         
         self.firstNameTextField.maxLength = 50
         self.nickNameTextField.maxLength = 50
+        self.bindViewModel()
+    }
+
+    private func bindViewModel() {
+        viewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        viewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        viewModel.onProfileUpdated = { [weak self] in
+            UserDataManager.shared.displayName = self?.nickNameTextField.text?.trimmText()
+            self?.navigateToNextScreen()
+        }
     }
 
     func setTextFieldUI(){
@@ -153,8 +168,12 @@ class UserDetailsViewController: BaseViewController,Instantiable{
 
     @IBAction func continueButtonTapped(_ sender: UIButton) {
         self.view.endEditing(true)
-        UserDataManager.shared.displayName = self.nickNameTextField.text?.trimmText()
-        self.navigateToNextScreen()
+        viewModel.updateProfile(firstName: firstNameTextField.text?.trimmText() ?? "",
+                                lastName: lastNameTextField.text?.trimmText(),
+                                nickName: nickNameTextField.text?.trimmText() ?? "",
+                                dateOfBirth: selectedDOB,
+                                genderID: genderID,
+                                about: aboutTextView.text.trimmText())
     }
 
     @IBAction func backButtonTapped(_ sender: UIButton) {

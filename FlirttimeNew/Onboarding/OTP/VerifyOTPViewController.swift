@@ -57,6 +57,9 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
     var isAllOTPEntered:Bool? = false
     var otpTextFieldIndex:Int? = 0
     var isDoneEditing:Bool? = false
+    var verificationId: String?
+    var resendAfter: Int?
+    private let viewModel = VerifyOTPViewModel()
     static var storyboardName: StringConvertible {
         return StoryboardName.login
     }
@@ -70,8 +73,39 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.setUI()
+        self.bindViewModel()
         IQKeyboardManager.shared.enableAutoToolbar = false
         IQKeyboardManager.shared.resignOnTouchOutside = false
+    }
+
+    private func bindViewModel() {
+        viewModel.signUpOption = signUpOption ?? .phoneNumber
+        viewModel.verificationId = verificationId ?? ""
+        viewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        viewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        viewModel.onWrongOTP = { [weak self] message in
+            self?.lblWrongOTPMsg.text = message
+            self?.wrongOTPPopUp.isHidden = false
+        }
+        viewModel.onVerified = { [weak self] isProfileComplete in
+            UserDataManager.shared.isOTPVerificationDone = true
+            if isProfileComplete {
+                self?.navigateToHome()
+            } else {
+                self?.navigateToNextScreen()
+            }
+        }
+        viewModel.onResent = { [weak self] resendAfter in
+            if let resendAfter {
+                self?.resendAfter = resendAfter
+            }
+            self?.stopTimer()
+            self?.startTimer()
+        }
     }
 
     func setUI(){
@@ -115,8 +149,7 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
     }
 
     @IBAction func resendOTPButton(_ sender: UIButton) {
-        self.stopTimer()
-        self.startTimer()
+        viewModel.resend()
     }
 
     @IBAction func editButton(_ sender: UIButton) {
@@ -125,8 +158,7 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
 
     @IBAction func continueButtonAction(_ sender: UIButton) {
         self.view.endEditing(true)
-        UserDataManager.shared.isOTPVerificationDone = true
-        self.navigateToNextScreen()
+        viewModel.verify(otp: enterOtp)
     }
     
     @IBAction func actionLearnMore(_ sender: UIButton) {
@@ -154,8 +186,13 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
     }
 
     // Timer For Resend OTP
+    private var resendWindow: Int {
+        guard let resendAfter, resendAfter > 0 else { return 60 }
+        return resendAfter
+    }
+
     private func startTimer(){
-        self.secondsRemaining = 60
+        self.secondsRemaining = resendWindow
         self.setResendButtonInteration(isHide: true)
         if timer == nil {
             timer =  Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { (Timer) in
@@ -175,7 +212,7 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
     private func stopTimer(){
         timer?.invalidate()
         timer = nil
-        self.timerLabel.text = "01:00"
+        self.timerLabel.text = String(format: "%02d:%02d", resendWindow / 60, resendWindow % 60)
         self.setResendButtonInteration(isHide: false)
     }
 
@@ -187,6 +224,13 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
         aUserDetailsViewController.phoneNumber = self.phoneNumber
         aUserDetailsViewController.phoneCode = self.phoneCode
         self.navigationController?.pushViewController(aUserDetailsViewController, animated: true)
+    }
+
+    private func navigateToHome() {
+        self.stopTimer()
+        UserDataManager.shared.isHomePageRedirect = true
+        guard let sceneDelegate = self.view.window?.windowScene?.delegate as? SceneDelegate else { return }
+        sceneDelegate.changeRootViewController(AppTabBarController.instantiateFromStoryboard())
     }
 }
 
