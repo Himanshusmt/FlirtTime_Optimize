@@ -565,10 +565,10 @@
             </objects>
             <point key="canvasLocation" x="2171.7557251908397" y="-930.28169014084517"/>
         </scene>
-        <!--Home Placeholder-->
+        <!--Discover-->
         <scene sceneID="gZy-7g-ZM6">
             <objects>
-                <viewController storyboardIdentifier="VibeFeedViewController" id="nbj-Lb-RuJ" customClass="VibeFeedViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="DiscoverViewController" id="nbj-Lb-RuJ" customClass="DiscoverViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Hm1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -601,10 +601,10 @@
             </objects>
             <point key="canvasLocation" x="2171" y="511"/>
         </scene>
-        <!--Moments Placeholder-->
+        <!--Vibe Feed-->
         <scene sceneID="QMF-JN-sJ0">
             <objects>
-                <viewController storyboardIdentifier="MomentsPlaceholderViewController" id="lhb-dt-1Kd" customClass="TabPlaceholderViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="VibeFeedViewController" id="lhb-dt-1Kd" customClass="VibeFeedViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Mo1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -612,10 +612,6 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <navigationItem key="navigationItem" id="Mo1-v1-003"/>
-                    <userDefinedRuntimeAttributes>
-                        <userDefinedRuntimeAttribute type="string" keyPath="screenTitle" value="Moments"/>
-                        <userDefinedRuntimeAttribute type="boolean" keyPath="showsLogout" value="NO"/>
-                    </userDefinedRuntimeAttributes>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Mo1-v1-004" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>

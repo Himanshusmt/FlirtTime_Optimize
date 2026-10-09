@@ -5,7 +5,7 @@
 
 import UIKit
 
-/// Stand-in root for tabs whose feature has not been ported yet (Home, Moments, Messages).
+/// Stand-in root for tabs whose feature has not been ported yet (Messages).
 class TabPlaceholderViewController: BaseViewController {
 
     @objc var screenTitle: String = ""

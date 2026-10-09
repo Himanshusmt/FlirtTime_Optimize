@@ -2,7 +2,7 @@
 //  VibeFeedViewController.swift
 //  FlirttimeNew
 //
-//  Home tab: vibe feed with a "what's new" composer, like / comment / gift actions.
+//  Moments tab: vibe feed with a "what's new" composer, like / comment / gift actions.
 //
 
 import UIKit

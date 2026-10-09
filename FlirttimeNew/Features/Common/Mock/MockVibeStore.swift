@@ -26,7 +26,7 @@ final class MockVibeStore {
     }
 
     private let fileURL: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("mock_vibes.json")
+        .appendingPathComponent("mock_vibes_v2.json")
 
     private var state: State
 
@@ -244,18 +244,18 @@ final class MockVibeStore {
 
     private static func seedState() -> State {
         let seeds: [(personID: Int, caption: String, photos: [String], minutesAgo: Int, likes: Int, gifts: Int)] = [
-            (101, "Sunday mood: coffee, playlist on shuffle and zero plans ☕️🎶", ["delete-24"], 12, 24, 3),
-            (103, "Made it to the top! Nothing beats mountain air after a long week 🏔️", ["delete-8", "delete-24"], 45, 58, 6),
+            (101, "Sunday mood: coffee, playlist on shuffle and zero plans ☕️🎶", ["mock-cindy-1"], 12, 24, 3),
+            (103, "Made it to the top! Nothing beats mountain air after a long week 🏔️", ["mock-riya-1", "mock-riya-2"], 45, 58, 6),
             (105, "Street food tour tonight. Who's in? 🌮", [], 90, 17, 0),
-            (102, "Currently reading three books at once and regretting nothing 📚", ["delete-26"], 180, 33, 2),
+            (102, "Currently reading three books at once and regretting nothing 📚", ["mock-ally-0"], 180, 33, 2),
             (106, "Leg day done. Netflix recommendations please 🍿", [], 300, 12, 1),
-            (104, "Tried a new pasta recipe and it actually worked 🍝", ["delete-3"], 420, 41, 4),
-            (107, "My dog judged me for singing in the shower again 🐶", ["delete-23"], 600, 76, 9),
+            (104, "Tried a new pasta recipe and it actually worked 🍝", ["mock-meera-1"], 420, 41, 4),
+            (107, "My dog judged me for singing in the shower again 🐶", ["mock-tanya-1"], 600, 76, 9),
             (108, "Classical music + rainy evenings = perfect combo 🎻", [], 900, 19, 0),
-            (101, "Sunsets hit different when you're with the right people 🌅", ["delete-25", "delete-8"], 1500, 88, 11),
+            (101, "Sunsets hit different when you're with the right people 🌅", ["mock-sara-1", "mock-cindy-0"], 1500, 88, 11),
             (103, "Chai over coffee. Fight me ☕️", [], 2200, 27, 1),
-            (105, "Spontaneous road trip to the lakes 🚗💨", ["delete-5"], 3100, 64, 5),
-            (106, "Morning runs are my therapy 🏃‍♀️", ["delete-7"], 4400, 22, 0)
+            (105, "Spontaneous road trip to the lakes 🚗💨", ["mock-sara-3"], 3100, 64, 5),
+            (106, "Morning runs are my therapy 🏃‍♀️", ["mock-nisha-0"], 4400, 22, 0)
         ]
 
         var vibes: [Vibe] = []

@@ -266,9 +266,9 @@ class ExploreViewController: BaseViewController {
     }
 
     @IBAction func applyFilterButtonTapped(_ sender: UIButton) {
-        let aExploreFilterViewController:ExploreFilterViewController = ExploreFilterViewController.instantiateFromStoryboard()
-        aExploreFilterViewController.modalPresentationStyle = .overCurrentContext
-        self.tabBarController?.present(aExploreFilterViewController, animated: true, completion: nil)
+        VibeFiltersViewController.present(from: tabBarController ?? self, filters: .saved) { filters in
+            UserDataManager.shared.filterDataModel = filters
+        }
     }
     
     @IBAction func likeButtonTapped(_ sender: UIButton) {

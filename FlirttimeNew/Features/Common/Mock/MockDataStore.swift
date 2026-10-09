@@ -25,6 +25,7 @@ final class MockDataStore {
         if let data = try? Data(contentsOf: fileURL),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             user = json
+            MockDataStore.migrateLegacyGallery(&user)
         } else {
             user = MockDataStore.defaultUser()
         }
@@ -38,7 +39,7 @@ final class MockDataStore {
     }
 
     func myMoments() -> [MomentsDatum] {
-        let moments: [[String: Any]] = ["delete-18", "delete-19", "delete-20", "delete-21"].enumerated().map { index, image in
+        let moments: [[String: Any]] = ["mock-me-moment-0", "mock-me-moment-1", "mock-me-moment-2", "mock-me-moment-3"].enumerated().map { index, image in
             [
                 "id": 900 + index,
                 "user_id": currentUserID,
@@ -147,6 +148,7 @@ final class MockDataStore {
         VibeUploadViewModel.shared.cancel()
         LocalImageStore.shared.removeAll()
         MockVibeStore.shared.reset()
+        MockDiscover.shared.reset()
     }
 
     // MARK: - Helpers
@@ -210,9 +212,25 @@ final class MockDataStore {
         try? data.write(to: fileURL, options: .atomic)
     }
 
+    private static let defaultGalleryFiles = ["mock-me-0", "mock-me-1", "mock-me-2"]
+    private static let legacyGalleryFiles: Set<String> = ["delete-4", "delete-13", "delete-14"]
+
+    /// Swaps the old low-resolution sample photos in a previously saved user for the HD ones.
+    private static func migrateLegacyGallery(_ user: inout [String: Any]) {
+        guard var images = user["user_images"] as? [[String: Any]] else { return }
+        var changed = false
+        for index in images.indices {
+            if let file = images[index]["filename"] as? String, legacyGalleryFiles.contains(file), index < defaultGalleryFiles.count {
+                images[index]["filename"] = defaultGalleryFiles[index]
+                changed = true
+            }
+        }
+        if changed { user["user_images"] = images }
+    }
+
     private static func defaultUser() -> [String: Any] {
         let displayName = UserDataManager.shared.displayName ?? "Alex"
-        let gallery: [[String: Any]] = ["delete-4", "delete-13", "delete-14"].enumerated().map { index, file in
+        let gallery: [[String: Any]] = defaultGalleryFiles.enumerated().map { index, file in
             [
                 "id": index + 1,
                 "user_id": 1,
