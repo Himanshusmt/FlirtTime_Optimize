@@ -450,6 +450,16 @@ extension VibeFeedViewController: VibeTableViewCellDelegate {
         cell.updateCounts(with: viewModel.vibes[indexPath.row])
     }
 
+    func vibeCellDidDoubleTapLike(_ cell: VibeTableViewCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        guard viewModel.vibes[indexPath.row].hasLiked != true else { return }
+        let vibeId = viewModel.vibes[indexPath.row].id
+        viewModel.toggleLike(vibeId: vibeId) { [weak self] row in
+            self?.refreshCounts(at: row)
+        }
+        cell.updateCounts(with: viewModel.vibes[indexPath.row])
+    }
+
     func vibeCellDidTapComment(_ cell: VibeTableViewCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let vibe = viewModel.vibes[indexPath.row]

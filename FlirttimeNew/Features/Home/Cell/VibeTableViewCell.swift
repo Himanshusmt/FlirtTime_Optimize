@@ -7,6 +7,7 @@ import UIKit
 
 protocol VibeTableViewCellDelegate: AnyObject {
     func vibeCellDidTapLike(_ cell: VibeTableViewCell)
+    func vibeCellDidDoubleTapLike(_ cell: VibeTableViewCell)
     func vibeCellDidTapComment(_ cell: VibeTableViewCell)
     func vibeCellDidTapGift(_ cell: VibeTableViewCell)
     func vibeCellDidTapMore(_ cell: VibeTableViewCell)
@@ -52,12 +53,13 @@ final class VibeTableViewCell: UITableViewCell {
         return imageView
     }()
 
-    private let timeLabel: UILabel = {
+    /// Location when the author shares one, otherwise the relative time.
+    private let metaLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.fredoka(.regular, size: 14)
+        label.font = UIFont.fredoka(.regular, size: 13)
         label.textColor = AppColor.SilverChalice
-        label.setContentHuggingPriority(.required, for: .horizontal)
-        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingTail
         return label
     }()
 
@@ -143,8 +145,12 @@ final class VibeTableViewCell: UITableViewCell {
         super.prepareForReuse()
         delegate = nil
         avatarImageView.image = nil
+        metaLabel.text = nil
         media = []
         mediaCollectionView.reloadData()
+        contentView.subviews
+            .filter { $0.accessibilityIdentifier == HeartBurst.identifier }
+            .forEach { $0.removeFromSuperview() }
     }
 
     override func layoutSubviews() {
@@ -157,17 +163,27 @@ final class VibeTableViewCell: UITableViewCell {
     }
 
     private func setUI() {
-        let nameStack = UIStackView(arrangedSubviews: [nameLabel, verifiedImageView, timeLabel, UIView(), moreButton])
+        let nameStack = UIStackView(arrangedSubviews: [nameLabel, verifiedImageView, UIView(), moreButton])
         nameStack.axis = .horizontal
         nameStack.alignment = .center
         nameStack.spacing = 6
 
+        let headerStack = UIStackView(arrangedSubviews: [nameStack, metaLabel])
+        headerStack.axis = .vertical
+        headerStack.alignment = .fill
+        headerStack.spacing = 2
+
         rowActionStack.addArrangedSubview(rowActionSpacer)
 
-        let contentStack = UIStackView(arrangedSubviews: [nameStack, captionLabel, mediaCollectionView, rowActionStack])
+        let contentStack = UIStackView(arrangedSubviews: [headerStack, captionLabel, mediaCollectionView, rowActionStack])
         contentStack.axis = .vertical
         contentStack.spacing = 8
-        contentStack.setCustomSpacing(4, after: nameStack)
+        contentStack.setCustomSpacing(4, after: headerStack)
+
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        doubleTap.cancelsTouchesInView = false
+        contentView.addGestureRecognizer(doubleTap)
 
         [avatarImageView, contentStack, separatorView, pageIndicator, overlayActionStack].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -218,7 +234,8 @@ final class VibeTableViewCell: UITableViewCell {
     func configure(with vibe: Vibe) {
         nameLabel.text = vibe.author?.displayName
         verifiedImageView.isHidden = !(vibe.author?.verified ?? false)
-        timeLabel.text = VibeDate.timeAgo(from: vibe.createdAt)
+        metaLabel.text = Self.metaText(location: vibe.author?.location, createdAt: vibe.createdAt)
+        metaLabel.isHidden = (metaLabel.text ?? "").isEmpty
         avatarImageView.loadImage(path: vibe.author?.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
 
         let caption = (vibe.caption ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -278,6 +295,31 @@ final class VibeTableViewCell: UITableViewCell {
     @objc private func likeTapped() {
         bounce(likeButton)
         delegate?.vibeCellDidTapLike(self)
+    }
+
+    @objc private func doubleTapped(_ gesture: UITapGestureRecognizer) {
+        let point = gesture.location(in: contentView)
+        guard !isInsideControl(contentView.hitTest(point, with: nil)) else { return }
+        HeartBurst.show(in: contentView, at: point)
+        VibeHaptics.threshold()
+        delegate?.vibeCellDidDoubleTapLike(self)
+    }
+
+    /// Location under the name when the author shares one, otherwise the relative time.
+    private static func metaText(location: String?, createdAt: String?) -> String {
+        let place = (location ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let time = VibeDate.timeAgo(from: createdAt)
+        if !place.isEmpty, !time.isEmpty { return "\(place) · \(time)" }
+        return place.isEmpty ? time : place
+    }
+
+    private func isInsideControl(_ view: UIView?) -> Bool {
+        var current = view
+        while let candidate = current, candidate !== contentView {
+            if candidate is UIControl { return true }
+            current = candidate.superview
+        }
+        return false
     }
 
     @objc private func commentTapped() {

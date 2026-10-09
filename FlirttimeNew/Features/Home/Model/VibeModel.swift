@@ -53,6 +53,8 @@ struct VibeAuthor: Codable {
     let fullName: String?
     let profilePicture: String?
     let verified: Bool?
+    /// City or place shown under the name. Empty when the author hides their location.
+    let location: String?
 
     var displayName: String {
         let name = (userName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)

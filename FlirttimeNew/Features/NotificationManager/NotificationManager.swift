@@ -106,8 +106,7 @@ final class NotificationManager {
             nav.pushViewController(aEditProfileViewController, animated: true)
 
         case .membershipUpgrade:
-            // TODO: push PremiumVC once the subscription module is ported.
-            viewController.showComingSoon("Premium")
+            viewController.openPremium()
 
         case .message:
             // TODO: push ChatViewController with data["user_id"] once chat is ported.

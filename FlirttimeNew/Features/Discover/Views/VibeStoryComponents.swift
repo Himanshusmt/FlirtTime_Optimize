@@ -42,8 +42,11 @@ extension UIView {
 // MARK: - Heart burst
 
 enum HeartBurst {
+    static let identifier = "heartBurst"
+
     static func show(in view: UIView, at point: CGPoint, color: UIColor = AppColor.Punch) {
         let heart = UIImageView(image: UIImage(systemName: "heart.fill"))
+        heart.accessibilityIdentifier = identifier
         heart.tintColor = color
         heart.frame = CGRect(x: 0, y: 0, width: 96, height: 88)
         heart.center = point

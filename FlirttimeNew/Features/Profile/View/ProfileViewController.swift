@@ -308,7 +308,7 @@ class ProfileViewController: BaseViewController,UIScrollViewDelegate,UIGestureRe
     }
     
     @IBAction func upgragePremiumPlanButtonTapped(_ sender: UIButton) {
-        self.showComingSoon("Premium")
+        self.openPremium()
     }
 
     @IBAction func rewardSeeMoreButtonTapped(_ sender: UIButton) {

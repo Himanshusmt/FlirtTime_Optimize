@@ -1,0 +1,319 @@
+{
+  "appPolicies": {
+    "eula": "",
+    "policies": [
+      {
+        "locale": "en_US",
+        "policyText": "",
+        "policyURL": ""
+      }
+    ]
+  },
+  "identifier": "F17C0E01",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "49",
+      "familyShareable": false,
+      "internalID": "6740001000",
+      "localizations": [
+        {
+          "description": "50 Flirttime coins",
+          "displayName": "Starter Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "starter_pack",
+      "referenceName": "Starter Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "89",
+      "familyShareable": false,
+      "internalID": "6740001001",
+      "localizations": [
+        {
+          "description": "100 Flirttime coins",
+          "displayName": "Basic Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "basic_pack",
+      "referenceName": "Basic Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "169",
+      "familyShareable": false,
+      "internalID": "6740001002",
+      "localizations": [
+        {
+          "description": "200 Flirttime coins",
+          "displayName": "Bronze Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "bronze_pack",
+      "referenceName": "Bronze Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "279",
+      "familyShareable": false,
+      "internalID": "6740001003",
+      "localizations": [
+        {
+          "description": "350 Flirttime coins",
+          "displayName": "Silver Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "silver_pack",
+      "referenceName": "Silver Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "399",
+      "familyShareable": false,
+      "internalID": "6740001004",
+      "localizations": [
+        {
+          "description": "500 Flirttime coins",
+          "displayName": "Gold Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "gold_pack",
+      "referenceName": "Gold Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "599",
+      "familyShareable": false,
+      "internalID": "6740001005",
+      "localizations": [
+        {
+          "description": "800 Flirttime coins",
+          "displayName": "Platinum Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "platinum_pack",
+      "referenceName": "Platinum Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "849",
+      "familyShareable": false,
+      "internalID": "6740001006",
+      "localizations": [
+        {
+          "description": "1200 Flirttime coins",
+          "displayName": "Diamond Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "diamond_pack",
+      "referenceName": "Diamond Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "1299",
+      "familyShareable": false,
+      "internalID": "6740001007",
+      "localizations": [
+        {
+          "description": "2000 Flirttime coins",
+          "displayName": "Elite Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "elite_pack",
+      "referenceName": "Elite Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "1999",
+      "familyShareable": false,
+      "internalID": "6740001008",
+      "localizations": [
+        {
+          "description": "3500 Flirttime coins",
+          "displayName": "Mega Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "mega_pack",
+      "referenceName": "Mega Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "2999",
+      "familyShareable": false,
+      "internalID": "6740001009",
+      "localizations": [
+        {
+          "description": "6000 Flirttime coins",
+          "displayName": "Royal Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "royal_pack",
+      "referenceName": "Royal Pack",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_IN",
+    "_storeKitErrors": [
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
+      }
+    ],
+    "_storefront": "IND"
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21640001",
+      "localizations": [],
+      "name": "Flirttime Premium",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "199",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740002000",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Premium for 1 week",
+              "displayName": "Flirttime Premium Weekly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.flirttime.weekly",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly",
+          "subscriptionGroupID": "21640001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "499",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740002001",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Premium for 1 month",
+              "displayName": "Flirttime Premium Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.flirttime.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly",
+          "subscriptionGroupID": "21640001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "1999",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740002002",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Premium for 6 months",
+              "displayName": "Flirttime Premium 6 Months",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.flirttime.halfyearly",
+          "recurringSubscriptionPeriod": "P6M",
+          "referenceName": "Premium 6 Months",
+          "subscriptionGroupID": "21640001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "2999",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740002003",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Premium for 1 year",
+              "displayName": "Flirttime Premium Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.flirttime.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Yearly",
+          "subscriptionGroupID": "21640001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

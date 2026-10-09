@@ -52,11 +52,13 @@ final class MockVibeStore {
     private static func makeCurrentUserAuthor() -> VibeAuthor {
         let info = MockDataStore.shared.currentUserResponse()?.data?.userInfo
         let name = info?.displayName ?? UserDataManager.shared.displayName ?? "You"
+        let location = info?.locationShow == false ? nil : info?.location
         return VibeAuthor(userId: String(MockDataStore.shared.currentUserID),
                           userName: name,
                           fullName: info?.fullname ?? name,
                           profilePicture: info?.avatar,
-                          verified: info?.gestureIsVerified ?? false)
+                          verified: info?.gestureIsVerified ?? false,
+                          location: location)
     }
 
     // MARK: - Feed
@@ -235,7 +237,8 @@ final class MockVibeStore {
                    userName: person.displayName,
                    fullName: person.fullname,
                    profilePicture: person.photos.first,
-                   verified: person.isVerified)
+                   verified: person.isVerified,
+                   location: person.location)
     }
 
     private static func timestamp(minutesAgo: Int) -> String {

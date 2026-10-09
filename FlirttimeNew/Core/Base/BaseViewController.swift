@@ -61,9 +61,26 @@ class BaseViewController: UIViewController {
         let window = UIApplication.shared.windows.first
         window?.addSubview(customView)
         customView.subsUpdateAction = { [weak self] in
-            // TODO: push PremiumVC once the subscription module is ported.
-            self?.showComingSoon("Premium")
+            // TODO: open ChatViewController for `chatUserID` after purchase when `isToChatView` once chat is ported.
+            self?.openPremium(source: subscriptionPopUpType)
         }
+    }
+
+    func openPremium(source: SubscriptionPopUpType? = nil, onPurchased: (() -> Void)? = nil) {
+        let premiumVC = PremiumViewController(source: source)
+        premiumVC.onPurchased = onPurchased
+        if let navigationController {
+            navigationController.pushViewController(premiumVC, animated: true)
+        } else {
+            let nav = UINavigationController(rootViewController: premiumVC)
+            nav.isNavigationBarHidden = true
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
+        }
+    }
+
+    func openCoinShop() {
+        navigationController?.pushViewController(CoinsViewController(), animated: true)
     }
 
     /// Placeholder for destinations whose module has not been ported yet.

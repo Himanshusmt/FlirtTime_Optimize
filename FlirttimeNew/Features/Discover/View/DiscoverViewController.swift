@@ -56,6 +56,12 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         return imageView
     }()
 
+    private lazy var coinShopButton: CoinBalancePill = {
+        let pill = CoinBalancePill()
+        pill.addAction(UIAction { [weak self] _ in self?.openCoinShop() }, for: .touchUpInside)
+        return pill
+    }()
+
     private lazy var notificationButton = headerButton(image: UIImage(named: "Notification"), label: "Notifications") { [weak self] in
         self?.notificationTapped()
     }
@@ -188,6 +194,7 @@ final class DiscoverViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: false)
+        CoinWallet.shared.refresh()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -203,7 +210,7 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         view.addSubview(background)
         background.pinEdges(to: view)
 
-        let header = UIStackView(arrangedSubviews: [logoImageView, UIView(), notificationButton, filterButton])
+        let header = UIStackView(arrangedSubviews: [logoImageView, UIView(), coinShopButton, notificationButton, filterButton])
         header.spacing = 10
         header.alignment = .center
         filterBadge.translatesAutoresizingMaskIntoConstraints = false
@@ -378,6 +385,15 @@ final class DiscoverViewController: BaseViewController, Instantiable {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] filters in self?.updateFilterBadge(filters.activeCount) }
             .store(in: &cancellables)
+
+        CoinWallet.shared.$balance
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] balance in self?.updateCoinBalance(balance) }
+            .store(in: &cancellables)
+    }
+
+    private func updateCoinBalance(_ balance: Int) {
+        coinShopButton.setBalance(balance)
     }
 
     private func deckChanged(_ deck: [VibeProfile]) {

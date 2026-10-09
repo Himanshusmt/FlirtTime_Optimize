@@ -19,7 +19,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         UITextField.appearance().tintColor = AppColor.Punch
         UITextView.appearance().tintColor = AppColor.Punch
         startChat()
+        startStore()
         return true
+    }
+
+    private func startStore() {
+        StoreManager.shared.start()
+        _ = CoinWallet.shared
+        PremiumViewModel.refreshMembership()
     }
 
     private func startChat() {

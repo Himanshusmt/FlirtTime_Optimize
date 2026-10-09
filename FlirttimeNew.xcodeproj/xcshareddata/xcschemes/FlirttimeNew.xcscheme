@@ -50,6 +50,9 @@
             ReferencedContainer = "container:FlirttimeNew.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <StoreKitConfigurationFileReference
+         identifier = "../FlirttimeNew/Features/Subscription/FlirttimeStore.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

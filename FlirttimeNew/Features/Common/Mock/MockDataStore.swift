@@ -149,6 +149,8 @@ final class MockDataStore {
         LocalImageStore.shared.removeAll()
         MockVibeStore.shared.reset()
         MockDiscover.shared.reset()
+        MockStore.shared.reset()
+        CoinWallet.shared.refresh()
     }
 
     // MARK: - Helpers
