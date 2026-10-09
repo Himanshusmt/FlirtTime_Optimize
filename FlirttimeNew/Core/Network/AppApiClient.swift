@@ -114,19 +114,8 @@ final class AppApiClient {
         let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         let success = json?["success"] as? Bool ?? (200..<300).contains(statusCode)
         guard !success else { return }
-        throw APIHTTPError(statusCode: statusCode, message: errorMessage(from: json))
-    }
-
-    /// Prefers the first field error ("phone is required") over a generic "Validation failed".
-    private static func errorMessage(from json: [String: Any]?) -> String {
-        if let fieldErrors = json?["error"] as? [[String: Any]],
-           let first = fieldErrors.first?["message"] as? String, !first.isEmpty {
-            return first
-        }
-        if let message = json?["message"] as? String, !message.isEmpty {
-            return message
-        }
-        return "Something went wrong"
+        let errorResponse = try? JSONDecoder().decode(AppErrorResponse.self, from: data)
+        throw APIHTTPError(statusCode: statusCode, message: errorResponse?.displayMessage ?? "Something went wrong")
     }
 
     // MARK: - Logging

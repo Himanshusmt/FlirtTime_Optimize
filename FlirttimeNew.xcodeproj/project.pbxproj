@@ -10,18 +10,20 @@
 		174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */; };
 		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
 		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
+		329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */; };
 		4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */; };
 		557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */; };
 		56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */; };
 		5E12006DD0F17692527E52ED /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */; };
 		615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098437D832448245A93BC7F2 /* AppEndPoint.swift */; };
+		6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */; };
 		9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */; };
 		9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D763521B7C6B71DF206B5DDF /* AppConfig.swift */; };
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
 		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
 		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
-		C5985349FE87952A818AADA2 /* AppJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBD7FA8B044481320A3CEFA /* AppJSON.swift */; };
+		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -623,12 +625,14 @@
 		0A9443AC2280F3B0639910DE /* FlirttimeNew.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlirttimeNew.entitlements; sourceTree = "<group>"; };
 		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
 		22661A208F524B403C3887C7 /* AppContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
-		2DBD7FA8B044481320A3CEFA /* AppJSON.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppJSON.swift; sourceTree = "<group>"; };
 		2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
 		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
 		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
 		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		7FB6A6E2D71BF2706C814A73 /* AppUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
+		9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppErrorResponse.swift; sourceTree = "<group>"; };
 		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
+		CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
 		D2353406368B559954CF0295 /* AppSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSessionManager.swift; sourceTree = "<group>"; };
 		D763521B7C6B71DF206B5DDF /* AppConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
@@ -1250,6 +1254,9 @@
 			isa = PBXGroup;
 			children = (
 				CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */,
+				CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */,
+				7FB6A6E2D71BF2706C814A73 /* AppUser.swift */,
+				9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */,
 			);
 			name = Api;
 			path = Api;
@@ -1313,7 +1320,6 @@
 				D763521B7C6B71DF206B5DDF /* AppConfig.swift */,
 				22661A208F524B403C3887C7 /* AppContainer.swift */,
 				098437D832448245A93BC7F2 /* AppEndPoint.swift */,
-				2DBD7FA8B044481320A3CEFA /* AppJSON.swift */,
 				37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */,
 				D2353406368B559954CF0295 /* AppSessionManager.swift */,
 				E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */,
@@ -3516,7 +3522,6 @@
 				9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */,
 				245517BB47B75C7557C83725 /* AppContainer.swift in Sources */,
 				615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */,
-				C5985349FE87952A818AADA2 /* AppJSON.swift in Sources */,
 				174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */,
 				BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */,
 				2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */,
@@ -3526,6 +3531,9 @@
 				AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */,
 				4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */,
 				C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */,
+				329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */,
+				CB427D849A8B659E90DB344E /* AppUser.swift in Sources */,
+				6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

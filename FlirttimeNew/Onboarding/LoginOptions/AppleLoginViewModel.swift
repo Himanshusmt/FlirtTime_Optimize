@@ -42,10 +42,9 @@ final class AppleLoginViewModel {
                                   nonce: nil,
                                   firstName: credential.firstName,
                                   lastName: credential.lastName)
-            .subscribe(onSuccess: { [weak self] json in
+            .subscribe(onSuccess: { [weak self] auth in
                 self?.onLoading?(false)
-                let isProfileComplete = AppJSON.bool(json, keys: ["isProfileComplete", "profileCompleted", "isOnboarded"]) ?? false
-                self?.onLoggedIn?(isProfileComplete)
+                self?.onLoggedIn?(auth.user?.isProfileComplete ?? false)
             }, onFailure: { [weak self] error in
                 self?.onLoading?(false)
                 self?.onError?(parseError(error) ?? "Something went wrong")

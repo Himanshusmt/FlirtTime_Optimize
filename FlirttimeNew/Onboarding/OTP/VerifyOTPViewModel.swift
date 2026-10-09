@@ -32,10 +32,9 @@ final class VerifyOTPViewModel {
 
         onLoading?(true)
         request
-            .subscribe(onSuccess: { [weak self] json in
+            .subscribe(onSuccess: { [weak self] auth in
                 self?.onLoading?(false)
-                let isProfileComplete = AppJSON.bool(json, keys: ["isProfileComplete", "profileCompleted", "isOnboarded"]) ?? false
-                self?.onVerified?(isProfileComplete)
+                self?.onVerified?(auth.user?.isProfileComplete ?? false)
             }, onFailure: { [weak self] error in
                 self?.onLoading?(false)
                 let message = parseError(error) ?? "Something went wrong"

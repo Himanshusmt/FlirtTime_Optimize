@@ -6,7 +6,7 @@
 import Foundation
 import RxSwift
 
-/// One function per FlirtTime API. Calls whose response shape is not confirmed yet return `[String: Any]`.
+/// One function per FlirtTime API.
 final class AppSessionManager {
 
     let backendClient: AppBackendClient
@@ -30,10 +30,9 @@ final class AppSessionManager {
         return backendClient.load(request: AppApiRequest(method: .post, endPoint: .emailRequestOTP, parameters: params))
     }
 
-    func verifyEmailOTP(verificationId: String, otp: String) -> Single<[String: Any]> {
+    func verifyEmailOTP(verificationId: String, otp: String) -> Single<AuthResponse> {
         let params: [String: Any] = ["verificationId": verificationId, "otp": otp]
-        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .emailVerifyOTP, parameters: params))
-            .do(onSuccess: { [weak self] json in self?.persistAuthSession(from: json) })
+        return authenticate(AppApiRequest(method: .post, endPoint: .emailVerifyOTP, parameters: params))
     }
 
     func resendEmailOTP(verificationId: String) -> Single<OTPResponse> {
@@ -49,10 +48,9 @@ final class AppSessionManager {
         return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneRequestOTP, parameters: params))
     }
 
-    func verifyPhoneOTP(verificationId: String, otp: String) -> Single<[String: Any]> {
+    func verifyPhoneOTP(verificationId: String, otp: String) -> Single<AuthResponse> {
         let params: [String: Any] = ["verificationId": verificationId, "otp": otp]
-        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .phoneVerifyOTP, parameters: params))
-            .do(onSuccess: { [weak self] json in self?.persistAuthSession(from: json) })
+        return authenticate(AppApiRequest(method: .post, endPoint: .phoneVerifyOTP, parameters: params))
     }
 
     func resendPhoneOTP(verificationId: String) -> Single<OTPResponse> {
@@ -66,7 +64,7 @@ final class AppSessionManager {
                     authorizationCode: String?,
                     nonce: String?,
                     firstName: String?,
-                    lastName: String?) -> Single<[String: Any]> {
+                    lastName: String?) -> Single<AuthResponse> {
         var params: [String: Any] = ["identityToken": identityToken]
         if let authorizationCode, !authorizationCode.isEmpty { params["authorizationCode"] = authorizationCode }
         if let nonce, !nonce.isEmpty { params["nonce"] = nonce }
@@ -74,23 +72,24 @@ final class AppSessionManager {
         if let firstName, !firstName.isEmpty { name["firstName"] = firstName }
         if let lastName, !lastName.isEmpty { name["lastName"] = lastName }
         if !name.isEmpty { params["user"] = ["name": name] }
-        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .appleLogin, parameters: params))
-            .do(onSuccess: { [weak self] json in self?.persistAuthSession(from: json) })
+        return authenticate(AppApiRequest(method: .post, endPoint: .appleLogin, parameters: params))
     }
 
     // MARK: - User
 
-    func getMe() -> Single<[String: Any]> {
-        backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .me))
+    func getMe() -> Single<AppUser?> {
+        let request: Single<MeResponse> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .me))
+        return request.map { $0.user }
     }
 
-    /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "other".
+    /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "non-binary" | "other".
+    /// The backend requires `lastName`.
     func updateProfile(firstName: String,
                        lastName: String?,
                        nickName: String,
                        dateOfBirth: String,
                        gender: String,
-                       about: String) -> Single<[String: Any]> {
+                       about: String) -> Single<AppUser> {
         var params: [String: Any] = [
             "firstName": firstName,
             "nickName": nickName,
@@ -99,7 +98,7 @@ final class AppSessionManager {
             "about": about
         ]
         if let lastName, !lastName.isEmpty { params["lastName"] = lastName }
-        return backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
+        return backendClient.load(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
     }
 
     // MARK: - Session
@@ -109,11 +108,15 @@ final class AppSessionManager {
         UserDataManager.shared.removeUserData()
     }
 
-    private func persistAuthSession(from json: [String: Any]) {
-        guard let token = AppJSON.accessToken(in: json) else {
-            print("AppSessionManager: no access token found in auth response")
-            return
+    /// Decodes an auth response and stores its token.
+    private func authenticate(_ request: AppApiRequest) -> Single<AuthResponse> {
+        let response: Single<AuthResponse> = backendClient.load(request: request)
+        return response.map { auth in
+            guard let token = auth.token, !token.isEmpty else {
+                throw APIHTTPError(statusCode: 0, message: "Login failed. Please try again.")
+            }
+            AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
+            return auth
         }
-        AppTokenStore.shared.update(accessToken: token, refreshToken: AppJSON.refreshToken(in: json))
     }
 }
