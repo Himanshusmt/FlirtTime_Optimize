@@ -7,7 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0809B175D887C6F88B3CC304 /* VibeSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979C5020639C47E827599523 /* VibeSafety.swift */; };
+		1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */; };
+		27E7C7E330200024DCCFFDB3 /* VibeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */; };
+		371C63B8F7E6F7C38B1A178B /* DiscoverViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFC050627BED43E700F948 /* DiscoverViewController.swift */; };
+		6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0589AAB139F188714C1019D /* NotificationViewModel.swift */; };
+		76F5210D32597ED327F229D7 /* VibeCardStackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */; };
+		787E36FBEEFFF9B019D5C293 /* NotificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */; };
+		7ABE1E362790C85688D43430 /* NotificationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */; };
+		869C6A5140428E2EFF4CFD2F /* VibeProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */; };
+		8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44CF9558FE0250560AC807D /* MockNotifications.swift */; };
+		89EF86808206C0DE9041C21A /* VibeRangeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */; };
+		8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */; };
+		8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */; };
+		938094036D624A1FA6C259B0 /* VibeConnectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */; };
+		97EAC81079DCE02E6FAA0FBE /* VibeProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62486E210DA53E8F1B80FC17 /* VibeProfile.swift */; };
+		9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */; };
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
+		AEEC82DD04625E1B999859FA /* VibeMomentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */; };
+		B4D13E3BE4F46F39A4FB5591 /* VibeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */; };
+		B4DF64BE43E8E42844E1A9C2 /* VibeAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */; };
+		C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Vibe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */; };
+		C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */; };
+		C57E2A295829D18EE05B7CD6 /* WhyVibeDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -17,6 +39,9 @@
 		CC1000000000000000000014 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000013 /* KeychainAccess */; };
 		CC1000000000000000000017 /* RtcBasic in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000016 /* RtcBasic */; };
 		CC100000000000000000001B /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = CC100000000000000000001A /* GoogleMaps */; };
+		CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */; };
+		D716281BD622D3187A227B72 /* VibeHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */; };
+		DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */; };
 		E3A2D8CB30776627008D1551 /* ActivityIndicator.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E630776627008D1551 /* ActivityIndicator.xib */; };
 		E3A2D8CC30776627008D1551 /* CustomAlertVW.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E930776627008D1551 /* CustomAlertVW.xib */; };
 		E3A2D8CD30776627008D1551 /* DeleteCustomPopUp.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6EC30776627008D1551 /* DeleteCustomPopUp.xib */; };
@@ -601,9 +626,39 @@
 		E3E889383078C1AA0026295C /* emoji.json in Resources */ = {isa = PBXBuildFile; fileRef = E3E888833078C1AA0026295C /* emoji.json */; };
 		E3E889393078C1AA0026295C /* incoming_ringtone.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888843078C1AA0026295C /* incoming_ringtone.caf */; };
 		E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888853078C1AA0026295C /* outgoing_ringback.caf */; };
+		E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7045A9235ADAA76496ED259C /* MockDiscover.swift */; };
+		F690335568303B016201193C /* VibeFiltersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */; };
+		F8CB26514F9C07EB669DE2C9 /* VibeStoryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */; };
+		FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationModel.swift; sourceTree = "<group>"; };
+		20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeCardView.swift; sourceTree = "<group>"; };
+		28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewController.swift; sourceTree = "<group>"; };
+		2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverViewModel.swift; sourceTree = "<group>"; };
+		2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeProfileViewController.swift; sourceTree = "<group>"; };
+		49CFC050627BED43E700F948 /* DiscoverViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverViewController.swift; sourceTree = "<group>"; };
+		550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverTabViews.swift; sourceTree = "<group>"; };
+		5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectBecauseViewController.swift; sourceTree = "<group>"; };
+		62486E210DA53E8F1B80FC17 /* VibeProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeProfile.swift; sourceTree = "<group>"; };
+		627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeConnectionViewController.swift; sourceTree = "<group>"; };
+		63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FilterModel+Vibe.swift"; sourceTree = "<group>"; };
+		67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WhyVibeDetailsViewController.swift; sourceTree = "<group>"; };
+		7045A9235ADAA76496ED259C /* MockDiscover.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDiscover.swift; sourceTree = "<group>"; };
+		71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeRangeSlider.swift; sourceTree = "<group>"; };
+		84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeMomentsViewController.swift; sourceTree = "<group>"; };
+		89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureActionOverlay.swift; sourceTree = "<group>"; };
+		93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverResponse.swift; sourceTree = "<group>"; };
+		979C5020639C47E827599523 /* VibeSafety.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeSafety.swift; sourceTree = "<group>"; };
+		B0589AAB139F188714C1019D /* NotificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
+		B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeHaptics.swift; sourceTree = "<group>"; };
+		B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceIntroPlayer.swift; sourceTree = "<group>"; };
+		BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeFiltersViewController.swift; sourceTree = "<group>"; };
+		CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeStoryComponents.swift; sourceTree = "<group>"; };
+		D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeAnalytics.swift; sourceTree = "<group>"; };
+		D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationTableViewCell.swift; sourceTree = "<group>"; };
 		DF560E8030764A3500FA3C0D /* FlirttimeNew.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlirttimeNew.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A2D6D730776627008D1551 /* BaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseViewController.swift; sourceTree = "<group>"; };
 		E3A2D6D930776627008D1551 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
@@ -1192,6 +1247,9 @@
 		E3E8888E3078C1AA0026295C /* ChatDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel.xcdatamodel; sourceTree = "<group>"; };
 		E3E8888F3078C1AA0026295C /* ChatDataModel_v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v2.xcdatamodel; sourceTree = "<group>"; };
 		E3E888903078C1AA0026295C /* ChatDataModel_v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v3.xcdatamodel; sourceTree = "<group>"; };
+		F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeCardStackView.swift; sourceTree = "<group>"; };
+		F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeComponents.swift; sourceTree = "<group>"; };
+		F44CF9558FE0250560AC807D /* MockNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockNotifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1215,6 +1273,113 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		16333C80D50BCE51EB7D6611 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */,
+				20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */,
+				CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */,
+				F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */,
+				F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */,
+				7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */,
+				89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */,
+			);
+			name = Views;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		25BC0A755ADBC81D1C4BB16E /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				B0589AAB139F188714C1019D /* NotificationViewModel.swift */,
+			);
+			name = ViewModel;
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		3699F8A5733DC82E19CF4BCC /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */,
+			);
+			name = Model;
+			path = Model;
+			sourceTree = "<group>";
+		};
+		7FE86003FB486C8C09498641 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */,
+				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */,
+				62486E210DA53E8F1B80FC17 /* VibeProfile.swift */,
+			);
+			name = Model;
+			path = Model;
+			sourceTree = "<group>";
+		};
+		A1BF91BECE7D4AFE7C48FA95 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */,
+				B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */,
+				979C5020639C47E827599523 /* VibeSafety.swift */,
+				D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */,
+			);
+			name = Helpers;
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		A94BDEA93CFECA6CD1FE47D1 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */,
+			);
+			name = View;
+			path = View;
+			sourceTree = "<group>";
+		};
+		AD6DEE7032733990F9DC74B7 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */,
+				67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */,
+				5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */,
+				49CFC050627BED43E700F948 /* DiscoverViewController.swift */,
+				BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */,
+				2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */,
+				627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */,
+			);
+			name = View;
+			path = View;
+			sourceTree = "<group>";
+		};
+		C63D3A6CADC7DA47F32B251C /* Cell */ = {
+			isa = PBXGroup;
+			children = (
+				D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */,
+			);
+			name = Cell;
+			path = Cell;
+			sourceTree = "<group>";
+		};
+		C774A5A71AE849728B119984 /* NotificationManager */ = {
+			isa = PBXGroup;
+			children = (
+				71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */,
+			);
+			name = NotificationManager;
+			path = NotificationManager;
+			sourceTree = "<group>";
+		};
+		D7F2F02EE2F54FB9B0F4E044 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */,
+			);
+			name = ViewModel;
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
 		DF560E7730764A3500FA3C0D = {
 			isa = PBXGroup;
 			children = (
@@ -1229,6 +1394,18 @@
 				DF560E8030764A3500FA3C0D /* FlirttimeNew.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E1624EEF6A809F1E08A2B8FA /* Notification */ = {
+			isa = PBXGroup;
+			children = (
+				25BC0A755ADBC81D1C4BB16E /* ViewModel */,
+				C63D3A6CADC7DA47F32B251C /* Cell */,
+				3699F8A5733DC82E19CF4BCC /* Model */,
+				A94BDEA93CFECA6CD1FE47D1 /* View */,
+			);
+			name = Notification;
+			path = Notification;
 			sourceTree = "<group>";
 		};
 		E3A2D6D830776627008D1551 /* Base */ = {
@@ -1485,6 +1662,8 @@
 				E3A2D71D30776627008D1551 /* MockPeople.swift */,
 				E3A2D71E30776627008D1551 /* MockResponses.swift */,
 				E3A2D71F30776627008D1551 /* MockVibeStore.swift */,
+				7045A9235ADAA76496ED259C /* MockDiscover.swift */,
+				F44CF9558FE0250560AC807D /* MockNotifications.swift */,
 			);
 			path = Mock;
 			sourceTree = "<group>";
@@ -1858,6 +2037,9 @@
 				E3A2D78630776627008D1551 /* StoryBoard */,
 				E3A2D78930776627008D1551 /* Subscription */,
 				E3A2D78D30776627008D1551 /* TabBar */,
+				EED84FF088F28C6E253F4F78 /* Discover */,
+				C774A5A71AE849728B119984 /* NotificationManager */,
+				E1624EEF6A809F1E08A2B8FA /* Notification */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -2751,6 +2933,19 @@
 			path = Chat;
 			sourceTree = "<group>";
 		};
+		EED84FF088F28C6E253F4F78 /* Discover */ = {
+			isa = PBXGroup;
+			children = (
+				D7F2F02EE2F54FB9B0F4E044 /* ViewModel */,
+				7FE86003FB486C8C09498641 /* Model */,
+				AD6DEE7032733990F9DC74B7 /* View */,
+				16333C80D50BCE51EB7D6611 /* Views */,
+				A1BF91BECE7D4AFE7C48FA95 /* Helpers */,
+			);
+			name = Discover;
+			path = Discover;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -3427,6 +3622,35 @@
 				E3A2DA6730776627008D1551 /* Constants.swift in Sources */,
 				E3A2DA6830776627008D1551 /* AppDelegate.swift in Sources */,
 				E3A2DA6930776627008D1551 /* SceneDelegate.swift in Sources */,
+				CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */,
+				DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */,
+				C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Vibe.swift in Sources */,
+				97EAC81079DCE02E6FAA0FBE /* VibeProfile.swift in Sources */,
+				AEEC82DD04625E1B999859FA /* VibeMomentsViewController.swift in Sources */,
+				C57E2A295829D18EE05B7CD6 /* WhyVibeDetailsViewController.swift in Sources */,
+				9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */,
+				371C63B8F7E6F7C38B1A178B /* DiscoverViewController.swift in Sources */,
+				F690335568303B016201193C /* VibeFiltersViewController.swift in Sources */,
+				869C6A5140428E2EFF4CFD2F /* VibeProfileViewController.swift in Sources */,
+				938094036D624A1FA6C259B0 /* VibeConnectionViewController.swift in Sources */,
+				C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */,
+				27E7C7E330200024DCCFFDB3 /* VibeCardView.swift in Sources */,
+				F8CB26514F9C07EB669DE2C9 /* VibeStoryComponents.swift in Sources */,
+				B4D13E3BE4F46F39A4FB5591 /* VibeComponents.swift in Sources */,
+				76F5210D32597ED327F229D7 /* VibeCardStackView.swift in Sources */,
+				89EF86808206C0DE9041C21A /* VibeRangeSlider.swift in Sources */,
+				8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */,
+				D716281BD622D3187A227B72 /* VibeHaptics.swift in Sources */,
+				8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */,
+				0809B175D887C6F88B3CC304 /* VibeSafety.swift in Sources */,
+				B4DF64BE43E8E42844E1A9C2 /* VibeAnalytics.swift in Sources */,
+				FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */,
+				6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */,
+				1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */,
+				7ABE1E362790C85688D43430 /* NotificationModel.swift in Sources */,
+				787E36FBEEFFF9B019D5C293 /* NotificationViewController.swift in Sources */,
+				E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */,
+				8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
