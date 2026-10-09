@@ -222,6 +222,7 @@ enum Constants{
         static let like = "like"
         static let dislike = "dislike"
         static let favorite = "favorite"
+        static let nope = "nope"
         
     }
     

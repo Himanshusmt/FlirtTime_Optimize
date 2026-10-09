@@ -21,6 +21,8 @@ struct FilterModel:Codable {
     var distance:String?
     var isVerified:String?
     var isOnline:String?
+    var interests:[Int]?
+    var intents:[String]?
 }
 
 struct InteractionResponse: Codable {

@@ -475,33 +475,8 @@
                                         <rect key="frame" x="350" y="10" width="40" height="40"/>
                                         <subviews>
                                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Notification" translatesAutoresizingMaskIntoConstraints="NO" id="ksg-V0-3Yv">
-                                                <rect key="frame" x="13.666666666666686" y="8" width="25" height="24"/>
+                                                <rect key="frame" x="7.666666666666686" y="8" width="25" height="24"/>
                                             </imageView>
-                                            <view hidden="YES" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="jvH-Zl-73j">
-                                                <rect key="frame" x="19" y="-1" width="20" height="20"/>
-                                                <subviews>
-                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="80" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="IKr-A7-9TV">
-                                                        <rect key="frame" x="0.0" y="0.0" width="20" height="20"/>
-                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="10"/>
-                                                        <color key="textColor" name="#FFFFFF"/>
-                                                        <nil key="highlightedColor"/>
-                                                    </label>
-                                                </subviews>
-                                                <color key="backgroundColor" name="#D92B2B"/>
-                                                <constraints>
-                                                    <constraint firstAttribute="width" constant="20" id="DJh-Je-FR2"/>
-                                                    <constraint firstAttribute="bottom" secondItem="IKr-A7-9TV" secondAttribute="bottom" id="JcE-vs-8E9"/>
-                                                    <constraint firstAttribute="trailing" secondItem="IKr-A7-9TV" secondAttribute="trailing" id="LkH-xY-ane"/>
-                                                    <constraint firstItem="IKr-A7-9TV" firstAttribute="top" secondItem="jvH-Zl-73j" secondAttribute="top" id="PY3-eX-2YJ"/>
-                                                    <constraint firstAttribute="height" constant="20" id="RWn-iy-Rtr"/>
-                                                    <constraint firstItem="IKr-A7-9TV" firstAttribute="leading" secondItem="jvH-Zl-73j" secondAttribute="leading" id="dLX-xq-SwY"/>
-                                                </constraints>
-                                                <userDefinedRuntimeAttributes>
-                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                        <real key="value" value="10"/>
-                                                    </userDefinedRuntimeAttribute>
-                                                </userDefinedRuntimeAttributes>
-                                            </view>
                                             <button opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mwz-vz-TbL">
                                                 <rect key="frame" x="0.0" y="0.0" width="40" height="40"/>
                                                 <constraints>
@@ -521,12 +496,9 @@
                                         </subviews>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
-                                            <constraint firstItem="ksg-V0-3Yv" firstAttribute="centerX" secondItem="7Yd-dY-0xd" secondAttribute="centerX" constant="6" id="0mu-HK-1Ht"/>
-                                            <constraint firstAttribute="trailing" secondItem="jvH-Zl-73j" secondAttribute="trailing" constant="1" id="5fk-eo-Tbc"/>
+                                            <constraint firstItem="ksg-V0-3Yv" firstAttribute="centerX" secondItem="7Yd-dY-0xd" secondAttribute="centerX" id="0mu-HK-1Ht"/>
                                             <constraint firstItem="mwz-vz-TbL" firstAttribute="centerY" secondItem="7Yd-dY-0xd" secondAttribute="centerY" id="6Xy-zZ-XkZ"/>
-                                            <constraint firstItem="ksg-V0-3Yv" firstAttribute="centerY" secondItem="7Yd-dY-0xd" secondAttribute="centerY" id="B9a-Bf-YzK"/>
-                                            <constraint firstItem="jvH-Zl-73j" firstAttribute="top" secondItem="7Yd-dY-0xd" secondAttribute="top" constant="-1" id="EkT-Jw-dGw"/>
-                                            <constraint firstAttribute="bottom" secondItem="mwz-vz-TbL" secondAttribute="bottom" id="IFT-Ww-auq"/>
+                                            <constraint firstItem="ksg-V0-3Yv" firstAttribute="centerY" secondItem="7Yd-dY-0xd" secondAttribute="centerY" id="B9a-Bf-YzK"/>                                            <constraint firstAttribute="bottom" secondItem="mwz-vz-TbL" secondAttribute="bottom" id="IFT-Ww-auq"/>
                                             <constraint firstItem="mwz-vz-TbL" firstAttribute="top" secondItem="7Yd-dY-0xd" secondAttribute="top" id="Mzz-cD-U1I"/>
                                             <constraint firstAttribute="trailing" secondItem="mwz-vz-TbL" secondAttribute="trailing" id="ah9-rg-P1a"/>
                                             <constraint firstItem="mwz-vz-TbL" firstAttribute="centerY" secondItem="7Yd-dY-0xd" secondAttribute="centerY" id="c4Q-gx-z2A"/>
@@ -578,8 +550,7 @@
                         <outlet property="lblCountMatches" destination="y9K-zm-oXv" id="Ejr-yB-cIH"/>
                         <outlet property="lblCountYouLiked" destination="6bM-Nj-0ia" id="6VE-oa-tUr"/>
                         <outlet property="lblLike" destination="uPH-GN-VgK" id="Y1j-2J-zH6"/>
-                        <outlet property="lblMatches" destination="W7o-oq-Eqp" id="haz-On-axo"/>
-                        <outlet property="lblYouLiked" destination="sIm-8V-B0H" id="pEp-Q8-QH0"/>
+                        <outlet property="lblMatches" destination="W7o-oq-Eqp" id="haz-On-axo"/>                        <outlet property="lblYouLiked" destination="sIm-8V-B0H" id="pEp-Q8-QH0"/>
                         <outlet property="lineViewCompliment" destination="5f4-A7-W3a" id="mMr-ck-d5F"/>
                         <outlet property="lineViewLike" destination="sgT-h9-BUQ" id="yMP-no-V37"/>
                         <outlet property="lineViewMatch" destination="UaG-U8-BUa" id="yRE-C4-GIT"/>
@@ -587,18 +558,17 @@
                         <outlet property="vwCompliment" destination="cXC-so-TG6" id="1NB-qe-z3X"/>
                         <outlet property="vwLike" destination="IQI-fP-oI7" id="ySs-Fk-0k3"/>
                         <outlet property="vwMatches" destination="4BY-L2-YOW" id="2FQ-XK-iZ7"/>
-                        <outlet property="vwNoDataFound" destination="KOw-tr-GuW" id="JEl-Hq-o9p"/>
-                        <outlet property="vwYouLiked" destination="XHa-g5-ote" id="bDD-eA-mRd"/>
+                        <outlet property="vwNoDataFound" destination="KOw-tr-GuW" id="JEl-Hq-o9p"/>                        <outlet property="vwYouLiked" destination="XHa-g5-ote" id="bDD-eA-mRd"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="BnX-Xj-wuc" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="2171.7557251908397" y="-930.28169014084517"/>
         </scene>
-        <!--Home Placeholder-->
+        <!--Discover-->
         <scene sceneID="gZy-7g-ZM6">
             <objects>
-                <viewController storyboardIdentifier="VibeFeedViewController" id="nbj-Lb-RuJ" customClass="VibeFeedViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="DiscoverViewController" id="nbj-Lb-RuJ" customClass="DiscoverViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Hm1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -627,10 +597,10 @@
             </objects>
             <point key="canvasLocation" x="2171" y="511"/>
         </scene>
-        <!--Moments Placeholder-->
+        <!--Vibe Feed-->
         <scene sceneID="QMF-JN-sJ0">
             <objects>
-                <viewController storyboardIdentifier="MomentsPlaceholderViewController" id="lhb-dt-1Kd" customClass="TabPlaceholderViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="VibeFeedViewController" id="lhb-dt-1Kd" customClass="VibeFeedViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Mo1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -638,10 +608,6 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <navigationItem key="navigationItem" id="Mo1-v1-003"/>
-                    <userDefinedRuntimeAttributes>
-                        <userDefinedRuntimeAttribute type="string" keyPath="screenTitle" value="Moments"/>
-                        <userDefinedRuntimeAttribute type="boolean" keyPath="showsLogout" value="NO"/>
-                    </userDefinedRuntimeAttributes>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Mo1-v1-004" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -1456,6 +1422,21 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Fes-pT-7iK" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1360" y="1222"/>
+        </scene>
+        <!--Notification View Controller-->
+        <scene sceneID="8sa-Ef-AWe">
+            <objects>
+                <viewController storyboardIdentifier="NotificationViewController" hidesBottomBarWhenPushed="YES" useStoryboardIdentifierAsRestorationIdentifier="YES" id="2EK-BI-ANS" customClass="NotificationViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="2wB-HE-ZGy">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="APp-h8-wsz"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="WcL-yU-MYl" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="3000" y="-930"/>
         </scene>
     </scenes>
     <resources>

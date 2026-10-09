@@ -24,7 +24,6 @@ class ExploreViewController: BaseViewController {
     @IBOutlet weak var vwMatches: UIView!
     @IBOutlet weak var vwCompliment: UIView!
     @IBOutlet weak var vwNoDataFound: UIView!
-    
     @IBOutlet weak var lineViewLike : UIView!
     @IBOutlet weak var lineViewYouLike : UIView!
     @IBOutlet weak var lineViewMatch : UIView!
@@ -262,13 +261,14 @@ class ExploreViewController: BaseViewController {
     }
 
     @IBAction func notificationButtonTapped(_ sender: UIButton) {
-        self.showComingSoon("Notifications")
+        let aNotificationViewController:NotificationViewController = NotificationViewController.instantiateFromStoryboard()
+        self.navigationController?.pushViewController(aNotificationViewController, animated: true)
     }
 
     @IBAction func applyFilterButtonTapped(_ sender: UIButton) {
-        let aExploreFilterViewController:ExploreFilterViewController = ExploreFilterViewController.instantiateFromStoryboard()
-        aExploreFilterViewController.modalPresentationStyle = .overCurrentContext
-        self.tabBarController?.present(aExploreFilterViewController, animated: true, completion: nil)
+        VibeFiltersViewController.present(from: tabBarController ?? self, filters: .saved) { filters in
+            UserDataManager.shared.filterDataModel = filters
+        }
     }
     
     @IBAction func likeButtonTapped(_ sender: UIButton) {
