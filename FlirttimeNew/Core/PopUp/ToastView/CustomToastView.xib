@@ -50,8 +50,9 @@
                     </subviews>
                     <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <constraints>
-                        <constraint firstAttribute="height" constant="44" id="33C-M1-but"/>
-                        <constraint firstItem="wCC-Ti-z6I" firstAttribute="centerY" secondItem="NG2-Tf-rSZ" secondAttribute="centerY" id="645-4T-PHd"/>
+                        <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="44" id="33C-M1-but"/>
+                        <constraint firstItem="wCC-Ti-z6I" firstAttribute="top" secondItem="PLT-50-TWz" secondAttribute="top" constant="10" id="Tst-Lb-Top"/>
+                        <constraint firstAttribute="bottom" secondItem="wCC-Ti-z6I" secondAttribute="bottom" constant="10" id="Tst-Lb-Btm"/>
                         <constraint firstItem="wCC-Ti-z6I" firstAttribute="leading" secondItem="NG2-Tf-rSZ" secondAttribute="trailing" constant="10" id="SK7-CZ-EJl"/>
                         <constraint firstAttribute="trailing" secondItem="wCC-Ti-z6I" secondAttribute="trailing" constant="15" id="jCf-bw-I9d"/>
                         <constraint firstItem="NG2-Tf-rSZ" firstAttribute="leading" secondItem="PLT-50-TWz" secondAttribute="leading" constant="15" id="ktB-UO-jq3"/>

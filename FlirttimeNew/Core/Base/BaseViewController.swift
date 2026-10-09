@@ -42,6 +42,20 @@ class BaseViewController: UIViewController {
         }
     }
 
+    /// Existing users with a completed profile go home; everyone else continues onboarding.
+    func routeAfterLogin(isProfileComplete: Bool, signUpOption: SignUpOption) {
+        UserDataManager.shared.isOTPVerificationDone = true
+        if isProfileComplete {
+            UserDataManager.shared.isHomePageRedirect = true
+            guard let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate else { return }
+            sceneDelegate.changeRootViewController(AppTabBarController.instantiateFromStoryboard())
+        } else {
+            let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
+            aUserDetailsViewController.signUpOption = signUpOption
+            navigationController?.pushViewController(aUserDetailsViewController, animated: true)
+        }
+    }
+
     func showNewAlertPopUp(Title:String, Msg:String, isSuccess:Bool, CompletionHandler:@escaping CompletionHandler) {
         let customView = CustomAlertVW(frame: CGRect(x: 0, y: 44, width: self.view.frame.width , height: 82))
         customView.setView(Title: Title, Msg: Msg, isSuccess: isSuccess)

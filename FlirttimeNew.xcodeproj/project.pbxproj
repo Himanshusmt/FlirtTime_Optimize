@@ -10,6 +10,7 @@
 		174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */; };
 		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
 		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
+		4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */; };
 		557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */; };
 		56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */; };
 		5E12006DD0F17692527E52ED /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */; };
@@ -19,6 +20,7 @@
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
 		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
+		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
 		C5985349FE87952A818AADA2 /* AppJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBD7FA8B044481320A3CEFA /* AppJSON.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
@@ -618,10 +620,13 @@
 
 /* Begin PBXFileReference section */
 		098437D832448245A93BC7F2 /* AppEndPoint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEndPoint.swift; sourceTree = "<group>"; };
+		0A9443AC2280F3B0639910DE /* FlirttimeNew.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlirttimeNew.entitlements; sourceTree = "<group>"; };
 		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
 		22661A208F524B403C3887C7 /* AppContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		2DBD7FA8B044481320A3CEFA /* AppJSON.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppJSON.swift; sourceTree = "<group>"; };
+		2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
 		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
+		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
 		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
@@ -1951,6 +1956,8 @@
 			children = (
 				E3A2D79B30776627008D1551 /* LearnMoreVC.swift */,
 				E3A2D79C30776627008D1551 /* LoginOptionsViewController.swift */,
+				2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */,
+				4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */,
 			);
 			path = LoginOptions;
 			sourceTree = "<group>";
@@ -2371,6 +2378,7 @@
 				E3A2D8C830776627008D1551 /* LaunchScreen.storyboard */,
 				E3A2D8C930776627008D1551 /* SceneDelegate.swift */,
 				5474E43D425E3AB7845D4F7D /* Model */,
+				0A9443AC2280F3B0639910DE /* FlirttimeNew.entitlements */,
 			);
 			path = FlirttimeNew;
 			sourceTree = "<group>";
@@ -3516,6 +3524,8 @@
 				56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */,
 				9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */,
 				AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */,
+				4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */,
+				C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3542,6 +3552,7 @@
 				CHAT_MEDIA_BASE_URL = "";
 				CHAT_SOCKET_PATH = /socket.io/;
 				CHAT_SOCKET_URL = "";
+				CODE_SIGN_ENTITLEMENTS = FlirttimeNew/FlirttimeNew.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PQ3L2P67J5;
@@ -3589,6 +3600,7 @@
 				CHAT_MEDIA_BASE_URL = "";
 				CHAT_SOCKET_PATH = /socket.io/;
 				CHAT_SOCKET_URL = "";
+				CODE_SIGN_ENTITLEMENTS = FlirttimeNew/FlirttimeNew.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PQ3L2P67J5;

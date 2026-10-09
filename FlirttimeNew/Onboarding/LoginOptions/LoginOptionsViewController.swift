@@ -16,8 +16,23 @@ class LoginOptionsViewController: BaseViewController,Instantiable {
         return StoryboardName.login
     }
 
+    private let appleLoginViewModel = AppleLoginViewModel()
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        bindAppleLogin()
+    }
+
+    private func bindAppleLogin() {
+        appleLoginViewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        appleLoginViewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        appleLoginViewModel.onLoggedIn = { [weak self] isProfileComplete in
+            self?.routeAfterLogin(isProfileComplete: isProfileComplete, signUpOption: .apple)
+        }
     }
 
     @IBAction func loginWithEmailButton(_ sender: UIButton) {
@@ -29,10 +44,7 @@ class LoginOptionsViewController: BaseViewController,Instantiable {
     }
 
     @IBAction func loginWithAppleID(_ sender: UIButton) {
-        UserDataManager.shared.isOTPVerificationDone = true
-        let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
-        aUserDetailsViewController.signUpOption = .apple
-        self.navigationController?.pushViewController(aUserDetailsViewController, animated: true)
+        appleLoginViewModel.signIn(from: view.window)
     }
     
     @IBAction func actionPrivacyPolicy(_ sender: UIButton) {

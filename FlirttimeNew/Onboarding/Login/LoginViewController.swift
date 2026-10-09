@@ -38,6 +38,7 @@ class LoginViewController: BaseViewController,Instantiable {
     var topConstraintEqual: NSLayoutConstraint?
     var topConstraintGreaterThanOrEqual: NSLayoutConstraint?
     private let viewModel = LoginViewModel()
+    private let appleLoginViewModel = AppleLoginViewModel()
     
     static var storyboardName: StringConvertible {
         return StoryboardName.login
@@ -68,6 +69,15 @@ class LoginViewController: BaseViewController,Instantiable {
         }
         viewModel.onOTPSent = { [weak self] otp in
             self?.navigateToOTPScreen(otp: otp)
+        }
+        appleLoginViewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        appleLoginViewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        appleLoginViewModel.onLoggedIn = { [weak self] isProfileComplete in
+            self?.routeAfterLogin(isProfileComplete: isProfileComplete, signUpOption: .apple)
         }
     }
     
@@ -122,9 +132,8 @@ class LoginViewController: BaseViewController,Instantiable {
     }
     
     @IBAction func appleSignUpButtonAction(_ sender: UIButton) {
-        self.signUpOption = .apple
-        UserDataManager.shared.isOTPVerificationDone = true
-        self.navigateToUserDetails()
+        view.endEditing(true)
+        appleLoginViewModel.signIn(from: view.window)
     }
     
     @IBAction func phoneCodeSelectionButton(_ sender: UIButton) {
@@ -278,12 +287,5 @@ extension LoginViewController: UITextFieldDelegate {
             self.view.layoutIfNeeded()
         }
         
-    }
-    
-    func navigateToUserDetails(){
-        let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
-        aUserDetailsViewController.signUpOption = self.signUpOption
-        aUserDetailsViewController.emailID = self.emailTextField.text
-        self.navigationController?.pushViewController(aUserDetailsViewController, animated: true)
     }
 }
