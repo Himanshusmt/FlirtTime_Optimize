@@ -556,12 +556,9 @@ final class DiscoverViewController: BaseViewController, Instantiable {
                 self?.discover(interest)
             }
         }
-        profileVC.onHide = { [weak self] profile, blocked in
-            self?.popProfile {
-                guard let self else { return }
-                self.viewModel.hide(profile, block: blocked)
-                self.aCustomToastView.show(message: blocked ? "\(profile.displayName) has been blocked"
-                                                            : "Thanks for reporting. We'll review this profile.")
+        profileVC.onSafetyAction = { [weak self] profile, action in
+            self?.applySafety(action, to: profile) {
+                self?.popProfile {}
             }
         }
         navigationController?.pushViewController(profileVC, animated: true)
@@ -581,6 +578,26 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         }
     }
 
+    /// Sends a report or block; `onSuccess` runs only once the API accepts it. On failure the user stays put.
+    private func applySafety(_ action: VibeSafetyAction, to profile: VibeProfile, onSuccess: @escaping () -> Void) {
+        setLoading(true)
+        viewModel.apply(action, to: profile) { [weak self] result in
+            guard let self else { return }
+            self.setLoading(false)
+            switch result {
+            case .success:
+                onSuccess()
+                if case .block = action {
+                    self.aCustomToastView.show(message: "\(profile.displayName) has been blocked")
+                } else {
+                    self.aCustomToastView.show(message: "Thanks for reporting. We'll review this profile.")
+                }
+            case .failure(let error):
+                self.aCustomToastView.show(message: parseError(error) ?? "Something went wrong. Please try again.")
+            }
+        }
+    }
+
     private func popProfile(then completion: @escaping () -> Void) {
         navigationController?.popViewController(animated: true)
         if let coordinator = navigationController?.transitionCoordinator {
@@ -593,9 +610,8 @@ final class DiscoverViewController: BaseViewController, Instantiable {
     private func openMoments(of profile: VibeProfile, at index: Int) {
         VibeAnalytics.track(.vibeMomentOpened, profileID: profile.id)
         let momentsVC = VibeMomentsViewController(profile: profile, startIndex: index)
-        momentsVC.onReport = { [weak self] profile in
-            self?.viewModel.hide(profile, block: false)
-            self?.aCustomToastView.show(message: "Thanks for reporting. We'll review this profile.")
+        momentsVC.onReport = { [weak self] profile, reason in
+            self?.applySafety(.report(reason), to: profile) {}
         }
         momentsVC.onViewProfile = { [weak self] profile in
             self?.dismiss(animated: true) { self?.openProfile(profile) }

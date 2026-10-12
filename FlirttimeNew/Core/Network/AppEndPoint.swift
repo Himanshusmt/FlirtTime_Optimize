@@ -48,6 +48,18 @@ enum AppEndPoint: CustomStringConvertible {
     // Gesture selfie — GestureVerificationViewController
     case gestureUpload
 
+    // Profile photo — StartProfileVerificationViewController
+    case profilePhotoUpload
+
+    // Discover — DiscoverViewModel
+    case discoveryPeople
+    case discoveryAction
+
+    // Vibe Details — VibeProfileViewController
+    case userProfile(userId: String)
+    case blockUser(userId: String)
+    case reportUser(userId: String)
+
     var description: String {
         switch self {
         case .health: return "health"
@@ -61,6 +73,12 @@ enum AppEndPoint: CustomStringConvertible {
         case .me: return "api/v1/auth/me"
         case .updateProfile: return "api/v1/users/profile"
         case .gestureUpload: return "api/v1/gesture-upload"
+        case .profilePhotoUpload: return "api/v1/onboarding/profile-photo"
+        case .discoveryPeople: return "api/v1/discovery/people"
+        case .discoveryAction: return "api/v1/discovery/actions"
+        case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
+        case .blockUser(let userId): return "api/v1/users/\(userId)/block"
+        case .reportUser(let userId): return "api/v1/users/\(userId)/report"
         }
     }
 
@@ -72,7 +90,9 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .updateProfile, .gestureUpload:
+        case .me, .updateProfile, .gestureUpload, .profilePhotoUpload,
+             .discoveryPeople, .discoveryAction,
+             .userProfile, .blockUser, .reportUser:
             return false
         }
     }

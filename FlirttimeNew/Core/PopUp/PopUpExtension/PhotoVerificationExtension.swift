@@ -22,14 +22,22 @@ extension FlirtCustomPopUp{
         uploadingProgressView.setProgressLineWidth = 4.5
         uploadingProgressView.setTrackLineWidth = 4.5
         progressAnimationWorkItem?.cancel()
-        simulateUpload()
+        startUploadProgress()
     }
 
-    //    Upload is mocked until the API is wired: animate progress, then report success
-    func simulateUpload() {
+    //    Progress stops short of 100% until the caller reports the real result
+    func startUploadProgress() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self else { return }
-            self.uploadingProgressView.setProgressWithAnimation(duration: 3.0, value: 1.0)
+            guard let self = self, self.popUpType == .pictureUploading else { return }
+            self.uploadingProgressView.setProgressWithAnimation(duration: 3.0, value: 0.9)
+        }
+    }
+
+    //    Upload succeeded: finish the progress, then report success and close
+    func completeUpload() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.popUpType == .pictureUploading else { return }
+            self.uploadingProgressView.setProgressWithAnimation(duration: 0.3, value: 1.0)
             let workItem = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
                 self.callBackAction?("")
@@ -37,7 +45,16 @@ extension FlirtCustomPopUp{
                 self.hide()
             }
             self.progressAnimationWorkItem = workItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.1, execute: workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: workItem)
+        }
+    }
+
+    //    Upload failed: switch to the failed view with a Retake button
+    func failUpload(message: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.popUpType == .pictureUploading else { return }
+            self.progressAnimationWorkItem?.cancel()
+            self.showuploadingFailedView(message)
         }
     }
 
@@ -49,6 +66,8 @@ extension FlirtCustomPopUp{
         self.picUploadFailedView.isHidden = false
         self.popUpType = .picUploadingFailed
         self.button2.setTitle(Constants.AlertButtons.retake, for: .normal)
+        self.button2.isUserInteractionEnabled = true
+        self.button2.backgroundColor = AppColor.Punch
     }
 
     //    Dismiss animation during user image verification

@@ -55,11 +55,13 @@
 		9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */; };
 		9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D763521B7C6B71DF206B5DDF /* AppConfig.swift */; };
 		A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */; };
+		C3D5E7F9A1B2C4D6E8F0A1B3 /* ProfilePhotoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
 		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
 		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
 		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
 		B8E4D3F2AC5E6B7D9F102E3D /* GestureVerification.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */; };
+		D4E6F8A0B2C3D5E7F9A1B2C4 /* ProfilePhotoUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -72,6 +74,7 @@
 		CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */; };
 		D716281BD622D3187A227B72 /* VibeHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */; };
 		DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */; };
+		E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */; };
 		E3A2D8CB30776627008D1551 /* ActivityIndicator.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E630776627008D1551 /* ActivityIndicator.xib */; };
 		E3A2D8CC30776627008D1551 /* CustomAlertVW.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E930776627008D1551 /* CustomAlertVW.xib */; };
 		E3A2D8CD30776627008D1551 /* DeleteCustomPopUp.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6EC30776627008D1551 /* DeleteCustomPopUp.xib */; };
@@ -704,6 +707,7 @@
 		84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeMomentsViewController.swift; sourceTree = "<group>"; };
 		89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureActionOverlay.swift; sourceTree = "<group>"; };
 		93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverResponse.swift; sourceTree = "<group>"; };
+		E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoveryAPIModels.swift; sourceTree = "<group>"; };
 		979C5020639C47E827599523 /* VibeSafety.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeSafety.swift; sourceTree = "<group>"; };
 		B0589AAB139F188714C1019D /* NotificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
 		B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeHaptics.swift; sourceTree = "<group>"; };
@@ -722,8 +726,10 @@
 		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		7FB6A6E2D71BF2706C814A73 /* AppUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
 		B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerification.swift; sourceTree = "<group>"; };
+		D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoUpload.swift; sourceTree = "<group>"; };
 		9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppErrorResponse.swift; sourceTree = "<group>"; };
 		A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerificationViewModel.swift; sourceTree = "<group>"; };
+		C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoViewModel.swift; sourceTree = "<group>"; };
 		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
 		CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
@@ -1391,6 +1397,7 @@
 				CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */,
 				7FB6A6E2D71BF2706C814A73 /* AppUser.swift */,
 				B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */,
+				D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */,
 				9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */,
 			);
 			path = Api;
@@ -1458,6 +1465,7 @@
 			isa = PBXGroup;
 			children = (
 				93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */,
+				E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */,
 				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */,
 				62486E210DA53E8F1B80FC17 /* VibeProfile.swift */,
 			);
@@ -2309,6 +2317,7 @@
 				E3A2D7AB30776627008D1551 /* FaceVerificationViewController.swift */,
 				E3A2D7AC30776627008D1551 /* GestureVerificationViewController.swift */,
 				A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */,
+				C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */,
 				E3A2D7AD30776627008D1551 /* PhotoSelectionType.swift */,
 				E3A2D7AE30776627008D1551 /* StartProfileVerificationViewController.swift */,
 				E3A2D7AF30776627008D1551 /* VerificationDoneViewController.swift */,
@@ -3833,6 +3842,7 @@
 				E3A2DA5E30776627008D1551 /* FaceVerificationViewController.swift in Sources */,
 				E3A2DA5F30776627008D1551 /* GestureVerificationViewController.swift in Sources */,
 				A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */,
+				C3D5E7F9A1B2C4D6E8F0A1B3 /* ProfilePhotoViewModel.swift in Sources */,
 				E3A2DA6030776627008D1551 /* PhotoSelectionType.swift in Sources */,
 				E3A2DA6130776627008D1551 /* StartProfileVerificationViewController.swift in Sources */,
 				E3A2DA6230776627008D1551 /* VerificationDoneViewController.swift in Sources */,
@@ -3845,6 +3855,7 @@
 				E3A2DA6930776627008D1551 /* SceneDelegate.swift in Sources */,
 				CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */,
 				DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */,
+				E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */,
 				C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Vibe.swift in Sources */,
 				97EAC81079DCE02E6FAA0FBE /* VibeProfile.swift in Sources */,
 				AEEC82DD04625E1B999859FA /* VibeMomentsViewController.swift in Sources */,
@@ -3889,6 +3900,7 @@
 				329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */,
 				CB427D849A8B659E90DB344E /* AppUser.swift in Sources */,
 				B8E4D3F2AC5E6B7D9F102E3D /* GestureVerification.swift in Sources */,
+				D4E6F8A0B2C3D5E7F9A1B2C4 /* ProfilePhotoUpload.swift in Sources */,
 				6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -3,6 +3,7 @@
 //  FlirttimeNew
 //
 
+import Alamofire
 import Foundation
 import RxSwift
 
@@ -101,12 +102,54 @@ final class AppSessionManager {
 
     // MARK: - Verification
 
+    /// Stores the photo and makes it the user's primary profile photo. Max 5 MB.
+    func uploadProfilePhoto(imageData: Data) -> Single<ProfilePhotoUpload> {
+        let file = AppMultipartFile(name: "profilePhoto", fileName: "profile.jpg", mimeType: "image/jpeg", data: imageData)
+        return backendClient.upload(endPoint: .profilePhotoUpload, fields: [:], files: [file])
+    }
+
     /// The backend compares the selfie against the user's primary profile photo. Max 5 MB.
     func uploadGestureSelfie(imageData: Data) -> Single<GestureVerification> {
         let file = AppMultipartFile(name: "selfie_image", fileName: "selfie.jpg", mimeType: "image/jpeg", data: imageData)
         return backendClient.upload(endPoint: .gestureUpload,
                                     fields: ["verification_type": "gesture"],
                                     files: [file])
+    }
+
+    // MARK: - Discover
+
+    /// `interestId` narrows the feed to people with that interest without changing the user's own interests.
+    func discoveryPeople(page: Int, limit: Int, interestId: String? = nil) -> Single<DiscoveryPeopleResponse> {
+        var params: [String: Any] = ["page": page, "limit": limit]
+        if let interestId, !interestId.isEmpty { params["interestId"] = interestId }
+        return backendClient.load(request: AppApiRequest(method: .get, endPoint: .discoveryPeople,
+                                                         parameters: params, encoding: URLEncoding.queryString))
+    }
+
+    /// `action` is "like", "nope" or "super_like".
+    func discoveryAction(targetUserId: String, action: String) -> Single<DiscoveryActionResult> {
+        let params: [String: Any] = ["targetUserId": targetUserId, "action": action]
+        return backendClient.load(request: AppApiRequest(method: .post, endPoint: .discoveryAction, parameters: params))
+    }
+
+    // MARK: - Other users
+
+    func otherUserProfile(userId: String) -> Single<OtherUserProfile> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .userProfile(userId: userId)))
+    }
+
+    func blockUser(userId: String, reason: String) -> Single<UserBlockResult> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .blockUser(userId: userId),
+                                                  parameters: ["reason": reason]))
+    }
+
+    /// `reason` is one of the API codes: fake_profile, harassment, inappropriate_content, spam, scam, underage, other.
+    func reportUser(userId: String, reason: String, description: String? = nil) -> Single<Void> {
+        var params: [String: Any] = ["reason": reason]
+        if let description, !description.isEmpty { params["description"] = description }
+        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .reportUser(userId: userId),
+                                                             parameters: params))
+            .map { _ in () }
     }
 
     // MARK: - Session

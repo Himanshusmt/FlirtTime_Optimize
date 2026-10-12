@@ -63,6 +63,15 @@ enum VibeAction: CaseIterable {
         }
     }
 
+    /// Value sent as `action` to POST `discovery/actions`.
+    var apiAction: String {
+        switch self {
+        case .superVibe: return "super_like"
+        case .interested: return "like"
+        case .notMyVibe, .nope: return "nope"
+        }
+    }
+
     var sendsConnection: Bool {
         self == .superVibe || self == .interested
     }
@@ -157,6 +166,8 @@ struct VibeProfile: Equatable {
     let moments: [VibeMoment]
     /// Overlap of real interests (plus same city); `nil` when nothing is shared, so no score is shown.
     let vibeScore: Int?
+    /// Backend user id (UUID) for profiles from `discovery/people`; `id` is a local id derived from it.
+    var remoteUserId: String? = nil
 
     static func == (lhs: VibeProfile, rhs: VibeProfile) -> Bool {
         lhs.id == rhs.id
@@ -357,6 +368,18 @@ enum VibeInterestCatalog {
             guard seen.insert(id).inserted else { return nil }
             return all[id]
         }
+    }
+
+    /// Interest from the API by name: the catalog entry when the title is known, otherwise a new one with a stable id.
+    static func interest(named name: String, emoji: String? = nil) -> VibeInterest? {
+        let title = name.trimmingCharacters(in: .whitespaces)
+        guard !title.isEmpty else { return nil }
+        let key = title.lowercased()
+        if let known = all.values.first(where: { $0.title.lowercased() == key }) {
+            return known
+        }
+        let icon = (emoji?.isEmpty == false ? emoji : nil) ?? emojiByTitle[key] ?? "✨"
+        return VibeInterest(id: key.stableID, title: title, emoji: icon)
     }
 
     static func conversationStarter(for interest: VibeInterest) -> String? {

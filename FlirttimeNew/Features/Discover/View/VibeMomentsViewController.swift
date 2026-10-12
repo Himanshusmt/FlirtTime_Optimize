@@ -9,7 +9,7 @@ import UIKit
 
 final class VibeMomentsViewController: UIViewController {
 
-    var onReport: ((VibeProfile) -> Void)?
+    var onReport: ((VibeProfile, VibeReportReason) -> Void)?
     var onViewProfile: ((VibeProfile) -> Void)?
     /// Own Quick Moments: show who reacted and replied. Called with the moment index and the viewer to present from.
     var onShowActivity: ((Int, UIViewController) -> Void)?
@@ -597,9 +597,9 @@ final class VibeMomentsViewController: UIViewController {
         }
         sheet.addAction(UIAlertAction(title: "Report Moment", style: .destructive) { [weak self] _ in
             guard let self else { return }
-            VibeSafety.presentReportReasons(for: self.profile, from: self, sourceView: sourceView) { [weak self] in
+            VibeSafety.presentReportReasons(for: self.profile, from: self, sourceView: sourceView) { [weak self] reason in
                 guard let self else { return }
-                self.dismiss(animated: true) { self.onReport?(self.profile) }
+                self.dismiss(animated: true) { self.onReport?(self.profile, reason) }
             }
         })
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))

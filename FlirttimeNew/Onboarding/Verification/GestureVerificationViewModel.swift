@@ -25,7 +25,7 @@ final class GestureVerificationViewModel {
     }
 
     func uploadGesture(image: UIImage) {
-        guard let imageData = Self.jpegData(for: image.fixedOrientation()) else {
+        guard let imageData = image.fixedOrientation().jpegData(maxBytes: Self.maxImageBytes) else {
             onError?("Unable to process the photo. Please try again.")
             return
         }
@@ -50,16 +50,5 @@ final class GestureVerificationViewModel {
                 self?.onError?(parseError(error) ?? "Something went wrong")
             })
             .disposed(by: disposeBag)
-    }
-
-    private static func jpegData(for image: UIImage) -> Data? {
-        var quality: CGFloat = 0.8
-        var data = image.jpegData(compressionQuality: quality)
-        while let current = data, current.count > maxImageBytes, quality > 0.1 {
-            quality -= 0.1
-            data = image.jpegData(compressionQuality: quality)
-        }
-        guard let data, data.count <= maxImageBytes else { return nil }
-        return data
     }
 }

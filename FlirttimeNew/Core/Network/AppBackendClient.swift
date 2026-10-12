@@ -29,4 +29,8 @@ final class AppBackendClient {
     func upload<T: Codable>(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<T> {
         apiClient.upload(endPoint: endPoint, fields: fields, files: files)
     }
+
+    func uploadJSON(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<[String: Any]> {
+        apiClient.uploadJSON(endPoint: endPoint, fields: fields, files: files)
+    }
 }
