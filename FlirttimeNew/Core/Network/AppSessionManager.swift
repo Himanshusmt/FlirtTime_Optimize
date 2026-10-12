@@ -83,21 +83,19 @@ final class AppSessionManager {
     }
 
     /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "non-binary" | "other".
-    /// The backend requires `lastName`.
-    func updateProfile(firstName: String,
-                       lastName: String?,
+    /// The backend requires `fullName`.
+    func updateProfile(fullName: String,
                        nickName: String,
                        dateOfBirth: String,
                        gender: String,
                        about: String) -> Single<AppUser> {
-        var params: [String: Any] = [
-            "firstName": firstName,
+        let params: [String: Any] = [
+            "fullName": fullName,
             "nickName": nickName,
             "dateOfBirth": dateOfBirth,
             "gender": gender,
             "about": about
         ]
-        if let lastName, !lastName.isEmpty { params["lastName"] = lastName }
         return backendClient.load(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
     }
 

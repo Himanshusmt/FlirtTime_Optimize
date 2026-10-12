@@ -37,8 +37,7 @@ final class UserDetailsViewModel {
         }
     }
 
-    func updateProfile(firstName: String,
-                       lastName: String?,
+    func updateProfile(fullName: String,
                        nickName: String,
                        dateOfBirth: Date?,
                        genderID: Int?,
@@ -49,8 +48,7 @@ final class UserDetailsViewModel {
         }
 
         onLoading?(true)
-        sessionManager.updateProfile(firstName: firstName,
-                                     lastName: lastName,
+        sessionManager.updateProfile(fullName: fullName,
                                      nickName: nickName,
                                      dateOfBirth: Self.dobFormatter.string(from: dateOfBirth),
                                      gender: Self.genderValue(for: genderID),

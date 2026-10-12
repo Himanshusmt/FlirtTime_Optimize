@@ -168,8 +168,7 @@ class UserDetailsViewController: BaseViewController,Instantiable{
 
     @IBAction func continueButtonTapped(_ sender: UIButton) {
         self.view.endEditing(true)
-        viewModel.updateProfile(firstName: firstNameTextField.text?.trimmText() ?? "",
-                                lastName: lastNameTextField.text?.trimmText(),
+        viewModel.updateProfile(fullName: firstNameTextField.text?.trimmText() ?? "",
                                 nickName: nickNameTextField.text?.trimmText() ?? "",
                                 dateOfBirth: selectedDOB,
                                 genderID: genderID,

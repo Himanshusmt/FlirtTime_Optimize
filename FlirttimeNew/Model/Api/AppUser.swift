@@ -14,6 +14,7 @@ struct AppUser: Codable {
     let isPhoneVerified: Bool?
     let role: String?
     let isActive: Bool?
+    let fullName: String?
     let firstName: String?
     let lastName: String?
     let nickName: String?
