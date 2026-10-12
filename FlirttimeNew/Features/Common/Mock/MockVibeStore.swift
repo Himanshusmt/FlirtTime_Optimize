@@ -94,6 +94,7 @@ final class MockVibeStore {
                         likesCount: 0,
                         commentsCount: 0,
                         giftCount: 0,
+                        shareCount: 0,
                         hasLiked: false,
                         createdAt: VibeDate.string(from: Date()),
                         author: currentUserAuthor)
@@ -129,6 +130,15 @@ final class MockVibeStore {
         state.reportedVibeIds = reported
         persist()
         return VibeActionResponse(success: true, message: "Thanks for reporting. We'll review this vibe.")
+    }
+
+    /// Stand-in for POST vibes/{id}/share. Returns the updated share count.
+    func recordShare(vibeId: String) -> Int? {
+        guard let index = state.vibes.firstIndex(where: { $0.id == vibeId }) else { return nil }
+        let count = (state.vibes[index].shareCount ?? 0) + 1
+        state.vibes[index].shareCount = count
+        persist()
+        return count
     }
 
     // MARK: - Likes
@@ -249,19 +259,19 @@ final class MockVibeStore {
     }
 
     private static func seedState() -> State {
-        let seeds: [(personID: Int, caption: String, photos: [String], minutesAgo: Int, likes: Int, gifts: Int)] = [
-            (101, "Sunday mood: coffee, playlist on shuffle and zero plans ☕️🎶", ["mock-cindy-1"], 12, 24, 3),
-            (103, "Made it to the top! Nothing beats mountain air after a long week 🏔️", ["mock-riya-1", "mock-riya-2"], 45, 58, 6),
-            (105, "Street food tour tonight. Who's in? 🌮", [], 90, 17, 0),
-            (102, "Currently reading three books at once and regretting nothing 📚", ["mock-ally-0"], 180, 33, 2),
-            (106, "Leg day done. Netflix recommendations please 🍿", [], 300, 12, 1),
-            (104, "Tried a new pasta recipe and it actually worked 🍝", ["mock-meera-1"], 420, 41, 4),
-            (107, "My dog judged me for singing in the shower again 🐶", ["mock-tanya-1"], 600, 76, 9),
-            (108, "Classical music + rainy evenings = perfect combo 🎻", [], 900, 19, 0),
-            (101, "Sunsets hit different when you're with the right people 🌅", ["mock-sara-1", "mock-cindy-0"], 1500, 88, 11),
-            (103, "Chai over coffee. Fight me ☕️", [], 2200, 27, 1),
-            (105, "Spontaneous road trip to the lakes 🚗💨", ["mock-sara-3"], 3100, 64, 5),
-            (106, "Morning runs are my therapy 🏃‍♀️", ["mock-nisha-0"], 4400, 22, 0)
+        let seeds: [(personID: Int, caption: String, photos: [String], minutesAgo: Int, likes: Int, gifts: Int, shares: Int)] = [
+            (101, "Sunday mood: coffee, playlist on shuffle and zero plans ☕️🎶", ["mock-cindy-1"], 12, 24, 3, 2),
+            (103, "Made it to the top! Nothing beats mountain air after a long week 🏔️", ["mock-riya-1", "mock-riya-2"], 45, 58, 6, 8),
+            (105, "Street food tour tonight. Who's in? 🌮", [], 90, 17, 0, 1),
+            (102, "Currently reading three books at once and regretting nothing 📚", ["mock-ally-0"], 180, 33, 2, 4),
+            (106, "Leg day done. Netflix recommendations please 🍿", [], 300, 12, 1, 0),
+            (104, "Tried a new pasta recipe and it actually worked 🍝", ["mock-meera-1"], 420, 41, 4, 5),
+            (107, "My dog judged me for singing in the shower again 🐶", ["mock-tanya-1"], 600, 76, 9, 12),
+            (108, "Classical music + rainy evenings = perfect combo 🎻", [], 900, 19, 0, 2),
+            (101, "Sunsets hit different when you're with the right people 🌅", ["mock-sara-1", "mock-cindy-0"], 1500, 88, 11, 15),
+            (103, "Chai over coffee. Fight me ☕️", [], 2200, 27, 1, 3),
+            (105, "Spontaneous road trip to the lakes 🚗💨", ["mock-sara-3"], 3100, 64, 5, 7),
+            (106, "Morning runs are my therapy 🏃‍♀️", ["mock-nisha-0"], 4400, 22, 0, 1)
         ]
 
         var vibes: [Vibe] = []
@@ -289,6 +299,7 @@ final class MockVibeStore {
                               likesCount: seed.likes,
                               commentsCount: comments[id]?.count ?? 0,
                               giftCount: seed.gifts,
+                              shareCount: seed.shares,
                               hasLiked: index % 3 == 0,
                               createdAt: timestamp(minutesAgo: seed.minutesAgo),
                               author: author(person)))
@@ -318,6 +329,7 @@ final class MockVibeStore {
                           likesCount: 9,
                           commentsCount: comments[ownID]?.count ?? 0,
                           giftCount: ownGifts.count,
+                          shareCount: 2,
                           hasLiked: false,
                           createdAt: timestamp(minutesAgo: 240),
                           author: me))
@@ -335,6 +347,7 @@ final class MockVibeStore {
                               likesCount: seed.likes,
                               commentsCount: seed.comments,
                               giftCount: 0,
+                              shareCount: index == 0 ? 1 : 3,
                               hasLiked: false,
                               createdAt: timestamp(minutesAgo: seed.minutesAgo),
                               author: me))

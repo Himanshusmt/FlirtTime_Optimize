@@ -362,7 +362,7 @@ struct ChatRowSelectableView: View {
     var body: some View {
         mainContent
             .padding(8)
-            .background(.white)
+            .contentShape(Rectangle())
             .onTapGesture {
                 if isMultiSelectMode {
                     onSelect()

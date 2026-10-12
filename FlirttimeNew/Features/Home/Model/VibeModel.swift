@@ -31,6 +31,7 @@ struct Vibe: Codable {
     var likesCount: Int?
     var commentsCount: Int?
     var giftCount: Int?
+    var shareCount: Int? = nil
     var hasLiked: Bool?
     let createdAt: String?
     let author: VibeAuthor?
@@ -38,6 +39,7 @@ struct Vibe: Codable {
     enum CodingKeys: String, CodingKey {
         case id, userId, caption, media, likesCount, commentsCount, hasLiked, createdAt, author
         case giftCount = "gift_count"
+        case shareCount = "share_count"
     }
 }
 

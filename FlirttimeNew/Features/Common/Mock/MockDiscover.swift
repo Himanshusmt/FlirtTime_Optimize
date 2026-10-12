@@ -51,6 +51,12 @@ final class MockDiscover {
 
     // MARK: - Endpoints
 
+    func voiceIntro(userID: Int) -> VibeVoiceIntro? {
+        guard let transcript = extras[userID]?.voiceTranscript else { return nil }
+        let words = transcript.split(separator: " ").count
+        return VibeVoiceIntro(transcript: transcript, duration: max(4, Double(words) / 2.5), audioURL: nil)
+    }
+
     func recommendationsJSON() -> [String: Any] {
         let hidden = seenIDs.union(blockedIDs)
         let users: [[String: Any]] = MockPeople.all

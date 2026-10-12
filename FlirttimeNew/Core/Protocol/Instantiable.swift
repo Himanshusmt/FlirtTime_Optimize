@@ -16,6 +16,8 @@ enum StoryboardName: String, StringConvertible {
     case editProfile = "EditProfile"
     case moments = "Moments"
     case aboutYou = "AboutYou"
+    case otherUserProfile = "OtherUserProfile"
+    case searchPeople = "SearchPeople"
 }
 
 protocol StringConvertible {

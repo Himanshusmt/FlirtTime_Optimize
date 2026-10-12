@@ -18,10 +18,15 @@ final class VibeFeedViewModel {
     /// Bumped on every like tap so only the latest response for a vibe is applied.
     private var likeGeneration: [String: Int] = [:]
     private let store = MockVibeStore.shared
-    private let onlyCurrentUser: Bool
+    /// Limits the feed to one author's vibes; `nil` is the everyone feed.
+    private let authorID: String?
 
     init(onlyCurrentUser: Bool = false) {
-        self.onlyCurrentUser = onlyCurrentUser
+        self.authorID = onlyCurrentUser ? MockVibeStore.shared.currentUserID : nil
+    }
+
+    init(authorID: String) {
+        self.authorID = authorID
     }
 
     var currentUserID: String { store.currentUserID }
@@ -57,7 +62,7 @@ final class VibeFeedViewModel {
             guard let self else { return }
             self.isLoading = false
             let response = self.store.feed(page: page, limit: self.pageSize,
-                                           authorID: self.onlyCurrentUser ? self.currentUserID : nil)
+                                           authorID: self.authorID)
             guard response.success == true, let data = response.data else {
                 completion(.failure(VibeError(message: response.message ?? "Unable to load vibes")))
                 return
@@ -151,6 +156,21 @@ final class VibeFeedViewModel {
                     $0.likesCount = before.likesCount
                 }
             }
+            completion(row)
+        }
+    }
+
+    // MARK: - Share
+
+    /// Records a completed share and returns the row to refresh.
+    func recordShare(vibeId: String, completion: @escaping (Int?) -> Void) {
+        respond { [weak self] in
+            guard let self else { return }
+            guard let count = self.store.recordShare(vibeId: vibeId) else {
+                completion(nil)
+                return
+            }
+            let row = self.updateVibe(id: vibeId) { $0.shareCount = count }
             completion(row)
         }
     }

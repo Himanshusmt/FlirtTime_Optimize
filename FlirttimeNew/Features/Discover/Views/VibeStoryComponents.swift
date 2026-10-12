@@ -32,6 +32,15 @@ final class VibeGradientView: UIView {
 }
 
 extension UIView {
+    /// Soft blush-to-white wash used behind Discover, Premium and the main tabs.
+    func addBlushBackground() {
+        let background = VibeGradientView(colors: [VibeTheme.blushGradient[0], AppColor.AppWhite],
+                                          start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 0.5))
+        backgroundColor = AppColor.AppWhite
+        insertSubview(background, at: 0)
+        background.pinEdges(to: self)
+    }
+
     func pinEdges(to other: UIView, insets: UIEdgeInsets = .zero) {
         translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([

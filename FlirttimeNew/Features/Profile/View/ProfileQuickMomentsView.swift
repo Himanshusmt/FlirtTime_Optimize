@@ -11,6 +11,8 @@ final class ProfileQuickMomentsView: UIView {
 
     var onAdd: (() -> Void)?
     var onSelect: ((Int) -> Void)?
+    /// Off when showing someone else's Quick Moments.
+    @IBInspectable var showsAddButton: Bool = true
 
     static let preferredHeight: CGFloat = 102
     private static let bubbleSize: CGFloat = 70
@@ -20,6 +22,15 @@ final class ProfileQuickMomentsView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        setUp()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setUp()
+    }
+
+    private func setUp() {
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.alwaysBounceHorizontal = true
         addSubview(scrollView)
@@ -38,11 +49,11 @@ final class ProfileQuickMomentsView: UIView {
         ])
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
     func configure(moments: [VibeMoment], avatarPath: String?) {
         stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        stack.addArrangedSubview(addItem(avatarPath: avatarPath))
+        if showsAddButton {
+            stack.addArrangedSubview(addItem(avatarPath: avatarPath))
+        }
         for (index, moment) in moments.enumerated() {
             stack.addArrangedSubview(momentItem(moment, index: index, total: moments.count))
         }
@@ -148,7 +159,7 @@ final class ProfileQuickMomentsView: UIView {
 
         let time = moment.postedAt.map { VibeDate.timeAgo(from: VibeDate.string(from: $0)) }
         let item = makeItem(circle: bubble, title: time ?? " ", titleColor: AppColor.DoveGray)
-        item.accessibilityLabel = "Your quick moment \(index + 1) of \(total)"
+        item.accessibilityLabel = (showsAddButton ? "Your quick moment" : "Quick moment") + " \(index + 1) of \(total)"
             + (moment.postedAgoText.map { ", \($0)" } ?? "")
             + (moment.caption.map { ". \($0)" } ?? "")
             + (activity > 0 ? ". \(moment.reactionsCount ?? 0) reactions, \(moment.repliesCount ?? 0) replies" : "")

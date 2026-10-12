@@ -19,7 +19,7 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         var title: String {
             switch self {
             case .people: return "People"
-            case .moments: return "Moments"
+            case .moments: return "Quick Moments"
             case .interests: return "Interests"
             }
         }
@@ -67,7 +67,8 @@ final class DiscoverViewController: BaseViewController, Instantiable {
     }
 
     private lazy var filterButton = headerButton(
-        image: UIImage(systemName: "slider.horizontal.3", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)),
+        image: UIImage(systemName: "slider.horizontal.3", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))?
+            .withTintColor(AppColor.Punch, renderingMode: .alwaysOriginal),
         label: "Filters") { [weak self] in
             self?.openFilters()
         }
@@ -234,7 +235,7 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         let bottomInset = -(DiscoverViewController.centerTabButtonOverlap + 4)
 
         NSLayoutConstraint.activate([
-            header.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6),
+            header.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 5),
             header.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             header.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
 

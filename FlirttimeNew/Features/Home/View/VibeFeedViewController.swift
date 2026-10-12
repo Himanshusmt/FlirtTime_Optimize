@@ -2,7 +2,7 @@
 //  VibeFeedViewController.swift
 //  FlirttimeNew
 //
-//  Moments tab: vibe feed with a "what's new" composer, like / comment / gift actions.
+//  Moments tab: vibe feed with FlirtTime's moment filter chips, like / comment / gift / share actions.
 //
 
 import UIKit
@@ -10,11 +10,15 @@ import Combine
 
 final class VibeFeedViewController: BaseViewController {
 
-    enum Scope {
+    enum Scope: Equatable {
         /// The Moments tab feed.
         case everyone
         /// "My Moments", pushed from Profile: only the signed-in user's vibes.
         case currentUser
+        /// Another user's moments, pushed from their profile.
+        case user(id: String, name: String)
+
+        var isPushed: Bool { self != .everyone }
     }
 
     private let scope: Scope
@@ -104,13 +108,13 @@ final class VibeFeedViewController: BaseViewController {
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.separatorStyle = .none
-        tableView.backgroundColor = AppColor.AppWhite
+        tableView.backgroundColor = .clear
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 160
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(VibeTableViewCell.self, forCellReuseIdentifier: VibeTableViewCell.identifier)
-        let bottomInset = scope == .everyone ? VibeFeedViewController.centerTabButtonOverlap : 0
+        let bottomInset = scope.isPushed ? 0 : VibeFeedViewController.centerTabButtonOverlap
         tableView.contentInset.bottom = bottomInset
         tableView.verticalScrollIndicatorInsets.bottom = bottomInset
         return tableView
@@ -118,20 +122,34 @@ final class VibeFeedViewController: BaseViewController {
 
     private let refreshControl = UIRefreshControl()
 
-    private let composerAvatarImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 20
-        imageView.backgroundColor = AppColor.AthensGray
-        return imageView
-    }()
+    /// FlirtTime's Moments filter row. Only "Add new moment" acts; the distance chips just select.
+    private enum FeedFilter: CaseIterable {
+        case addMoment
+        case nearBy
+        case within25Km
+
+        var title: String {
+            switch self {
+            case .addMoment: return "Add new moment"
+            case .nearBy: return "Near by"
+            case .within25Km: return "Less than 25km"
+            }
+        }
+    }
+
+    private var selectedFilter: FeedFilter = .addMoment
+    private var filterChips: [(filter: FeedFilter, chip: VibeFilterChip)] = []
 
     private lazy var emptyStateLabel: UILabel = {
         let label = UILabel()
-        label.text = scope == .everyone
-            ? "No vibes yet.\nBe the first to share what's on your mind!"
-            : "You haven't shared any moments yet.\nTap + to post your first one!"
+        switch scope {
+        case .everyone:
+            label.text = "No vibes yet.\nBe the first to share what's on your mind!"
+        case .currentUser:
+            label.text = "You haven't shared any moments yet.\nTap + to post your first one!"
+        case .user(_, let name):
+            label.text = "\(name) hasn't shared any moments yet."
+        }
         label.font = UIFont.fredoka(.regular, size: 16)
         label.textColor = AppColor.DoveGray
         label.textAlignment = .center
@@ -153,9 +171,13 @@ final class VibeFeedViewController: BaseViewController {
     init(scope: Scope, focusVibeID: String? = nil) {
         self.scope = scope
         self.focusVibeID = focusVibeID
-        self.viewModel = VibeFeedViewModel(onlyCurrentUser: scope == .currentUser)
+        switch scope {
+        case .everyone: self.viewModel = VibeFeedViewModel()
+        case .currentUser: self.viewModel = VibeFeedViewModel(onlyCurrentUser: true)
+        case .user(let id, _): self.viewModel = VibeFeedViewModel(authorID: id)
+        }
         super.init(nibName: nil, bundle: nil)
-        hidesBottomBarWhenPushed = scope == .currentUser
+        hidesBottomBarWhenPushed = scope.isPushed
     }
 
     required init?(coder: NSCoder) {
@@ -166,7 +188,7 @@ final class VibeFeedViewController: BaseViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = AppColor.AppWhite
+        view.addBlushBackground()
         setUI()
         setUploadBinding()
         loadFeed(showLoader: true)
@@ -174,8 +196,7 @@ final class VibeFeedViewController: BaseViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        checkHideCustomButton(hide: scope == .currentUser)
-        refreshComposerAvatar()
+        checkHideCustomButton(hide: scope.isPushed)
     }
 
     // MARK: - UI
@@ -185,11 +206,14 @@ final class VibeFeedViewController: BaseViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             topBarView.addSubview($0)
         }
-        let isCurrentUser = scope == .currentUser
-        logoImageView.isHidden = isCurrentUser
-        notificationButton.isHidden = isCurrentUser
-        backButton.isHidden = !isCurrentUser
-        titleLabel.isHidden = !isCurrentUser
+        logoImageView.isHidden = scope.isPushed
+        notificationButton.isHidden = scope.isPushed
+        backButton.isHidden = !scope.isPushed
+        titleLabel.isHidden = !scope.isPushed
+        if case .user(_, let name) = scope {
+            titleLabel.text = "\(name)'s Moments"
+            newVibeButton.isHidden = true
+        }
         [topBarView, uploadingBarView, tableView, emptyStateLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
@@ -243,7 +267,14 @@ final class VibeFeedViewController: BaseViewController {
         refreshControl.tintColor = AppColor.Punch
         refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         tableView.refreshControl = refreshControl
-        tableView.tableHeaderView = makeComposerHeader()
+        if scope == .everyone {
+            tableView.tableHeaderView = makeFilterHeader()
+        }
+    }
+
+    private var isOtherUserScope: Bool {
+        if case .user = scope { return true }
+        return false
     }
 
     private func setUploadingBarUI() {
@@ -282,59 +313,63 @@ final class VibeFeedViewController: BaseViewController {
         ])
     }
 
-    /// "What's new?" row from OneVibe's feed; tapping it opens the composer.
-    private func makeComposerHeader() -> UIView {
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 68))
+    /// "Add new moment / Near by / Less than 25km" chip row from FlirtTime's Moments tab.
+    private func makeFilterHeader() -> UIView {
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 59))
 
-        let promptLabel = UILabel()
-        promptLabel.text = "What's new?"
-        promptLabel.font = UIFont.fredoka(.regular, size: 15)
-        promptLabel.textColor = AppColor.SilverChalice
+        let scrollView = UIScrollView()
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.alwaysBounceHorizontal = true
 
-        let pill = UIView()
-        pill.backgroundColor = AppColor.WildSand
-        pill.layer.cornerRadius = 20
-        pill.isUserInteractionEnabled = false
+        let chipStack = UIStackView()
+        chipStack.axis = .horizontal
+        chipStack.spacing = 10
+
+        filterChips = FeedFilter.allCases.map { filter in
+            let icon = filter == .addMoment ? UIImage(named: "addIcon") : nil
+            let chip = VibeFilterChip(title: filter.title, icon: icon)
+            chip.isSelected = filter == selectedFilter
+            chip.addAction(UIAction { [weak self] _ in self?.filterTapped(filter) }, for: .touchUpInside)
+            chipStack.addArrangedSubview(chip)
+            return (filter, chip)
+        }
 
         let separator = UIView()
         separator.backgroundColor = AppColor.Iron
 
-        [composerAvatarImageView, pill, promptLabel, separator].forEach {
+        [scrollView, separator].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             header.addSubview($0)
         }
+        chipStack.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(chipStack)
 
         NSLayoutConstraint.activate([
-            composerAvatarImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            composerAvatarImageView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            composerAvatarImageView.widthAnchor.constraint(equalToConstant: 40),
-            composerAvatarImageView.heightAnchor.constraint(equalToConstant: 40),
+            scrollView.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: header.topAnchor, constant: 12),
+            scrollView.heightAnchor.constraint(equalToConstant: VibeFilterChip.height),
 
-            pill.leadingAnchor.constraint(equalTo: composerAvatarImageView.trailingAnchor, constant: 12),
-            pill.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            pill.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            pill.heightAnchor.constraint(equalToConstant: 40),
-
-            promptLabel.leadingAnchor.constraint(equalTo: pill.leadingAnchor, constant: 16),
-            promptLabel.trailingAnchor.constraint(equalTo: pill.trailingAnchor, constant: -16),
-            promptLabel.centerYAnchor.constraint(equalTo: pill.centerYAnchor),
+            chipStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
+            chipStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
+            chipStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            chipStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            chipStack.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
 
             separator.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             separator.bottomAnchor.constraint(equalTo: header.bottomAnchor),
             separator.heightAnchor.constraint(equalToConstant: 0.5)
         ])
-
-        header.isAccessibilityElement = true
-        header.accessibilityLabel = "What's new? Post a vibe"
-        header.accessibilityTraits = .button
-        header.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(newVibeTapped)))
         return header
     }
 
-    private func refreshComposerAvatar() {
-        composerAvatarImageView.loadImage(path: viewModel.currentUserAuthor.profilePicture,
-                                          placeholder: UIImage(named: "dummy_Profile"))
+    private func filterTapped(_ filter: FeedFilter) {
+        selectedFilter = filter
+        filterChips.forEach { $0.chip.isSelected = $0.filter == filter }
+        if filter == .addMoment {
+            newVibeTapped()
+        }
     }
 
     private func updateEmptyState() {
@@ -344,6 +379,7 @@ final class VibeFeedViewController: BaseViewController {
     // MARK: - Upload progress
 
     private func setUploadBinding() {
+        guard !isOtherUserScope else { return }
         uploadViewModel.$uploadProgress
             .receive(on: DispatchQueue.main)
             .sink { [weak self] progress in
@@ -502,7 +538,7 @@ extension VibeFeedViewController: UITableViewDataSource, UITableViewDelegate {
     }
 }
 
-// MARK: - Like / Comment / Gift
+// MARK: - Like / Comment / Gift / Share
 extension VibeFeedViewController: VibeTableViewCellDelegate {
 
     func vibeCellDidTapLike(_ cell: VibeTableViewCell) {
@@ -554,6 +590,64 @@ extension VibeFeedViewController: VibeTableViewCellDelegate {
         }
         let height = VibeGiftViewController.preferredSheetHeight
         presentAsSheet(giftViewController, detents: [.custom(identifier: .init("vibeGift")) { _ in height }, .large()])
+    }
+
+    func vibeCellDidTapShare(_ cell: VibeTableViewCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        let vibe = viewModel.vibes[indexPath.row]
+        let activity = UIActivityViewController(activityItems: [shareText(for: vibe)], applicationActivities: nil)
+        activity.popoverPresentationController?.sourceView = cell
+        activity.completionWithItemsHandler = { [weak self] _, completed, _, _ in
+            guard completed, let self else { return }
+            self.viewModel.recordShare(vibeId: vibe.id) { row in
+                self.refreshCounts(at: row)
+            }
+        }
+        present(activity, animated: true)
+    }
+
+    private func shareText(for vibe: Vibe) -> String {
+        let name = vibe.author?.displayName ?? "Someone"
+        let caption = (vibe.caption ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if caption.isEmpty { return "Check out \(name)'s vibe on FlirtTime" }
+        return "\(name) on FlirtTime: \(caption)"
+    }
+
+    func vibeCellDidTapProfile(_ cell: VibeTableViewCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        let vibe = viewModel.vibes[indexPath.row]
+        if viewModel.isOwnVibe(vibe) {
+            openOwnProfile()
+            return
+        }
+        if isOtherUserScope {
+            navigationController?.popViewController(animated: true)
+            return
+        }
+        let author = vibe.author
+        let seed = OtherUserProfileRouter.Seed(
+            userID: author?.userId ?? vibe.userId,
+            name: author?.displayName,
+            avatar: author?.profilePicture,
+            location: author?.location,
+            isVerified: author?.verified ?? false
+        )
+        OtherUserProfileRouter.open(seed, from: self)
+    }
+
+    /// "My Moments" was pushed from Profile, so go back to it; otherwise switch to the Profile tab.
+    private func openOwnProfile() {
+        if scope == .currentUser {
+            navigationController?.popViewController(animated: true)
+            return
+        }
+        guard let tabBar = tabBarController,
+              let index = tabBar.viewControllers?.firstIndex(where: { tab in
+                  let root = (tab as? UINavigationController)?.viewControllers.first ?? tab
+                  return root is ProfileViewController
+              }) else { return }
+        (tabBar.viewControllers?[index] as? UINavigationController)?.popToRootViewController(animated: false)
+        tabBar.selectedIndex = index
     }
 
     func vibeCellDidTapMore(_ cell: VibeTableViewCell) {
@@ -619,5 +713,73 @@ private extension VibeFeedViewController {
         case .failure(let error):
             aCustomToastView.show(message: error.message)
         }
+    }
+}
+
+/// Pill from FlirtTime's Moments filter row: filled red when selected, white with a grey border otherwise.
+private final class VibeFilterChip: UIControl {
+
+    static let height: CGFloat = 35
+
+    private let iconImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.regular, size: 15)
+        return label
+    }()
+
+    init(title: String, icon: UIImage?) {
+        super.init(frame: .zero)
+        layer.cornerRadius = VibeFilterChip.height / 2
+        layer.borderColor = AppColor.Gallery.cgColor
+        iconImageView.image = icon?.withRenderingMode(.alwaysTemplate)
+        iconImageView.isHidden = icon == nil
+        titleLabel.text = title
+        isAccessibilityElement = true
+        accessibilityLabel = title
+
+        let stackView = UIStackView(arrangedSubviews: [iconImageView, titleLabel])
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.spacing = 10
+        stackView.isUserInteractionEnabled = false
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: VibeFilterChip.height),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 15),
+            iconImageView.heightAnchor.constraint(equalToConstant: 15)
+        ])
+        applyStyle()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var isSelected: Bool {
+        didSet { applyStyle() }
+    }
+
+    override var isHighlighted: Bool {
+        didSet { alpha = isHighlighted ? 0.7 : 1 }
+    }
+
+    private func applyStyle() {
+        let foreground = isSelected ? AppColor.AppWhite : AppColor.DoveGray
+        backgroundColor = isSelected ? AppColor.Punch : AppColor.AppWhite
+        layer.borderWidth = isSelected ? 0 : 1
+        titleLabel.textColor = foreground
+        iconImageView.tintColor = foreground
+        accessibilityTraits = isSelected ? [.button, .selected] : .button
     }
 }
