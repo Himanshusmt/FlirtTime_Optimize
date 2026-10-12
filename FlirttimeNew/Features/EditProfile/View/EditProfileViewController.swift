@@ -87,6 +87,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
     var countAboutMe:Int = 0
     var isOTPEntered:Bool? = false
     var strOTP:String?
+    private let voiceIntroView = ProfileVoiceIntroView(style: .editor)
 
     static var storyboardName: StringConvertible {
         return StoryboardName.editProfile
@@ -94,6 +95,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.installVoiceIntroSection()
         self.setUpBinding()
        // self.aAttributesViewModel.loadJSON()
         //self.setUserData()
@@ -109,6 +111,65 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.prosonalInfoViewHeightConstraint.constant = 0
         self.filterListAlphabetically()
     }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        voiceIntroView.stopIfPlaying()
+    }
+
+    // MARK: - Voice intro
+
+    /// Adds the voice intro editor under the About field in the "My bio" section.
+    private func installVoiceIntroSection() {
+        guard let bioStack = viewTextView.superview as? UIStackView else { return }
+        let title = UILabel.vibeLabel(.medium, 15, style: .subheadline, color: AppColor.AppBlack)
+        title.text = "Voice intro"
+        title.accessibilityTraits = .header
+        let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray, lines: 0)
+        subtitle.text = "A short recording plays on your profile so matches can hear you."
+        let header = UIStackView(arrangedSubviews: [title, subtitle])
+        header.axis = .vertical
+        header.spacing = 2
+
+        bioStack.addArrangedSubview(header)
+        bioStack.addArrangedSubview(voiceIntroView)
+        bioStack.setCustomSpacing(20, after: viewTextView)
+        bioStack.setCustomSpacing(10, after: header)
+
+        voiceIntroView.onRecord = { [weak self] in self?.recordVoiceIntro() }
+        voiceIntroView.onDelete = { [weak self] in self?.confirmDeleteVoiceIntro() }
+    }
+
+    private func recordVoiceIntro() {
+        VoiceIntroRecorderViewController.present(from: self) { [weak self] intro in
+            guard let self else { return }
+            self.userDetailInfo?.voiceIntro = intro
+            self.voiceIntroView.configure(intro: intro)
+            self.aCustomToastView.show(message: "Voice intro saved")
+        }
+    }
+
+    private func confirmDeleteVoiceIntro() {
+        aDeleteCustomPopUp.show(message: "Delete your voice intro? Matches won't be able to hear it anymore.",
+                                button1Text: Constants.AlertButtons.cancel,
+                                button2Text: "Delete") { [weak self] in
+            guard let self else { return }
+            self.aActivityIndicator.show()
+            VoiceIntroService.delete { [weak self] result in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                switch result {
+                case .success:
+                    self.userDetailInfo?.voiceIntro = nil
+                    self.voiceIntroView.configure(intro: nil)
+                    self.aCustomToastView.show(message: "Voice intro deleted")
+                case .failure(let error):
+                    self.aCustomToastView.show(message: error.message)
+                }
+            }
+        }
+    }
+
     func setEditAboutYouData(){
         
         if self.editProfileMoreAboutQuestionData != nil && self.userDetailInfo != nil {
@@ -380,6 +441,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.displayNameTextField.text = self.userDetailInfo?.userInfo?.displayName?.trimmText()
         
         self.cityPlaceTextField.text = self.userDetailInfo?.userInfo?.location
+        self.voiceIntroView.configure(intro: self.userDetailInfo?.voiceIntro)
         
         if self.updatedTextValue != "" {
             self.aboutTextView.text = updatedTextValue
@@ -856,8 +918,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.aEditProfileViewModel.$aUpdateAboutMe.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    guard let action = self.callBackAction else {return}
-                    action()
+                    self.callBackAction?()
                     self.view.isUserInteractionEnabled = true
                     self.navigationController?.popViewController(animated: true)
                 }
@@ -867,8 +928,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.aEditProfileViewModel.$errorAboutMe.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    guard let action = self.callBackAction else {return}
-                    action()
+                    self.callBackAction?()
                     self.view.isUserInteractionEnabled = true
                     self.navigationController?.popViewController(animated: true)
                 }
@@ -1082,8 +1142,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
                 let param = ["about_me":self.aboutTextView.text]
                 self.aEditProfileViewModel.callSaveUserDetailsAPI(filteredData: param as [String : Any])
             } else {
-                guard let action = self.callBackAction else {return}
-                action()
+                self.callBackAction?()
                 self.view.isUserInteractionEnabled = true
                 self.navigationController?.popViewController(animated: true)
             }

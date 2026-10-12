@@ -276,12 +276,12 @@ final class DiscoverViewModel {
         return reasons.isEmpty ? [fallbackReason] : reasons
     }
 
-    private static func cityName(from location: String?) -> String? {
+    static func cityName(from location: String?) -> String? {
         guard let city = location?.split(separator: ",").first?.trimmingCharacters(in: .whitespaces), !city.isEmpty else { return nil }
         return city
     }
 
-    private static func age(from dob: String?) -> Int? {
+    static func age(from dob: String?) -> Int? {
         guard let dob else { return nil }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")

@@ -18,6 +18,11 @@ final class VibeFeedViewModel {
     /// Bumped on every like tap so only the latest response for a vibe is applied.
     private var likeGeneration: [String: Int] = [:]
     private let store = MockVibeStore.shared
+    private let onlyCurrentUser: Bool
+
+    init(onlyCurrentUser: Bool = false) {
+        self.onlyCurrentUser = onlyCurrentUser
+    }
 
     var currentUserID: String { store.currentUserID }
     var currentUserAuthor: VibeAuthor { store.currentUserAuthor }
@@ -51,7 +56,8 @@ final class VibeFeedViewModel {
         respond { [weak self] in
             guard let self else { return }
             self.isLoading = false
-            let response = self.store.feed(page: page, limit: self.pageSize)
+            let response = self.store.feed(page: page, limit: self.pageSize,
+                                           authorID: self.onlyCurrentUser ? self.currentUserID : nil)
             guard response.success == true, let data = response.data else {
                 completion(.failure(VibeError(message: response.message ?? "Unable to load vibes")))
                 return

@@ -9,492 +9,760 @@ import UIKit
 import Photos
 import Combine
 
-class ProfileViewController: BaseViewController,UIScrollViewDelegate,UIGestureRecognizerDelegate{
+class ProfileViewController: BaseViewController {
 
-    @IBOutlet weak var nameLabel:UILabel!
-    @IBOutlet weak var verifiedUserIcon:UIImageView!
-    @IBOutlet weak var backGroundProfileImage:UIImageView!
-    @IBOutlet weak var editProfileImageButton: UIButton!
-    @IBOutlet weak var coverImage: UIImageView!
-    @IBOutlet weak var rewardCollectionView: UICollectionView!
-    @IBOutlet weak var addCoverPhotoButton: UIButton!
-    @IBOutlet weak var addCoverPhotoButton2: UIView!
-    @IBOutlet weak var premiumCardView: UIView!
-    @IBOutlet weak var upgradePremiumPlanButton: UIButton!
-    @IBOutlet weak var scrollView: UIScrollView!
-    @IBOutlet weak var momentCollectionView: UICollectionView!
-    @IBOutlet weak var momentCollectionViewHeight: NSLayoutConstraint!
-    @IBOutlet weak var noMomentsView: UIView!
-    @IBOutlet weak var momentListView: UIView!
-    @IBOutlet weak var profileProgressView: CircularProgressView!
-    @IBOutlet weak var userAboutLabel: UILabel!
-    @IBOutlet weak var userProfileImage: UIImageView!
-    @IBOutlet weak var editProfileView: UIView!
-    @IBOutlet weak var settingButton: UIButton!
-    @IBOutlet weak var addMomentView: UIView!
-    @IBOutlet weak var allMomentView: UIView!
+    private static let coverHeight: CGFloat = 240
+    private static let ringSize: CGFloat = 136
+    private static let avatarSize: CGFloat = 118
+    private static let aboutCollapsedLines = 3
 
-    private var aProfileViewModel = ProfileViewModel()
-    private var userProfileData:UserDetailsData?
-    private var aMyMomentsData:[MomentsDatum]? = []
-    private var MyMomentCellWidth = (screen.width - 50)/2
-    private var selectedImage:UIImage?
-    private var editProfileImage:Bool? = true
+    private let aProfileViewModel = ProfileViewModel()
+    private let aBannerModel = SetBannerModel()
     private var desposeBag: Set<AnyCancellable> = []
-    private var textDescription:String?
-    private var coverImageUrl:String?
-    private var ignoreViewWillAppear:Bool? = false
-    
-    private var aBannerModel = SetBannerModel()
-    private var aAvatarModel = SetAvatarModel()
-    
+    private var userProfileData: UserDetailsData?
+    private var coverImageUrl: String?
+    private var selectedImage: UIImage?
+
+    private let scrollView = UIScrollView()
+    private let contentStack = UIStackView()
+
+    // Header
+    private let coverImageView = UIImageView()
+    private let topButtonsTopConstraintOffset: CGFloat = 6
+    private var topButtonsTopConstraint: NSLayoutConstraint?
+    private let progressRing = CircularProgressView(frame: CGRect(x: 0, y: 0, width: ProfileViewController.ringSize, height: ProfileViewController.ringSize))
+    private let avatarImageView = UIImageView()
+    private let completionButton = UIButton(type: .custom)
+
+    // Identity
+    private let nameLabel = UILabel.vibeLabel(.bold, 26, style: .title1, color: AppColor.AppBlack)
+    private let verifiedImageView = UIImageView(image: UIImage(named: "verifyIcon"))
+    private let locationLabel = UILabel.vibeLabel(.regular, 14, style: .subheadline, color: AppColor.DoveGray)
+    private let aboutLabel = UILabel.vibeLabel(.regular, 15, style: .body, color: AppColor.MineShaft, lines: ProfileViewController.aboutCollapsedLines)
+
+    // Sections
+    private let voiceIntroView = ProfileVoiceIntroView(style: .profile)
+    private let quickMomentsView = ProfileQuickMomentsView()
+    private let quickMomentsHint = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray, lines: 0)
+    private lazy var quickMomentsHintContainer = padded(quickMomentsHint, top: 0)
+    private let interestsChips = VibeChipsView()
+    private lazy var interestsContainer = padded(section("My Interests", content: interestsChips, actionTitle: "Edit") { [weak self] in
+        self?.openEditProfile()
+    }, top: 28)
+    private let momentsGrid = ProfileMomentsGridView()
+    private let momentsSeeAllButton = UIButton(type: .system)
+    private let uploadViewModel = VibeUploadViewModel.shared
+    private let photosRow = UIStackView()
+    private lazy var photosContainer = padded(section("My Photos", content: horizontalScroller(for: photosRow, height: 150), actionTitle: "Edit") { [weak self] in
+        self?.openEditProfile()
+    }, top: 28, horizontal: 0)
+
+    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.setUI()
-        self.setBinding()
+        view.backgroundColor = AppColor.AppWhite
+        setUI()
+        setBinding()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        checkHideCustomButton(hide: false)
+        loadData()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         AppTabBarController.buttonD.isHidden = false
-        
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        voiceIntroView.stopIfPlaying()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        self.ignoreViewWillAppear = false
         AppTabBarController.buttonD.isHidden = true
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        if self.aProfileViewModel.aUserProfileModel == nil && !(self.ignoreViewWillAppear ?? false) {
-            self.noMomentsView.isHidden = true
-            self.momentListView.isHidden = false
-            self.setProfileCompletionProgress()
-            self.aProfileViewModel.getProfileDataAPI()
-            self.aProfileViewModel.getMyMomentsAPI()
-        }
-        
-        self.checkHideCustomButton(hide: false)
-        self.resetData(ignoreViewWillAppear: true)
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        topButtonsTopConstraint?.constant = view.safeAreaInsets.top + topButtonsTopConstraintOffset
     }
 
-    func resetData(ignoreViewWillAppear:Bool?){
-        self.ignoreViewWillAppear = ignoreViewWillAppear
-        self.setProfileCompletionProgress()
-        self.aProfileViewModel.aUserProfileModel = nil
-        self.aProfileViewModel.getProfileDataAPI()
-        self.aProfileViewModel.getMyMomentsAPI()
+    private func loadData() {
+        aProfileViewModel.getProfileDataAPI()
+        aProfileViewModel.getQuickMoments()
+        aProfileViewModel.getMyMoments()
     }
 
-    func setUI(){
-        self.scrollView.contentInsetAdjustmentBehavior = .never
-        self.editProfileImageButton.layer.cornerRadius = 10
-        self.editProfileImageButton.layer.masksToBounds = true
-        self.addCoverPhotoButton2.isHidden = true
-        self.addCoverPhotoButton.isHidden = true
-        self.scrollView.delegate = self
-        self.registerCell()
+    // MARK: - Binding
 
-        let labelTapGesture = UITapGestureRecognizer(target: self, action: #selector(self.handleLabelTap(_:)))
-        labelTapGesture.cancelsTouchesInView = false
-        labelTapGesture.delegate = self // Set the delegate
-        self.userAboutLabel.addGestureRecognizer(labelTapGesture)
-        self.premiumCardView.addShadow(color: AppColor.AppBlack.withAlphaComponent(0.25), opacity: 1.0, offset: CGSize(width: 0, height: 1.0))
-        premiumCardView.backgroundColor = .white // or your card background color
-        premiumCardView.layer.cornerRadius = 14.0
-       // premiumCardView.layer.borderWidth = 1
-       // premiumCardView.layer.borderColor = AppColor.AthensGray.cgColor // your border color
-        //premiumCardView.clipsToBounds = false // Important for shadow to show
+    private func setBinding() {
+        aProfileViewModel.$aUserProfileModel.receive(on: DispatchQueue.main).sink { [weak self] model in
+            guard let self, let model else { return }
+            self.userProfileData = model
+            self.setUserProfileData(model)
+        }.store(in: &desposeBag)
 
-        // Shadow
-       // premiumCardView.layer.shadowColor = UIColor.black.cgColor
-       // premiumCardView.layer.shadowOpacity = 0.1
-       // premiumCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
-       // premiumCardView.layer.shadowRadius = 8
+        aProfileViewModel.$quickMoments.receive(on: DispatchQueue.main).sink { [weak self] moments in
+            guard let self else { return }
+            let frames = moments.enumerated().map { $1.storyMoment(id: $0) }
+            self.quickMomentsView.configure(moments: frames, avatarPath: self.userProfileData?.userInfo?.avatar)
+            self.quickMomentsHintContainer.isHidden = !moments.isEmpty
+        }.store(in: &desposeBag)
+
+        aProfileViewModel.$myMoments.receive(on: DispatchQueue.main).sink { [weak self] vibes in
+            guard let self, let vibes else { return }
+            self.momentsGrid.configure(vibes: vibes)
+            let total = self.aProfileViewModel.myMomentsTotal
+            self.momentsSeeAllButton.isHidden = vibes.isEmpty
+            self.momentsSeeAllButton.configuration?.attributedTitle = AttributedString(
+                total > vibes.count ? "See all (\(total))" : "See all",
+                attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+        }.store(in: &desposeBag)
+
+        uploadViewModel.$uploadProgress.receive(on: DispatchQueue.main).sink { [weak self] progress in
+            self?.momentsGrid.setUploadProgress(progress)
+        }.store(in: &desposeBag)
+
+        uploadViewModel.uploadFinished.receive(on: DispatchQueue.main).sink { [weak self] result in
+            guard case .success = result else { return }
+            self?.aProfileViewModel.getMyMoments()
+        }.store(in: &desposeBag)
+
+        aProfileViewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
+        }.store(in: &desposeBag)
+
+        aBannerModel.$aUploadBannerModel.receive(on: DispatchQueue.main).sink { [weak self] model in
+            guard let self, let model else { return }
+            self.aActivityIndicator.hide()
+            self.coverImageView.loadImage(path: model.data?.image_url, placeholder: UIImage(named: "addCoverPhoto"))
+        }.store(in: &desposeBag)
+
+        aBannerModel.$errorBannerMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, error != nil else { return }
+            self.aActivityIndicator.hide()
+            self.showImageAlertPopUp(TitleMsg: "Picture upload failed", TitleBtn: "Discard")
+        }.store(in: &desposeBag)
     }
 
-    func setBinding(){
-        self.aBannerModel.$aUploadBannerModel.receive(on: DispatchQueue.main).sink { model in
-            if model != nil {
-                //self.coverImageUrl = model?.data?.image_url ?? ""
-                self.aActivityIndicator.hide()
-               // self.showImageAlertPopUp(TitleMsg: "Picture uploaded successfully", TitleBtn: "Continue")
-                
-                if let imageUrl = URL(string: model?.data?.image_url ?? "") {
-                    self.addCoverPhotoButton.isHidden = true
-                    self.addCoverPhotoButton2.isHidden = false
-                    self.coverImage.contentMode = .scaleAspectFill
-                    self.downloadImage(imageType:self.coverImage, imageUrl: imageUrl, message: model?.message ?? "")
-                }
-            }
-        }.store(in: &desposeBag)
+    private func setUserProfileData(_ model: UserDetailsData) {
+        let info = model.userInfo
 
-        self.aAvatarModel.$aUploadAvatarModel.receive(on: DispatchQueue.main).sink { model in
-            if model != nil {
-                if let imageUrl = URL(string: model?.data?.image_url ?? "") {
-                    DispatchQueue.main.async {
-                        self.downloadImage(imageType:self.userProfileImage, imageUrl: imageUrl, message: model?.message ?? "")
-                    }
-                }
-            }
-        }.store(in: &desposeBag)
-
-        self.aProfileViewModel.$aUserProfileModel.receive(on: DispatchQueue.main).sink { model in
-            if model != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    self.userProfileData = model
-                    self.setUserProfileData(model: model)
-                    self.momentCollectionView.reloadData()
-                }
-            }
-        }.store(in: &desposeBag)
-        
-        self.aProfileViewModel.$aMyMomentsModel.receive(on: DispatchQueue.main).sink { model in
-            if model?.count ?? 0 > 0 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    self.aMyMomentsData = model
-                    self.setMyMomentsData()
-                }
-            }else {
-                self.noMomentsView.isHidden = false
-                self.momentListView.isHidden = true
-            }
-            self.momentCollectionView.reloadData()
-        }.store(in: &desposeBag)
-
-        self.aProfileViewModel.$errorMessage.receive(on: DispatchQueue.main).sink { error in
-            if error != nil {
-                self.showNewAlertPopUp(Title: "Error", Msg: error ?? "", isSuccess: false, CompletionHandler: {(success) -> Void in
-    
-                })
-            }
-        }.store(in: &desposeBag)
-        
-        self.aBannerModel.$errorBannerMessage.receive(on: DispatchQueue.main).sink { error in
-            if error != nil {
-                self.aActivityIndicator.hide()
-                self.showImageAlertPopUp(TitleMsg: "Picture upload failed", TitleBtn: "Discard")
-            }
-        }.store(in: &desposeBag)
-
-    }
-
-    func downloadImage(imageType:UIImageView,imageUrl:URL?,message:String?){
-        self.aActivityIndicator.show()
-        imageType.loadImage(with: imageUrl,placeholder: UIImage(named: "ProfileBlur")) { [weak self] _ in
-            self?.aActivityIndicator.hide()
-        }
-    }
-    
-//    func downloadImage(imageType:UIImageView,imageUrl:URL?,message:String?){
-//        print("url......", imageUrl?.absoluteString ?? "")
-//        //self.aActivityIndicator.show()
-//        DispatchQueue.main.async {
-//            imageType.sd_setImage(with: imageUrl, placeholderImage: UIImage(named: "ProfileBlur"))
-//            
-//        }
-//        //self.aAppAlert.show(message:message ?? "", buttonTitles: [Constants.AlertButtons.okay],isSuccess: true)
-//        //imageType.sd_setImage(with: imageUrl, placeholderImage: UIImage(named: "ProfileBlur"))
-//        //self.aActivityIndicator.hide()
-//    }
-
-    func setUserProfileData(model:UserDetailsData?){
-            
-            if model?.userInfo?.banner != nil {
-                self.coverImageUrl = "\(ApiName.imgBaseURL)"+"\(model?.userInfo?.banner ?? "")"
-                if let imageUrl = URL(string: self.coverImageUrl ?? "") {
-                    print("img url cover.....", imageUrl)
-                    DispatchQueue.main.async {
-                        self.addCoverPhotoButton.isHidden = true
-                        self.addCoverPhotoButton2.isHidden = false
-                        self.coverImage.loadImage(with: imageUrl,placeholder: UIImage(named: "addCoverPhoto"))
-                        self.coverImage.contentMode = .scaleAspectFill
-                    }
-                }
-            }
-             else {
-                self.addCoverPhotoButton.isHidden = false
-                self.addCoverPhotoButton2.isHidden = true
-            }
-            let profileImg = "\(ApiName.imgBaseURL)"+"\(model?.userInfo?.avatar ?? "")"
-            print("img url profile.....", profileImg)
-            if let imageUrl = URL(string: profileImg) {
-                DispatchQueue.main.async {
-                    self.userProfileImage.loadImage(with: imageUrl,placeholder: UIImage(named: "ProfileBlur"))
-                    self.coverImage.contentMode = .scaleAspectFill
-                }
-            }
-        
-        self.nameLabel.text = "\(model?.userInfo?.displayName ?? "")"
-        //self.verifiedUserIcon.isHidden = model?.data?.isVerified == 0
-        self.profileProgressView.setProgressColor = .red
-        let profilePercentage = Float(model?.profile_complete ?? 0) / 100
-        self.profileProgressView.setProgressWithAnimation(duration:2.0, value: profilePercentage)
-        self.userAboutLabel.isUserInteractionEnabled = true
-        self.textDescription = model?.userInfo?.aboutMe
-        self.userAboutLabel.text = self.textDescription
-        self.userAboutLabel.appendReadmore(after: textDescription ?? "", trailingContent: .readmore)
-        self.editProfileImageButton.setTitle("\(model?.profile_complete ?? 0)%", for: .normal)
-        if model?.userInfo?.isActive == true {
-            self.verifiedUserIcon.isHidden = false
+        if let banner = info?.banner, !banner.isEmpty {
+            coverImageUrl = ApiName.imgBaseURL + banner
+            coverImageView.loadImage(path: banner, placeholder: UIImage(named: "addCoverPhoto"))
         } else {
-            self.verifiedUserIcon.isHidden = true
+            coverImageUrl = nil
+            coverImageView.image = UIImage(named: "addCoverPhoto")
+        }
+        avatarImageView.loadImage(path: info?.avatar, placeholder: UIImage(named: "ProfileBlur"))
+        voiceIntroView.configure(intro: model.voiceIntro)
+        quickMomentsView.configure(moments: aProfileViewModel.quickMomentFrames, avatarPath: info?.avatar)
+
+        let completion = model.profile_complete ?? 0
+        progressRing.setProgressWithAnimation(duration: 1.2, value: Float(completion) / 100)
+        completionButton.configuration?.attributedTitle = AttributedString("\(completion)% complete", attributes: AttributeContainer([
+            .font: VibeFont.scaled(.medium, 13, style: .footnote)
+        ]))
+        completionButton.accessibilityLabel = "Profile \(completion) percent complete. Edit profile"
+
+        let name = (info?.displayName ?? info?.fullname ?? "").firstLetterCapitalized
+        let age = DiscoverViewModel.age(from: info?.dob)
+        nameLabel.text = age.map { "\(name), \($0)" } ?? name
+        verifiedImageView.isHidden = info?.isActive != true
+
+        let location = info?.location?.trimmingCharacters(in: .whitespaces) ?? ""
+        locationLabel.text = location.isEmpty ? nil : "📍 \(location)"
+        locationLabel.isHidden = location.isEmpty
+
+        let about = info?.aboutMe?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        aboutLabel.text = about.isEmpty ? nil : "“\(about)”"
+        aboutLabel.isHidden = about.isEmpty
+
+        let interests = VibeInterestCatalog.interests(for: info?.interests ?? [])
+        interestsChips.configure(interests, highlighted: [])
+        interestsContainer.isHidden = interests.isEmpty
+
+        let photos = (info?.images ?? [])
+            .sorted { ($0.is_primary ?? false) && !($1.is_primary ?? false) }
+            .compactMap(\.image)
+            .filter { !$0.isEmpty }
+        setPhotos(photos)
+    }
+
+    // MARK: - UI
+
+    private func setUI() {
+        scrollView.contentInsetAdjustmentBehavior = .never
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.alwaysBounceVertical = true
+        scrollView.delegate = self
+        scrollView.contentInset.bottom = 120
+        view.addSubview(scrollView)
+        scrollView.pinEdges(to: view)
+
+        contentStack.axis = .vertical
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentStack)
+        NSLayoutConstraint.activate([
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+        ])
+
+        contentStack.addArrangedSubview(makeHeader())
+        contentStack.addArrangedSubview(padded(makeIdentity(), top: 12))
+        contentStack.addArrangedSubview(padded(makeActionButtons(), top: 20))
+        contentStack.addArrangedSubview(padded(makeVoiceSection(), top: 28))
+        contentStack.addArrangedSubview(makeQuickMomentsSection())
+        contentStack.addArrangedSubview(padded(makePremiumCard(), top: 24))
+        contentStack.addArrangedSubview(interestsContainer)
+        contentStack.addArrangedSubview(padded(makeMomentsSection(), top: 28))
+        contentStack.addArrangedSubview(photosContainer)
+    }
+
+    private func padded(_ content: UIView, top: CGFloat, horizontal: CGFloat = 20) -> UIView {
+        let wrapper = UIView()
+        wrapper.addSubview(content)
+        content.pinEdges(to: wrapper, insets: UIEdgeInsets(top: top, left: horizontal, bottom: 0, right: horizontal))
+        return wrapper
+    }
+
+    // MARK: Header
+
+    private func makeHeader() -> UIView {
+        let header = UIView()
+
+        coverImageView.contentMode = .scaleAspectFill
+        coverImageView.clipsToBounds = true
+        coverImageView.backgroundColor = AppColor.Lavenderblush
+        coverImageView.image = UIImage(named: "addCoverPhoto")
+        coverImageView.isAccessibilityElement = true
+        coverImageView.accessibilityLabel = "Cover photo"
+
+        let topShade = VibeGradientView(colors: [UIColor.black.withAlphaComponent(0.35), .clear],
+                                        start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
+        let bottomFade = VibeGradientView(colors: [AppColor.AppWhite.withAlphaComponent(0), AppColor.AppWhite],
+                                          start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
+
+        let settings = circleButton(symbol: "gearshape.fill", label: "Settings")
+        settings.addAction(UIAction { [weak self] _ in self?.settingsTapped() }, for: .touchUpInside)
+        let camera = circleButton(symbol: "camera.fill", label: "Change cover photo")
+        camera.addAction(UIAction { [weak self] _ in self?.openImageSelectionMethodPopUp() }, for: .touchUpInside)
+        let topButtons = UIStackView(arrangedSubviews: [UIView(), camera, settings])
+        topButtons.spacing = 10
+
+        progressRing.startAngle = CGFloat(-0.5 * Double.pi)
+        progressRing.endAngle = CGFloat(1.5 * Double.pi)
+        progressRing.setTrackColor = AppColor.Lavenderblush
+        progressRing.setProgressColor = AppColor.Punch
+        progressRing.setTrackLineWidth = 5
+        progressRing.setProgressLineWidth = 6
+        progressRing.setProgressWithAnimation(duration: 0, value: 0)
+        progressRing.backgroundColor = AppColor.AppWhite
+        progressRing.layer.cornerRadius = Self.ringSize / 2
+        progressRing.isAccessibilityElement = false
+
+        avatarImageView.contentMode = .scaleAspectFill
+        avatarImageView.clipsToBounds = true
+        avatarImageView.layer.cornerRadius = Self.avatarSize / 2
+        avatarImageView.backgroundColor = AppColor.AthensGray
+        avatarImageView.isAccessibilityElement = true
+        avatarImageView.accessibilityLabel = "Profile photo"
+
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = AppColor.Punch
+        config.baseForegroundColor = .white
+        config.image = UIImage(systemName: "pencil", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .bold))
+        config.imagePlacement = .trailing
+        config.imagePadding = 5
+        config.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12)
+        completionButton.configuration = config
+        completionButton.layer.shadowColor = AppColor.Punch.cgColor
+        completionButton.layer.shadowOpacity = 0.3
+        completionButton.layer.shadowRadius = 6
+        completionButton.layer.shadowOffset = CGSize(width: 0, height: 3)
+        completionButton.addAction(UIAction { [weak self] _ in self?.openEditProfile() }, for: .touchUpInside)
+
+        [coverImageView, topShade, bottomFade, topButtons, progressRing, avatarImageView, completionButton].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            header.addSubview($0)
+        }
+
+        let topConstraint = topButtons.topAnchor.constraint(equalTo: header.topAnchor, constant: 50)
+        topButtonsTopConstraint = topConstraint
+
+        NSLayoutConstraint.activate([
+            coverImageView.topAnchor.constraint(equalTo: header.topAnchor),
+            coverImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            coverImageView.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            coverImageView.heightAnchor.constraint(equalToConstant: Self.coverHeight),
+
+            topShade.topAnchor.constraint(equalTo: header.topAnchor),
+            topShade.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            topShade.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            topShade.heightAnchor.constraint(equalToConstant: 110),
+
+            bottomFade.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            bottomFade.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            bottomFade.bottomAnchor.constraint(equalTo: coverImageView.bottomAnchor),
+            bottomFade.heightAnchor.constraint(equalToConstant: 90),
+
+            topConstraint,
+            topButtons.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            topButtons.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+
+            progressRing.centerXAnchor.constraint(equalTo: header.centerXAnchor),
+            progressRing.centerYAnchor.constraint(equalTo: coverImageView.bottomAnchor, constant: -16),
+            progressRing.widthAnchor.constraint(equalToConstant: Self.ringSize),
+            progressRing.heightAnchor.constraint(equalToConstant: Self.ringSize),
+
+            avatarImageView.centerXAnchor.constraint(equalTo: progressRing.centerXAnchor),
+            avatarImageView.centerYAnchor.constraint(equalTo: progressRing.centerYAnchor),
+            avatarImageView.widthAnchor.constraint(equalToConstant: Self.avatarSize),
+            avatarImageView.heightAnchor.constraint(equalToConstant: Self.avatarSize),
+
+            completionButton.centerXAnchor.constraint(equalTo: progressRing.centerXAnchor),
+            completionButton.centerYAnchor.constraint(equalTo: progressRing.bottomAnchor),
+            completionButton.bottomAnchor.constraint(equalTo: header.bottomAnchor)
+        ])
+        return header
+    }
+
+    private func circleButton(symbol: String, label: String) -> UIButton {
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = UIColor.black.withAlphaComponent(0.35)
+        config.baseForegroundColor = .white
+        config.image = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .bold))
+        let button = UIButton(configuration: config)
+        button.accessibilityLabel = label
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 40),
+            button.heightAnchor.constraint(equalToConstant: 40)
+        ])
+        return button
+    }
+
+    // MARK: Identity
+
+    private func makeIdentity() -> UIView {
+        nameLabel.textAlignment = .center
+        nameLabel.accessibilityTraits = .header
+        verifiedImageView.contentMode = .scaleAspectFit
+        verifiedImageView.isHidden = true
+        verifiedImageView.isAccessibilityElement = true
+        verifiedImageView.accessibilityLabel = "Verified"
+        NSLayoutConstraint.activate([
+            verifiedImageView.widthAnchor.constraint(equalToConstant: 20),
+            verifiedImageView.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        let nameRow = UIStackView(arrangedSubviews: [nameLabel, verifiedImageView])
+        nameRow.spacing = 6
+        nameRow.alignment = .center
+
+        locationLabel.textAlignment = .center
+        aboutLabel.textAlignment = .center
+        aboutLabel.isUserInteractionEnabled = true
+        aboutLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(toggleAbout)))
+        aboutLabel.accessibilityHint = "Double tap to show more or less"
+
+        let stack = UIStackView(arrangedSubviews: [nameRow, locationLabel, aboutLabel])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 4
+        stack.setCustomSpacing(12, after: locationLabel)
+        return stack
+    }
+
+    @objc private func toggleAbout() {
+        let collapsed = aboutLabel.numberOfLines != 0
+        aboutLabel.numberOfLines = collapsed ? 0 : Self.aboutCollapsedLines
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+    }
+
+    // MARK: Actions row
+
+    private func makeActionButtons() -> UIView {
+        var edit = UIButton.Configuration.filled()
+        edit.cornerStyle = .capsule
+        edit.baseBackgroundColor = AppColor.Lavenderblush
+        edit.baseForegroundColor = AppColor.Punch
+        edit.image = UIImage(systemName: "pencil", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
+        edit.imagePadding = 8
+        edit.attributedTitle = AttributedString("Edit Profile", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 16)]))
+        let editButton = UIButton(configuration: edit)
+        editButton.addAction(UIAction { [weak self] _ in self?.openEditProfile() }, for: .touchUpInside)
+
+        var add = UIButton.Configuration.filled()
+        add.cornerStyle = .capsule
+        add.baseBackgroundColor = AppColor.Punch
+        add.baseForegroundColor = .white
+        add.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
+        add.imagePadding = 8
+        add.attributedTitle = AttributedString("Add Moment", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 16)]))
+        let addButton = UIButton(configuration: add)
+        addButton.layer.shadowColor = AppColor.Punch.cgColor
+        addButton.layer.shadowOpacity = 0.35
+        addButton.layer.shadowRadius = 10
+        addButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        addButton.addAction(UIAction { [weak self] _ in self?.openAddMoment() }, for: .touchUpInside)
+
+        let row = UIStackView(arrangedSubviews: [editButton, addButton])
+        row.spacing = 12
+        row.distribution = .fillEqually
+        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
+        return row
+    }
+
+    // MARK: Voice intro
+
+    private func makeVoiceSection() -> UIView {
+        voiceIntroView.onRecord = { [weak self] in self?.recordVoiceIntro() }
+        return section("My Voice", content: voiceIntroView, actionTitle: nil, action: nil)
+    }
+
+    private func recordVoiceIntro() {
+        voiceIntroView.stopIfPlaying()
+        VoiceIntroRecorderViewController.present(from: self) { [weak self] _ in
+            guard let self else { return }
+            self.aProfileViewModel.getProfileDataAPI()
+            self.aCustomToastView.show(message: "Voice intro saved")
         }
     }
-    
-    func setMyMomentsData(){
-        self.noMomentsView.isHidden = self.aMyMomentsData?.count ?? 0 > 0
-        self.momentListView.isHidden = !(self.aMyMomentsData?.count ?? 0 > 0)
-        let momentDataCount = self.aMyMomentsData?.count ?? 0
-        let count = momentDataCount % 2 == 0 ? momentDataCount : (momentDataCount + 1)
-        self.momentCollectionViewHeight.constant =  CGFloat(count / 2) * (self.MyMomentCellWidth * 1.3048 + 12)
-        DispatchQueue.main.async {
-            self.momentCollectionView.reloadData()
+
+    // MARK: Quick Moments
+
+    private func makeQuickMomentsSection() -> UIView {
+        let header = sectionHeader("Quick Moments", actionTitle: "+ Add") { [weak self] in self?.openAddQuickMoment() }
+        quickMomentsHint.text = "Share a quick photo or thought. People can react and reply to it."
+        quickMomentsView.onAdd = { [weak self] in self?.openAddQuickMoment() }
+        quickMomentsView.onSelect = { [weak self] index in self?.openQuickMoment(at: index) }
+        quickMomentsView.heightAnchor.constraint(equalToConstant: ProfileQuickMomentsView.preferredHeight).isActive = true
+
+        quickMomentsHintContainer.isHidden = true
+        let stack = UIStackView(arrangedSubviews: [padded(header, top: 0), quickMomentsView, quickMomentsHintContainer])
+        stack.axis = .vertical
+        stack.spacing = 12
+        let wrapper = UIView()
+        wrapper.addSubview(stack)
+        stack.pinEdges(to: wrapper, insets: UIEdgeInsets(top: 28, left: 0, bottom: 0, right: 0))
+        return wrapper
+    }
+
+    // MARK: My Moments
+
+    private func makeMomentsSection() -> UIView {
+        let title = UILabel.vibeLabel(.bold, 18, style: .headline, color: AppColor.AppBlack)
+        title.text = "My Moments"
+        title.accessibilityTraits = .header
+
+        var config = UIButton.Configuration.plain()
+        config.baseForegroundColor = AppColor.Punch
+        config.contentInsets = .zero
+        config.attributedTitle = AttributedString("See all", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+        momentsSeeAllButton.configuration = config
+        momentsSeeAllButton.setContentHuggingPriority(.required, for: .horizontal)
+        momentsSeeAllButton.accessibilityLabel = "See all, My Moments"
+        momentsSeeAllButton.isHidden = true
+        momentsSeeAllButton.addAction(UIAction { [weak self] _ in self?.openMyMoments() }, for: .touchUpInside)
+
+        let header = UIStackView(arrangedSubviews: [title, UIView(), momentsSeeAllButton])
+        header.alignment = .center
+
+        momentsGrid.onSelect = { [weak self] vibe in self?.openMyMoments(focusing: vibe.id) }
+        momentsGrid.onAdd = { [weak self] in self?.openAddMoment() }
+
+        let stack = UIStackView(arrangedSubviews: [header, momentsGrid])
+        stack.axis = .vertical
+        stack.spacing = 12
+        return stack
+    }
+
+    // MARK: Premium
+
+    private func makePremiumCard() -> UIView {
+        let card = VibeGradientView(colors: VibeTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+        card.isUserInteractionEnabled = true
+        card.layer.cornerRadius = 22
+        card.layer.cornerCurve = .continuous
+        card.layer.shadowColor = AppColor.Punch.cgColor
+        card.layer.shadowOpacity = 0.3
+        card.layer.shadowRadius = 14
+        card.layer.shadowOffset = CGSize(width: 0, height: 6)
+
+        let crown = UIImageView(image: UIImage(systemName: "crown.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 26, weight: .bold)))
+        crown.tintColor = VibeTheme.gold
+        crown.contentMode = .center
+        crown.backgroundColor = .white
+        crown.layer.cornerRadius = 28
+        let badge = UIView()
+        badge.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        badge.layer.cornerRadius = 36
+        badge.addSubview(crown)
+        crown.pinEdges(to: badge, insets: UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8))
+
+        let title = UILabel.vibeLabel(.bold, 19, style: .headline, color: .white)
+        title.text = "Enjoy All Benefits"
+        let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: UIColor.white.withAlphaComponent(0.92), lines: 0)
+        subtitle.text = "Unlimited swiping, see who likes you and match without ads."
+
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = .white
+        config.baseForegroundColor = AppColor.Punch
+        config.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 18, bottom: 9, trailing: 18)
+        config.attributedTitle = AttributedString("Upgrade to premium", attributes: AttributeContainer([.font: VibeFont.scaled(.bold, 15)]))
+        let upgrade = UIButton(configuration: config)
+        upgrade.addAction(UIAction { [weak self] _ in self?.openPremium() }, for: .touchUpInside)
+
+        let texts = UIStackView(arrangedSubviews: [title, subtitle, upgrade])
+        texts.axis = .vertical
+        texts.alignment = .leading
+        texts.spacing = 4
+        texts.setCustomSpacing(12, after: subtitle)
+
+        let row = UIStackView(arrangedSubviews: [badge, texts])
+        row.spacing = 14
+        row.alignment = .center
+        card.addSubview(row)
+        row.pinEdges(to: card, insets: UIEdgeInsets(top: 18, left: 16, bottom: 18, right: 16))
+        NSLayoutConstraint.activate([
+            badge.widthAnchor.constraint(equalToConstant: 72),
+            badge.heightAnchor.constraint(equalToConstant: 72)
+        ])
+        return card
+    }
+
+    // MARK: Photos
+
+    private func setPhotos(_ photos: [String]) {
+        photosRow.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for (index, photo) in photos.enumerated() {
+            let button = UIButton(type: .custom)
+            let image = UIImageView()
+            image.contentMode = .scaleAspectFill
+            image.clipsToBounds = true
+            image.layer.cornerRadius = 18
+            image.layer.cornerCurve = .continuous
+            image.backgroundColor = AppColor.AthensGray
+            image.isUserInteractionEnabled = false
+            image.loadImage(path: photo, placeholder: UIImage(named: "ProfileBlur"))
+            button.addSubview(image)
+            image.pinEdges(to: button)
+            button.widthAnchor.constraint(equalToConstant: 116).isActive = true
+            button.accessibilityLabel = "Your photo \(index + 1) of \(photos.count)"
+            button.addAction(UIAction { [weak self] _ in self?.openEditProfile() }, for: .touchUpInside)
+            photosRow.addArrangedSubview(button)
         }
+        photosContainer.isHidden = photos.isEmpty
     }
 
-    func setProfileCompletionProgress(color:UIColor? = .white) {
-        self.profileProgressView.startAngle = CGFloat(-1.5 * Double.pi)
-        self.profileProgressView.endAngle = CGFloat(0.5 * Double.pi)
-        self.profileProgressView.setProgressWithAnimation(duration: 0, value: 0)
-        self.profileProgressView.setProgressColor = color ?? .red // Your color
-        self.profileProgressView.setTrackColor = UIColor.white // Your track color
-        self.profileProgressView.setProgressLineWidth = 6 // Appropriate line width
-        self.profileProgressView.setTrackLineWidth = 4 // Appropriate track line width
+    private func horizontalScroller(for row: UIStackView, height: CGFloat) -> UIView {
+        let scroller = UIScrollView()
+        scroller.showsHorizontalScrollIndicator = false
+        scroller.alwaysBounceHorizontal = true
+        row.spacing = 12
+        row.translatesAutoresizingMaskIntoConstraints = false
+        scroller.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: scroller.contentLayoutGuide.topAnchor),
+            row.leadingAnchor.constraint(equalTo: scroller.contentLayoutGuide.leadingAnchor, constant: 20),
+            row.trailingAnchor.constraint(equalTo: scroller.contentLayoutGuide.trailingAnchor, constant: -20),
+            row.bottomAnchor.constraint(equalTo: scroller.contentLayoutGuide.bottomAnchor),
+            row.heightAnchor.constraint(equalTo: scroller.frameLayoutGuide.heightAnchor),
+            scroller.heightAnchor.constraint(equalToConstant: height)
+        ])
+        return scroller
     }
 
-    func registerCell(){
-        self.rewardCollectionView.register(UINib(nibName: RewardCollectionViewCell.identifier, bundle: nil), forCellWithReuseIdentifier: RewardCollectionViewCell.identifier)
-        self.rewardCollectionView.delegate = self
-        self.rewardCollectionView.dataSource = self
-        self.rewardCollectionView.reloadData()
+    // MARK: Section helpers
 
-        self.momentCollectionView.register(UINib(nibName: MomentCollectionViewCell.identifier, bundle: nil), forCellWithReuseIdentifier: MomentCollectionViewCell.identifier)
-        self.momentCollectionView.isScrollEnabled = false
-        self.momentCollectionView.delegate = self
-        self.momentCollectionView.dataSource = self
-        self.momentCollectionView.reloadData()
-
+    private func sectionHeader(_ title: String, actionTitle: String?, action: (() -> Void)?) -> UIView {
+        let label = UILabel.vibeLabel(.bold, 18, style: .headline, color: AppColor.AppBlack)
+        label.text = title
+        label.accessibilityTraits = .header
+        let row = UIStackView(arrangedSubviews: [label, UIView()])
+        row.alignment = .center
+        if let actionTitle, let action {
+            var config = UIButton.Configuration.plain()
+            config.baseForegroundColor = AppColor.Punch
+            config.contentInsets = .zero
+            config.attributedTitle = AttributedString(actionTitle, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+            let button = UIButton(configuration: config)
+            button.setContentHuggingPriority(.required, for: .horizontal)
+            button.accessibilityLabel = "\(actionTitle), \(title)"
+            button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+            row.addArrangedSubview(button)
+        }
+        return row
     }
 
-    @objc func handleLabelTap(_ sender: UITapGestureRecognizer) {
-        guard let text = self.userAboutLabel.text else { return }
-
-        let readmore = (text as NSString).range(of: TrailingContent.readmore.text)
-        let readless = (text as NSString).range(of: TrailingContent.readless.text)
-        if readmore.length > 0 {
-            self.userAboutLabel.appendReadLess(after: textDescription ?? "", trailingContent: .readless)
-        } else if readless.length > 0 {
-            self.userAboutLabel.appendReadmore(after: textDescription ?? "", trailingContent: .readmore)
-        } else { return }
-        
-//        if sender.didTapAttributedTextInLabel(label: self.userAboutLabel, inRange: readmore) {
-//            self.userAboutLabel.appendReadLess(after: textDescription ?? "", trailingContent: .readless)
-//        } else if  sender.didTapAttributedTextInLabel(label: self.userAboutLabel, inRange: readless) {
-//            self.userAboutLabel.appendReadmore(after: textDescription ?? "", trailingContent: .readmore)
-//        } else { return }
+    /// A titled section; `content` keeps its own horizontal insets when it's full-width (photos).
+    private func section(_ title: String, content: UIView, actionTitle: String?, action: (() -> Void)?) -> UIView {
+        let header = sectionHeader(title, actionTitle: actionTitle, action: action)
+        let isFullWidth = content is UIScrollView
+        let stack = UIStackView(arrangedSubviews: [isFullWidth ? padded(header, top: 0) : header, content])
+        stack.axis = .vertical
+        stack.spacing = 12
+        return stack
     }
 
-    @IBAction func addCoverPhotoButtonTapped(_ sender: UIButton) {
-        self.editProfileImage = false
-        self.openImageSelectionMethodPopUp()
+    // MARK: - Navigation
+
+    private func openEditProfile() {
+        let aEditProfileViewController: EditProfileViewController = EditProfileViewController.instantiateFromStoryboard()
+        aEditProfileViewController.coverImageUrl = coverImageUrl
+        navigationController?.pushViewController(aEditProfileViewController, animated: true)
     }
 
-    @IBAction func addCoverPhotoButton2Tapped(_ sender: UIButton) {
-        self.editProfileImage = false
-        self.openImageSelectionMethodPopUp()
-    }
-    
-    @IBAction func upgragePremiumPlanButtonTapped(_ sender: UIButton) {
-        self.openPremium()
+    private func openMyMoments(focusing vibeID: String? = nil) {
+        navigationController?.pushViewController(VibeFeedViewController(scope: .currentUser, focusVibeID: vibeID), animated: true)
     }
 
-    @IBAction func rewardSeeMoreButtonTapped(_ sender: UIButton) {
-        //        sender.isSelected =  !(sender.isSelected)
-        //        self.noMomentsView.isHidden = !(sender.isSelected)
-        //        self.momentListView.isHidden = sender.isSelected
-
-        self.showComingSoon("Rewards")
+    private func openAddMoment() {
+        guard !uploadViewModel.isUploading else {
+            aCustomToastView.show(message: "Please wait, your last vibe is still uploading")
+            return
+        }
+        let aAddMomentViewController: AddMomentViewController = AddMomentViewController.instantiateFromStoryboard()
+        aAddMomentViewController.callBackAction = { [weak self] in
+            guard let self else { return }
+            self.scrollToMoments()
+        }
+        navigationController?.pushViewController(aAddMomentViewController, animated: true)
     }
 
-    @IBAction func addMomentButtonTapped(_ sender: UIButton) {
-        // TODO: restore the verification gating and push AddMomentViewController once Moments is ported.
-        self.showComingSoon("Add moment")
+    private func scrollToMoments() {
+        view.layoutIfNeeded()
+        let frame = momentsGrid.convert(momentsGrid.bounds, to: scrollView)
+        let maxOffset = max(scrollView.contentSize.height + scrollView.contentInset.bottom - scrollView.bounds.height, 0)
+        scrollView.setContentOffset(CGPoint(x: 0, y: min(max(frame.minY - 140, 0), maxOffset)), animated: false)
     }
 
-    @IBAction func editProfileButtonTapped(_ sender: UIButton) {
-//        if UserDataManager.shared.isHomeVerificationDone == false {
-//            self.openVerifyUserNonSkipPopUp()
-//        } else {
-           // if UserDataManager.shared.ProfileStatus == Constants.ProfileStatus.Pending || UserDataManager.shared.AvatarStatus == Constants.AvatarStatus.UnderVerification || UserDataManager.shared.AvatarStatus == Constants.AvatarStatus.NewUpload {
-            //Commented by Aasif old comment
-//            if UserDataManager.shared.AvatarStatus != Constants.AvatarStatus.Verified {  // Implemented by Aasif new comment
-//                self.showWaitAlertPopUp()
-//                
-//            } else {
-                let aEditProfileViewController:EditProfileViewController = EditProfileViewController.instantiateFromStoryboard()
-                //aEditProfileViewController.userProfileData = self.userProfileData
-                aEditProfileViewController.coverImageUrl = self.coverImageUrl
-                aEditProfileViewController.callBackAction = { [weak self] in
-                    self?.resetData(ignoreViewWillAppear: true)
+    private func openAddQuickMoment() {
+        let composer = AddQuickMomentViewController()
+        composer.onShare = { [weak self] text, background, image in
+            guard let self else { return }
+            self.aActivityIndicator.show()
+            self.aProfileViewModel.createQuickMoment(text: text, background: background, image: image) { [weak self] result in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                switch result {
+                case .success: self.aCustomToastView.show(message: "Quick moment shared")
+                case .failure(let error): self.aCustomToastView.show(message: error.message)
                 }
-                self.navigationController?.pushViewController(aEditProfileViewController, animated: true)
-//            }
-//        }
-        
+            }
+        }
+        present(composer, animated: true)
     }
 
-    @IBAction func settingButtonTapped(_ sender: UIButton) {
-        // Settings is not ported yet; it hosts logout until it is.
-        self.aDeleteCustomPopUp.show(message: Constants.logOut.logout, button1Text: Constants.AlertButtons.yes, button2Text: Constants.AlertButtons.No, deleteType: .logout) {
-            self.navigateToLoginScreen()
+    private func showQuickMomentActivity(at index: Int, from presenter: UIViewController) {
+        let moments = aProfileViewModel.quickMoments
+        guard moments.indices.contains(index) else { return }
+        let activity = QuickMomentActivityViewController(moment: moments[index])
+        activity.modalPresentationStyle = .pageSheet
+        if let sheet = activity.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        presenter.present(activity, animated: true)
+    }
+
+    private func deleteQuickMoment(at index: Int) {
+        let moments = aProfileViewModel.quickMoments
+        guard moments.indices.contains(index) else { return }
+        aProfileViewModel.deleteQuickMoment(id: moments[index].id) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success: self.aCustomToastView.show(message: "Quick moment deleted")
+            case .failure(let error): self.aCustomToastView.show(message: error.message)
+            }
         }
     }
 
-    @IBAction func editProfilePhotoButtonTapped(_ sender: UIButton) {
-//        self.editProfileImage = true
-//        self.openImageSelectionMethodPopUp()
+    private func openQuickMoment(at index: Int) {
+        let moments = aProfileViewModel.quickMomentFrames
+        guard moments.indices.contains(index) else { return }
+        let info = userProfileData?.userInfo
+        let profile = VibeProfile(id: info?.userID ?? info?.id ?? 0,
+                                  displayName: (info?.displayName ?? info?.fullname ?? "You").firstLetterCapitalized,
+                                  age: nil,
+                                  isVerified: false,
+                                  gender: info?.gender,
+                                  city: nil,
+                                  distanceKm: nil,
+                                  isOnline: nil,
+                                  datingIntent: nil,
+                                  photos: [info?.avatar].compactMap { $0 },
+                                  about: "",
+                                  interests: [],
+                                  sharedInterests: [],
+                                  reasons: [],
+                                  voiceIntro: nil,
+                                  moments: moments,
+                                  vibeScore: nil)
+        let viewer = VibeMomentsViewController(profile: profile, startIndex: index, isOwnMoments: true)
+        viewer.onShowActivity = { [weak self] index, presenter in self?.showQuickMomentActivity(at: index, from: presenter) }
+        viewer.onDelete = { [weak self] index in self?.deleteQuickMoment(at: index) }
+        present(viewer, animated: true)
     }
-    
-    @IBAction func goToProfileTapped(_ sender: UIButton) {
-//        if UserDataManager.shared.isHomeVerificationDone == false {
-//            self.openVerifyUserNonSkipPopUp()
-//        } else {                      //Commented by Aasif
-            let aEditProfileViewController:EditProfileViewController = EditProfileViewController.instantiateFromStoryboard()
-            //aEditProfileViewController.userProfileData = self.userProfileData
-            aEditProfileViewController.coverImageUrl = self.coverImageUrl
-            aEditProfileViewController.callBackAction = { [weak self] in
-                self?.resetData(ignoreViewWillAppear: true)
-            }
-            self.navigationController?.pushViewController(aEditProfileViewController, animated: true)
-//        }
-        
+
+    private func settingsTapped() {
+        // Settings is not ported yet; it hosts logout until it is.
+        aDeleteCustomPopUp.show(message: Constants.logOut.logout, button1Text: Constants.AlertButtons.yes, button2Text: Constants.AlertButtons.No, deleteType: .logout) { [weak self] in
+            self?.navigateToLoginScreen()
+        }
     }
-    
-    func openImageSelectionMethodPopUp(){
-        let aImageSelectionMethodVC:ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
-        aImageSelectionMethodVC.callBack = { [weak self] data in
-            if data {
+
+    private func openImageSelectionMethodPopUp() {
+        let aImageSelectionMethodVC: ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
+        aImageSelectionMethodVC.callBack = { [weak self] useCamera in
+            if useCamera {
                 self?.checkCameraAuthorization()
-            }else{
+            } else {
                 self?.requestPhotoLibraryAccess()
             }
         }
         aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
-        self.tabBarController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
+        tabBarController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
     }
 }
 
-extension ProfileViewController:UICollectionViewDelegate,UICollectionViewDataSource,UICollectionViewDelegateFlowLayout {
+// MARK: - UIScrollViewDelegate
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        switch collectionView{
-        case rewardCollectionView:
-            return 3
-        case momentCollectionView:
-            let count = (self.aMyMomentsData?.count ?? 0)
-            return count == 1 ? 2 : count
-        default :
-            return 0
-        }
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        switch collectionView{
-        case rewardCollectionView:
-            if let cell = collectionView.dequeueReusableCell(withReuseIdentifier: RewardCollectionViewCell.identifier, for: indexPath) as? RewardCollectionViewCell {
-                return cell
-            }
-        case momentCollectionView:
-            if (self.aMyMomentsData?.count ?? 0) == 1 && indexPath.row != 0 {
-                if let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentCollectionViewCell.identifier, for: indexPath) as? MomentCollectionViewCell {
-                    cell.isUserInteractionEnabled = false
-                    cell.contentView.isHidden = true
-                    return cell
-                }
-            }else {
-                if let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentCollectionViewCell.identifier, for: indexPath) as? MomentCollectionViewCell {
-                    cell.setMyMomnetsData(data:self.aMyMomentsData?[indexPath.row].images ?? [])
-                    cell.isUserInteractionEnabled = true
-                    cell.contentView.isHidden = false
-                    return cell
-                }
-            }
-        default :
-            return UICollectionViewCell()
-        }
-        return UICollectionViewCell()
-    }
-
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        let aOtherUserPhotoGridViewController:OtherUserPhotoGridViewController = OtherUserPhotoGridViewController.instantiateFromStoryboard()
-//        self.navigationController?.pushViewController(aOtherUserPhotoGridViewController, animated: true)
-        
-        guard collectionView == momentCollectionView else { return }
-        self.showComingSoon("Moments")
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        switch collectionView{
-        case rewardCollectionView:
-            return CGSize(width: screen.width - 40 , height: 114)
-        case momentCollectionView:
-            return CGSize(width: MyMomentCellWidth , height: MyMomentCellWidth * 1.3048)
-        default :
-            return CGSize(width: 0 , height: 0)
-        }
-    }
-
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-        return 10
-    }
-
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 11
-    }
-
-    //    func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
-    //        if scrollView.panGestureRecognizer.translation(in: scrollView).y < 0{
-    //            hideShowTabBar(isHide:true)
-    //        }else{
-    //            hideShowTabBar(isHide:false)
-    //        }
-    //    }
-
-
+extension ProfileViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard scrollView != self.rewardCollectionView else {return}
+        guard scrollView === self.scrollView else { return }
         let translation = scrollView.panGestureRecognizer.translation(in: scrollView).y
         hideShowTabBar(isHide: translation < 0)
     }
-
 }
+
+// MARK: - Cover photo
 
 extension ProfileViewController {
 
-    func uploadSelectedImage(_ selectedImage:UIImage?){
-        guard let image = selectedImage else {return}
-        let imgPic = image.fixedOrientation()
-        self.aActivityIndicator.show()
-        if self.editProfileImage ?? false {
-            self.aAvatarModel.uploadUserProfileImageAPI(image: imgPic)
-        }else{
-            self.aBannerModel.uploadCoverPhotoAPI(image: imgPic)
-        }
+    func uploadSelectedImage(_ selectedImage: UIImage?) {
+        guard let image = selectedImage else { return }
+        aActivityIndicator.show()
+        aBannerModel.uploadCoverPhotoAPI(image: image.fixedOrientation())
     }
-}
 
-// Granted User permission
-extension ProfileViewController {
-    // Function to request photo library access permission
     func requestPhotoLibraryAccess() {
         PHPhotoLibrary.requestAuthorization { [weak self] status in
-            if status == .authorized { // Permission granted by the user
+            if status == .authorized {
                 self?.openPhotoLibrary()
-            } else { // Permission denied by the user
-                // Show alert for photo library access permission
+            } else {
                 DispatchQueue.main.async {
                     self?.showPhotoLibraryAccessAlert()
                 }
@@ -508,7 +776,7 @@ extension ProfileViewController {
             if cameraAuthorizationStatus == .denied || cameraAuthorizationStatus == .restricted {
                 self.showCameraAccessAlert()
             } else {
-                let aFaceVerificationViewController:FaceVerificationViewController = FaceVerificationViewController.instantiateFromStoryboard()
+                let aFaceVerificationViewController: FaceVerificationViewController = FaceVerificationViewController.instantiateFromStoryboard()
                 aFaceVerificationViewController.headerText = Constants.ProfileVerification.startPosing
                 aFaceVerificationViewController.isHideScanningImage = true
                 aFaceVerificationViewController.callBackAction = { [weak self] image in
@@ -522,8 +790,6 @@ extension ProfileViewController {
         }
     }
 
-
-    // UIImagePickerControllerDelegate method to handle image selection
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let selectedImage = (info[.editedImage] as? UIImage) ?? (info[.originalImage] as? UIImage) {
             self.selectedImage = selectedImage
@@ -533,7 +799,6 @@ extension ProfileViewController {
         }
     }
 
-    // UIImagePickerControllerDelegate method to handle cancel action
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true, completion: nil)
     }

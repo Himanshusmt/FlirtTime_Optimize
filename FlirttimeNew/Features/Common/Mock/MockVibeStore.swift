@@ -26,7 +26,7 @@ final class MockVibeStore {
     }
 
     private let fileURL: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("mock_vibes_v2.json")
+        .appendingPathComponent("mock_vibes_v4.json")
 
     private var state: State
 
@@ -63,9 +63,12 @@ final class MockVibeStore {
 
     // MARK: - Feed
 
-    func feed(page: Int, limit: Int) -> VibeFeedResponse {
+    /// `authorID` limits the feed to one author's vibes (GET vibes/?userId=).
+    func feed(page: Int, limit: Int, authorID: String? = nil) -> VibeFeedResponse {
         let reported = Set(state.reportedVibeIds ?? [])
-        let sorted = state.vibes.filter { !reported.contains($0.id) }.sorted {
+        let sorted = state.vibes.filter {
+            !reported.contains($0.id) && (authorID == nil || ($0.author?.userId ?? $0.userId) == authorID)
+        }.sorted {
             (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
         }
         let start = max(page - 1, 0) * limit
@@ -318,6 +321,24 @@ final class MockVibeStore {
                           hasLiked: false,
                           createdAt: timestamp(minutesAgo: 240),
                           author: me))
+
+        let ownPhotoVibes: [(caption: String, photos: [String], minutesAgo: Int, likes: Int, comments: Int)] = [
+            ("Planning the next getaway. Suggestions welcome 🗺️", ["mock-me-moment-0"], 35, 14, 0),
+            ("Forest walks reset everything 🌲", ["mock-me-moment-1"], 150, 21, 0)
+        ]
+        for (index, seed) in ownPhotoVibes.enumerated() {
+            let id = "vibe-own-\(index + 2)"
+            vibes.append(Vibe(id: id,
+                              userId: me.userId,
+                              caption: seed.caption,
+                              media: seed.photos.enumerated().map { VibeMedia(id: "\(id)-m\($0)", filePath: $1, fileType: "image") },
+                              likesCount: seed.likes,
+                              commentsCount: seed.comments,
+                              giftCount: 0,
+                              hasLiked: false,
+                              createdAt: timestamp(minutesAgo: seed.minutesAgo),
+                              author: me))
+        }
 
         return State(vibes: vibes, comments: comments, receivedGifts: [ownID: ownGifts], coinBalance: 500)
     }

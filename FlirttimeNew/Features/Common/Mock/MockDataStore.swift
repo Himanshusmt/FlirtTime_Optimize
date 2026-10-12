@@ -38,25 +38,6 @@ final class MockDataStore {
         return decode(UserResponse.self, from: payload)
     }
 
-    func myMoments() -> [MomentsDatum] {
-        let moments: [[String: Any]] = ["mock-me-moment-0", "mock-me-moment-1", "mock-me-moment-2", "mock-me-moment-3"].enumerated().map { index, image in
-            [
-                "id": 900 + index,
-                "user_id": currentUserID,
-                "title": "",
-                "body": "",
-                "images": [image],
-                "like_count": 4 + index,
-                "comment_count": index,
-                "share_count": 0,
-                "status": 1,
-                "created_at": "2026-09-1\(index) 10:00:00",
-                "updated_at": "2026-09-1\(index) 10:00:00"
-            ]
-        }
-        return decode([MomentsDatum].self, from: moments) ?? []
-    }
-
     var currentUserID: Int {
         user["id"] as? Int ?? 1
     }
@@ -142,12 +123,37 @@ final class MockDataStore {
         return true
     }
 
+    /// Stores a finished recording as the user's voice intro, replacing the previous one.
+    func setVoiceIntro(recordingAt source: URL, duration: TimeInterval) -> VoiceIntroResponse {
+        guard let name = VoiceIntroFileStore.shared.save(recordingAt: source) else {
+            return VoiceIntroResponse(status: false, message: "Unable to save your voice intro", data: nil)
+        }
+        VoiceIntroFileStore.shared.remove(named: (user["voice_intro"] as? [String: Any])?["audio_url"] as? String)
+        let payload: [String: Any] = [
+            "audio_url": name,
+            "duration": (duration * 10).rounded() / 10,
+            "updated_at": VibeDate.string(from: Date())
+        ]
+        user["voice_intro"] = payload
+        persist()
+        return VoiceIntroResponse(status: true, message: "Voice intro saved", data: decode(UserVoiceIntro.self, from: payload))
+    }
+
+    func deleteVoiceIntro() -> VoiceIntroResponse {
+        VoiceIntroFileStore.shared.remove(named: (user["voice_intro"] as? [String: Any])?["audio_url"] as? String)
+        user.removeValue(forKey: "voice_intro")
+        persist()
+        return VoiceIntroResponse(status: true, message: "Voice intro removed", data: nil)
+    }
+
     func reset() {
         user = MockDataStore.defaultUser()
         try? FileManager.default.removeItem(at: fileURL)
+        VoiceIntroFileStore.shared.removeAll()
         VibeUploadViewModel.shared.cancel()
         LocalImageStore.shared.removeAll()
         MockVibeStore.shared.reset()
+        MockQuickMomentStore.shared.reset()
         MockDiscover.shared.reset()
         MockStore.shared.reset()
         CoinWallet.shared.refresh()
@@ -199,9 +205,11 @@ final class MockDataStore {
         let hasAbout = !((info["about_me"] as? String) ?? "").isEmpty
         let hasInterests = !((info["interests"] as? [Int]) ?? []).isEmpty
         let hasBanner = info["banner"] != nil
+        let hasVoice = user["voice_intro"] != nil
         let score = 30
             + answered * 3
             + (hasAbout ? 6 : 0)
+            + (hasVoice ? 6 : 0)
             + (hasInterests ? 6 : 0)
             + (hasBanner ? 4 : 0)
             + min(galleryCount, 6) * 3

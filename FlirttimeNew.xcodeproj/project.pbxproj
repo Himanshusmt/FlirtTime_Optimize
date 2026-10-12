@@ -434,6 +434,15 @@
 		E3A2DA4530776627008D1551 /* CustomImagePopUpVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77630776627008D1551 /* CustomImagePopUpVC.swift */; };
 		E3A2DA4630776627008D1551 /* ProfileModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77930776627008D1551 /* ProfileModel.swift */; };
 		E3A2DA4730776627008D1551 /* ProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77B30776627008D1551 /* ProfileViewController.swift */; };
+		9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */; };
+		E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */; };
+		CD64905F3A500451C1AA29EC /* VoiceIntroRecorderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */; };
+		163815D8D834768C1A060099 /* ProfileVoiceIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */; };
+		232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */; };
+		C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */; };
+		0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */; };
+		493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */; };
+		E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */; };
 		E3A2DA4830776627008D1551 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77D30776627008D1551 /* ProfileViewModel.swift */; };
 		E3A2DA4930776627008D1551 /* SetAvatarModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77E30776627008D1551 /* SetAvatarModel.swift */; };
 		E3A2DA4A30776627008D1551 /* SetBannerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77F30776627008D1551 /* SetBannerModel.swift */; };
@@ -793,6 +802,15 @@
 		E3A2D77730776627008D1551 /* CustomImagePopUpVC.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = CustomImagePopUpVC.xib; sourceTree = "<group>"; };
 		E3A2D77930776627008D1551 /* ProfileModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileModel.swift; sourceTree = "<group>"; };
 		E3A2D77B30776627008D1551 /* ProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewController.swift; sourceTree = "<group>"; };
+		F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileMomentsGridView.swift; sourceTree = "<group>"; };
+		A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroModel.swift; sourceTree = "<group>"; };
+		09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroRecorderViewController.swift; sourceTree = "<group>"; };
+		07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileVoiceIntroView.swift; sourceTree = "<group>"; };
+		3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileQuickMomentsView.swift; sourceTree = "<group>"; };
+		1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentModel.swift; sourceTree = "<group>"; };
+		50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockQuickMomentStore.swift; sourceTree = "<group>"; };
+		931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentActivityViewController.swift; sourceTree = "<group>"; };
+		F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddQuickMomentViewController.swift; sourceTree = "<group>"; };
 		E3A2D77D30776627008D1551 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		E3A2D77E30776627008D1551 /* SetAvatarModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetAvatarModel.swift; sourceTree = "<group>"; };
 		E3A2D77F30776627008D1551 /* SetBannerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetBannerModel.swift; sourceTree = "<group>"; };
@@ -1733,6 +1751,7 @@
 				E3A2D71D30776627008D1551 /* MockPeople.swift */,
 				E3A2D71E30776627008D1551 /* MockResponses.swift */,
 				E3A2D71F30776627008D1551 /* MockVibeStore.swift */,
+				50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */,
 				7045A9235ADAA76496ED259C /* MockDiscover.swift */,
 				F44CF9558FE0250560AC807D /* MockNotifications.swift */,
 				EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */,
@@ -2030,6 +2049,8 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D77930776627008D1551 /* ProfileModel.swift */,
+				1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */,
+				A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2038,6 +2059,12 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D77B30776627008D1551 /* ProfileViewController.swift */,
+				3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */,
+				07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */,
+				09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */,
+				F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */,
+				931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */,
+				F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -3678,6 +3705,15 @@
 				E3A2DA4530776627008D1551 /* CustomImagePopUpVC.swift in Sources */,
 				E3A2DA4630776627008D1551 /* ProfileModel.swift in Sources */,
 				E3A2DA4730776627008D1551 /* ProfileViewController.swift in Sources */,
+				232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */,
+				163815D8D834768C1A060099 /* ProfileVoiceIntroView.swift in Sources */,
+				CD64905F3A500451C1AA29EC /* VoiceIntroRecorderViewController.swift in Sources */,
+				E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */,
+				9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */,
+				C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */,
+				0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */,
+				493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */,
+				E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */,
 				E3A2DA4830776627008D1551 /* ProfileViewModel.swift in Sources */,
 				E3A2DA4930776627008D1551 /* SetAvatarModel.swift in Sources */,
 				E3A2DA4A30776627008D1551 /* SetBannerModel.swift in Sources */,
@@ -3779,7 +3815,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "Allow Flirttime to access your contacts so you can share a contact in chat.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To make and receive calls, allow flirttime access to your microphone.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -3826,7 +3862,7 @@
 				INFOPLIST_KEY_NSContactsUsageDescription = "Allow Flirttime to access your contacts so you can share a contact in chat.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To make and receive calls, allow flirttime access to your microphone.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;

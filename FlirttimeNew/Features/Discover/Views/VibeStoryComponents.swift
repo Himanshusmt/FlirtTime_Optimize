@@ -25,6 +25,10 @@ final class VibeGradientView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func setColors(_ colors: [UIColor]) {
+        gradient.colors = colors.map(\.cgColor)
+    }
 }
 
 extension UIView {

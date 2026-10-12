@@ -110,10 +110,19 @@ struct VibeVoiceIntro {
 
 struct VibeMoment: Hashable {
     let id: Int
+    /// Empty for a text-only Moment, which is shown as its caption on the brand gradient.
     let imagePath: String
     let isVideo: Bool
     var caption: String?
     var postedAt: Date?
+    /// Index into `VibeTheme.storyBackgrounds` for a text Moment.
+    var textBackground: Int = 0
+    /// Activity on the signed-in user's own Quick Moments; `nil` for other people's.
+    var reactionsCount: Int?
+    var repliesCount: Int?
+    var topReactions: [String] = []
+
+    var isText: Bool { imagePath.isEmpty }
 
     /// "2h ago"
     var postedAgoText: String? {
@@ -271,6 +280,19 @@ enum VibeTheme {
         UIColor(red: 1.0, green: 0.88, blue: 0.90, alpha: 1)
     ]
     static let gold = UIColor(red: 0.96, green: 0.65, blue: 0.14, alpha: 1)
+
+    /// Backgrounds a text Quick Moment can use.
+    static let storyBackgrounds: [[UIColor]] = [
+        brandGradient,
+        nightGradient,
+        [UIColor(red: 0.36, green: 0.27, blue: 0.93, alpha: 1), UIColor(red: 0.85, green: 0.33, blue: 0.84, alpha: 1)],
+        [UIColor(red: 0.07, green: 0.55, blue: 0.62, alpha: 1), UIColor(red: 0.29, green: 0.80, blue: 0.56, alpha: 1)],
+        [UIColor(red: 0.98, green: 0.45, blue: 0.20, alpha: 1), UIColor(red: 0.99, green: 0.74, blue: 0.27, alpha: 1)]
+    ]
+
+    static func storyBackground(_ index: Int) -> [UIColor] {
+        storyBackgrounds[abs(index) % storyBackgrounds.count]
+    }
 }
 
 enum VibeActionError: Error {

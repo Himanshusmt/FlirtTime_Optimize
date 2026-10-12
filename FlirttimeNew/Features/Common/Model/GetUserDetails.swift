@@ -40,9 +40,11 @@ struct UserDetailsData: Codable {
     let deletedAt: String?
     let page_redirect:String?
     var userInfo: UserDetailInfo?
+    var voiceIntro: UserVoiceIntro?
     
     // Custom coding keys to map snake_case to camelCase
     private enum CodingKeys: String, CodingKey {
+        case voiceIntro = "voice_intro"
         case user_images,id, username, email, page_redirect, profile_complete
         case phoneCode = "phone_code"
         case phone, referralBy = "referral_by"

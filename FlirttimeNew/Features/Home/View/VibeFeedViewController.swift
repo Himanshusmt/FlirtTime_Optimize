@@ -10,7 +10,15 @@ import Combine
 
 final class VibeFeedViewController: BaseViewController {
 
-    private let viewModel = VibeFeedViewModel()
+    enum Scope {
+        /// The Moments tab feed.
+        case everyone
+        /// "My Moments", pushed from Profile: only the signed-in user's vibes.
+        case currentUser
+    }
+
+    private let scope: Scope
+    private let viewModel: VibeFeedViewModel
     private let uploadViewModel = VibeUploadViewModel.shared
     private var cancellables: Set<AnyCancellable> = []
 
@@ -76,6 +84,23 @@ final class VibeFeedViewController: BaseViewController {
         button.addTarget(self, action: #selector(notificationTapped), for: .touchUpInside)
         return button
     }()
+
+    private lazy var backButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "chevron.left", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)), for: .normal)
+        button.tintColor = AppColor.MineShaft
+        button.accessibilityLabel = "Back"
+        button.addAction(UIAction { [weak self] _ in self?.navigationController?.popViewController(animated: true) }, for: .touchUpInside)
+        return button
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel.vibeLabel(.bold, 20, style: .headline, color: AppColor.AppBlack)
+        label.text = "My Moments"
+        label.accessibilityTraits = .header
+        return label
+    }()
+
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.separatorStyle = .none
@@ -85,8 +110,9 @@ final class VibeFeedViewController: BaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(VibeTableViewCell.self, forCellReuseIdentifier: VibeTableViewCell.identifier)
-        tableView.contentInset.bottom = VibeFeedViewController.centerTabButtonOverlap
-        tableView.verticalScrollIndicatorInsets.bottom = VibeFeedViewController.centerTabButtonOverlap
+        let bottomInset = scope == .everyone ? VibeFeedViewController.centerTabButtonOverlap : 0
+        tableView.contentInset.bottom = bottomInset
+        tableView.verticalScrollIndicatorInsets.bottom = bottomInset
         return tableView
     }()
 
@@ -101,9 +127,11 @@ final class VibeFeedViewController: BaseViewController {
         return imageView
     }()
 
-    private let emptyStateLabel: UILabel = {
+    private lazy var emptyStateLabel: UILabel = {
         let label = UILabel()
-        label.text = "No vibes yet.\nBe the first to share what's on your mind!"
+        label.text = scope == .everyone
+            ? "No vibes yet.\nBe the first to share what's on your mind!"
+            : "You haven't shared any moments yet.\nTap + to post your first one!"
         label.font = UIFont.fredoka(.regular, size: 16)
         label.textColor = AppColor.DoveGray
         label.textAlignment = .center
@@ -119,6 +147,23 @@ final class VibeFeedViewController: BaseViewController {
         return spinner
     }()
 
+    /// Scrolled to once after the first page loads.
+    private var focusVibeID: String?
+
+    init(scope: Scope, focusVibeID: String? = nil) {
+        self.scope = scope
+        self.focusVibeID = focusVibeID
+        self.viewModel = VibeFeedViewModel(onlyCurrentUser: scope == .currentUser)
+        super.init(nibName: nil, bundle: nil)
+        hidesBottomBarWhenPushed = scope == .currentUser
+    }
+
+    required init?(coder: NSCoder) {
+        self.scope = .everyone
+        self.viewModel = VibeFeedViewModel()
+        super.init(coder: coder)
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = AppColor.AppWhite
@@ -129,17 +174,22 @@ final class VibeFeedViewController: BaseViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        checkHideCustomButton(hide: false)
+        checkHideCustomButton(hide: scope == .currentUser)
         refreshComposerAvatar()
     }
 
     // MARK: - UI
 
     private func setUI() {
-        [logoImageView, notificationButton, newVibeButton].forEach {
+        [logoImageView, notificationButton, newVibeButton, backButton, titleLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             topBarView.addSubview($0)
         }
+        let isCurrentUser = scope == .currentUser
+        logoImageView.isHidden = isCurrentUser
+        notificationButton.isHidden = isCurrentUser
+        backButton.isHidden = !isCurrentUser
+        titleLabel.isHidden = !isCurrentUser
         [topBarView, uploadingBarView, tableView, emptyStateLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
@@ -156,6 +206,15 @@ final class VibeFeedViewController: BaseViewController {
             logoImageView.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
             logoImageView.heightAnchor.constraint(equalToConstant: 24),
             logoImageView.widthAnchor.constraint(equalToConstant: 100),
+
+            backButton.leadingAnchor.constraint(equalTo: topBarView.leadingAnchor, constant: 6),
+            backButton.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+
+            titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 2),
+            titleLabel.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: newVibeButton.leadingAnchor, constant: -8),
 
             newVibeButton.trailingAnchor.constraint(equalTo: topBarView.trailingAnchor, constant: -6),
             newVibeButton.centerYAnchor.constraint(equalTo: topBarView.centerYAnchor),
@@ -357,6 +416,11 @@ final class VibeFeedViewController: BaseViewController {
             }
             self.tableView.reloadData()
             self.updateEmptyState()
+            if let id = self.focusVibeID, let row = self.viewModel.index(of: id) {
+                self.focusVibeID = nil
+                self.tableView.layoutIfNeeded()
+                self.tableView.scrollToRow(at: IndexPath(row: row, section: 0), at: .top, animated: false)
+            }
         }
     }
 

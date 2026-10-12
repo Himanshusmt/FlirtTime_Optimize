@@ -11,6 +11,10 @@ final class VibeMomentsViewController: UIViewController {
 
     var onReport: ((VibeProfile) -> Void)?
     var onViewProfile: ((VibeProfile) -> Void)?
+    /// Own Quick Moments: show who reacted and replied. Called with the moment index and the viewer to present from.
+    var onShowActivity: ((Int, UIViewController) -> Void)?
+    /// Own Quick Moments: delete the moment at the index. The viewer dismisses itself first.
+    var onDelete: ((Int) -> Void)?
 
     private enum PauseReason { case holding, typing, sheet, background }
 
@@ -19,6 +23,8 @@ final class VibeMomentsViewController: UIViewController {
 
     private let profile: VibeProfile
     private var index: Int
+    /// The signed-in user's own Quick Moments: instead of reacting and replying, see who did.
+    private let isOwnMoments: Bool
 
     private var elapsed: CFTimeInterval = 0
     private var lastTimestamp: CFTimeInterval?
@@ -26,6 +32,9 @@ final class VibeMomentsViewController: UIViewController {
     private var pauseReasons = Set<PauseReason>()
 
     private let imageView = UIImageView()
+    private let textBackground = VibeGradientView(colors: VibeTheme.brandGradient)
+    private let textMomentLabel = UILabel.vibeLabel(.bold, 28, style: .title1, color: .white, lines: 0)
+    private let activityButton = UIButton(type: .custom)
     private let progressStack = UIStackView()
     private let timeLabel = UILabel.vibeLabel(.regular, 12, style: .caption1, color: UIColor.white.withAlphaComponent(0.8))
     private let captionLabel = UILabel.vibeLabel(.bold, 20, style: .title3, color: .white, lines: 3)
@@ -44,8 +53,9 @@ final class VibeMomentsViewController: UIViewController {
     private var currentMoment: VibeMoment? { profile.moments.indices.contains(index) ? profile.moments[index] : nil }
     private var chromeViews: [UIView] { [progressStack, header, previousButton, nextButton, captionStack, bottomStack] }
 
-    init(profile: VibeProfile, startIndex: Int) {
+    init(profile: VibeProfile, startIndex: Int, isOwnMoments: Bool = false) {
         self.profile = profile
+        self.isOwnMoments = isOwnMoments
         self.index = min(max(0, startIndex), max(0, profile.moments.count - 1))
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
@@ -79,6 +89,18 @@ final class VibeMomentsViewController: UIViewController {
         container.addSubview(imageView)
         imageView.pinEdges(to: container)
 
+        container.addSubview(textBackground)
+        textBackground.pinEdges(to: container)
+        textMomentLabel.textAlignment = .center
+        textMomentLabel.isAccessibilityElement = false
+        textMomentLabel.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(textMomentLabel)
+        NSLayoutConstraint.activate([
+            textMomentLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -30),
+            textMomentLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 64),
+            textMomentLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -64)
+        ])
+
         let topShade = VibeGradientView(colors: [UIColor.black.withAlphaComponent(0.5), .clear],
                                         start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
         let bottomShade = VibeGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.8)],
@@ -99,7 +121,11 @@ final class VibeMomentsViewController: UIViewController {
         captionStack.addArrangedSubview(locationLabel)
         captionStack.axis = .vertical
         captionStack.spacing = 6
-        buildBottomBar()
+        if isOwnMoments {
+            buildOwnBottomBar()
+        } else {
+            buildBottomBar()
+        }
 
         [progressStack, header, previousButton, nextButton, captionStack].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -196,7 +222,14 @@ final class VibeMomentsViewController: UIViewController {
         }, for: .touchUpInside)
 
         let more = iconButton("ellipsis", label: "More options")
-        more.addAction(UIAction { [weak self, unowned more] _ in self?.showOptions(from: more) }, for: .touchUpInside)
+        more.addAction(UIAction { [weak self, unowned more] _ in
+            guard let self else { return }
+            if self.isOwnMoments {
+                self.showOwnOptions(from: more)
+            } else {
+                self.showOptions(from: more)
+            }
+        }, for: .touchUpInside)
         let close = iconButton("xmark", label: "Close")
         close.addAction(UIAction { [weak self] _ in self?.dismiss(animated: true) }, for: .touchUpInside)
 
@@ -272,6 +305,49 @@ final class VibeMomentsViewController: UIViewController {
         bottomStack.addArrangedSubview(reactionsStack)
         bottomStack.addArrangedSubview(inputRow)
         updateSendButton()
+    }
+
+    /// "😍🔥 5  ·  💬 2 replies  ⌃": opens who reacted and replied.
+    private func buildOwnBottomBar() {
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = UIColor.white.withAlphaComponent(0.16)
+        config.baseForegroundColor = .white
+        config.background.strokeColor = UIColor.white.withAlphaComponent(0.4)
+        config.background.strokeWidth = 1
+        config.image = UIImage(systemName: "chevron.up", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .bold))
+        config.imagePlacement = .trailing
+        config.imagePadding = 10
+        config.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 18, bottom: 12, trailing: 18)
+        activityButton.configuration = config
+        activityButton.addAction(UIAction { [weak self] _ in self?.showActivity() }, for: .touchUpInside)
+
+        let row = UIStackView(arrangedSubviews: [UIView(), activityButton, UIView()])
+        row.alignment = .center
+        row.distribution = .equalCentering
+        bottomStack.axis = .vertical
+        bottomStack.addArrangedSubview(row)
+        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+    }
+
+    private func showActivity() {
+        guard let onShowActivity else { return }
+        pause(.sheet)
+        onShowActivity(index, self)
+    }
+
+    private func showOwnOptions(from sourceView: UIView) {
+        guard onDelete != nil else { return }
+        pause(.sheet)
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "Delete quick moment", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            let index = self.index
+            self.dismiss(animated: true) { self.onDelete?(index) }
+        })
+        sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
+        sheet.popoverPresentationController?.sourceView = sourceView
+        present(sheet, animated: true)
     }
 
     private func updateSendButton() {
@@ -379,9 +455,19 @@ final class VibeMomentsViewController: UIViewController {
         guard profile.moments.indices.contains(index) else { return }
         elapsed = 0
         let moment = profile.moments[index]
-        let apply = { self.imageView.loadImage(path: moment.imagePath, placeholder: UIImage(named: "ProfileBlur")) }
+        let apply = {
+            if moment.isText {
+                self.imageView.loadImage(with: nil)
+            } else {
+                self.imageView.loadImage(path: moment.imagePath, placeholder: UIImage(named: "ProfileBlur"))
+            }
+            self.textBackground.setColors(VibeTheme.storyBackground(moment.textBackground))
+            self.textBackground.isHidden = !moment.isText
+            self.textMomentLabel.isHidden = !moment.isText
+            self.textMomentLabel.text = moment.caption
+        }
         if animated && !UIAccessibility.isReduceMotionEnabled {
-            UIView.transition(with: imageView, duration: 0.25, options: .transitionCrossDissolve, animations: apply)
+            UIView.transition(with: imageView.superview ?? imageView, duration: 0.25, options: .transitionCrossDissolve, animations: apply)
         } else {
             apply()
         }
@@ -390,13 +476,34 @@ final class VibeMomentsViewController: UIViewController {
         }
         timeLabel.text = moment.postedAgoText
         captionLabel.text = moment.caption
-        captionLabel.isHidden = moment.caption == nil
+        captionLabel.isHidden = moment.caption == nil || moment.isText
         locationLabel.text = profile.city.map { "📍 \($0)" }
         locationLabel.isHidden = profile.city == nil
         previousButton.isHidden = index == 0
         nextButton.isHidden = index >= profile.moments.count - 1
+        if isOwnMoments {
+            let activity = activityText(for: moment)
+            activityButton.configuration?.attributedTitle = AttributedString(activity, attributes: AttributeContainer([
+                .font: VibeFont.scaled(.medium, 14, style: .subheadline)
+            ]))
+            activityButton.accessibilityLabel = activity + ". Show activity"
+        }
         imageView.isAccessibilityElement = true
-        imageView.accessibilityLabel = "\(profile.displayName)'s moment \(index + 1) of \(profile.moments.count). " + (moment.caption ?? "")
+        let owner = isOwnMoments ? "Your" : "\(profile.displayName)'s"
+        imageView.accessibilityLabel = "\(owner) moment \(index + 1) of \(profile.moments.count). " + (moment.caption ?? "")
+    }
+
+    /// "😍🔥 5  ·  💬 2 replies"
+    private func activityText(for moment: VibeMoment) -> String {
+        let reactions = moment.reactionsCount ?? 0
+        let replies = moment.repliesCount ?? 0
+        guard reactions > 0 || replies > 0 else { return "No reactions yet" }
+        var parts: [String] = []
+        if reactions > 0 {
+            parts.append("\(moment.topReactions.joined()) \(reactions.vibeCountText)")
+        }
+        parts.append("💬 \(replies.vibeCountText) \(replies == 1 ? "reply" : "replies")")
+        return parts.joined(separator: "  ·  ")
     }
 
     // MARK: - Reactions & replies
