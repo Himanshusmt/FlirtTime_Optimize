@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// FlirtTime user. Also the `data` of PATCH `users/profile`.
+/// FlirtTime user: `user` in auth responses and `auth/me`, and the `data` of PATCH `users/profile`.
 struct AppUser: Codable {
     let id: String?
     let username: String?
@@ -23,6 +23,9 @@ struct AppUser: Codable {
     /// "male" | "female" | "non-binary" | "other"
     let gender: String?
     let about: String?
+    let profilePicture: String?
+    let isFaceVerified: Bool?
+    let faceVerifiedAt: String?
     let isProfileComplete: Bool?
     let createdAt: String?
     let updatedAt: String?

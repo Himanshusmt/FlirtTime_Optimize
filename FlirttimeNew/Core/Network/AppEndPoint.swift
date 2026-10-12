@@ -13,6 +13,14 @@ struct AppApiRequest {
     var encoding: ParameterEncoding = JSONEncoding.default
 }
 
+/// A file part of a multipart/form-data request.
+struct AppMultipartFile {
+    let name: String
+    let fileName: String
+    let mimeType: String
+    let data: Data
+}
+
 /// FlirtTime REST paths, relative to `AppConfig.baseURL`.
 enum AppEndPoint: CustomStringConvertible {
 
@@ -37,6 +45,9 @@ enum AppEndPoint: CustomStringConvertible {
     // Introduce yourself — UserDetailsViewController
     case updateProfile
 
+    // Gesture selfie — GestureVerificationViewController
+    case gestureUpload
+
     var description: String {
         switch self {
         case .health: return "health"
@@ -49,6 +60,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .appleLogin: return "api/v1/auth/apple"
         case .me: return "api/v1/auth/me"
         case .updateProfile: return "api/v1/users/profile"
+        case .gestureUpload: return "api/v1/gesture-upload"
         }
     }
 
@@ -60,7 +72,7 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .updateProfile:
+        case .me, .updateProfile, .gestureUpload:
             return false
         }
     }

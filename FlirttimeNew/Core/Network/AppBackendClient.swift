@@ -25,4 +25,8 @@ final class AppBackendClient {
     func loadDirect<T: Codable>(request: AppApiRequest) -> Single<T> {
         apiClient.loadDirect(request: request)
     }
+
+    func upload<T: Codable>(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<T> {
+        apiClient.upload(endPoint: endPoint, fields: fields, files: files)
+    }
 }

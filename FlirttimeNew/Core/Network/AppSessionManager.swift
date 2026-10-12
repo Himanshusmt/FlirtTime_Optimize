@@ -99,6 +99,16 @@ final class AppSessionManager {
         return backendClient.load(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
     }
 
+    // MARK: - Verification
+
+    /// The backend compares the selfie against the user's primary profile photo. Max 5 MB.
+    func uploadGestureSelfie(imageData: Data) -> Single<GestureVerification> {
+        let file = AppMultipartFile(name: "selfie_image", fileName: "selfie.jpg", mimeType: "image/jpeg", data: imageData)
+        return backendClient.upload(endPoint: .gestureUpload,
+                                    fields: ["verification_type": "gesture"],
+                                    files: [file])
+    }
+
     // MARK: - Session
 
     func logout() {

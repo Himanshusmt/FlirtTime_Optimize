@@ -55,6 +55,29 @@ final class AppApiClient {
         }
     }
 
+    /// POSTs `fields` and `files` as multipart/form-data, decodes `{ success, data }` and returns `data`.
+    func upload<T: Codable>(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<T> {
+        var logParameters: [String: Any] = fields
+        files.forEach { logParameters[$0.name] = "<file \($0.fileName), \($0.data.count) bytes>" }
+
+        return perform(endPoint: endPoint, method: .post, logParameters: logParameters, makeRequest: { session, url in
+            session.upload(multipartFormData: { form in
+                fields.forEach { key, value in
+                    form.append(Data(value.utf8), withName: key)
+                }
+                files.forEach { file in
+                    form.append(file.data, withName: file.name, fileName: file.fileName, mimeType: file.mimeType)
+                }
+            }, to: url, method: .post)
+        }, decode: { data, _ in
+            let response = try JSONDecoder().decode(BaseApiResponse<T>.self, from: data)
+            guard let payload = response.data else {
+                throw APIError.apiError(response.message ?? "No data found")
+            }
+            return payload
+        })
+    }
+
     func isInternetAvailable() -> Bool {
         NetworkReachabilityManager()?.isReachable ?? false
     }
@@ -62,17 +85,26 @@ final class AppApiClient {
     // MARK: - Private
 
     private func perform<T>(_ request: AppApiRequest, decode: @escaping (Data, Int) throws -> T) -> Single<T> {
+        perform(endPoint: request.endPoint, method: request.method, logParameters: request.parameters, makeRequest: { session, url in
+            session.request(url, method: request.method, parameters: request.parameters, encoding: request.encoding)
+        }, decode: decode)
+    }
+
+    private func perform<T>(endPoint: AppEndPoint,
+                            method: HTTPMethod,
+                            logParameters: [String: Any]?,
+                            makeRequest: @escaping (Session, URL) -> DataRequest,
+                            decode: @escaping (Data, Int) throws -> T) -> Single<T> {
         guard isInternetAvailable() else {
             return .error(APIError.apiError("No Internet Connection"))
         }
-        guard let url = url(for: request.endPoint) else {
+        guard let url = url(for: endPoint) else {
             return .error(APIError.apiError("App base URL is not configured"))
         }
-        let endPoint = request.endPoint
-        let startTime = Self.logRequest(method: request.method, url: url, parameters: request.parameters)
+        let startTime = Self.logRequest(method: method, url: url, parameters: logParameters)
 
         return Single.create { [session] single in
-            let dataRequest = session.request(url, method: request.method, parameters: request.parameters, encoding: request.encoding)
+            let dataRequest = makeRequest(session, url)
             dataRequest
                 .validate { _, response, _ in
                     response.statusCode == 401 && !endPoint.isAuthEndPoint
