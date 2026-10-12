@@ -44,7 +44,8 @@ class CustomToastView: UIView {
                 self.contentView.alpha = 1.0
             }
 
-            DispatchQueue.main.asyncAfter(deadline:.now() + 1.0){
+            let duration = (message?.count ?? 0) > 40 ? 2.5 : 1.5
+            DispatchQueue.main.asyncAfter(deadline:.now() + duration){
                 self.hide()
             }
         }

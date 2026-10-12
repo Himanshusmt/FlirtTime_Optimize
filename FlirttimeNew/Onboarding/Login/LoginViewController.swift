@@ -37,6 +37,8 @@ class LoginViewController: BaseViewController,Instantiable {
     var selectedRegionCode:String?
     var topConstraintEqual: NSLayoutConstraint?
     var topConstraintGreaterThanOrEqual: NSLayoutConstraint?
+    private let viewModel = LoginViewModel()
+    private let appleLoginViewModel = AppleLoginViewModel()
     
     static var storyboardName: StringConvertible {
         return StoryboardName.login
@@ -55,6 +57,28 @@ class LoginViewController: BaseViewController,Instantiable {
         self.setUI()
         super.viewDidLoad()
         lastSignUpOption = signUpOption
+        self.bindViewModel()
+    }
+
+    private func bindViewModel() {
+        viewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        viewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        viewModel.onOTPSent = { [weak self] otp in
+            self?.navigateToOTPScreen(otp: otp)
+        }
+        appleLoginViewModel.onLoading = { [weak self] isLoading in
+            self?.setLoading(isLoading)
+        }
+        appleLoginViewModel.onError = { [weak self] message in
+            self?.aCustomToastView.show(message: message)
+        }
+        appleLoginViewModel.onLoggedIn = { [weak self] isProfileComplete in
+            self?.routeAfterLogin(isProfileComplete: isProfileComplete, signUpOption: .apple)
+        }
     }
     
     func setUI(){
@@ -108,9 +132,8 @@ class LoginViewController: BaseViewController,Instantiable {
     }
     
     @IBAction func appleSignUpButtonAction(_ sender: UIButton) {
-        self.signUpOption = .apple
-        UserDataManager.shared.isOTPVerificationDone = true
-        self.navigateToUserDetails()
+        view.endEditing(true)
+        appleLoginViewModel.signIn(from: view.window)
     }
     
     @IBAction func phoneCodeSelectionButton(_ sender: UIButton) {
@@ -127,7 +150,10 @@ class LoginViewController: BaseViewController,Instantiable {
     
     @IBAction func continueButton(_ sender: UIButton) {
         self.view.endEditing(true)
-        self.navigateToOTPScreen()
+        viewModel.requestOTP(signUpOption: signUpOption,
+                             email: emailTextField.text,
+                             countryCode: countryCodeLabel.text,
+                             phone: phoneNumberTextField.text)
     }
     
     @IBAction func actionPrivacyPolicy(_ sender: UIButton) {
@@ -165,9 +191,11 @@ class LoginViewController: BaseViewController,Instantiable {
 //        }
     }
     
-    func navigateToOTPScreen() {
+    func navigateToOTPScreen(otp: OTPResponse) {
         let aVerifyOTPViewController = VerifyOTPViewController.instantiateFromStoryboard()
         let countryCode = self.countryCodeLabel.text?.dropFirst()
+        aVerifyOTPViewController.verificationId = otp.verificationId
+        aVerifyOTPViewController.resendAfter = otp.resendAfter
         aVerifyOTPViewController.signUpOption = self.signUpOption
         aVerifyOTPViewController.phoneCode = String(countryCode ?? "")
         aVerifyOTPViewController.phoneNumber = self.phoneNumberTextField.text
@@ -259,12 +287,5 @@ extension LoginViewController: UITextFieldDelegate {
             self.view.layoutIfNeeded()
         }
         
-    }
-    
-    func navigateToUserDetails(){
-        let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
-        aUserDetailsViewController.signUpOption = self.signUpOption
-        aUserDetailsViewController.emailID = self.emailTextField.text
-        self.navigationController?.pushViewController(aUserDetailsViewController, animated: true)
     }
 }

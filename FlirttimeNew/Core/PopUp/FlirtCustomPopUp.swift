@@ -181,6 +181,8 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
             self.uploadPhoto()
         case .picUploadingFailed:
             self.picUploadFailedView.isHidden = false
+            self.button2.isUserInteractionEnabled = true
+            self.button2.backgroundColor = AppColor.Punch
         case .spiceUpMatch:
             if isFromHome == true {
                 self.btnCross.isHidden = true

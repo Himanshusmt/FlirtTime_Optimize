@@ -7,6 +7,8 @@
 
 
 import UIKit
+import RxSwift
+import Swinject
 
 class SplashScreenVC: UIViewController,Instantiable {
     
@@ -17,6 +19,7 @@ class SplashScreenVC: UIViewController,Instantiable {
     }
     
     var window: UIWindow?
+    private let disposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -68,6 +71,29 @@ class SplashScreenVC: UIViewController,Instantiable {
     }
     
     func navigateToNextScreen(){
+        let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+        guard UserDataManager.shared.isOTPVerificationDone == true else {
+            routeByLocalState()
+            return
+        }
+        guard sessionManager.isLoggedIn else {
+            sessionManager.logout()
+            routeByLocalState()
+            return
+        }
+        sessionManager.getMe()
+            .subscribe(onSuccess: { [weak self] _ in
+                self?.routeByLocalState()
+            }, onFailure: { [weak self] error in
+                if httpStatusCode(from: error) == 401 {
+                    sessionManager.logout()
+                }
+                self?.routeByLocalState()
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func routeByLocalState() {
         if UserDataManager.shared.isOTPVerificationDone == true {
             if UserDataManager.shared.isHomePageRedirect == true {
                 navigateToViewController(AppTabBarController.instantiateFromStoryboard())
