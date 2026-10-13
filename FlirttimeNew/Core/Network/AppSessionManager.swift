@@ -303,6 +303,19 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    /// Deletes one of the signed-in user's own moments.
+    func deleteMoment(momentId: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .moment(momentId: momentId)))
+            .map { _ in () }
+    }
+
+    /// Deletes one of the signed-in user's own comments on a moment.
+    func deleteMomentComment(momentId: String, commentId: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete,
+                                                      endPoint: .momentComment(momentId: momentId, commentId: commentId)))
+            .map { _ in () }
+    }
+
     // MARK: - Quick Moments
 
     /// Story bar: the user's own bubble plus other users' active stories with unread state.

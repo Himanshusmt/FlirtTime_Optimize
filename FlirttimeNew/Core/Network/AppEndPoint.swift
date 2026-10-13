@@ -72,6 +72,8 @@ enum AppEndPoint: CustomStringConvertible {
     case momentLike(momentId: String)
     case momentComments(momentId: String)
     case momentLikes(momentId: String)
+    case moment(momentId: String)
+    case momentComment(momentId: String, commentId: String)
     case momentGifts(momentId: String)
     case momentGiftsReceived(momentId: String)
     case momentReport(momentId: String)
@@ -117,6 +119,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .momentLike(let momentId): return "api/v1/moments/\(momentId)/like"
         case .momentComments(let momentId): return "api/v1/moments/\(momentId)/comments"
         case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
+        case .moment(let momentId): return "api/v1/moments/\(momentId)"
+        case .momentComment(let momentId, let commentId): return "api/v1/moments/\(momentId)/comments/\(commentId)"
         case .momentGifts(let momentId): return "api/v1/moments/\(momentId)/gifts"
         case .momentGiftsReceived(let momentId): return "api/v1/moments/\(momentId)/gifts/received"
         case .momentReport(let momentId): return "api/v1/moments/\(momentId)/report"
@@ -147,7 +151,7 @@ enum AppEndPoint: CustomStringConvertible {
              .userProfile, .blockUser, .reportUser,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
-             .momentGifts, .momentGiftsReceived,
+             .momentGifts, .momentGiftsReceived, .moment, .momentComment,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers:

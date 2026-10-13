@@ -109,6 +109,8 @@ struct VibeComment: Codable {
     let body: String?
     let createdAt: String?
     let author: VibeAuthor?
+    /// Written by the signed-in user, so it can be deleted.
+    var isMine: Bool? = nil
 }
 
 struct CreateVibeCommentResponse: Codable {

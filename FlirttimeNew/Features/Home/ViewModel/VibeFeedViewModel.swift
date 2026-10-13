@@ -128,6 +128,21 @@ final class VibeFeedViewModel {
             .disposed(by: disposeBag)
     }
 
+    /// Deletes an own moment; `completion` receives the removed row.
+    func deleteVibe(vibeId: String, completion: @escaping (Result<Int?, VibeError>) -> Void) {
+        sessionManager.deleteMoment(momentId: vibeId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                guard let self else { return }
+                let index = self.index(of: vibeId)
+                if let index { self.vibes.remove(at: index) }
+                completion(.success(index))
+            }, onFailure: { error in
+                completion(.failure(VibeError(message: parseError(error) ?? "Unable to delete moment")))
+            })
+            .disposed(by: disposeBag)
+    }
+
     // MARK: - Like
 
     /// Applies the like optimistically, then reconciles with the server. `completion` receives

@@ -214,8 +214,12 @@ struct MomentComment: Codable {
 
     func vibeComment(momentId: String) -> VibeComment? {
         guard let id = commentId ?? id else { return nil }
+        let currentUserId = UserDataManager.shared.appUser?.id
+        let authorId = user?.id ?? user?.userId
+        let isMine = isMyComment == true || (currentUserId != nil && authorId == currentUserId)
         return VibeComment(id: id, vibeId: momentId, body: comment ?? message, createdAt: createdAt,
-                           author: user?.author ?? (isMyComment == true ? .currentUser : nil))
+                           author: user?.author ?? (isMyComment == true ? .currentUser : nil),
+                           isMine: isMine)
     }
 }
 

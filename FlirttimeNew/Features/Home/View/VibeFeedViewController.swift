@@ -573,15 +573,16 @@ extension VibeFeedViewController: VibeTableViewCellDelegate {
     func vibeCellDidTapMore(_ cell: VibeTableViewCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let vibe = viewModel.vibes[indexPath.row]
-        guard !viewModel.isOwnVibe(vibe) else {
-            aCustomToastView.show(message: "Deleting moments isn't available yet")
-            return
-        }
-
         let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "Report vibe", style: .destructive) { [weak self] _ in
-            self?.showReportReasons(for: vibe, sourceView: cell)
-        })
+        if viewModel.isOwnVibe(vibe) {
+            sheet.addAction(UIAlertAction(title: "Delete moment", style: .destructive) { [weak self] _ in
+                self?.confirmDelete(vibe)
+            })
+        } else {
+            sheet.addAction(UIAlertAction(title: "Report vibe", style: .destructive) { [weak self] _ in
+                self?.showReportReasons(for: vibe, sourceView: cell)
+            })
+        }
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         sheet.popoverPresentationController?.sourceView = cell
         present(sheet, animated: true)
@@ -605,6 +606,21 @@ private extension VibeFeedViewController {
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         sheet.popoverPresentationController?.sourceView = sourceView
         present(sheet, animated: true)
+    }
+
+    func confirmDelete(_ vibe: Vibe) {
+        let alert = UIAlertController(title: "Delete this moment?",
+                                      message: "It will be removed for everyone. This can't be undone.",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            self.aActivityIndicator.show()
+            self.viewModel.deleteVibe(vibeId: vibe.id) { [weak self] result in
+                self?.handleRemoval(result, successMessage: "Moment deleted")
+            }
+        })
+        present(alert, animated: true)
     }
 
     func handleRemoval(_ result: Result<Int?, VibeError>, successMessage: String) {
