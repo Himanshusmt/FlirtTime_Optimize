@@ -10,7 +10,9 @@ protocol VibeTableViewCellDelegate: AnyObject {
     func vibeCellDidDoubleTapLike(_ cell: VibeTableViewCell)
     func vibeCellDidTapComment(_ cell: VibeTableViewCell)
     func vibeCellDidTapGift(_ cell: VibeTableViewCell)
+    func vibeCellDidTapShare(_ cell: VibeTableViewCell)
     func vibeCellDidTapMore(_ cell: VibeTableViewCell)
+    func vibeCellDidTapProfile(_ cell: VibeTableViewCell)
 }
 
 final class VibeTableViewCell: UITableViewCell {
@@ -24,6 +26,7 @@ final class VibeTableViewCell: UITableViewCell {
     private static let likedIcon = UIImage(named: "fillHeart")?.withRenderingMode(.alwaysOriginal)
     private static let commentIcon = UIImage(named: "whiteMessage1")?.withRenderingMode(.alwaysTemplate)
     private static let giftIcon = UIImage(named: "vibe_gift_box")?.withRenderingMode(.alwaysTemplate)
+    private static let shareIcon = UIImage(named: "whiteShare")?.withRenderingMode(.alwaysTemplate)
 
     weak var delegate: VibeTableViewCellDelegate?
 
@@ -102,6 +105,7 @@ final class VibeTableViewCell: UITableViewCell {
     private let likeButton = VibeActionButton(iconSize: 22)
     private let commentButton = VibeActionButton(iconSize: 20)
     private let giftButton = VibeActionButton(iconSize: 22)
+    private let shareButton = VibeActionButton(iconSize: 20)
 
     /// Actions sit in a column on the photo's right edge; text-only vibes show them in a row instead.
     private let overlayActionStack: UIStackView = {
@@ -134,6 +138,7 @@ final class VibeTableViewCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
+        backgroundColor = .clear
         setUI()
     }
 
@@ -226,7 +231,13 @@ final class VibeTableViewCell: UITableViewCell {
         likeButton.addTarget(self, action: #selector(likeTapped), for: .touchUpInside)
         commentButton.addTarget(self, action: #selector(commentTapped), for: .touchUpInside)
         giftButton.addTarget(self, action: #selector(giftTapped), for: .touchUpInside)
+        shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
         moreButton.addTarget(self, action: #selector(moreTapped), for: .touchUpInside)
+
+        [avatarImageView, nameLabel].forEach {
+            $0.isUserInteractionEnabled = true
+            $0.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(profileTapped)))
+        }
     }
 
     // MARK: - Configure
@@ -257,7 +268,7 @@ final class VibeTableViewCell: UITableViewCell {
 
     private func placeActions(overPhoto: Bool) {
         let style: VibeActionButton.Style = overPhoto ? .overPhoto : .plain
-        let buttons = [likeButton, commentButton, giftButton]
+        let buttons = [likeButton, commentButton, giftButton, shareButton]
         if style != actionStyle || buttons.allSatisfy({ $0.superview == nil }) {
             buttons.forEach { $0.removeFromSuperview() }
             if overPhoto {
@@ -271,12 +282,13 @@ final class VibeTableViewCell: UITableViewCell {
         rowActionStack.isHidden = overPhoto
     }
 
-    /// Refreshes like / comment / gift state without reloading media.
+    /// Refreshes like / comment / gift / share state without reloading media.
     func updateCounts(with vibe: Vibe) {
         let liked = vibe.hasLiked ?? false
         let likes = vibe.likesCount ?? 0
         let comments = vibe.commentsCount ?? 0
         let gifts = vibe.giftCount ?? 0
+        let shares = vibe.shareCount ?? 0
 
         likeButton.configure(icon: liked ? VibeTableViewCell.likedIcon : VibeTableViewCell.likeIcon,
                              style: actionStyle, count: likes)
@@ -284,13 +296,20 @@ final class VibeTableViewCell: UITableViewCell {
                                 style: actionStyle, count: comments)
         giftButton.configure(icon: VibeTableViewCell.giftIcon,
                              style: actionStyle, count: gifts)
+        shareButton.configure(icon: VibeTableViewCell.shareIcon,
+                              style: actionStyle, count: shares)
 
         likeButton.accessibilityLabel = liked ? "Unlike, \(likes) likes" : "Like, \(likes) likes"
         commentButton.accessibilityLabel = "Comments, \(comments)"
         giftButton.accessibilityLabel = "Gifts, \(gifts)"
+        shareButton.accessibilityLabel = "Share, \(shares)"
     }
 
     // MARK: - Actions
+
+    @objc private func profileTapped() {
+        delegate?.vibeCellDidTapProfile(self)
+    }
 
     @objc private func likeTapped() {
         bounce(likeButton)
@@ -330,6 +349,11 @@ final class VibeTableViewCell: UITableViewCell {
     @objc private func giftTapped() {
         bounce(giftButton)
         delegate?.vibeCellDidTapGift(self)
+    }
+
+    @objc private func shareTapped() {
+        bounce(shareButton)
+        delegate?.vibeCellDidTapShare(self)
     }
 
     @objc private func moreTapped() {

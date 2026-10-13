@@ -23,7 +23,7 @@ final class ChatListContainerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.addBlushBackground()
 
         navigator.uikitPushHandler = { [weak self] navData in
             self?.pushChatDetail(navData: navData)

@@ -29,6 +29,18 @@ class OtherUserProfileViewModel {
     @Published var aCheckUserSubscribe:CheckSubscriptionResponse?
     @Published var errorCheckUserSubscribe:String?
 
+    /// First page of the user's moments (vibes); `nil` until loaded.
+    @Published private(set) var moments: [Vibe]?
+    private(set) var momentsTotal = 0
+    @Published private(set) var quickMoments: [QuickMoment] = []
+    @Published private(set) var voiceIntro: VibeVoiceIntro?
+
+    static let momentsPreviewLimit = 6
+
+    var quickMomentFrames: [VibeMoment] {
+        quickMoments.enumerated().map { $1.storyMoment(id: $0) }
+    }
+
     let arrayMoments: [UIImage] = ["delete-13", "delete-14", "delete-4", "delete-18", "delete-19", "delete-20", "delete-21"].compactMap { UIImage(named: $0) }
 
     let arrayInterest: [String] = ["Bowling","Bowling","Bowling","Bowling","8 - ball","Gaming","Cricket","8 - ball","Gaming","Cricket"]
@@ -37,6 +49,27 @@ class OtherUserProfileViewModel {
 
     private func respond(_ block: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
+    }
+
+    // TODO: GET vibes/?userId=, quick-moments/?userId= and the user's voice intro once the APIs are live.
+    func getMoments(userID: Int) {
+        respond { [weak self] in
+            let response = MockVibeStore.shared.feed(page: 1, limit: Self.momentsPreviewLimit, authorID: String(userID))
+            self?.momentsTotal = response.data?.count ?? 0
+            self?.moments = response.data?.rows ?? []
+        }
+    }
+
+    func getQuickMoments(userID: Int) {
+        respond { [weak self] in
+            self?.quickMoments = MockQuickMomentStore.shared.list(userID: String(userID)).data ?? []
+        }
+    }
+
+    func getVoiceIntro(userID: Int) {
+        respond { [weak self] in
+            self?.voiceIntro = MockDiscover.shared.voiceIntro(userID: userID)
+        }
     }
 
     func loadJSON() {

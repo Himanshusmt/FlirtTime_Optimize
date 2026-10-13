@@ -204,6 +204,7 @@ struct ChatListView: View {
                     regularChatsSection
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .background(Color.clear)
                 .scrollDismissesKeyboard(.interactively)
                 // Clearance above floating tab bar (SwiftUI List ignores UIKit contentInset overrides).

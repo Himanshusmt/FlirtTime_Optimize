@@ -18,10 +18,11 @@ final class VibePillTabsView: UIControl {
         super.init(frame: .zero)
         let stack = UIStackView()
         stack.spacing = 8
-        stack.distribution = .fillEqually
+        stack.distribution = .fillProportionally
         for (index, title) in titles.enumerated() {
             var config = UIButton.Configuration.filled()
             config.cornerStyle = .capsule
+            config.titleLineBreakMode = .byTruncatingTail
             config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
             config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 15, style: .subheadline)]))
             let button = UIButton(configuration: config)

@@ -18,6 +18,8 @@ final class MockQuickMomentStore {
         .appendingPathComponent("mock_quick_moments_v1.json")
 
     private var moments: [QuickMoment]
+    /// Other people's Quick Moments; read-only, so they are not persisted.
+    private let othersMoments = MockQuickMomentStore.seedOthers()
 
     private init() {
         if let data = try? Data(contentsOf: fileURL),
@@ -31,7 +33,7 @@ final class MockQuickMomentStore {
     // MARK: - Endpoints
 
     func list(userID: String) -> QuickMomentListResponse {
-        let rows = moments.filter { $0.userId == userID }.sorted {
+        let rows = (moments + othersMoments).filter { $0.userId == userID }.sorted {
             (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
         }
         return QuickMomentListResponse(success: true, message: "", data: rows)
@@ -96,6 +98,38 @@ final class MockQuickMomentStore {
         guard let person = MockPeople.person(id: id) else { return nil }
         return VibeAuthor(userId: String(person.id), userName: person.displayName, fullName: person.fullname,
                           profilePicture: person.photos.first, verified: person.isVerified, location: person.location)
+    }
+
+    private static func seedOthers() -> [QuickMoment] {
+        let seeds: [(personID: Int, photoIndex: Int?, text: String?, background: Int?, minutesAgo: Int,
+                     reactions: [(Int, String)])] = [
+            (101, 1, "Coffee date with myself ☕️", nil, 35, [(103, "😍"), (105, "🔥")]),
+            (101, nil, "Playlist recommendations? Drop them 🎧", 2, 190, [(104, "🎶")]),
+            (103, 0, "Trail done, chai next ⛰️", nil, 55, [(101, "👏"), (107, "😍"), (102, "🔥")]),
+            (103, nil, "Weekend plans: zero plans 😌", 4, 400, []),
+            (104, nil, "Cooking pasta tonight 🍝 who's in?", 1, 80, [(106, "😋")]),
+            (105, 0, "Sunset chaser 🌅", nil, 120, [(101, "😍")]),
+            (107, 0, "My dog says hi 🐶", nil, 25, [(103, "😍"), (108, "❤️")]),
+            (107, nil, "Looking for a hiking buddy this Sunday", 3, 300, [])
+        ]
+        return seeds.enumerated().compactMap { index, seed in
+            guard let person = MockPeople.person(id: seed.personID) else { return nil }
+            let id = "qm-\(seed.personID)-\(index + 1)"
+            let media = seed.photoIndex.flatMap { person.photos.indices.contains($0) ? person.photos[$0] : nil }
+            return QuickMoment(
+                id: id,
+                userId: String(person.id),
+                mediaPath: media,
+                text: seed.text,
+                background: media == nil ? seed.background : nil,
+                createdAt: timestamp(minutesAgo: seed.minutesAgo),
+                reactions: seed.reactions.enumerated().map { offset, reaction in
+                    QuickMomentReaction(id: "\(id)-r\(offset + 1)", emoji: reaction.1,
+                                        createdAt: timestamp(minutesAgo: max(seed.minutesAgo - (offset + 1) * 4, 1)),
+                                        author: author(reaction.0))
+                },
+                replies: [])
+        }
     }
 
     private static func seed() -> [QuickMoment] {

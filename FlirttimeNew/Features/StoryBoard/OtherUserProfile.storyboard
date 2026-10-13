@@ -1,0 +1,1020 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="collection view cell content view" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <customFonts key="customFonts">
+        <array key="Fredoka-Medium.ttf">
+            <string>Fredoka-Medium</string>
+        </array>
+        <array key="Fredoka-Regular.ttf">
+            <string>Fredoka-Regular</string>
+        </array>
+        <array key="Fredoka-SemiBold.ttf">
+            <string>Fredoka-SemiBold</string>
+        </array>
+    </customFonts>
+    <scenes>
+        <!--Other User Profile-->
+        <scene sceneID="oup-sc-001">
+            <objects>
+                <viewController storyboardIdentifier="OtherUserProfileViewController" automaticallyAdjustsScrollViewInsets="NO" hidesBottomBarWhenPushed="YES" id="oup-vc-001" userLabel="Other User Profile" customClass="OtherUserProfileViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="oup-rv-001">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" contentInsetAdjustmentBehavior="never" translatesAutoresizingMaskIntoConstraints="NO" id="oup-sv-001" userLabel="Profile Scroll View">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="oup-cs-001" userLabel="Content Stack">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="1400"/>
+                                        <subviews>
+                                            <!-- Header: cover photo + avatar -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-hv-001" userLabel="Header View">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="334"/>
+                                                <subviews>
+                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ci-001" userLabel="Cover Image">
+                                                        <rect key="frame" x="0.0" y="0.0" width="393" height="270"/>
+                                                        <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="270" id="oup-ci-002"/>
+                                                        </constraints>
+                                                    </imageView>
+                                                    <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ts-001" userLabel="Cover Top Shade" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="0.0" y="0.0" width="393" height="130"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="130" id="oup-ts-002"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                <color key="value" white="0.0" alpha="0.45000000000000001" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                <color key="value" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                    <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-bf-001" userLabel="Cover Bottom Fade" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="0.0" y="160" width="393" height="110"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="110" id="oup-bf-002"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                <color key="value" white="1" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                    <view clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ar-001" userLabel="Avatar Gradient Ring" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="126.66666666666669" y="194" width="140" height="140"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="140" id="oup-ar-002"/>
+                                                            <constraint firstAttribute="height" constant="140" id="oup-ar-003"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                <color key="value" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                <color key="value" red="1" green="0.43137254901960786" blue="0.56470588235294117" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="isHorizontal" value="YES"/>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="70"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                    <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ab-001" userLabel="Avatar White Border">
+                                                        <rect key="frame" x="130.66666666666669" y="198" width="132" height="132"/>
+                                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="132" id="oup-ab-002"/>
+                                                            <constraint firstAttribute="height" constant="132" id="oup-ab-003"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="66"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                    <imageView clipsSubviews="YES" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ai-001" userLabel="Avatar Image">
+                                                        <rect key="frame" x="134.66666666666669" y="202" width="124" height="124"/>
+                                                        <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <accessibility key="accessibilityConfiguration" label="Profile photo">
+                                                            <bool key="isElement" value="YES"/>
+                                                        </accessibility>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="124" id="oup-ai-002"/>
+                                                            <constraint firstAttribute="height" constant="124" id="oup-ai-003"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                <real key="value" value="62"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </imageView>
+                                                    <view hidden="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-od-001" userLabel="Online Dot">
+                                                        <rect key="frame" x="239" y="306" width="22" height="22"/>
+                                                        <color key="backgroundColor" red="0.23137254901960785" green="0.6470588235294118" blue="0.45882352941176469" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="width" constant="22" id="oup-od-002"/>
+                                                            <constraint firstAttribute="height" constant="22" id="oup-od-003"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="11"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                <real key="value" value="3"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-ci-001" firstAttribute="top" secondItem="oup-hv-001" secondAttribute="top" id="oup-hc-001"/>
+                                                    <constraint firstItem="oup-ci-001" firstAttribute="leading" secondItem="oup-hv-001" secondAttribute="leading" id="oup-hc-002"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-ci-001" secondAttribute="trailing" id="oup-hc-003"/>
+                                                    <constraint firstItem="oup-ts-001" firstAttribute="top" secondItem="oup-hv-001" secondAttribute="top" id="oup-hc-004"/>
+                                                    <constraint firstItem="oup-ts-001" firstAttribute="leading" secondItem="oup-hv-001" secondAttribute="leading" id="oup-hc-005"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-ts-001" secondAttribute="trailing" id="oup-hc-006"/>
+                                                    <constraint firstItem="oup-bf-001" firstAttribute="leading" secondItem="oup-hv-001" secondAttribute="leading" id="oup-hc-007"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-bf-001" secondAttribute="trailing" id="oup-hc-008"/>
+                                                    <constraint firstItem="oup-bf-001" firstAttribute="bottom" secondItem="oup-ci-001" secondAttribute="bottom" id="oup-hc-009"/>
+                                                    <constraint firstItem="oup-ar-001" firstAttribute="centerX" secondItem="oup-hv-001" secondAttribute="centerX" id="oup-hc-010"/>
+                                                    <constraint firstItem="oup-ar-001" firstAttribute="centerY" secondItem="oup-ci-001" secondAttribute="bottom" constant="-6" id="oup-hc-011"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-ar-001" secondAttribute="bottom" id="oup-hc-012"/>
+                                                    <constraint firstItem="oup-ab-001" firstAttribute="centerX" secondItem="oup-ar-001" secondAttribute="centerX" id="oup-hc-013"/>
+                                                    <constraint firstItem="oup-ab-001" firstAttribute="centerY" secondItem="oup-ar-001" secondAttribute="centerY" id="oup-hc-014"/>
+                                                    <constraint firstItem="oup-ai-001" firstAttribute="centerX" secondItem="oup-ar-001" secondAttribute="centerX" id="oup-hc-015"/>
+                                                    <constraint firstItem="oup-ai-001" firstAttribute="centerY" secondItem="oup-ar-001" secondAttribute="centerY" id="oup-hc-016"/>
+                                                    <constraint firstItem="oup-od-001" firstAttribute="centerX" secondItem="oup-ar-001" secondAttribute="trailing" constant="-22" id="oup-hc-017"/>
+                                                    <constraint firstItem="oup-od-001" firstAttribute="centerY" secondItem="oup-ar-001" secondAttribute="bottom" constant="-22" id="oup-hc-018"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Name, location, online status, about -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-is-001" userLabel="Identity Section">
+                                                <rect key="frame" x="0.0" y="358" width="393" height="100"/>
+                                                <subviews>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ik-001" userLabel="Identity Stack">
+                                                        <rect key="frame" x="20" y="0.0" width="353" height="100"/>
+                                                        <subviews>
+                                                            <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="6" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nr-001" userLabel="Name Row">
+                                                                <rect key="frame" x="104" y="0.0" width="145" height="32"/>
+                                                                <subviews>
+                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Name, 24" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nl-001" userLabel="Name Label">
+                                                                        <rect key="frame" x="0.0" y="0.0" width="117" height="32"/>
+                                                                        <accessibility key="accessibilityConfiguration">
+                                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                                        </accessibility>
+                                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="26"/>
+                                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        <nil key="highlightedColor"/>
+                                                                    </label>
+                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="checkmark.seal.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vi-001" userLabel="Verified Badge">
+                                                                        <rect key="frame" x="123" y="5" width="22" height="22"/>
+                                                                        <color key="tintColor" red="0.35999999999999999" green="0.67000000000000004" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                        <accessibility key="accessibilityConfiguration" label="Verified profile">
+                                                                            <bool key="isElement" value="YES"/>
+                                                                        </accessibility>
+                                                                        <constraints>
+                                                                            <constraint firstAttribute="width" constant="22" id="oup-vi-002"/>
+                                                                            <constraint firstAttribute="height" constant="22" id="oup-vi-003"/>
+                                                                        </constraints>
+                                                                    </imageView>
+                                                                </subviews>
+                                                            </stackView>
+                                                            <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mr-001" userLabel="Location And Online Row">
+                                                                <rect key="frame" x="96.666666666666657" y="40" width="160" height="18"/>
+                                                                <subviews>
+                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="📍 City" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ll-001" userLabel="Location Label">
+                                                                        <rect key="frame" x="0.0" y="0.0" width="60" height="18"/>
+                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="14"/>
+                                                                        <color key="textColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                        <nil key="highlightedColor"/>
+                                                                    </label>
+                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="● Online now" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ol-001" userLabel="Online Status Label">
+                                                                        <rect key="frame" x="72" y="0.0" width="88" height="18"/>
+                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
+                                                                        <color key="textColor" red="0.23137254901960785" green="0.6470588235294118" blue="0.45882352941176469" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                        <nil key="highlightedColor"/>
+                                                                    </label>
+                                                                </subviews>
+                                                            </stackView>
+                                                            <label opaque="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="“About me”" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-al-001" userLabel="About Label">
+                                                                <rect key="frame" x="138" y="66" width="77" height="34"/>
+                                                                <accessibility key="accessibilityConfiguration" hint="Double tap to show more or less"/>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                                <color key="textColor" red="0.14509803921568629" green="0.14509803921568629" blue="0.14509803921568629" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                <nil key="highlightedColor"/>
+                                                                <connections>
+                                                                    <outletCollection property="gestureRecognizers" destination="oup-tg-001" appends="YES" id="oup-tg-003"/>
+                                                                </connections>
+                                                            </label>
+                                                        </subviews>
+                                                    </stackView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-ik-001" firstAttribute="top" secondItem="oup-is-001" secondAttribute="top" id="oup-ic-001"/>
+                                                    <constraint firstItem="oup-ik-001" firstAttribute="leading" secondItem="oup-is-001" secondAttribute="leading" constant="20" id="oup-ic-002"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-ik-001" secondAttribute="trailing" constant="20" id="oup-ic-003"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-ik-001" secondAttribute="bottom" id="oup-ic-004"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Voice intro player -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-001" userLabel="Voice Intro Section">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="98"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Voice Intro" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-002" userLabel="Voice Intro Title">
+                                                        <rect key="frame" x="20" y="0.0" width="150" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-003" userLabel="Voice Intro Card">
+                                                        <rect key="frame" x="20" y="38" width="353" height="60"/>
+                                                        <subviews>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-004" userLabel="Voice Play Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                <rect key="frame" x="8" y="8" width="44" height="44"/>
+                                                                <color key="backgroundColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="width" constant="44" id="oup-vs-005"/>
+                                                                    <constraint firstAttribute="height" constant="44" id="oup-vs-006"/>
+                                                                </constraints>
+                                                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <state key="normal" image="play.fill"/>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                        <real key="value" value="22"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                                <connections>
+                                                                    <action selector="voicePlayTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-vs-007"/>
+                                                                </connections>
+                                                            </button>
+                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-008" userLabel="Voice Waveform Holder">
+                                                                <rect key="frame" x="64" y="15" width="225" height="30"/>
+                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="height" constant="30" id="oup-vs-009"/>
+                                                                </constraints>
+                                                            </view>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="751" verticalHuggingPriority="251" horizontalCompressionResistancePriority="751" text="0:12" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vs-010" userLabel="Voice Duration Label">
+                                                                <rect key="frame" x="301" y="21" width="34" height="18"/>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
+                                                                <color key="textColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                        </subviews>
+                                                        <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="60" id="oup-vs-011"/>
+                                                            <constraint firstItem="oup-vs-004" firstAttribute="leading" secondItem="oup-vs-003" secondAttribute="leading" constant="8" id="oup-vs-012"/>
+                                                            <constraint firstItem="oup-vs-004" firstAttribute="centerY" secondItem="oup-vs-003" secondAttribute="centerY" id="oup-vs-013"/>
+                                                            <constraint firstItem="oup-vs-008" firstAttribute="leading" secondItem="oup-vs-004" secondAttribute="trailing" constant="12" id="oup-vs-014"/>
+                                                            <constraint firstItem="oup-vs-008" firstAttribute="centerY" secondItem="oup-vs-003" secondAttribute="centerY" id="oup-vs-015"/>
+                                                            <constraint firstItem="oup-vs-010" firstAttribute="leading" secondItem="oup-vs-008" secondAttribute="trailing" constant="12" id="oup-vs-016"/>
+                                                            <constraint firstAttribute="trailing" secondItem="oup-vs-010" secondAttribute="trailing" constant="18" id="oup-vs-017"/>
+                                                            <constraint firstItem="oup-vs-010" firstAttribute="centerY" secondItem="oup-vs-003" secondAttribute="centerY" id="oup-vs-018"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                <real key="value" value="30"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-vs-002" firstAttribute="top" secondItem="oup-vs-001" secondAttribute="top" id="oup-vs-019"/>
+                                                    <constraint firstItem="oup-vs-002" firstAttribute="leading" secondItem="oup-vs-001" secondAttribute="leading" constant="20" id="oup-vs-020"/>
+                                                    <constraint firstItem="oup-vs-003" firstAttribute="top" secondItem="oup-vs-002" secondAttribute="bottom" constant="12" id="oup-vs-021"/>
+                                                    <constraint firstItem="oup-vs-003" firstAttribute="leading" secondItem="oup-vs-001" secondAttribute="leading" constant="20" id="oup-vs-022"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-vs-003" secondAttribute="trailing" constant="20" id="oup-vs-023"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-vs-003" secondAttribute="bottom" id="oup-vs-024"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Quick moments (story bubbles) -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-001" userLabel="Quick Moments Section">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="140"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Moments" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-002" userLabel="Quick Moments Title">
+                                                        <rect key="frame" x="20" y="0.0" width="150" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-003" userLabel="Quick Moments View" customClass="ProfileQuickMomentsView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="0.0" y="38" width="393" height="102"/>
+                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="102" id="oup-qs-004"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="showsAddButton" value="NO"/>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-qs-002" firstAttribute="top" secondItem="oup-qs-001" secondAttribute="top" id="oup-qs-005"/>
+                                                    <constraint firstItem="oup-qs-002" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" constant="20" id="oup-qs-006"/>
+                                                    <constraint firstItem="oup-qs-003" firstAttribute="top" secondItem="oup-qs-002" secondAttribute="bottom" constant="12" id="oup-qs-007"/>
+                                                    <constraint firstItem="oup-qs-003" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" id="oup-qs-008"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-qs-003" secondAttribute="trailing" id="oup-qs-009"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-qs-003" secondAttribute="bottom" id="oup-qs-010"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Photos carousel -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ps-001" userLabel="Photos Section">
+                                                <rect key="frame" x="0.0" y="482" width="393" height="268"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Photos" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-pt-001" userLabel="Photos Title">
+                                                        <rect key="frame" x="20" y="0.0" width="60" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-pc-001" userLabel="Photos Count Label">
+                                                        <rect key="frame" x="88" y="2" width="28" height="22"/>
+                                                        <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="22" id="oup-pc-002"/>
+                                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="28" id="oup-pc-003"/>
+                                                        </constraints>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
+                                                        <color key="textColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <nil key="highlightedColor"/>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                <real key="value" value="11"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="YES"/>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </label>
+                                                    <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="oup-pv-001" userLabel="Photos Collection View">
+                                                        <rect key="frame" x="0.0" y="38" width="393" height="230"/>
+                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="230" id="oup-pv-002"/>
+                                                        </constraints>
+                                                        <collectionViewFlowLayout key="collectionViewLayout" scrollDirection="horizontal" minimumLineSpacing="12" minimumInteritemSpacing="12" id="oup-pf-001">
+                                                            <size key="itemSize" width="165" height="230"/>
+                                                            <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                                            <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                                            <inset key="sectionInset" minX="20" minY="0.0" maxX="20" maxY="0.0"/>
+                                                        </collectionViewFlowLayout>
+                                                        <cells>
+                                                            <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="OtherUserPhotoCell" id="oup-pz-001" userLabel="Photo Cell" customClass="OtherUserPhotoCell" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                <rect key="frame" x="20" y="0.0" width="165" height="230"/>
+                                                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                                <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="oup-pz-002">
+                                                                    <rect key="frame" x="0.0" y="0.0" width="165" height="230"/>
+                                                                    <autoresizingMask key="autoresizingMask"/>
+                                                                    <subviews>
+                                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-pz-003" userLabel="Photo Image">
+                                                                            <rect key="frame" x="0.0" y="0.0" width="165" height="230"/>
+                                                                            <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                            <userDefinedRuntimeAttributes>
+                                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                                    <real key="value" value="20"/>
+                                                                                </userDefinedRuntimeAttribute>
+                                                                            </userDefinedRuntimeAttributes>
+                                                                        </imageView>
+                                                                    </subviews>
+                                                                    <constraints>
+                                                                        <constraint firstItem="oup-pz-003" firstAttribute="top" secondItem="oup-pz-002" secondAttribute="top" id="oup-pz-004"/>
+                                                                        <constraint firstItem="oup-pz-003" firstAttribute="leading" secondItem="oup-pz-002" secondAttribute="leading" id="oup-pz-005"/>
+                                                                        <constraint firstAttribute="trailing" secondItem="oup-pz-003" secondAttribute="trailing" id="oup-pz-006"/>
+                                                                        <constraint firstAttribute="bottom" secondItem="oup-pz-003" secondAttribute="bottom" id="oup-pz-007"/>
+                                                                    </constraints>
+                                                                </collectionViewCellContentView>
+                                                                <size key="customSize" width="165" height="230"/>
+                                                                <connections>
+                                                                    <outlet property="photoImageView" destination="oup-pz-003" id="oup-pz-008"/>
+                                                                </connections>
+                                                            </collectionViewCell>
+                                                        </cells>
+                                                        <connections>
+                                                            <outlet property="dataSource" destination="oup-vc-001" id="oup-pv-003"/>
+                                                            <outlet property="delegate" destination="oup-vc-001" id="oup-pv-004"/>
+                                                        </connections>
+                                                    </collectionView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-pt-001" firstAttribute="top" secondItem="oup-ps-001" secondAttribute="top" id="oup-pk-001"/>
+                                                    <constraint firstItem="oup-pt-001" firstAttribute="leading" secondItem="oup-ps-001" secondAttribute="leading" constant="20" id="oup-pk-002"/>
+                                                    <constraint firstItem="oup-pc-001" firstAttribute="leading" secondItem="oup-pt-001" secondAttribute="trailing" constant="8" id="oup-pk-003"/>
+                                                    <constraint firstItem="oup-pc-001" firstAttribute="centerY" secondItem="oup-pt-001" secondAttribute="centerY" id="oup-pk-004"/>
+                                                    <constraint firstItem="oup-pv-001" firstAttribute="top" secondItem="oup-pt-001" secondAttribute="bottom" constant="12" id="oup-pk-005"/>
+                                                    <constraint firstItem="oup-pv-001" firstAttribute="leading" secondItem="oup-ps-001" secondAttribute="leading" id="oup-pk-006"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-pv-001" secondAttribute="trailing" id="oup-pk-007"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-pv-001" secondAttribute="bottom" id="oup-pk-008"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Interests chips -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ns-001" userLabel="Interests Section">
+                                                <rect key="frame" x="0.0" y="774" width="393" height="110"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Interests" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nt-001" userLabel="Interests Title">
+                                                        <rect key="frame" x="20" y="0.0" width="80" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <view contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="72" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nc-001" userLabel="Interests Chips View" customClass="VibeChipsView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="20" y="38" width="353" height="72"/>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-nt-001" firstAttribute="top" secondItem="oup-ns-001" secondAttribute="top" id="oup-nk-001"/>
+                                                    <constraint firstItem="oup-nt-001" firstAttribute="leading" secondItem="oup-ns-001" secondAttribute="leading" constant="20" id="oup-nk-002"/>
+                                                    <constraint firstItem="oup-nc-001" firstAttribute="top" secondItem="oup-nt-001" secondAttribute="bottom" constant="12" id="oup-nk-003"/>
+                                                    <constraint firstItem="oup-nc-001" firstAttribute="leading" secondItem="oup-ns-001" secondAttribute="leading" constant="20" id="oup-nk-004"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-nc-001" secondAttribute="trailing" constant="20" id="oup-nk-005"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-nc-001" secondAttribute="bottom" id="oup-nk-006"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- More about me card -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ms-001" userLabel="More About Me Section">
+                                                <rect key="frame" x="0.0" y="908" width="393" height="262"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="More about me" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mt-001" userLabel="More About Me Title">
+                                                        <rect key="frame" x="20" y="0.0" width="130" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mc-001" userLabel="More About Me Card">
+                                                        <rect key="frame" x="20" y="38" width="353" height="216"/>
+                                                        <subviews>
+                                                            <tableView clipsSubviews="YES" contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="208" scrollEnabled="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="52" estimatedRowHeight="52" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mv-001" userLabel="Basic Info Table View" customClass="AutoHeightTableView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                <rect key="frame" x="0.0" y="4" width="353" height="208"/>
+                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <prototypes>
+                                                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="OtherUserBasicInfoCell" rowHeight="52" id="oup-mz-001" userLabel="Basic Info Cell" customClass="OtherUserBasicInfoCell" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                        <rect key="frame" x="0.0" y="50" width="353" height="52"/>
+                                                                        <autoresizingMask key="autoresizingMask"/>
+                                                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="oup-mz-001" id="oup-mz-002">
+                                                                            <rect key="frame" x="0.0" y="0.0" width="353" height="52"/>
+                                                                            <autoresizingMask key="autoresizingMask"/>
+                                                                            <subviews>
+                                                                                <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-003" userLabel="Icon Bubble">
+                                                                                    <rect key="frame" x="14" y="8" width="36" height="36"/>
+                                                                                    <subviews>
+                                                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-004" userLabel="Icon Image">
+                                                                                            <rect key="frame" x="8" y="8" width="20" height="20"/>
+                                                                                            <constraints>
+                                                                                                <constraint firstAttribute="width" constant="20" id="oup-mz-010"/>
+                                                                                                <constraint firstAttribute="height" constant="20" id="oup-mz-011"/>
+                                                                                            </constraints>
+                                                                                        </imageView>
+                                                                                    </subviews>
+                                                                                    <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <constraints>
+                                                                                        <constraint firstAttribute="width" constant="36" id="oup-mz-012"/>
+                                                                                        <constraint firstAttribute="height" constant="36" id="oup-mz-013"/>
+                                                                                        <constraint firstItem="oup-mz-004" firstAttribute="centerX" secondItem="oup-mz-003" secondAttribute="centerX" id="oup-mz-014"/>
+                                                                                        <constraint firstItem="oup-mz-004" firstAttribute="centerY" secondItem="oup-mz-003" secondAttribute="centerY" id="oup-mz-015"/>
+                                                                                    </constraints>
+                                                                                    <userDefinedRuntimeAttributes>
+                                                                                        <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                                            <real key="value" value="18"/>
+                                                                                        </userDefinedRuntimeAttribute>
+                                                                                    </userDefinedRuntimeAttributes>
+                                                                                </view>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Height" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-005" userLabel="Title Label">
+                                                                                    <rect key="frame" x="62" y="16" width="50" height="20"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="15"/>
+                                                                                    <color key="textColor" red="0.14509803921568629" green="0.14509803921568629" blue="0.14509803921568629" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <nil key="highlightedColor"/>
+                                                                                </label>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" horizontalCompressionResistancePriority="749" text="5.1 Feet" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-006" userLabel="Value Label">
+                                                                                    <rect key="frame" x="124" y="16" width="213" height="20"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                                                    <color key="textColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <nil key="highlightedColor"/>
+                                                                                </label>
+                                                                                <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-007" userLabel="Separator">
+                                                                                    <rect key="frame" x="62" y="51" width="291" height="1"/>
+                                                                                    <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <constraints>
+                                                                                        <constraint firstAttribute="height" constant="1" id="oup-mz-016"/>
+                                                                                    </constraints>
+                                                                                </view>
+                                                                            </subviews>
+                                                                            <constraints>
+                                                                                <constraint firstItem="oup-mz-003" firstAttribute="leading" secondItem="oup-mz-002" secondAttribute="leading" constant="14" id="oup-mz-017"/>
+                                                                                <constraint firstItem="oup-mz-003" firstAttribute="centerY" secondItem="oup-mz-002" secondAttribute="centerY" id="oup-mz-018"/>
+                                                                                <constraint firstItem="oup-mz-005" firstAttribute="leading" secondItem="oup-mz-003" secondAttribute="trailing" constant="12" id="oup-mz-019"/>
+                                                                                <constraint firstItem="oup-mz-005" firstAttribute="centerY" secondItem="oup-mz-002" secondAttribute="centerY" id="oup-mz-020"/>
+                                                                                <constraint firstItem="oup-mz-006" firstAttribute="leading" secondItem="oup-mz-005" secondAttribute="trailing" constant="12" id="oup-mz-021"/>
+                                                                                <constraint firstAttribute="trailing" secondItem="oup-mz-006" secondAttribute="trailing" constant="16" id="oup-mz-022"/>
+                                                                                <constraint firstItem="oup-mz-006" firstAttribute="centerY" secondItem="oup-mz-002" secondAttribute="centerY" id="oup-mz-023"/>
+                                                                                <constraint firstItem="oup-mz-007" firstAttribute="leading" secondItem="oup-mz-005" secondAttribute="leading" id="oup-mz-024"/>
+                                                                                <constraint firstAttribute="trailing" secondItem="oup-mz-007" secondAttribute="trailing" id="oup-mz-025"/>
+                                                                                <constraint firstAttribute="bottom" secondItem="oup-mz-007" secondAttribute="bottom" id="oup-mz-026"/>
+                                                                            </constraints>
+                                                                        </tableViewCellContentView>
+                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        <connections>
+                                                                            <outlet property="iconImageView" destination="oup-mz-004" id="oup-mz-027"/>
+                                                                            <outlet property="separatorView" destination="oup-mz-007" id="oup-mz-028"/>
+                                                                            <outlet property="titleLabel" destination="oup-mz-005" id="oup-mz-029"/>
+                                                                            <outlet property="valueLabel" destination="oup-mz-006" id="oup-mz-030"/>
+                                                                        </connections>
+                                                                    </tableViewCell>
+                                                                </prototypes>
+                                                                <userDefinedRuntimeAttributes>
+                                                                    <userDefinedRuntimeAttribute type="number" keyPath="sectionHeaderTopPadding">
+                                                                        <real key="value" value="0.0"/>
+                                                                    </userDefinedRuntimeAttribute>
+                                                                </userDefinedRuntimeAttributes>
+                                                                <connections>
+                                                                    <outlet property="dataSource" destination="oup-vc-001" id="oup-mv-002"/>
+                                                                </connections>
+                                                            </tableView>
+                                                        </subviews>
+                                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstItem="oup-mv-001" firstAttribute="top" secondItem="oup-mc-001" secondAttribute="top" constant="4" id="oup-mc-002"/>
+                                                            <constraint firstItem="oup-mv-001" firstAttribute="leading" secondItem="oup-mc-001" secondAttribute="leading" id="oup-mc-003"/>
+                                                            <constraint firstAttribute="trailing" secondItem="oup-mv-001" secondAttribute="trailing" id="oup-mc-004"/>
+                                                            <constraint firstAttribute="bottom" secondItem="oup-mv-001" secondAttribute="bottom" constant="4" id="oup-mc-005"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                <real key="value" value="22"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                                                <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                                                <real key="value" value="0.080000000000000002"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                                                <real key="value" value="12"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+<size key="value" width="0.0" height="4"/>
+</userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-mt-001" firstAttribute="top" secondItem="oup-ms-001" secondAttribute="top" id="oup-mk-001"/>
+                                                    <constraint firstItem="oup-mt-001" firstAttribute="leading" secondItem="oup-ms-001" secondAttribute="leading" constant="20" id="oup-mk-002"/>
+                                                    <constraint firstItem="oup-mc-001" firstAttribute="top" secondItem="oup-mt-001" secondAttribute="bottom" constant="12" id="oup-mk-003"/>
+                                                    <constraint firstItem="oup-mc-001" firstAttribute="leading" secondItem="oup-ms-001" secondAttribute="leading" constant="20" id="oup-mk-004"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-mc-001" secondAttribute="trailing" constant="20" id="oup-mk-005"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-mc-001" secondAttribute="bottom" constant="8" id="oup-mk-006"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Moments grid -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-os-001" userLabel="Moments Section">
+                                                <rect key="frame" x="0.0" y="1194" width="393" height="188"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Moments" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ot-001" userLabel="Moments Title">
+                                                        <rect key="frame" x="20" y="0.0" width="85" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oa-001" userLabel="See All Moments Button">
+                                                        <rect key="frame" x="318" y="0.0" width="55" height="26"/>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="15"/>
+                                                        <color key="tintColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <state key="normal" title="See all">
+                                                            <color key="titleColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        </state>
+                                                        <connections>
+                                                            <action selector="seeAllMomentsTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-oa-002"/>
+                                                        </connections>
+                                                    </button>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ok-001" userLabel="Moments Stack">
+                                                        <rect key="frame" x="20" y="38" width="353" height="150"/>
+                                                        <subviews>
+                                                            <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="150" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ov-001" userLabel="Moments Collection View" customClass="AutoHeightCollectionView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                <rect key="frame" x="0.0" y="0.0" width="353" height="150"/>
+                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="8" minimumInteritemSpacing="8" id="oup-of-001">
+                                                                    <size key="itemSize" width="112" height="150"/>
+                                                                    <size key="headerReferenceSize" width="0.0" height="0.0"/>
+                                                                    <size key="footerReferenceSize" width="0.0" height="0.0"/>
+                                                                    <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
+                                                                </collectionViewFlowLayout>
+                                                                <cells>
+                                                                    <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="OtherUserMomentCell" id="oup-oz-001" userLabel="Moment Cell" customClass="OtherUserMomentCell" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                        <rect key="frame" x="0.0" y="0.0" width="112" height="150"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                                        <collectionViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="oup-oz-002">
+                                                                            <rect key="frame" x="0.0" y="0.0" width="112" height="150"/>
+                                                                            <autoresizingMask key="autoresizingMask"/>
+                                                                            <subviews>
+                                                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oz-003" userLabel="Moment Image">
+                                                                                    <rect key="frame" x="0.0" y="0.0" width="112" height="150"/>
+                                                                                    <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <userDefinedRuntimeAttributes>
+                                                                                        <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                                            <real key="value" value="14"/>
+                                                                                        </userDefinedRuntimeAttribute>
+                                                                                    </userDefinedRuntimeAttributes>
+                                                                                </imageView>
+                                                                                <view hidden="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oz-013" userLabel="Text Moment Background" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                                    <rect key="frame" x="0.0" y="0.0" width="112" height="150"/>
+                                                                                    <userDefinedRuntimeAttributes>
+                                                                                        <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                                            <color key="value" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        </userDefinedRuntimeAttribute>
+                                                                                        <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                                            <color key="value" red="0.97647058823529409" green="0.45098039215686275" blue="0.5490196078431373" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        </userDefinedRuntimeAttribute>
+                                                                                        <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                                            <real key="value" value="14"/>
+                                                                                        </userDefinedRuntimeAttribute>
+                                                                                    </userDefinedRuntimeAttributes>
+                                                                                </view>
+                                                                                <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Text moment" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="5" baselineAdjustment="alignBaselines" minimumScaleFactor="0.59999999999999998" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oz-014" userLabel="Text Moment Label">
+                                                                                    <rect key="frame" x="10" y="12" width="92" height="100"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="14"/>
+                                                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                                    <nil key="highlightedColor"/>
+                                                                                </label>
+                                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="♥ 12" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oz-004" userLabel="Like Count Label">
+                                                                                    <rect key="frame" x="8" y="126" width="34" height="16"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="12"/>
+                                                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                                    <nil key="highlightedColor"/>
+                                                                                    <color key="shadowColor" white="0.0" alpha="0.5" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                                    <size key="shadowOffset" width="0.0" height="1"/>
+                                                                                </label>
+                                                                            </subviews>
+                                                                            <constraints>
+                                                                                <constraint firstItem="oup-oz-003" firstAttribute="top" secondItem="oup-oz-002" secondAttribute="top" id="oup-oz-005"/>
+                                                                                <constraint firstItem="oup-oz-003" firstAttribute="leading" secondItem="oup-oz-002" secondAttribute="leading" id="oup-oz-006"/>
+                                                                                <constraint firstAttribute="trailing" secondItem="oup-oz-003" secondAttribute="trailing" id="oup-oz-007"/>
+                                                                                <constraint firstAttribute="bottom" secondItem="oup-oz-003" secondAttribute="bottom" id="oup-oz-008"/>
+                                                                                <constraint firstItem="oup-oz-004" firstAttribute="leading" secondItem="oup-oz-002" secondAttribute="leading" constant="8" id="oup-oz-009"/>
+                                                                                <constraint firstAttribute="bottom" secondItem="oup-oz-004" secondAttribute="bottom" constant="8" id="oup-oz-010"/>
+                                                                                <constraint firstItem="oup-oz-013" firstAttribute="top" secondItem="oup-oz-002" secondAttribute="top" id="oup-oz-015"/>
+                                                                                <constraint firstItem="oup-oz-013" firstAttribute="leading" secondItem="oup-oz-002" secondAttribute="leading" id="oup-oz-016"/>
+                                                                                <constraint firstAttribute="trailing" secondItem="oup-oz-013" secondAttribute="trailing" id="oup-oz-017"/>
+                                                                                <constraint firstAttribute="bottom" secondItem="oup-oz-013" secondAttribute="bottom" id="oup-oz-018"/>
+                                                                                <constraint firstItem="oup-oz-014" firstAttribute="top" relation="greaterThanOrEqual" secondItem="oup-oz-002" secondAttribute="top" constant="10" id="oup-oz-019"/>
+                                                                                <constraint firstItem="oup-oz-014" firstAttribute="leading" secondItem="oup-oz-002" secondAttribute="leading" constant="10" id="oup-oz-020"/>
+                                                                                <constraint firstAttribute="trailing" secondItem="oup-oz-014" secondAttribute="trailing" constant="10" id="oup-oz-021"/>
+                                                                                <constraint firstItem="oup-oz-014" firstAttribute="centerY" secondItem="oup-oz-002" secondAttribute="centerY" constant="-8" id="oup-oz-022"/>
+                                                                                <constraint firstItem="oup-oz-004" firstAttribute="top" relation="greaterThanOrEqual" secondItem="oup-oz-014" secondAttribute="bottom" constant="4" id="oup-oz-023"/>
+                                                                            </constraints>
+                                                                        </collectionViewCellContentView>
+                                                                        <size key="customSize" width="112" height="150"/>
+                                                                        <connections>
+                                                                            <outlet property="likeCountLabel" destination="oup-oz-004" id="oup-oz-011"/>
+                                                                            <outlet property="momentImageView" destination="oup-oz-003" id="oup-oz-012"/>
+                                                                            <outlet property="textBackgroundView" destination="oup-oz-013" id="oup-oz-024"/>
+                                                                            <outlet property="textMomentLabel" destination="oup-oz-014" id="oup-oz-025"/>
+                                                                        </connections>
+                                                                    </collectionViewCell>
+                                                                </cells>
+                                                                <connections>
+                                                                    <outlet property="dataSource" destination="oup-vc-001" id="oup-ov-002"/>
+                                                                    <outlet property="delegate" destination="oup-vc-001" id="oup-ov-003"/>
+                                                                </connections>
+                                                            </collectionView>
+                                                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="No moments shared yet" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-on-001" userLabel="No Moments Label">
+                                                                <rect key="frame" x="0.0" y="150" width="353" height="18"/>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="14"/>
+                                                                <color key="textColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                        </subviews>
+                                                    </stackView>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-ot-001" firstAttribute="top" secondItem="oup-os-001" secondAttribute="top" id="oup-ok-002"/>
+                                                    <constraint firstItem="oup-ot-001" firstAttribute="leading" secondItem="oup-os-001" secondAttribute="leading" constant="20" id="oup-ok-003"/>
+                                                    <constraint firstItem="oup-ok-001" firstAttribute="top" secondItem="oup-ot-001" secondAttribute="bottom" constant="12" id="oup-ok-004"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-oa-001" secondAttribute="trailing" constant="20" id="oup-oa-003"/>
+                                                    <constraint firstItem="oup-oa-001" firstAttribute="centerY" secondItem="oup-ot-001" secondAttribute="centerY" id="oup-oa-004"/>
+                                                    <constraint firstItem="oup-ok-001" firstAttribute="leading" secondItem="oup-os-001" secondAttribute="leading" constant="20" id="oup-ok-005"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-ok-001" secondAttribute="trailing" constant="20" id="oup-ok-006"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-ok-001" secondAttribute="bottom" id="oup-ok-007"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Space so the last section scrolls above the action buttons -->
+                                            <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-bs-001" userLabel="Bottom Spacer">
+                                                <rect key="frame" x="0.0" y="1406" width="393" height="110"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="110" id="oup-bs-002"/>
+                                                </constraints>
+                                            </view>
+                                        </subviews>
+                                    </stackView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstItem="oup-cs-001" firstAttribute="top" secondItem="oup-cg-001" secondAttribute="top" id="oup-sk-001"/>
+                                    <constraint firstItem="oup-cs-001" firstAttribute="leading" secondItem="oup-cg-001" secondAttribute="leading" id="oup-sk-002"/>
+                                    <constraint firstItem="oup-cs-001" firstAttribute="trailing" secondItem="oup-cg-001" secondAttribute="trailing" id="oup-sk-003"/>
+                                    <constraint firstItem="oup-cs-001" firstAttribute="bottom" secondItem="oup-cg-001" secondAttribute="bottom" id="oup-sk-004"/>
+                                    <constraint firstItem="oup-cs-001" firstAttribute="width" secondItem="oup-fg-001" secondAttribute="width" id="oup-sk-005"/>
+                                </constraints>
+                                <viewLayoutGuide key="contentLayoutGuide" id="oup-cg-001"/>
+                                <viewLayoutGuide key="frameLayoutGuide" id="oup-fg-001"/>
+                            </scrollView>
+                            <!-- Soft white fade behind the action buttons -->
+                            <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-af-001" userLabel="Action Bar Fade" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="702" width="393" height="150"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="150" id="oup-af-002"/>
+                                </constraints>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                        <color key="value" white="1" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                        <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                            </view>
+                            <!-- Top buttons over the cover photo -->
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-bb-001" userLabel="Back Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                <rect key="frame" x="16" y="65" width="40" height="40"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.34999999999999998" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="40" id="oup-bb-002"/>
+                                    <constraint firstAttribute="height" constant="40" id="oup-bb-003"/>
+                                </constraints>
+                                <accessibility key="accessibilityConfiguration" label="Back"/>
+                                <state key="normal" image="chevron.left" catalog="system">
+                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="16" weight="bold"/>
+                                </state>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="20"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="backTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-bb-004"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mb-001" userLabel="More Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                <rect key="frame" x="337" y="65" width="40" height="40"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.34999999999999998" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="40" id="oup-mb-002"/>
+                                    <constraint firstAttribute="height" constant="40" id="oup-mb-003"/>
+                                </constraints>
+                                <accessibility key="accessibilityConfiguration" label="More options"/>
+                                <state key="normal" image="ellipsis" catalog="system">
+                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="16" weight="bold"/>
+                                </state>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="20"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="moreTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-mb-004"/>
+                                </connections>
+                            </button>
+                            <!-- Floating Dislike / Super Like / Like / Chat buttons -->
+                            <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="18" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ak-001" userLabel="Action Buttons Stack">
+                                <rect key="frame" x="53.666666666666657" y="736" width="286" height="72"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-dk-001" userLabel="Dislike Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="6" width="60" height="60"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="tintColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="60" id="oup-dk-002"/>
+                                            <constraint firstAttribute="height" constant="60" id="oup-dk-003"/>
+                                        </constraints>
+                                        <accessibility key="accessibilityConfiguration" label="Dislike"/>
+                                        <state key="normal" image="xmark" catalog="system">
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="22" weight="bold"/>
+                                        </state>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="30"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                                <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                                <real key="value" value="0.14999999999999999"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                                <real key="value" value="10"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+<size key="value" width="0.0" height="4"/>
+</userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                        <connections>
+                                            <action selector="dislikeTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-dk-004"/>
+                                        </connections>
+                                    </button>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-sk-010" userLabel="Super Like Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="10" width="52" height="52"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="tintColor" red="0.20000000000000001" green="0.55000000000000004" blue="0.94999999999999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="52" id="oup-sk-011"/>
+                                            <constraint firstAttribute="height" constant="52" id="oup-sk-012"/>
+                                        </constraints>
+                                        <accessibility key="accessibilityConfiguration" label="Super like"/>
+                                        <state key="normal" image="star.fill" catalog="system">
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20" weight="bold"/>
+                                        </state>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="26"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                                <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                                <real key="value" value="0.14999999999999999"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                                <real key="value" value="10"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+<size key="value" width="0.0" height="4"/>
+</userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                        <connections>
+                                            <action selector="superLikeTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-sk-013"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-lk-001" userLabel="Like Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                        <rect key="frame" x="78" y="0.0" width="72" height="72"/>
+                                        <color key="backgroundColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="72" id="oup-lk-002"/>
+                                            <constraint firstAttribute="height" constant="72" id="oup-lk-003"/>
+                                        </constraints>
+                                        <accessibility key="accessibilityConfiguration" label="Like"/>
+                                        <state key="normal" image="heart.fill" catalog="system">
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="28" weight="bold"/>
+                                        </state>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="36"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                                <color key="value" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                                <real key="value" value="0.40000000000000002"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                                <real key="value" value="12"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+<size key="value" width="0.0" height="6"/>
+</userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                        <connections>
+                                            <action selector="likeTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-lk-004"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ck-001" userLabel="Chat Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                        <rect key="frame" x="168" y="6" width="60" height="60"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <color key="tintColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="60" id="oup-ck-002"/>
+                                            <constraint firstAttribute="height" constant="60" id="oup-ck-003"/>
+                                        </constraints>
+                                        <accessibility key="accessibilityConfiguration" label="Chat"/>
+                                        <state key="normal" image="message.fill" catalog="system">
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="22" weight="bold"/>
+                                        </state>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="30"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                                <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                                <real key="value" value="0.14999999999999999"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                                <real key="value" value="10"/>
+                                            </userDefinedRuntimeAttribute>
+                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+<size key="value" width="0.0" height="4"/>
+</userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                        <connections>
+                                            <action selector="chatTapped:" destination="oup-vc-001" eventType="touchUpInside" id="oup-ck-004"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="oup-sa-001"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="oup-sv-001" firstAttribute="top" secondItem="oup-rv-001" secondAttribute="top" id="oup-rc-001"/>
+                            <constraint firstItem="oup-sv-001" firstAttribute="leading" secondItem="oup-rv-001" secondAttribute="leading" id="oup-rc-002"/>
+                            <constraint firstAttribute="trailing" secondItem="oup-sv-001" secondAttribute="trailing" id="oup-rc-003"/>
+                            <constraint firstAttribute="bottom" secondItem="oup-sv-001" secondAttribute="bottom" id="oup-rc-004"/>
+                            <constraint firstItem="oup-af-001" firstAttribute="leading" secondItem="oup-rv-001" secondAttribute="leading" id="oup-rc-005"/>
+                            <constraint firstAttribute="trailing" secondItem="oup-af-001" secondAttribute="trailing" id="oup-rc-006"/>
+                            <constraint firstAttribute="bottom" secondItem="oup-af-001" secondAttribute="bottom" id="oup-rc-007"/>
+                            <constraint firstItem="oup-bb-001" firstAttribute="top" secondItem="oup-sa-001" secondAttribute="top" constant="6" id="oup-rc-008"/>
+                            <constraint firstItem="oup-bb-001" firstAttribute="leading" secondItem="oup-rv-001" secondAttribute="leading" constant="16" id="oup-rc-009"/>
+                            <constraint firstItem="oup-mb-001" firstAttribute="centerY" secondItem="oup-bb-001" secondAttribute="centerY" id="oup-rc-010"/>
+                            <constraint firstAttribute="trailing" secondItem="oup-mb-001" secondAttribute="trailing" constant="16" id="oup-rc-011"/>
+                            <constraint firstItem="oup-ak-001" firstAttribute="centerX" secondItem="oup-rv-001" secondAttribute="centerX" id="oup-rc-012"/>
+                            <constraint firstItem="oup-sa-001" firstAttribute="bottom" secondItem="oup-ak-001" secondAttribute="bottom" constant="10" id="oup-rc-013"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="aboutLabel" destination="oup-al-001" id="oup-ox-001"/>
+                        <outlet property="aboutMeSectionView" destination="oup-ms-001" id="oup-ox-002"/>
+                        <outlet property="actionBarFadeView" destination="oup-af-001" id="oup-ox-003"/>
+                        <outlet property="actionBarStackView" destination="oup-ak-001" id="oup-ox-004"/>
+                        <outlet property="avatarImageView" destination="oup-ai-001" id="oup-ox-005"/>
+                        <outlet property="backButton" destination="oup-bb-001" id="oup-ox-006"/>
+                        <outlet property="basicInfoTableView" destination="oup-mv-001" id="oup-ox-007"/>
+                        <outlet property="chatButton" destination="oup-ck-001" id="oup-ox-008"/>
+                        <outlet property="coverImageView" destination="oup-ci-001" id="oup-ox-009"/>
+                        <outlet property="dislikeButton" destination="oup-dk-001" id="oup-ox-010"/>
+                        <outlet property="interestsChipsView" destination="oup-nc-001" id="oup-ox-011"/>
+                        <outlet property="interestsSectionView" destination="oup-ns-001" id="oup-ox-012"/>
+                        <outlet property="likeButton" destination="oup-lk-001" id="oup-ox-013"/>
+                        <outlet property="locationLabel" destination="oup-ll-001" id="oup-ox-014"/>
+                        <outlet property="momentsCollectionView" destination="oup-ov-001" id="oup-ox-015"/>
+                        <outlet property="moreButton" destination="oup-mb-001" id="oup-ox-016"/>
+                        <outlet property="nameLabel" destination="oup-nl-001" id="oup-ox-017"/>
+                        <outlet property="noMomentsLabel" destination="oup-on-001" id="oup-ox-018"/>
+                        <outlet property="onlineDotView" destination="oup-od-001" id="oup-ox-019"/>
+                        <outlet property="onlineStatusLabel" destination="oup-ol-001" id="oup-ox-020"/>
+                        <outlet property="photosCollectionView" destination="oup-pv-001" id="oup-ox-021"/>
+                        <outlet property="photosCountLabel" destination="oup-pc-001" id="oup-ox-022"/>
+                        <outlet property="photosSectionView" destination="oup-ps-001" id="oup-ox-023"/>
+                        <outlet property="superLikeButton" destination="oup-sk-010" id="oup-ox-024"/>
+                        <outlet property="verifiedImageView" destination="oup-vi-001" id="oup-ox-025"/>
+                        <outlet property="voiceIntroSectionView" destination="oup-vs-001" id="oup-ox-026"/>
+                        <outlet property="voicePlayButton" destination="oup-vs-004" id="oup-ox-027"/>
+                        <outlet property="voiceWaveformHolder" destination="oup-vs-008" id="oup-ox-028"/>
+                        <outlet property="voiceDurationLabel" destination="oup-vs-010" id="oup-ox-029"/>
+                        <outlet property="quickMomentsSectionView" destination="oup-qs-001" id="oup-ox-030"/>
+                        <outlet property="quickMomentsView" destination="oup-qs-003" id="oup-ox-031"/>
+                        <outlet property="seeAllMomentsButton" destination="oup-oa-001" id="oup-ox-032"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="oup-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+                <tapGestureRecognizer id="oup-tg-001" userLabel="About Tap Gesture">
+                    <connections>
+                        <action selector="aboutTapped:" destination="oup-vc-001" id="oup-tg-002"/>
+                    </connections>
+                </tapGestureRecognizer>
+            </objects>
+            <point key="canvasLocation" x="0.0" y="0.0"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="checkmark.seal.fill" catalog="system" width="128" height="128"/>
+        <image name="chevron.left" catalog="system" width="97" height="128"/>
+        <image name="ellipsis" catalog="system" width="128" height="37"/>
+        <image name="heart.fill" catalog="system" width="128" height="107"/>
+        <image name="message.fill" catalog="system" width="128" height="114"/>
+        <image name="play.fill" catalog="system" width="120" height="128"/>
+        <image name="star.fill" catalog="system" width="128" height="116"/>
+        <image name="xmark" catalog="system" width="128" height="113"/>
+    </resources>
+</document>
