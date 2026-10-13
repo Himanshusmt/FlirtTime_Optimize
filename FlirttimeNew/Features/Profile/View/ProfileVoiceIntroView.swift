@@ -172,7 +172,7 @@ final class ProfileVoiceIntroView: UIView {
         config.image = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
         config.imagePadding = 6
         config.contentInsets = NSDirectionalEdgeInsets(top: 11, leading: 12, bottom: 11, trailing: 12)
-        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
         return UIButton(configuration: config)
     }
 

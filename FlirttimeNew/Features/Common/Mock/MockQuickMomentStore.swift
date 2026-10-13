@@ -34,7 +34,7 @@ final class MockQuickMomentStore {
 
     func list(userID: String) -> QuickMomentListResponse {
         let rows = (moments + othersMoments).filter { $0.userId == userID }.sorted {
-            (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
+            (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
         }
         return QuickMomentListResponse(success: true, message: "", data: rows)
     }
@@ -53,11 +53,11 @@ final class MockQuickMomentStore {
             return CreateQuickMomentResponse(success: false, message: "Add a photo or write something", data: nil)
         }
         let moment = QuickMoment(id: UUID().uuidString,
-                                 userId: MockVibeStore.shared.currentUserID,
+                                 userId: MockMomentsStore.shared.currentUserID,
                                  mediaPath: mediaPath,
                                  text: body?.isEmpty == false ? body : nil,
                                  background: mediaPath == nil ? background : nil,
-                                 createdAt: VibeDate.string(from: Date()),
+                                 createdAt: MomentsDate.string(from: Date()),
                                  reactions: [],
                                  replies: [])
         moments.append(moment)
@@ -65,17 +65,17 @@ final class MockQuickMomentStore {
         return CreateQuickMomentResponse(success: true, message: "Quick moment shared", data: moment)
     }
 
-    func delete(id: String) -> VibeActionResponse {
+    func delete(id: String) -> MomentsActionResponse {
         guard let index = moments.firstIndex(where: { $0.id == id }) else {
-            return VibeActionResponse(success: false, message: "Quick moment not found")
+            return MomentsActionResponse(success: false, message: "Quick moment not found")
         }
-        guard moments[index].userId == MockVibeStore.shared.currentUserID else {
-            return VibeActionResponse(success: false, message: "You can only delete your own quick moments")
+        guard moments[index].userId == MockMomentsStore.shared.currentUserID else {
+            return MomentsActionResponse(success: false, message: "You can only delete your own quick moments")
         }
         let removed = moments.remove(at: index)
         persist()
         if let path = removed.mediaPath { LocalImageStore.shared.remove(path) }
-        return VibeActionResponse(success: true, message: "Quick moment deleted")
+        return MomentsActionResponse(success: true, message: "Quick moment deleted")
     }
 
     func reset() {
@@ -91,12 +91,12 @@ final class MockQuickMomentStore {
     }
 
     private static func timestamp(minutesAgo: Int) -> String {
-        VibeDate.string(from: Date().addingTimeInterval(TimeInterval(-minutesAgo * 60)))
+        MomentsDate.string(from: Date().addingTimeInterval(TimeInterval(-minutesAgo * 60)))
     }
 
-    private static func author(_ id: Int) -> VibeAuthor? {
+    private static func author(_ id: Int) -> MomentsAuthor? {
         guard let person = MockPeople.person(id: id) else { return nil }
-        return VibeAuthor(userId: String(person.id), userName: person.displayName, fullName: person.fullname,
+        return MomentsAuthor(userId: String(person.id), userName: person.displayName, fullName: person.fullname,
                           profilePicture: person.photos.first, verified: person.isVerified, location: person.location)
     }
 
@@ -133,7 +133,7 @@ final class MockQuickMomentStore {
     }
 
     private static func seed() -> [QuickMoment] {
-        let me = MockVibeStore.shared.currentUserID
+        let me = MockMomentsStore.shared.currentUserID
         let seeds: [(media: String?, text: String?, background: Int?, minutesAgo: Int,
                      reactions: [(Int, String)], replies: [(Int, String)])] = [
             (nil, "Who's up for coffee this evening? ☕️", 1, 20,

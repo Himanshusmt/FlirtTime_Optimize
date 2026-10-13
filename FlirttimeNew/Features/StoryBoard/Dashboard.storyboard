@@ -51,7 +51,7 @@
                                         </constraints>
                                     </imageView>
                                     <button hidden="YES" opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CSX-SM-mgl">
-                                        <rect key="frame" x="307" y="10" width="40" height="40"/>
+                                        <rect key="frame" x="262" y="6" width="40" height="40"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="40" id="0Zb-2i-dpb"/>
                                             <constraint firstAttribute="height" constant="40" id="dZZ-uH-gLD"/>
@@ -63,7 +63,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xSr-Bt-n01" userLabel="Search Button">
-                                        <rect key="frame" x="304" y="10" width="40" height="40"/>
+                                        <rect key="frame" x="305" y="6" width="40" height="40"/>
                                         <accessibility key="accessibilityConfiguration" label="Search people"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="40" id="xSr-Bt-n02"/>
@@ -75,7 +75,7 @@
                                         </connections>
                                     </button>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7Yd-dY-0xd">
-                                        <rect key="frame" x="350" y="10" width="40" height="40"/>
+                                        <rect key="frame" x="345" y="6" width="40" height="40"/>
                                         <subviews>
                                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Notification" translatesAutoresizingMaskIntoConstraints="NO" id="ksg-V0-3Yv">
                                                 <rect key="frame" x="7.666666666666686" y="8" width="25" height="24"/>
@@ -111,11 +111,11 @@
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
-                                    <constraint firstAttribute="trailing" secondItem="7Yd-dY-0xd" secondAttribute="trailing" constant="12" id="3Kt-Kk-Jvt"/>
+                                    <constraint firstAttribute="trailing" secondItem="7Yd-dY-0xd" secondAttribute="trailing" constant="8" id="3Kt-Kk-Jvt"/>
                                     <constraint firstAttribute="height" constant="52" id="49b-3u-Rvd"/>
                                     <constraint firstItem="kcB-pR-5PD" firstAttribute="centerY" secondItem="f8H-I1-wmZ" secondAttribute="centerY" id="6o0-83-ZYx"/>
                                     <constraint firstItem="kcB-pR-5PD" firstAttribute="leading" secondItem="f8H-I1-wmZ" secondAttribute="leading" constant="16" id="Acz-yw-4qV"/>
-                                    <constraint firstItem="7Yd-dY-0xd" firstAttribute="leading" secondItem="xSr-Bt-n01" secondAttribute="trailing" constant="6" id="ZeD-hr-2Ey"/>
+                                    <constraint firstItem="7Yd-dY-0xd" firstAttribute="leading" secondItem="xSr-Bt-n01" secondAttribute="trailing" id="ZeD-hr-2Ey"/>
                                     <constraint firstItem="xSr-Bt-n01" firstAttribute="leading" secondItem="CSX-SM-mgl" secondAttribute="trailing" constant="3" id="xSr-Bt-n05"/>
                                     <constraint firstItem="xSr-Bt-n01" firstAttribute="centerY" secondItem="f8H-I1-wmZ" secondAttribute="centerY" id="xSr-Bt-n06"/>
                                     <constraint firstItem="CSX-SM-mgl" firstAttribute="centerY" secondItem="f8H-I1-wmZ" secondAttribute="centerY" id="ekh-l1-wjv"/>
@@ -148,7 +148,7 @@
         <!--Discover-->
         <scene sceneID="gZy-7g-ZM6">
             <objects>
-                <viewController storyboardIdentifier="DiscoverViewController" id="nbj-Lb-RuJ" customClass="DiscoverViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="DiscoverPeopleListViewController" id="nbj-Lb-RuJ" customClass="DiscoverPeopleListViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Hm1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -177,17 +177,307 @@
             </objects>
             <point key="canvasLocation" x="2171" y="511"/>
         </scene>
-        <!--Vibe Feed-->
+        <!--Moments List-->
         <scene sceneID="QMF-JN-sJ0">
             <objects>
-                <viewController storyboardIdentifier="VibeFeedViewController" id="lhb-dt-1Kd" customClass="VibeFeedViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="MomentsListViewController" id="lhb-dt-1Kd" customClass="MomentsListViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Mo1-v1-001">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="-1" estimatedRowHeight="160" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tv-001" userLabel="Moments Table">
+                                <rect key="frame" x="0.0" y="59" width="393" height="793"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <view key="tableHeaderView" contentMode="scaleToFill" id="MLv-hd-001" userLabel="Filter Header">
+                                    <rect key="frame" x="0.0" y="0.0" width="393" height="59"/>
+                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                    <subviews>
+                                        <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" alwaysBounceHorizontal="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-002" userLabel="Filter Scroll">
+                                            <rect key="frame" x="0.0" y="12" width="393" height="35"/>
+                                            <subviews>
+                                                <stackView opaque="NO" contentMode="scaleToFill" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-003">
+                                                    <rect key="frame" x="16" y="0.0" width="405" height="35"/>
+                                                    <subviews>
+                                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-004" userLabel="Add Moment Chip" customClass="MomentsFilterChipButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                                            <rect key="frame" x="0.0" y="0.0" width="158" height="35"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="35" id="MLv-hc-001"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                            <inset key="contentEdgeInsets" minX="12" minY="0.0" maxX="22" maxY="0.0"/>
+                                                            <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="-10" maxY="0.0"/>
+                                                            <state key="normal" title="Add new moment" image="addIcon">
+                                                                <color key="titleColor" name="#646464"/>
+                                                            </state>
+                                                            <connections>
+                                                                <action selector="filterChipTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-003"/>
+                                                            </connections>
+                                                        </button>
+                                                        <button opaque="NO" tag="1" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-005" userLabel="Near By Chip" customClass="MomentsFilterChipButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                                            <rect key="frame" x="168" y="0.0" width="80" height="35"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="35" id="MLv-hc-002"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                            <inset key="contentEdgeInsets" minX="12" minY="0.0" maxX="12" maxY="0.0"/>
+                                                            <state key="normal" title="Near by">
+                                                                <color key="titleColor" name="#646464"/>
+                                                            </state>
+                                                            <connections>
+                                                                <action selector="filterChipTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-004"/>
+                                                            </connections>
+                                                        </button>
+                                                        <button opaque="NO" tag="2" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-006" userLabel="Within 25Km Chip" customClass="MomentsFilterChipButton" customModule="FlirttimeNew" customModuleProvider="target">
+                                                            <rect key="frame" x="258" y="0.0" width="147" height="35"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="35" id="MLv-hc-003"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                            <inset key="contentEdgeInsets" minX="12" minY="0.0" maxX="12" maxY="0.0"/>
+                                                            <state key="normal" title="Less than 25km">
+                                                                <color key="titleColor" name="#646464"/>
+                                                            </state>
+                                                            <connections>
+                                                                <action selector="filterChipTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-005"/>
+                                                            </connections>
+                                                        </button>
+                                                    </subviews>
+                                                </stackView>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="MLv-hd-003" firstAttribute="leading" secondItem="MLv-hd-020" secondAttribute="leading" constant="16" id="MLv-hc-004"/>
+                                                <constraint firstItem="MLv-hd-020" firstAttribute="trailing" secondItem="MLv-hd-003" secondAttribute="trailing" constant="16" id="MLv-hc-005"/>
+                                                <constraint firstItem="MLv-hd-003" firstAttribute="top" secondItem="MLv-hd-020" secondAttribute="top" id="MLv-hc-006"/>
+                                                <constraint firstItem="MLv-hd-020" firstAttribute="bottom" secondItem="MLv-hd-003" secondAttribute="bottom" id="MLv-hc-007"/>
+                                                <constraint firstItem="MLv-hd-003" firstAttribute="height" secondItem="MLv-hd-021" secondAttribute="height" id="MLv-hc-008"/>
+                                                <constraint firstAttribute="height" constant="35" id="MLv-hc-013"/>
+                                            </constraints>
+                                            <viewLayoutGuide key="contentLayoutGuide" id="MLv-hd-020"/>
+                                            <viewLayoutGuide key="frameLayoutGuide" id="MLv-hd-021"/>
+                                        </scrollView>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hd-007" userLabel="Separator">
+                                            <rect key="frame" x="0.0" y="58.5" width="393" height="0.5"/>
+                                            <color key="backgroundColor" red="0.8901960784" green="0.8980392157" blue="0.8980392157" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="0.5" id="MLv-hc-009"/>
+                                            </constraints>
+                                        </view>
+                                    </subviews>
+                                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <constraints>
+                                        <constraint firstItem="MLv-hd-002" firstAttribute="leading" secondItem="MLv-hd-001" secondAttribute="leading" id="MLv-hc-010"/>
+                                        <constraint firstAttribute="trailing" secondItem="MLv-hd-002" secondAttribute="trailing" id="MLv-hc-011"/>
+                                        <constraint firstItem="MLv-hd-002" firstAttribute="top" secondItem="MLv-hd-001" secondAttribute="top" constant="12" id="MLv-hc-012"/>
+                                        <constraint firstItem="MLv-hd-007" firstAttribute="leading" secondItem="MLv-hd-001" secondAttribute="leading" id="MLv-hc-014"/>
+                                        <constraint firstAttribute="trailing" secondItem="MLv-hd-007" secondAttribute="trailing" id="MLv-hc-015"/>
+                                        <constraint firstAttribute="bottom" secondItem="MLv-hd-007" secondAttribute="bottom" id="MLv-hc-016"/>
+                                    </constraints>
+                                </view>
+                                <connections>
+                                    <outlet property="dataSource" destination="lhb-dt-1Kd" id="MLv-oc-001"/>
+                                    <outlet property="delegate" destination="lhb-dt-1Kd" id="MLv-oc-002"/>
+                                </connections>
+                            </tableView>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hc-101" userLabel="Header Container">
+                                <rect key="frame" x="0.0" y="59" width="393" height="52"/>
+                                <subviews>
+                                <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-001" userLabel="Top Bar">
+                                    <rect key="frame" x="0.0" y="0.0" width="393" height="52"/>
+                                    <subviews>
+                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="FlirtTimeTitle" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-002" userLabel="Logo">
+                                            <rect key="frame" x="16" y="14" width="100" height="24"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="100" id="MLv-tc-001"/>
+                                                <constraint firstAttribute="height" constant="24" id="MLv-tc-002"/>
+                                            </constraints>
+                                        </imageView>
+                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-003" userLabel="Notification Button">
+                                            <rect key="frame" x="343" y="4" width="44" height="44"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="44" id="MLv-tc-003"/>
+                                                <constraint firstAttribute="height" constant="44" id="MLv-tc-004"/>
+                                            </constraints>
+                                            <accessibility key="accessibilityConfiguration" label="Notifications"/>
+                                            <state key="normal" image="Notification"/>
+                                            <connections>
+                                                <action selector="notificationTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-001"/>
+                                            </connections>
+                                        </button>
+                                        <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-004" userLabel="Back Button">
+                                            <rect key="frame" x="6" y="4" width="44" height="44"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="44" id="MLv-tc-005"/>
+                                                <constraint firstAttribute="height" constant="44" id="MLv-tc-006"/>
+                                            </constraints>
+                                            <color key="tintColor" name="#252525"/>
+                                            <accessibility key="accessibilityConfiguration" label="Back"/>
+                                            <state key="normal" image="chevron.left" catalog="system">
+                                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="18" weight="semibold"/>
+                                            </state>
+                                            <connections>
+                                                <action selector="backTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-002"/>
+                                            </connections>
+                                        </button>
+                                        <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="My Moments" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-005" userLabel="Title">
+                                            <rect key="frame" x="52" y="14" width="112" height="24"/>
+                                            <accessibility key="accessibilityConfiguration">
+                                                <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                            </accessibility>
+                                            <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="20"/>
+                                            <color key="textColor" name="#000000"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                    </subviews>
+                                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                    <constraints>
+                                        <constraint firstItem="MLv-tb-002" firstAttribute="leading" secondItem="MLv-tb-001" secondAttribute="leading" constant="16" id="MLv-tc-007"/>
+                                        <constraint firstItem="MLv-tb-002" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-008"/>
+                                        <constraint firstItem="MLv-tb-004" firstAttribute="leading" secondItem="MLv-tb-001" secondAttribute="leading" constant="6" id="MLv-tc-009"/>
+                                        <constraint firstItem="MLv-tb-004" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-010"/>
+                                        <constraint firstItem="MLv-tb-005" firstAttribute="leading" secondItem="MLv-tb-004" secondAttribute="trailing" constant="2" id="MLv-tc-011"/>
+                                        <constraint firstItem="MLv-tb-005" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-012"/>
+                                        <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="MLv-tb-005" secondAttribute="trailing" constant="16" id="MLv-tc-013"/>
+                                        <constraint firstAttribute="trailing" secondItem="MLv-tb-003" secondAttribute="trailing" constant="6" id="MLv-tc-014"/>
+                                        <constraint firstItem="MLv-tb-003" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-015"/>
+                                        <constraint firstAttribute="height" constant="52" id="MLv-tc-016"/>
+                                    </constraints>
+                                </view>
+                                <view hidden="YES" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-001" userLabel="Uploading Bar">
+                                    <rect key="frame" x="0.0" y="52" width="393" height="0.0"/>
+                                    <subviews>
+                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="file-image" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-002">
+                                            <rect key="frame" x="14" y="12.5" width="30" height="30"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="30" id="MLv-uc-001"/>
+                                                <constraint firstAttribute="height" constant="30" id="MLv-uc-002"/>
+                                            </constraints>
+                                        </imageView>
+                                        <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-003">
+                                            <rect key="frame" x="54" y="11" width="323" height="33"/>
+                                            <subviews>
+                                                <stackView opaque="NO" contentMode="scaleToFill" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-004">
+                                                    <rect key="frame" x="0.0" y="0.0" width="323" height="17"/>
+                                                    <subviews>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Moment uploading" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-005">
+                                                            <rect key="frame" x="0.0" y="0.0" width="258" height="17"/>
+                                                            <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="14"/>
+                                                            <color key="textColor" name="#252525"/>
+                                                            <nil key="highlightedColor"/>
+                                                        </label>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0%" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-006">
+                                                            <rect key="frame" x="263" y="0.0" width="60" height="17"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="width" constant="60" id="MLv-uc-003"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="12"/>
+                                                            <color key="textColor" name="#252525"/>
+                                                            <nil key="highlightedColor"/>
+                                                        </label>
+                                                    </subviews>
+                                                </stackView>
+                                                <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-007">
+                                                    <rect key="frame" x="0.0" y="29" width="323" height="4"/>
+                                                    <color key="progressTintColor" name="#F04349"/>
+                                                    <color key="trackTintColor" red="0.8901960784" green="0.8980392157" blue="0.8980392157" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                </progressView>
+                                            </subviews>
+                                        </stackView>
+                                    </subviews>
+                                    <color key="backgroundColor" red="0.94901960784313721" green="0.95686274509803926" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <constraints>
+                                        <constraint firstItem="MLv-ub-002" firstAttribute="leading" secondItem="MLv-ub-001" secondAttribute="leading" constant="14" id="MLv-uc-004"/>
+                                        <constraint firstItem="MLv-ub-002" firstAttribute="top" secondItem="MLv-ub-001" secondAttribute="top" constant="12.5" id="MLv-uc-005"/>
+                                        <constraint firstItem="MLv-ub-003" firstAttribute="leading" secondItem="MLv-ub-002" secondAttribute="trailing" constant="10" id="MLv-uc-006"/>
+                                        <constraint firstAttribute="trailing" secondItem="MLv-ub-003" secondAttribute="trailing" constant="16" id="MLv-uc-007"/>
+                                        <constraint firstItem="MLv-ub-003" firstAttribute="centerY" secondItem="MLv-ub-002" secondAttribute="centerY" id="MLv-uc-008"/>
+                                        <constraint firstAttribute="height" id="MLv-uc-009"/>
+                                    </constraints>
+                                </view>
+                                </subviews>
+                                <color key="backgroundColor" red="1" green="0.94999999999999996" blue="0.94999999999999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstItem="MLv-tb-001" firstAttribute="top" secondItem="MLv-hc-101" secondAttribute="top" id="MLv-mc-001"/>
+                                    <constraint firstItem="MLv-tb-001" firstAttribute="leading" secondItem="MLv-hc-101" secondAttribute="leading" id="MLv-mc-002"/>
+                                    <constraint firstAttribute="trailing" secondItem="MLv-tb-001" secondAttribute="trailing" id="MLv-mc-003"/>
+                                    <constraint firstItem="MLv-ub-001" firstAttribute="top" secondItem="MLv-tb-001" secondAttribute="bottom" id="MLv-mc-004"/>
+                                    <constraint firstItem="MLv-ub-001" firstAttribute="leading" secondItem="MLv-hc-101" secondAttribute="leading" id="MLv-mc-005"/>
+                                    <constraint firstAttribute="trailing" secondItem="MLv-ub-001" secondAttribute="trailing" id="MLv-mc-006"/>
+                                    <constraint firstAttribute="bottom" secondItem="MLv-ub-001" secondAttribute="bottom" id="MLv-mc-016"/>
+                                </constraints>
+                            </view>
+                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="No moments yet." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-es-001" userLabel="Empty State">
+                                <rect key="frame" x="32" y="472" width="329" height="19"/>
+                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="16"/>
+                                <color key="textColor" name="#646464"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-st-001" userLabel="Scroll To Top Button">
+                                <rect key="frame" x="333" y="758" width="44" height="44"/>
+                                <color key="backgroundColor" name="#FFFFFF"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="44" id="MLv-sc-001"/>
+                                    <constraint firstAttribute="height" constant="44" id="MLv-sc-002"/>
+                                </constraints>
+                                <accessibility key="accessibilityConfiguration" label="Scroll to top"/>
+                                <state key="normal" image="readLessIcon"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                        <real key="value" value="22"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                        <color key="value" name="#000000"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                        <real key="value" value="0.14999999999999999"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                        <real key="value" value="6"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+                                        <size key="value" width="0.0" height="2"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="scrollToTopTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-006"/>
+                                </connections>
+                            </button>
+                        </subviews>
                         <viewLayoutGuide key="safeArea" id="Mo1-v1-002"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <color key="backgroundColor" name="#FFFFFF"/>
+                        <constraints>
+                            <constraint firstItem="MLv-tv-001" firstAttribute="top" secondItem="Mo1-v1-002" secondAttribute="top" id="MLv-mc-007"/>
+                            <constraint firstItem="MLv-hc-101" firstAttribute="top" secondItem="Mo1-v1-002" secondAttribute="top" id="MLv-mc-017"/>
+                            <constraint firstItem="MLv-hc-101" firstAttribute="leading" secondItem="Mo1-v1-001" secondAttribute="leading" id="MLv-mc-018"/>
+                            <constraint firstAttribute="trailing" secondItem="MLv-hc-101" secondAttribute="trailing" id="MLv-mc-019"/>
+                            <constraint firstItem="MLv-tv-001" firstAttribute="leading" secondItem="Mo1-v1-001" secondAttribute="leading" id="MLv-mc-008"/>
+                            <constraint firstAttribute="trailing" secondItem="MLv-tv-001" secondAttribute="trailing" id="MLv-mc-009"/>
+                            <constraint firstAttribute="bottom" secondItem="MLv-tv-001" secondAttribute="bottom" id="MLv-mc-010"/>
+                            <constraint firstItem="MLv-es-001" firstAttribute="centerY" secondItem="MLv-tv-001" secondAttribute="centerY" id="MLv-mc-011"/>
+                            <constraint firstItem="MLv-es-001" firstAttribute="leading" secondItem="Mo1-v1-001" secondAttribute="leading" constant="32" id="MLv-mc-012"/>
+                            <constraint firstAttribute="trailing" secondItem="MLv-es-001" secondAttribute="trailing" constant="32" id="MLv-mc-013"/>
+                            <constraint firstItem="Mo1-v1-002" firstAttribute="trailing" secondItem="MLv-st-001" secondAttribute="trailing" constant="16" id="MLv-mc-014"/>
+                            <constraint firstItem="Mo1-v1-002" firstAttribute="bottom" secondItem="MLv-st-001" secondAttribute="bottom" constant="16" id="MLv-mc-015"/>
+                        </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="Mo1-v1-003"/>
+                    <connections>
+                        <outlet property="backButton" destination="MLv-tb-004" id="MLv-oc-003"/>
+                        <outlet property="emptyStateLabel" destination="MLv-es-001" id="MLv-oc-004"/>
+                        <outlet property="headerContainerView" destination="MLv-hc-101" id="MLv-oc-020"/>
+                        <outlet property="logoImageView" destination="MLv-tb-002" id="MLv-oc-005"/>
+                        <outlet property="notificationButton" destination="MLv-tb-003" id="MLv-oc-006"/>
+                        <outlet property="scrollToTopBottomConstraint" destination="MLv-mc-015" id="MLv-oc-007"/>
+                        <outlet property="scrollToTopButton" destination="MLv-st-001" id="MLv-oc-008"/>
+                        <outlet property="tableView" destination="MLv-tv-001" id="MLv-oc-009"/>
+                        <outlet property="titleLabel" destination="MLv-tb-005" id="MLv-oc-010"/>
+                        <outlet property="uploadProgressView" destination="MLv-ub-007" id="MLv-oc-013"/>
+                        <outlet property="uploadingBarHeightConstraint" destination="MLv-uc-009" id="MLv-oc-014"/>
+                        <outlet property="uploadingBarView" destination="MLv-ub-001" id="MLv-oc-015"/>
+                        <outlet property="uploadingPercentageLabel" destination="MLv-ub-006" id="MLv-oc-016"/>
+                        <outletCollection property="filterChipButtons" destination="MLv-hd-004" collectionClass="NSMutableArray" id="MLv-oc-017"/>
+                        <outletCollection property="filterChipButtons" destination="MLv-hd-005" collectionClass="NSMutableArray" id="MLv-oc-018"/>
+                        <outletCollection property="filterChipButtons" destination="MLv-hd-006" collectionClass="NSMutableArray" id="MLv-oc-019"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Mo1-v1-004" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -366,6 +656,7 @@
         <image name="Tab5UnSelected" width="24" height="24"/>
         <image name="addCoverPhoto" width="333" height="127"/>
         <image name="addIcon" width="16" height="16"/>
+        <image name="chevron.left" catalog="system" width="97" height="128"/>
         <image name="clearCall" width="19" height="19"/>
         <image name="clearChat" width="19" height="19"/>
         <image name="delete-15" width="375" height="201"/>

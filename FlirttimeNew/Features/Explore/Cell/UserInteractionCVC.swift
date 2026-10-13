@@ -15,11 +15,13 @@ class UserInteractionCVC: UICollectionViewCell {
     let imgVerify = UIImageView()
     let lblName = UILabel()
     let lblSubtitle = UILabel()
+    let lblDistance = UILabel()
     let superLikeImgView = UIImageView()
 
     private let cardView = UIView()
     private let gradientLayer = CAGradientLayer()
     private let onlineBadge = UIView()
+    private let distanceRow = UIStackView()
     var blurEffectView: UIVisualEffectView?
 
     override init(frame: CGRect) {
@@ -67,11 +69,26 @@ class UserInteractionCVC: UICollectionViewCell {
         nameRow.spacing = 4
         nameRow.alignment = .center
 
+        let distanceIcon = UIImageView(image: UIImage(systemName: "figure.walk"))
+        distanceIcon.tintColor = UIColor.white.withAlphaComponent(0.85)
+        distanceIcon.contentMode = .scaleAspectFit
+        distanceIcon.setContentHuggingPriority(.required, for: .horizontal)
+        distanceIcon.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        lblDistance.font = .fredoka(.medium, size: 12)
+        lblDistance.textColor = UIColor.white.withAlphaComponent(0.85)
+
+        distanceRow.addArrangedSubview(distanceIcon)
+        distanceRow.addArrangedSubview(lblDistance)
+        distanceRow.spacing = 4
+        distanceRow.alignment = .center
+        distanceRow.isHidden = true
+
         lblSubtitle.font = .fredoka(.regular, size: 12)
         lblSubtitle.textColor = UIColor.white.withAlphaComponent(0.85)
         lblSubtitle.numberOfLines = 2
 
-        let infoStack = UIStackView(arrangedSubviews: [nameRow, lblSubtitle])
+        let infoStack = UIStackView(arrangedSubviews: [nameRow, distanceRow, lblSubtitle])
         infoStack.axis = .vertical
         infoStack.spacing = 2
         infoStack.alignment = .leading
@@ -102,6 +119,9 @@ class UserInteractionCVC: UICollectionViewCell {
 
             imgVerify.widthAnchor.constraint(equalToConstant: 14),
             imgVerify.heightAnchor.constraint(equalToConstant: 14),
+
+            distanceIcon.widthAnchor.constraint(equalToConstant: 11),
+            distanceIcon.heightAnchor.constraint(equalToConstant: 11),
 
             infoStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
             infoStack.trailingAnchor.constraint(lessThanOrEqualTo: cardView.trailingAnchor, constant: -12),
@@ -168,11 +188,15 @@ class UserInteractionCVC: UICollectionViewCell {
         removeBlur()
         userImage.image = nil
         lblSubtitle.text = nil
+        lblDistance.text = nil
+        distanceRow.isHidden = true
         superLikeImgView.isHidden = true
         onlineBadge.isHidden = true
     }
 
-    func configure(imagePath: String?, name: String?, age: Int?, subtitle: String?, isVerified: Bool, isOnline: Bool, isSuperLike: Bool, isLocked: Bool) {
+    func configure(imagePath: String?, name: String?, age: Int?, distanceText: String?, subtitle: String?, isVerified: Bool, isOnline: Bool, isSuperLike: Bool, isLocked: Bool) {
+        lblDistance.text = distanceText
+        distanceRow.isHidden = distanceText == nil
         userImage.loadImage(path: imagePath)
         let displayName = name ?? ""
         if let age, age > 0 {

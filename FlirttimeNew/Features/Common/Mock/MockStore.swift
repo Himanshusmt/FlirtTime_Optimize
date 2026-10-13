@@ -27,12 +27,12 @@ final class MockStore {
 
     func subscriptionPlansJSON() -> [String: Any] {
         let commonFeatures: [[String: Any]] = [
-            ["id": 1, "text": "Unlimited Vibes every day", "image": "infinity"],
+            ["id": 1, "text": "Unlimited Likes every day", "image": "infinity"],
             ["id": 2, "text": "Chat without waiting for a match", "image": "bubble.left.and.bubble.right.fill"],
             ["id": 3, "text": "See who already liked you", "image": "eye.fill"]
         ]
         let plusFeatures: [[String: Any]] = [
-            ["id": 4, "text": "5 Super Vibes every week", "image": "star.fill"],
+            ["id": 4, "text": "5 Super Likes every week", "image": "star.fill"],
             ["id": 5, "text": "Priority placement in Discover", "image": "bolt.fill"]
         ]
         let topFeatures: [[String: Any]] = [

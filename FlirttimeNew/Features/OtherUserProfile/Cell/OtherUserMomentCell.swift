@@ -15,8 +15,8 @@ final class OtherUserMomentCell: UICollectionViewCell {
     @IBOutlet private weak var textMomentLabel: UILabel!
     @IBOutlet private weak var likeCountLabel: UILabel!
 
-    /// Photo vibes show their first photo; text-only vibes show the caption on a gradient.
-    func configure(vibe: Vibe, index: Int, total: Int) {
+    /// Photo moments show their first photo; text-only moments show the caption on a gradient.
+    func configure(vibe: MomentsPost, index: Int, total: Int) {
         let photo = (vibe.media ?? []).compactMap(\.filePath).first { !$0.isEmpty }
         let caption = vibe.caption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 

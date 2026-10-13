@@ -40,8 +40,10 @@ struct MatchedUser: Codable {
     let fcmToken: String?
     let memExpired: String?
     let createdAt, updatedAt: String?
+    let distance: Double?
 
     enum CodingKeys: String, CodingKey {
+        case distance
         case matchedUserID = "matched_user_id"
         case id
         case userID = "user_id"

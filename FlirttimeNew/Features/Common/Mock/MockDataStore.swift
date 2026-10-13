@@ -132,7 +132,7 @@ final class MockDataStore {
         let payload: [String: Any] = [
             "audio_url": name,
             "duration": (duration * 10).rounded() / 10,
-            "updated_at": VibeDate.string(from: Date())
+            "updated_at": MomentsDate.string(from: Date())
         ]
         user["voice_intro"] = payload
         persist()
@@ -150,9 +150,9 @@ final class MockDataStore {
         user = MockDataStore.defaultUser()
         try? FileManager.default.removeItem(at: fileURL)
         VoiceIntroFileStore.shared.removeAll()
-        VibeUploadViewModel.shared.cancel()
+        MomentsUploadViewModel.shared.cancel()
         LocalImageStore.shared.removeAll()
-        MockVibeStore.shared.reset()
+        MockMomentsStore.shared.reset()
         MockQuickMomentStore.shared.reset()
         MockDiscover.shared.reset()
         MockStore.shared.reset()

@@ -72,25 +72,9 @@
                                     <constraint firstItem="spp-lg-001" firstAttribute="centerY" secondItem="spp-tb-001" secondAttribute="centerY" id="spp-tb-006"/>
                                 </constraints>
                             </view>
-                            <!-- Title -->
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Search People" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="spp-tt-001" userLabel="Title Label">
-                                <rect key="frame" x="117" y="123" width="159" height="32"/>
-                                <accessibility key="accessibilityConfiguration">
-                                    <accessibilityTraits key="traits" staticText="YES" header="YES"/>
-                                </accessibility>
-                                <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="26"/>
-                                <color key="textColor" red="0.14509803921568629" green="0.14509803921568629" blue="0.14509803921568629" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Find someone special by name or city" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="spp-st-001" userLabel="Subtitle Label">
-                                <rect key="frame" x="82" y="159" width="229" height="17"/>
-                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="14"/>
-                                <color key="textColor" red="0.5490196078431373" green="0.5490196078431373" blue="0.5490196078431373" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
                             <!-- Search bar -->
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="spp-sb-001" userLabel="Search Bar">
-                                <rect key="frame" x="16" y="194" width="361" height="52"/>
+                                <rect key="frame" x="16" y="127" width="361" height="52"/>
                                 <subviews>
                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="magnifyingglass" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="spp-si-001" userLabel="Search Icon">
                                         <rect key="frame" x="18" y="15" width="22" height="22"/>
@@ -132,7 +116,7 @@
                                         </connections>
                                     </button>
                                 </subviews>
-                                <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="52" id="spp-sb-002"/>
                                     <constraint firstItem="spp-si-001" firstAttribute="leading" secondItem="spp-sb-001" secondAttribute="leading" constant="18" id="spp-sb-003"/>
@@ -237,7 +221,7 @@
                                                             </userDefinedRuntimeAttributes>
                                                         </view>
                                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="leading" spacing="3" translatesAutoresizingMaskIntoConstraints="NO" id="spp-is-001" userLabel="Info Stack">
-                                                            <rect key="frame" x="12" y="179" width="144" height="41"/>
+                                                            <rect key="frame" x="12" y="158" width="144" height="62"/>
                                                             <subviews>
                                                                 <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="spp-nr-001" userLabel="Name Row">
                                                                     <rect key="frame" x="0.0" y="0.0" width="88" height="20"/>
@@ -257,8 +241,27 @@
                                                                         </imageView>
                                                                     </subviews>
                                                                 </stackView>
+                                                                <stackView hidden="YES" opaque="NO" contentMode="scaleToFill" alignment="center" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="spp-ds-001" userLabel="Distance Row">
+                                                                    <rect key="frame" x="0.0" y="23" width="66" height="18"/>
+                                                                    <subviews>
+                                                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="figure.walk" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="spp-di-001" userLabel="Distance Icon">
+                                                                            <rect key="frame" x="0.0" y="3.5" width="11" height="11"/>
+                                                                            <color key="tintColor" white="1" alpha="0.84999999999999998" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                            <constraints>
+                                                                                <constraint firstAttribute="width" constant="11" id="spp-di-002"/>
+                                                                                <constraint firstAttribute="height" constant="11" id="spp-di-003"/>
+                                                                            </constraints>
+                                                                        </imageView>
+                                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="3 km away" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="spp-dl-001" userLabel="Distance Label">
+                                                                            <rect key="frame" x="15" y="0.0" width="51" height="18"/>
+                                                                            <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="12"/>
+                                                                            <color key="textColor" white="1" alpha="0.84999999999999998" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                            <nil key="highlightedColor"/>
+                                                                        </label>
+                                                                    </subviews>
+                                                                </stackView>
                                                                 <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="spp-ls-001" userLabel="Location Row">
-                                                                    <rect key="frame" x="0.0" y="23" width="130" height="18"/>
+                                                                    <rect key="frame" x="0.0" y="44" width="130" height="18"/>
                                                                     <subviews>
                                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="location.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="spp-pi-001" userLabel="Location Icon">
                                                                             <rect key="frame" x="0.0" y="3.5" width="11" height="11"/>
@@ -290,8 +293,7 @@
                                                         <constraint firstAttribute="bottom" secondItem="spp-gr-001" secondAttribute="bottom" id="spp-cd-008"/>
                                                         <constraint firstItem="spp-gr-001" firstAttribute="height" secondItem="spp-cd-001" secondAttribute="height" multiplier="0.55" id="spp-cd-009"/>
                                                         <constraint firstItem="spp-ob-001" firstAttribute="top" secondItem="spp-cd-001" secondAttribute="top" constant="10" id="spp-cd-010"/>
-                                                        <constraint firstItem="spp-ob-001" firstAttribute="leading" secondItem="spp-cd-001" secondAttribute="leading" constant="10" id="spp-cd-011"/>
-                                                        <constraint firstItem="spp-is-001" firstAttribute="leading" secondItem="spp-cd-001" secondAttribute="leading" constant="12" id="spp-cd-012"/>
+                                                        <constraint firstItem="spp-ob-001" firstAttribute="leading" secondItem="spp-cd-001" secondAttribute="leading" constant="10" id="spp-cd-011"/>                                                        <constraint firstItem="spp-is-001" firstAttribute="leading" secondItem="spp-cd-001" secondAttribute="leading" constant="12" id="spp-cd-012"/>
                                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="spp-is-001" secondAttribute="trailing" constant="12" id="spp-cd-013"/>
                                                         <constraint firstAttribute="bottom" secondItem="spp-is-001" secondAttribute="bottom" constant="12" id="spp-cd-014"/>
                                                     </constraints>
@@ -322,6 +324,8 @@
                                             </userDefinedRuntimeAttribute>
                                         </userDefinedRuntimeAttributes>
                                         <connections>
+                                            <outlet property="distanceStackView" destination="spp-ds-001" id="spp-cx-007"/>
+                                            <outlet property="distanceLabel" destination="spp-dl-001" id="spp-cx-008"/>
                                             <outlet property="locationLabel" destination="spp-lc-001" id="spp-cx-001"/>
                                             <outlet property="locationStackView" destination="spp-ls-001" id="spp-cx-002"/>
                                             <outlet property="nameLabel" destination="spp-nm-001" id="spp-cx-003"/>
@@ -395,12 +399,7 @@
                             <constraint firstItem="spp-tb-001" firstAttribute="top" secondItem="spp-sa-001" secondAttribute="top" id="spp-rc-001"/>
                             <constraint firstItem="spp-tb-001" firstAttribute="leading" secondItem="spp-rv-001" secondAttribute="leading" id="spp-rc-002"/>
                             <constraint firstAttribute="trailing" secondItem="spp-tb-001" secondAttribute="trailing" id="spp-rc-003"/>
-                            <constraint firstItem="spp-tt-001" firstAttribute="top" secondItem="spp-tb-001" secondAttribute="bottom" constant="8" id="spp-rc-004"/>
-                            <constraint firstItem="spp-tt-001" firstAttribute="centerX" secondItem="spp-rv-001" secondAttribute="centerX" id="spp-rc-005"/>
-                            <constraint firstItem="spp-st-001" firstAttribute="top" secondItem="spp-tt-001" secondAttribute="bottom" constant="4" id="spp-rc-006"/>
-                            <constraint firstItem="spp-st-001" firstAttribute="centerX" secondItem="spp-rv-001" secondAttribute="centerX" id="spp-rc-007"/>
-                            <constraint firstItem="spp-st-001" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="spp-rv-001" secondAttribute="leading" constant="24" id="spp-rc-008"/>
-                            <constraint firstItem="spp-sb-001" firstAttribute="top" secondItem="spp-st-001" secondAttribute="bottom" constant="18" id="spp-rc-009"/>
+                            <constraint firstItem="spp-sb-001" firstAttribute="top" secondItem="spp-tb-001" secondAttribute="bottom" constant="12" id="spp-rc-009"/>
                             <constraint firstItem="spp-sb-001" firstAttribute="leading" secondItem="spp-rv-001" secondAttribute="leading" constant="16" id="spp-rc-010"/>
                             <constraint firstAttribute="trailing" secondItem="spp-sb-001" secondAttribute="trailing" constant="16" id="spp-rc-011"/>
                             <constraint firstItem="spp-rl-001" firstAttribute="top" secondItem="spp-sb-001" secondAttribute="bottom" constant="18" id="spp-rc-012"/>
@@ -438,6 +437,7 @@
     <resources>
         <image name="BackIcon" width="28" height="28"/>
         <image name="FlirtTimeTitle" width="82" height="20"/>
+        <image name="figure.walk" catalog="system" width="95" height="128"/>
         <image name="location.fill" catalog="system" width="128" height="121"/>
         <image name="magnifyingglass" catalog="system" width="128" height="117"/>
         <image name="verifyIcon" width="15" height="15"/>

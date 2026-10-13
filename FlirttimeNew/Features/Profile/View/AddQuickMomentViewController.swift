@@ -17,9 +17,9 @@ final class AddQuickMomentViewController: UIViewController {
     private var photo: UIImage?
 
     private let canvas = UIView()
-    private let textBackground = VibeGradientView(colors: VibeTheme.storyBackground(0))
+    private let textBackground = MomentsGradientView(colors: MomentsTheme.storyBackground(0))
     private let photoView = UIImageView()
-    private let photoShade = VibeGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.6)],
+    private let photoShade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.6)],
                                               start: CGPoint(x: 0.5, y: 0.5), end: CGPoint(x: 0.5, y: 1))
     private let textView = UITextView()
     private let placeholderLabel = UILabel.vibeLabel(.bold, 26, style: .title1, color: UIColor.white.withAlphaComponent(0.6), lines: 0)
@@ -83,7 +83,7 @@ final class AddQuickMomentViewController: UIViewController {
         config.imagePlacement = .trailing
         config.imagePadding = 8
         config.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20)
-        config.attributedTitle = AttributedString("Share", attributes: AttributeContainer([.font: VibeFont.scaled(.bold, 16)]))
+        config.attributedTitle = AttributedString("Share", attributes: AttributeContainer([.font: MomentsFont.scaled(.bold, 16)]))
         shareButton.configuration = config
         shareButton.addAction(UIAction { [weak self] _ in self?.share() }, for: .touchUpInside)
 
@@ -161,14 +161,14 @@ final class AddQuickMomentViewController: UIViewController {
         photoView.isHidden = !isPhoto
         photoShade.isHidden = !isPhoto
         textBackground.isHidden = isPhoto
-        textBackground.setColors(VibeTheme.storyBackground(backgroundIndex))
+        textBackground.setColors(MomentsTheme.storyBackground(backgroundIndex))
         paletteButton.isHidden = isPhoto
         photoButton.configuration?.image = UIImage(systemName: isPhoto ? "trash.fill" : "photo.on.rectangle.angled",
                                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .bold))
         photoButton.accessibilityLabel = isPhoto ? "Remove photo" : "Add a photo"
 
         let size: CGFloat = isPhoto ? 18 : 28
-        textView.font = VibeFont.scaled(.bold, size, style: isPhoto ? .body : .title1)
+        textView.font = MomentsFont.scaled(.bold, size, style: isPhoto ? .body : .title1)
         placeholderLabel.font = textView.font
         placeholderLabel.text = isPhoto ? "Add a caption…" : "Type a quick moment…"
         textCenterConstraint?.isActive = !isPhoto
@@ -196,10 +196,10 @@ final class AddQuickMomentViewController: UIViewController {
     }
 
     private func nextBackground() {
-        backgroundIndex = (backgroundIndex + 1) % VibeTheme.storyBackgrounds.count
+        backgroundIndex = (backgroundIndex + 1) % MomentsTheme.storyBackgrounds.count
         UISelectionFeedbackGenerator().selectionChanged()
         UIView.transition(with: textBackground, duration: 0.25, options: .transitionCrossDissolve) {
-            self.textBackground.setColors(VibeTheme.storyBackground(self.backgroundIndex))
+            self.textBackground.setColors(MomentsTheme.storyBackground(self.backgroundIndex))
         }
     }
 

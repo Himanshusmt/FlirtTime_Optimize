@@ -19,6 +19,8 @@ struct DiscoverUser: Decodable {
     let datingIntent: String?
     let voiceIntro: DiscoverVoiceIntro?
     let moments: [DiscoverMoment]?
+    /// Total moments the user has posted; `moments` is only a preview.
+    let momentsCount: Int?
 
     enum CodingKeys: String, CodingKey {
         case userInfo = "user_info"
@@ -26,6 +28,7 @@ struct DiscoverUser: Decodable {
         case datingIntent = "dating_intent"
         case voiceIntro = "voice_intro"
         case moments
+        case momentsCount = "moments_count"
     }
 }
 

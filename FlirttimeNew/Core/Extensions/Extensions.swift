@@ -452,6 +452,15 @@ extension UIImage {
         }
 }
 
+extension Double {
+    /// "3 km away" / "Less than 1 km away"; `nil` for negative values.
+    var kmAwayText: String? {
+        guard self >= 0 else { return nil }
+        if self < 1 { return "Less than 1 km away" }
+        return "\(Int(rounded())) km away"
+    }
+}
+
 
 
 

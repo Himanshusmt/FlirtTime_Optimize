@@ -45,6 +45,7 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         setBinding()
+        setupSearchBar()
         updateSearchBarFocus(false)
         loadingIndicator.startAnimating()
         viewModel.getPeople()
@@ -90,10 +91,22 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         clearButton.isHidden = searchTextField.text?.isEmpty ?? true
     }
 
+    private func setupSearchBar() {
+        searchBarView.backgroundColor = .white
+        searchBarView.layer.shadowColor = AppColor.AppBlack.cgColor
+        searchBarView.layer.shadowOpacity = 0.08
+        searchBarView.layer.shadowRadius = 10
+        searchBarView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        searchTextField.textColor = AppColor.MineShaft
+        searchTextField.attributedPlaceholder = NSAttributedString(
+            string: searchTextField.placeholder ?? "Search by name or city",
+            attributes: [.foregroundColor: AppColor.Boulder]
+        )
+    }
+
     private func updateSearchBarFocus(_ focused: Bool) {
         UIView.animate(withDuration: 0.2) {
-            self.searchBarView.layer.borderColor = (focused ? AppColor.Punch : AppColor.AthensGray).cgColor
-            self.searchBarView.backgroundColor = focused ? .white : AppColor.AthensGray
+            self.searchBarView.layer.borderColor = (focused ? AppColor.Punch : AppColor.Silver).cgColor
         }
     }
 

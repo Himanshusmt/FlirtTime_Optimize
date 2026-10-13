@@ -1,0 +1,118 @@
+//
+//  SettingsViewController.swift
+//  FlirttimeNew
+//
+//  The layout (profile card, premium banner, grouped rows) lives in Settings.storyboard;
+//  this class only fills it with data and routes the row taps.
+//
+
+import UIKit
+import Combine
+
+final class SettingsViewController: BaseViewController, Instantiable {
+
+    static var storyboardName: StringConvertible {
+        return StoryboardName.settings
+    }
+
+    @IBOutlet private weak var avatarImageView: UIImageView!
+    @IBOutlet private weak var nameLabel: UILabel!
+    @IBOutlet private weak var contactLabel: UILabel!
+    @IBOutlet private weak var verifiedImageView: UIImageView!
+    @IBOutlet private weak var premiumCardView: UIView!
+    @IBOutlet private weak var versionLabel: UILabel!
+
+    private let viewModel = SettingsViewModel()
+    private var cancellables: Set<AnyCancellable> = []
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setBinding()
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        versionLabel.text = "Flirt Time v\(version) (\(build))"
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        checkHideCustomButton(hide: true)
+        premiumCardView.isHidden = UserDataManager.shared.isUserSubscriptionDone == true
+        viewModel.loadProfile()
+    }
+
+    private func setBinding() {
+        viewModel.$user.receive(on: DispatchQueue.main).sink { [weak self] user in
+            guard let self, let user else { return }
+            let info = user.userInfo
+            self.nameLabel.text = (info?.displayName ?? info?.fullname ?? "").firstLetterCapitalized
+            self.contactLabel.text = user.email ?? user.phone.map { "+\(user.phoneCode ?? "") \($0)" }
+            self.verifiedImageView.isHidden = info?.gestureIsVerified != true
+            self.avatarImageView.loadImage(path: info?.avatar, placeholder: UIImage(named: "ProfileBlur"))
+        }.store(in: &cancellables)
+
+        viewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
+        }.store(in: &cancellables)
+    }
+
+    private func push(_ viewController: UIViewController) {
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    // MARK: - Actions
+
+    @IBAction private func backButtonTapped(_ sender: UIButton) {
+        navigationController?.popViewController(animated: true)
+    }
+
+    @IBAction private func editProfileTapped(_ sender: UIButton) {
+        push(EditProfileViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func premiumTapped(_ sender: UIButton) {
+        openPremium()
+    }
+
+    @IBAction private func personalDetailsTapped(_ sender: UIButton) {
+        push(PersonalDetailsViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func privacySafetyTapped(_ sender: UIButton) {
+        push(PrivacySafetyViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func notificationsTapped(_ sender: UIButton) {
+        push(ManageNotificationViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func filteredProfilesTapped(_ sender: UIButton) {
+        push(FilteredProfilesViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func helpTapped(_ sender: UIButton) {
+        push(HelpSupportViewController.instantiateFromStoryboard())
+    }
+
+    @IBAction private func shareAppTapped(_ sender: UIButton) {
+        let message = "I'm on Flirt Time, come find me! https://flirttime.in"
+        let activity = UIActivityViewController(activityItems: [message], applicationActivities: nil)
+        activity.popoverPresentationController?.sourceView = sender
+        present(activity, animated: true)
+    }
+
+    @IBAction private func termsTapped(_ sender: UIButton) {
+        loadTermsAndConditions()
+    }
+
+    @IBAction private func privacyPolicyTapped(_ sender: UIButton) {
+        loadPrivacyPolicy()
+    }
+
+    @IBAction private func logoutTapped(_ sender: UIButton) {
+        aDeleteCustomPopUp.show(message: Constants.logOut.logout, button1Text: Constants.AlertButtons.yes, button2Text: Constants.AlertButtons.No, deleteType: .logout) { [weak self] in
+            self?.navigateToLoginScreen()
+        }
+    }
+}

@@ -36,7 +36,7 @@
                                         <subviews>
                                             <!-- Header: cover photo + avatar -->
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-hv-001" userLabel="Header View">
-                                                <rect key="frame" x="0.0" y="0.0" width="393" height="334"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="310"/>
                                                 <subviews>
                                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ci-001" userLabel="Cover Image">
                                                         <rect key="frame" x="0.0" y="0.0" width="393" height="270"/>
@@ -74,7 +74,7 @@
                                                         </userDefinedRuntimeAttributes>
                                                     </view>
                                                     <view clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ar-001" userLabel="Avatar Gradient Ring" customClass="GradientBackgroundView" customModule="FlirttimeNew" customModuleProvider="target">
-                                                        <rect key="frame" x="126.66666666666669" y="194" width="140" height="140"/>
+                                                        <rect key="frame" x="126.66666666666669" y="170" width="140" height="140"/>
                                                         <constraints>
                                                             <constraint firstAttribute="width" constant="140" id="oup-ar-002"/>
                                                             <constraint firstAttribute="height" constant="140" id="oup-ar-003"/>
@@ -93,7 +93,7 @@
                                                         </userDefinedRuntimeAttributes>
                                                     </view>
                                                     <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ab-001" userLabel="Avatar White Border">
-                                                        <rect key="frame" x="130.66666666666669" y="198" width="132" height="132"/>
+                                                        <rect key="frame" x="130.66666666666669" y="174" width="132" height="132"/>
                                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         <constraints>
                                                             <constraint firstAttribute="width" constant="132" id="oup-ab-002"/>
@@ -106,9 +106,10 @@
                                                         </userDefinedRuntimeAttributes>
                                                     </view>
                                                     <imageView clipsSubviews="YES" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ai-001" userLabel="Avatar Image">
-                                                        <rect key="frame" x="134.66666666666669" y="202" width="124" height="124"/>
+                                                        <rect key="frame" x="134.66666666666669" y="178" width="124" height="124"/>
                                                         <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                                        <accessibility key="accessibilityConfiguration" label="Profile photo">
+                                                        <accessibility key="accessibilityConfiguration" hint="Double tap to view the photo" label="Profile photo">
+                                                            <accessibilityTraits key="traits" button="YES" image="YES"/>
                                                             <bool key="isElement" value="YES"/>
                                                         </accessibility>
                                                         <constraints>
@@ -120,9 +121,12 @@
                                                                 <real key="value" value="62"/>
                                                             </userDefinedRuntimeAttribute>
                                                         </userDefinedRuntimeAttributes>
+                                                        <connections>
+                                                            <outletCollection property="gestureRecognizers" destination="oup-tg-010" appends="YES" id="oup-tg-012"/>
+                                                        </connections>
                                                     </imageView>
                                                     <view hidden="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-od-001" userLabel="Online Dot">
-                                                        <rect key="frame" x="239" y="306" width="22" height="22"/>
+                                                        <rect key="frame" x="239" y="282" width="22" height="22"/>
                                                         <color key="backgroundColor" red="0.23137254901960785" green="0.6470588235294118" blue="0.45882352941176469" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
                                                             <constraint firstAttribute="width" constant="22" id="oup-od-002"/>
@@ -152,7 +156,7 @@
                                                     <constraint firstAttribute="trailing" secondItem="oup-bf-001" secondAttribute="trailing" id="oup-hc-008"/>
                                                     <constraint firstItem="oup-bf-001" firstAttribute="bottom" secondItem="oup-ci-001" secondAttribute="bottom" id="oup-hc-009"/>
                                                     <constraint firstItem="oup-ar-001" firstAttribute="centerX" secondItem="oup-hv-001" secondAttribute="centerX" id="oup-hc-010"/>
-                                                    <constraint firstItem="oup-ar-001" firstAttribute="centerY" secondItem="oup-ci-001" secondAttribute="bottom" constant="-6" id="oup-hc-011"/>
+                                                    <constraint firstItem="oup-ar-001" firstAttribute="centerY" secondItem="oup-ci-001" secondAttribute="bottom" constant="-30" id="oup-hc-011"/>
                                                     <constraint firstAttribute="bottom" secondItem="oup-ar-001" secondAttribute="bottom" id="oup-hc-012"/>
                                                     <constraint firstItem="oup-ab-001" firstAttribute="centerX" secondItem="oup-ar-001" secondAttribute="centerX" id="oup-hc-013"/>
                                                     <constraint firstItem="oup-ab-001" firstAttribute="centerY" secondItem="oup-ar-001" secondAttribute="centerY" id="oup-hc-014"/>
@@ -164,7 +168,7 @@
                                             </view>
                                             <!-- Name, location, online status, about -->
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-is-001" userLabel="Identity Section">
-                                                <rect key="frame" x="0.0" y="358" width="393" height="100"/>
+                                                <rect key="frame" x="0.0" y="334" width="393" height="100"/>
                                                 <subviews>
                                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="oup-ik-001" userLabel="Identity Stack">
                                                         <rect key="frame" x="20" y="0.0" width="353" height="100"/>
@@ -182,14 +186,14 @@
                                                                         <nil key="highlightedColor"/>
                                                                     </label>
                                                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="checkmark.seal.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vi-001" userLabel="Verified Badge">
-                                                                        <rect key="frame" x="123" y="5" width="22" height="22"/>
+                                                                        <rect key="frame" x="123" y="7" width="18" height="18"/>
                                                                         <color key="tintColor" red="0.35999999999999999" green="0.67000000000000004" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                         <accessibility key="accessibilityConfiguration" label="Verified profile">
                                                                             <bool key="isElement" value="YES"/>
                                                                         </accessibility>
                                                                         <constraints>
-                                                                            <constraint firstAttribute="width" constant="22" id="oup-vi-002"/>
-                                                                            <constraint firstAttribute="height" constant="22" id="oup-vi-003"/>
+                                                                            <constraint firstAttribute="width" constant="18" id="oup-vi-002"/>
+                                                                            <constraint firstAttribute="height" constant="18" id="oup-vi-003"/>
                                                                         </constraints>
                                                                     </imageView>
                                                                 </subviews>
@@ -229,6 +233,39 @@
                                                     <constraint firstItem="oup-ik-001" firstAttribute="leading" secondItem="oup-is-001" secondAttribute="leading" constant="20" id="oup-ic-002"/>
                                                     <constraint firstAttribute="trailing" secondItem="oup-ik-001" secondAttribute="trailing" constant="20" id="oup-ic-003"/>
                                                     <constraint firstAttribute="bottom" secondItem="oup-ik-001" secondAttribute="bottom" id="oup-ic-004"/>
+                                                </constraints>
+                                            </view>
+                                            <!-- Quick moments (story bubbles) -->
+                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-001" userLabel="Quick Moments Section">
+                                                <rect key="frame" x="0.0" y="0.0" width="393" height="140"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Moments" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-002" userLabel="Quick Moments Title">
+                                                        <rect key="frame" x="20" y="0.0" width="150" height="26"/>
+                                                        <accessibility key="accessibilityConfiguration">
+                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
+                                                        </accessibility>
+                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
+                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-003" userLabel="Quick Moments View" customClass="ProfileQuickMomentsView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                        <rect key="frame" x="0.0" y="38" width="393" height="102"/>
+                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="102" id="oup-qs-004"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="showsAddButton" value="NO"/>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstItem="oup-qs-002" firstAttribute="top" secondItem="oup-qs-001" secondAttribute="top" id="oup-qs-005"/>
+                                                    <constraint firstItem="oup-qs-002" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" constant="20" id="oup-qs-006"/>
+                                                    <constraint firstItem="oup-qs-003" firstAttribute="top" secondItem="oup-qs-002" secondAttribute="bottom" constant="12" id="oup-qs-007"/>
+                                                    <constraint firstItem="oup-qs-003" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" id="oup-qs-008"/>
+                                                    <constraint firstAttribute="trailing" secondItem="oup-qs-003" secondAttribute="trailing" id="oup-qs-009"/>
+                                                    <constraint firstAttribute="bottom" secondItem="oup-qs-003" secondAttribute="bottom" id="oup-qs-010"/>
                                                 </constraints>
                                             </view>
                                             <!-- Voice intro player -->
@@ -304,39 +341,6 @@
                                                     <constraint firstItem="oup-vs-003" firstAttribute="leading" secondItem="oup-vs-001" secondAttribute="leading" constant="20" id="oup-vs-022"/>
                                                     <constraint firstAttribute="trailing" secondItem="oup-vs-003" secondAttribute="trailing" constant="20" id="oup-vs-023"/>
                                                     <constraint firstAttribute="bottom" secondItem="oup-vs-003" secondAttribute="bottom" id="oup-vs-024"/>
-                                                </constraints>
-                                            </view>
-                                            <!-- Quick moments (story bubbles) -->
-                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-001" userLabel="Quick Moments Section">
-                                                <rect key="frame" x="0.0" y="0.0" width="393" height="140"/>
-                                                <subviews>
-                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Quick Moments" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-002" userLabel="Quick Moments Title">
-                                                        <rect key="frame" x="20" y="0.0" width="150" height="26"/>
-                                                        <accessibility key="accessibilityConfiguration">
-                                                            <accessibilityTraits key="traits" staticText="YES" header="YES"/>
-                                                        </accessibility>
-                                                        <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="19"/>
-                                                        <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                        <nil key="highlightedColor"/>
-                                                    </label>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-qs-003" userLabel="Quick Moments View" customClass="ProfileQuickMomentsView" customModule="FlirttimeNew" customModuleProvider="target">
-                                                        <rect key="frame" x="0.0" y="38" width="393" height="102"/>
-                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                        <constraints>
-                                                            <constraint firstAttribute="height" constant="102" id="oup-qs-004"/>
-                                                        </constraints>
-                                                        <userDefinedRuntimeAttributes>
-                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="showsAddButton" value="NO"/>
-                                                        </userDefinedRuntimeAttributes>
-                                                    </view>
-                                                </subviews>
-                                                <constraints>
-                                                    <constraint firstItem="oup-qs-002" firstAttribute="top" secondItem="oup-qs-001" secondAttribute="top" id="oup-qs-005"/>
-                                                    <constraint firstItem="oup-qs-002" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" constant="20" id="oup-qs-006"/>
-                                                    <constraint firstItem="oup-qs-003" firstAttribute="top" secondItem="oup-qs-002" secondAttribute="bottom" constant="12" id="oup-qs-007"/>
-                                                    <constraint firstItem="oup-qs-003" firstAttribute="leading" secondItem="oup-qs-001" secondAttribute="leading" id="oup-qs-008"/>
-                                                    <constraint firstAttribute="trailing" secondItem="oup-qs-003" secondAttribute="trailing" id="oup-qs-009"/>
-                                                    <constraint firstAttribute="bottom" secondItem="oup-qs-003" secondAttribute="bottom" id="oup-qs-010"/>
                                                 </constraints>
                                             </view>
                                             <!-- Photos carousel -->
@@ -442,7 +446,7 @@
                                                         <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         <nil key="highlightedColor"/>
                                                     </label>
-                                                    <view contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="72" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nc-001" userLabel="Interests Chips View" customClass="VibeChipsView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                    <view contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="72" translatesAutoresizingMaskIntoConstraints="NO" id="oup-nc-001" userLabel="Interests Chips View" customClass="MomentsChipsView" customModule="FlirttimeNew" customModuleProvider="target">
                                                         <rect key="frame" x="20" y="38" width="353" height="72"/>
                                                     </view>
                                                 </subviews>
@@ -606,6 +610,23 @@
                                                         <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                         <nil key="highlightedColor"/>
                                                     </label>
+                                                    <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mn-001" userLabel="Moments Count Label">
+                                                        <rect key="frame" x="113" y="2" width="28" height="22"/>
+                                                        <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="22" id="oup-mn-002"/>
+                                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="28" id="oup-mn-003"/>
+                                                        </constraints>
+                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
+                                                        <color key="textColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <nil key="highlightedColor"/>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                <real key="value" value="11"/>
+                                                            </userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="YES"/>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </label>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-oa-001" userLabel="See All Moments Button">
                                                         <rect key="frame" x="318" y="0.0" width="55" height="26"/>
                                                         <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="15"/>
@@ -719,6 +740,8 @@
                                                 <constraints>
                                                     <constraint firstItem="oup-ot-001" firstAttribute="top" secondItem="oup-os-001" secondAttribute="top" id="oup-ok-002"/>
                                                     <constraint firstItem="oup-ot-001" firstAttribute="leading" secondItem="oup-os-001" secondAttribute="leading" constant="20" id="oup-ok-003"/>
+                                                    <constraint firstItem="oup-mn-001" firstAttribute="leading" secondItem="oup-ot-001" secondAttribute="trailing" constant="8" id="oup-mn-004"/>
+                                                    <constraint firstItem="oup-mn-001" firstAttribute="centerY" secondItem="oup-ot-001" secondAttribute="centerY" id="oup-mn-005"/>
                                                     <constraint firstItem="oup-ok-001" firstAttribute="top" secondItem="oup-ot-001" secondAttribute="bottom" constant="12" id="oup-ok-004"/>
                                                     <constraint firstAttribute="trailing" secondItem="oup-oa-001" secondAttribute="trailing" constant="20" id="oup-oa-003"/>
                                                     <constraint firstItem="oup-oa-001" firstAttribute="centerY" secondItem="oup-ot-001" secondAttribute="centerY" id="oup-oa-004"/>
@@ -995,6 +1018,9 @@
                         <outlet property="quickMomentsSectionView" destination="oup-qs-001" id="oup-ox-030"/>
                         <outlet property="quickMomentsView" destination="oup-qs-003" id="oup-ox-031"/>
                         <outlet property="seeAllMomentsButton" destination="oup-oa-001" id="oup-ox-032"/>
+                        <outlet property="momentsCountLabel" destination="oup-mn-001" id="oup-ox-033"/>
+                        <outlet property="contentStackView" destination="oup-cs-001" id="oup-ox-034"/>
+                        <outlet property="headerView" destination="oup-hv-001" id="oup-ox-035"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="oup-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1003,8 +1029,126 @@
                         <action selector="aboutTapped:" destination="oup-vc-001" id="oup-tg-002"/>
                     </connections>
                 </tapGestureRecognizer>
+                <tapGestureRecognizer id="oup-tg-010" userLabel="Avatar Tap Gesture">
+                    <connections>
+                        <action selector="avatarTapped:" destination="oup-vc-001" id="oup-tg-011"/>
+                    </connections>
+                </tapGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="0.0" y="0.0"/>
+        </scene>
+        <!--Profile Photo Preview-->
+        <scene sceneID="ppv-sc-001">
+            <objects>
+                <viewController storyboardIdentifier="ProfilePhotoPreviewViewController" modalTransitionStyle="crossDissolve" modalPresentationStyle="overFullScreen" id="ppv-vc-001" userLabel="Profile Photo Preview" customClass="ProfilePhotoPreviewViewController" customModule="FlirttimeNew" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="ppv-rv-001">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ppv-bl-001" userLabel="Blur Backdrop">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="ppv-bl-002">
+                                    <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                </view>
+                                <accessibility key="accessibilityConfiguration" hint="Double tap to close" label="Close photo">
+                                    <accessibilityTraits key="traits" button="YES"/>
+                                    <bool key="isElement" value="YES"/>
+                                </accessibility>
+                                <blurEffect style="dark"/>
+                                <connections>
+                                    <outletCollection property="gestureRecognizers" destination="ppv-tg-001" appends="YES" id="ppv-tg-002"/>
+                                </connections>
+                            </visualEffectView>
+                            <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ppv-pc-001" userLabel="Photo Container">
+                                <rect key="frame" x="32" y="230.66666666666666" width="329" height="329"/>
+                                <subviews>
+                                    <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" minimumZoomScale="1" maximumZoomScale="4" contentInsetAdjustmentBehavior="never" translatesAutoresizingMaskIntoConstraints="NO" id="ppv-sv-001" userLabel="Zoom Scroll View">
+                                        <rect key="frame" x="0.0" y="0.0" width="329" height="329"/>
+                                        <subviews>
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" id="ppv-iv-001" userLabel="Photo Image">
+                                                <rect key="frame" x="0.0" y="0.0" width="329" height="329"/>
+                                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                <accessibility key="accessibilityConfiguration" label="Profile photo">
+                                                    <accessibilityTraits key="traits" image="YES"/>
+                                                    <bool key="isElement" value="YES"/>
+                                                </accessibility>
+                                            </imageView>
+                                        </subviews>
+                                        <connections>
+                                            <outlet property="delegate" destination="ppv-vc-001" id="ppv-sv-002"/>
+                                            <outletCollection property="gestureRecognizers" destination="ppv-tg-003" appends="YES" id="ppv-tg-004"/>
+                                        </connections>
+                                    </scrollView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="ppv-pc-001" secondAttribute="height" multiplier="1:1" id="ppv-pc-002"/>
+                                    <constraint firstItem="ppv-sv-001" firstAttribute="top" secondItem="ppv-pc-001" secondAttribute="top" id="ppv-pc-003"/>
+                                    <constraint firstItem="ppv-sv-001" firstAttribute="leading" secondItem="ppv-pc-001" secondAttribute="leading" id="ppv-pc-004"/>
+                                    <constraint firstAttribute="trailing" secondItem="ppv-sv-001" secondAttribute="trailing" id="ppv-pc-005"/>
+                                    <constraint firstAttribute="bottom" secondItem="ppv-sv-001" secondAttribute="bottom" id="ppv-pc-006"/>
+                                </constraints>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Name" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ppv-nl-001" userLabel="Name Label">
+                                <rect key="frame" x="170" y="583.66666666666663" width="53" height="26"/>
+                                <fontDescription key="fontDescription" name="Fredoka-SemiBold" family="Fredoka" pointSize="22"/>
+                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ppv-cb-001" userLabel="Close Button">
+                                <rect key="frame" x="333" y="65" width="44" height="44"/>
+                                <accessibility key="accessibilityConfiguration" label="Close"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="44" id="ppv-cb-002"/>
+                                    <constraint firstAttribute="height" constant="44" id="ppv-cb-003"/>
+                                </constraints>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" image="xmark" catalog="system">
+                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20" weight="semibold"/>
+                                </state>
+                                <connections>
+                                    <action selector="closeTapped:" destination="ppv-vc-001" eventType="touchUpInside" id="ppv-cb-004"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="ppv-sa-001"/>
+                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="ppv-bl-001" firstAttribute="top" secondItem="ppv-rv-001" secondAttribute="top" id="ppv-rc-001"/>
+                            <constraint firstItem="ppv-bl-001" firstAttribute="leading" secondItem="ppv-rv-001" secondAttribute="leading" id="ppv-rc-002"/>
+                            <constraint firstAttribute="trailing" secondItem="ppv-bl-001" secondAttribute="trailing" id="ppv-rc-003"/>
+                            <constraint firstAttribute="bottom" secondItem="ppv-bl-001" secondAttribute="bottom" id="ppv-rc-004"/>
+                            <constraint firstItem="ppv-pc-001" firstAttribute="leading" secondItem="ppv-rv-001" secondAttribute="leading" constant="32" id="ppv-rc-005"/>
+                            <constraint firstAttribute="trailing" secondItem="ppv-pc-001" secondAttribute="trailing" constant="32" id="ppv-rc-006"/>
+                            <constraint firstItem="ppv-pc-001" firstAttribute="centerY" secondItem="ppv-rv-001" secondAttribute="centerY" constant="-31" id="ppv-rc-007"/>
+                            <constraint firstItem="ppv-nl-001" firstAttribute="top" secondItem="ppv-pc-001" secondAttribute="bottom" constant="24" id="ppv-rc-008"/>
+                            <constraint firstItem="ppv-nl-001" firstAttribute="centerX" secondItem="ppv-rv-001" secondAttribute="centerX" id="ppv-rc-009"/>
+                            <constraint firstItem="ppv-nl-001" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="ppv-rv-001" secondAttribute="leading" constant="20" id="ppv-rc-010"/>
+                            <constraint firstItem="ppv-cb-001" firstAttribute="top" secondItem="ppv-sa-001" secondAttribute="top" constant="6" id="ppv-rc-011"/>
+                            <constraint firstAttribute="trailing" secondItem="ppv-cb-001" secondAttribute="trailing" constant="16" id="ppv-rc-012"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="nameLabel" destination="ppv-nl-001" id="ppv-ox-001"/>
+                        <outlet property="photoContainerView" destination="ppv-pc-001" id="ppv-ox-002"/>
+                        <outlet property="photoImageView" destination="ppv-iv-001" id="ppv-ox-003"/>
+                        <outlet property="scrollView" destination="ppv-sv-001" id="ppv-ox-004"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ppv-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+                <tapGestureRecognizer id="ppv-tg-001" userLabel="Backdrop Tap Gesture">
+                    <connections>
+                        <action selector="closeTapped:" destination="ppv-vc-001" id="ppv-tg-005"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <tapGestureRecognizer numberOfTapsRequired="2" id="ppv-tg-003" userLabel="Photo Double Tap Gesture">
+                    <connections>
+                        <action selector="photoDoubleTapped:" destination="ppv-vc-001" id="ppv-tg-006"/>
+                    </connections>
+                </tapGestureRecognizer>
+            </objects>
+            <point key="canvasLocation" x="600" y="0.0"/>
         </scene>
     </scenes>
     <resources>

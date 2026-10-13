@@ -20,8 +20,8 @@ final class DiscoverViewModel {
 
     @Published private(set) var loadState: LoadState = .idle
     /// Remaining profiles after the interest filter; `deck[0]` is the active card.
-    @Published private(set) var deck: [VibeProfile] = []
-    @Published private(set) var interestFilter: VibeInterest?
+    @Published private(set) var deck: [MomentsProfile] = []
+    @Published private(set) var interestFilter: MomentsInterest?
     /// Saved filter-sheet preferences, applied before the interest filter.
     @Published private(set) var preferences: FilterModel = .saved
 
@@ -29,12 +29,12 @@ final class DiscoverViewModel {
     private(set) var actionInProgress = false
 
     /// Remaining profiles before the interest filter is applied.
-    private var queue: [VibeProfile] = []
+    private var queue: [MomentsProfile] = []
 
     /// Everyone still available, ignoring the interest filter (Moments and Interests tabs).
-    var everyone: [VibeProfile] { queue }
-    var currentProfile: VibeProfile? { deck.first }
-    var nextProfile: VibeProfile? { deck.dropFirst().first }
+    var everyone: [MomentsProfile] { queue }
+    var currentProfile: MomentsProfile? { deck.first }
+    var nextProfile: MomentsProfile? { deck.dropFirst().first }
 
     private func respond(_ block: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
@@ -69,7 +69,7 @@ final class DiscoverViewModel {
 
     /// Narrows the deck to people who share `interest`. Returns `false` when nobody else matches.
     @discardableResult
-    func filter(by interest: VibeInterest) -> Bool {
+    func filter(by interest: MomentsInterest) -> Bool {
         guard queue.contains(where: { preferences.matches($0) && $0.interests.contains(interest) }) else { return false }
         interestFilter = interest
         rebuildDeck()
@@ -96,7 +96,7 @@ final class DiscoverViewModel {
     func apply(_ filters: FilterModel) {
         UserDataManager.shared.filterDataModel = filters
         preferences = filters
-        VibeAnalytics.track(.discoverFiltersApplied, properties: ["active_count": filters.activeCount])
+        MomentsAnalytics.track(.discoverFiltersApplied, properties: ["active_count": filters.activeCount])
         rebuildDeck()
     }
 
@@ -105,17 +105,17 @@ final class DiscoverViewModel {
     /// Sends `action` for `profile`, removing it from the deck straight away so the next card is ready.
     /// Returns `false` (and does nothing) while another action is still in flight.
     @discardableResult
-    func perform(_ action: VibeAction,
-                 on profile: VibeProfile,
+    func perform(_ action: MomentsAction,
+                 on profile: MomentsProfile,
                  reasons: [ConnectReason] = [],
-                 reaction: VibeReaction? = nil,
-                 completion: @escaping (Result<VibeActionOutcome, VibeActionError>) -> Void) -> Bool {
+                 reaction: MomentsReaction? = nil,
+                 completion: @escaping (Result<MomentsActionOutcome, MomentsActionError>) -> Void) -> Bool {
         guard !actionInProgress else { return false }
         actionInProgress = true
         remove(profileID: profile.id)
-        VibeAnalytics.track(action.analyticsEvent, profileID: profile.id)
+        MomentsAnalytics.track(action.analyticsEvent, profileID: profile.id)
         if let reaction {
-            VibeAnalytics.track(.vibeReactionSent, profileID: profile.id, properties: ["target": reaction.analyticsValue])
+            MomentsAnalytics.track(.vibeReactionSent, profileID: profile.id, properties: ["target": reaction.analyticsValue])
         }
 
         respond { [weak self] in
@@ -134,29 +134,29 @@ final class DiscoverViewModel {
             }
             let isMatch = model.data?.is_match == true
             if action.sendsConnection {
-                VibeAnalytics.track(.connectionRequestSent, profileID: profile.id,
+                MomentsAnalytics.track(.connectionRequestSent, profileID: profile.id,
                                     properties: ["reasons": reasons.map(\.rawValue),
                                                  "super": action == .superVibe,
                                                  "reaction": reaction?.analyticsValue ?? ""])
             }
             if isMatch {
-                VibeAnalytics.track(.connectionCreated, profileID: profile.id)
+                MomentsAnalytics.track(.connectionCreated, profileID: profile.id)
             }
             self.actionInProgress = false
-            completion(.success(VibeActionOutcome(action: action, profile: profile, isMatch: isMatch, reaction: reaction)))
+            completion(.success(MomentsActionOutcome(action: action, profile: profile, isMatch: isMatch, reaction: reaction)))
         }
         return true
     }
 
     /// Puts a profile back on top of the deck (e.g. after a failed action the user wants to keep).
-    func restore(_ profile: VibeProfile) {
+    func restore(_ profile: MomentsProfile) {
         guard !queue.contains(profile) else { return }
         queue.insert(profile, at: 0)
         rebuildDeck()
     }
 
     /// Report / block: the profile leaves Discover without sending an interaction.
-    func hide(_ profile: VibeProfile, block: Bool) {
+    func hide(_ profile: MomentsProfile, block: Bool) {
         if block {
             MockDiscover.shared.block(userID: profile.id)
         } else {
@@ -200,7 +200,7 @@ final class DiscoverViewModel {
 
     // MARK: - Mapping
 
-    static func makeProfile(from user: DiscoverUser, currentUser: UserDetailInfo?) -> VibeProfile? {
+    static func makeProfile(from user: DiscoverUser, currentUser: UserDetailInfo?) -> MomentsProfile? {
         guard let info = user.userInfo, let id = info.userID ?? info.id else { return nil }
 
         let gallery = (info.images ?? [])
@@ -209,7 +209,7 @@ final class DiscoverViewModel {
             .filter { !$0.isEmpty }
         let photos = gallery.isEmpty ? [info.avatar].compactMap { $0 } : gallery
 
-        let interests = VibeInterestCatalog.interests(for: info.interests ?? [])
+        let interests = MomentsInterestCatalog.interests(for: info.interests ?? [])
         let myInterestIDs = Set(currentUser?.interests ?? [])
         let shared = interests.filter { myInterestIDs.contains($0.id) }
 
@@ -217,21 +217,21 @@ final class DiscoverViewModel {
         let myCity = cityName(from: currentUser?.location)
         let sameCity = (city != nil && city?.lowercased() == myCity?.lowercased()) ? city : nil
 
-        let voice: VibeVoiceIntro? = user.voiceIntro.flatMap { intro in
+        let voice: MomentsVoiceIntro? = user.voiceIntro.flatMap { intro in
             guard let transcript = intro.transcript, !transcript.isEmpty else { return nil }
-            return VibeVoiceIntro(transcript: transcript,
+            return MomentsVoiceIntro(transcript: transcript,
                                   duration: intro.duration ?? 0,
                                   audioURL: intro.audioURL.flatMap(URL.init(string:)))
         }
 
-        let moments = (user.moments ?? []).compactMap { moment -> VibeMoment? in
+        let moments = (user.moments ?? []).compactMap { moment -> MomentsStory? in
             guard let id = moment.id, let image = moment.image, !image.isEmpty else { return nil }
-            return VibeMoment(id: id, imagePath: image, isVideo: moment.type == "video",
+            return MomentsStory(id: id, imagePath: image, isVideo: moment.type == "video",
                               caption: moment.caption?.isEmpty == false ? moment.caption : nil,
                               postedAt: moment.createdAt.flatMap { ISO8601DateFormatter().date(from: $0) })
         }
 
-        return VibeProfile(id: id,
+        return MomentsProfile(id: id,
                            displayName: (info.displayName ?? info.fullname ?? "").firstLetterCapitalized,
                            age: info.ageShow == false ? nil : age(from: info.dob),
                            isVerified: info.gestureIsVerified == true || info.videoIsVerified == true,
@@ -248,7 +248,8 @@ final class DiscoverViewModel {
                            voiceIntro: voice,
                            moments: moments,
                            vibeScore: vibeScore(shared: shared.count, mine: myInterestIDs.count,
-                                                theirs: interests.count, sameCity: sameCity != nil))
+                                                theirs: interests.count, sameCity: sameCity != nil),
+                           momentsCount: max(user.momentsCount ?? 0, moments.count))
     }
 
     static func vibeScore(shared: Int, mine: Int, theirs: Int, sameCity: Bool) -> Int? {
@@ -258,7 +259,7 @@ final class DiscoverViewModel {
     }
 
     /// Only real overlap is used; with nothing in common the honest fallback is shown instead.
-    static func reasons(shared: [VibeInterest], sameCity: String?) -> [String] {
+    static func reasons(shared: [MomentsInterest], sameCity: String?) -> [String] {
         var reasons: [String] = []
         if let first = shared.first {
             reasons.append("You both love \(first.title.lowercased())")

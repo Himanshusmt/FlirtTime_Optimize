@@ -29,9 +29,9 @@ struct UserVoiceIntro: Codable {
     }
 
     /// The shape `VoiceIntroPlayer` plays; `nil` when there is no audio file.
-    var playerIntro: VibeVoiceIntro? {
+    var playerIntro: MomentsVoiceIntro? {
         guard let url = playableURL else { return nil }
-        return VibeVoiceIntro(transcript: "", duration: duration ?? 0, audioURL: url)
+        return MomentsVoiceIntro(transcript: "", duration: duration ?? 0, audioURL: url)
     }
 }
 
@@ -85,24 +85,24 @@ final class VoiceIntroFileStore {
 // TODO: replace with a multipart upload to the voice-intro endpoint and DELETE for removal.
 enum VoiceIntroService {
 
-    static func upload(recordingAt fileURL: URL, duration: TimeInterval, completion: @escaping (Result<UserVoiceIntro, VibeError>) -> Void) {
+    static func upload(recordingAt fileURL: URL, duration: TimeInterval, completion: @escaping (Result<UserVoiceIntro, MomentsError>) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) {
             let response = MockDataStore.shared.setVoiceIntro(recordingAt: fileURL, duration: duration)
             if response.status, let intro = response.data {
                 completion(.success(intro))
             } else {
-                completion(.failure(VibeError(message: response.message ?? "Unable to save your voice intro")))
+                completion(.failure(MomentsError(message: response.message ?? "Unable to save your voice intro")))
             }
         }
     }
 
-    static func delete(completion: @escaping (Result<Void, VibeError>) -> Void) {
+    static func delete(completion: @escaping (Result<Void, MomentsError>) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) {
             let response = MockDataStore.shared.deleteVoiceIntro()
             if response.status {
                 completion(.success(()))
             } else {
-                completion(.failure(VibeError(message: response.message ?? "Unable to delete your voice intro")))
+                completion(.failure(MomentsError(message: response.message ?? "Unable to delete your voice intro")))
             }
         }
     }

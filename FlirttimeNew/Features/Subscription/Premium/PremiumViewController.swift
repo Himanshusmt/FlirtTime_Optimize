@@ -22,9 +22,9 @@ final class PremiumViewController: BaseViewController {
 
     private static let benefits: [PremiumBenefit] = [
         PremiumBenefit(symbol: "eye.fill", title: "See who likes you", detail: "Skip the guessing and match with your admirers instantly."),
-        PremiumBenefit(symbol: "infinity", title: "Unlimited Vibes", detail: "No daily limits. Discover as many people as you like."),
-        PremiumBenefit(symbol: "bubble.left.and.bubble.right.fill", title: "Chat before matching", detail: "Start the conversation with anyone you vibe with."),
-        PremiumBenefit(symbol: "star.fill", title: "Weekly Super Vibes", detail: "Stand out and let them know they're special."),
+        PremiumBenefit(symbol: "infinity", title: "Unlimited Likes", detail: "No daily limits. Discover as many people as you like."),
+        PremiumBenefit(symbol: "bubble.left.and.bubble.right.fill", title: "Chat before matching", detail: "Start the conversation with anyone you click with."),
+        PremiumBenefit(symbol: "star.fill", title: "Weekly Super Likes", detail: "Stand out and let them know they're special."),
         PremiumBenefit(symbol: "gift.fill", title: "Unlimited compliments", detail: "Make a great first impression every time."),
         PremiumBenefit(symbol: "bolt.heart.fill", title: "Priority in Discover", detail: "Get shown to more people, more often.")
     ]
@@ -166,7 +166,7 @@ final class PremiumViewController: BaseViewController {
     // MARK: - UI
 
     private func setUI() {
-        let background = VibeGradientView(colors: [VibeTheme.blushGradient[0], AppColor.AppWhite],
+        let background = MomentsGradientView(colors: [MomentsTheme.blushGradient[0], AppColor.AppWhite],
                                           start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 0.45))
         view.addSubview(background)
         background.pinEdges(to: view)
@@ -255,16 +255,16 @@ final class PremiumViewController: BaseViewController {
         switch source {
         case .chat: text = "Start the conversation first"
         case .compliment: text = "Make an unforgettable first impression"
-        case .superLike: text = "Stand out with Super Vibes"
-        case .unlimitedSwipes: text = "Keep the vibes coming"
+        case .superLike: text = "Stand out with Super Likes"
+        case .unlimitedSwipes: text = "Keep the likes coming"
         case nil: text = "Find your match faster"
         }
-        return NSAttributedString(string: text, attributes: [.font: VibeFont.scaled(.bold, 26, style: .title1), .foregroundColor: UIColor.white])
+        return NSAttributedString(string: text, attributes: [.font: MomentsFont.scaled(.bold, 26, style: .title1), .foregroundColor: UIColor.white])
     }
 
     private var subtitleText: String {
         switch source {
-        case .chat: return "Message anyone you vibe with, no match needed."
+        case .chat: return "Message anyone you click with, no match needed."
         case .compliment: return "Send compliments that get you noticed."
         case .superLike: return "Let them know they're special before anyone else."
         case .unlimitedSwipes: return "No daily limits. Discover as many people as you like."
@@ -415,7 +415,7 @@ final class PremiumViewController: BaseViewController {
             tile.configure(with: option, savings: viewModel.savingsPercent(for: option))
             tile.addAction(UIAction { [weak self] _ in
                 guard let self, !self.viewModel.isPurchasing else { return }
-                VibeHaptics.threshold()
+                MomentsHaptics.threshold()
                 self.viewModel.selectedIndex = index
             }, for: .touchUpInside)
             tilesStack.addArrangedSubview(tile)
@@ -474,14 +474,14 @@ final class PremiumViewController: BaseViewController {
     private func handle(_ event: PremiumViewModel.PurchaseEvent) {
         switch event {
         case .purchased(let message), .restored(let message):
-            VibeHaptics.connected()
+            MomentsHaptics.connected()
             showNewAlertPopUp(Title: "You're Premium 👑", Msg: message, isSuccess: true) { _ in }
             onPurchased?()
             close()
         case .pending:
             aCustomToastView.show(message: "Your purchase is waiting for approval. We'll unlock Premium as soon as it's confirmed.")
         case .failed(let message):
-            VibeHaptics.failed()
+            MomentsHaptics.failed()
             showNewAlertPopUp(Title: "Purchase failed", Msg: message, isSuccess: false) { _ in }
         }
     }

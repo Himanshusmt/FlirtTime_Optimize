@@ -85,7 +85,7 @@ final class CoinsViewController: BaseViewController {
     // MARK: - UI
 
     private func setUI() {
-        let background = VibeGradientView(colors: [VibeTheme.blushGradient[0], AppColor.AppWhite],
+        let background = MomentsGradientView(colors: [MomentsTheme.blushGradient[0], AppColor.AppWhite],
                                           start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 0.4))
         view.addSubview(background)
         background.pinEdges(to: view)
@@ -214,13 +214,13 @@ final class CoinsViewController: BaseViewController {
     private func handle(_ event: CoinsViewModel.PurchaseEvent) {
         switch event {
         case .purchased(let coins, let message):
-            VibeHaptics.connected()
+            MomentsHaptics.connected()
             balanceCard.celebrate()
             showNewAlertPopUp(Title: "+\(coins) coins 🎉", Msg: message, isSuccess: true) { _ in }
         case .pending:
             aCustomToastView.show(message: "Your purchase is waiting for approval. Coins will be added once it's confirmed.")
         case .failed(let message):
-            VibeHaptics.failed()
+            MomentsHaptics.failed()
             showNewAlertPopUp(Title: "Purchase failed", Msg: message, isSuccess: false) { _ in }
         }
     }

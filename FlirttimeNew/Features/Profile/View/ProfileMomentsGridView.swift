@@ -2,8 +2,8 @@
 //  ProfileMomentsGridView.swift
 //  FlirttimeNew
 //
-//  "My Moments" on the Profile tab: FlirtTime's two-column grid of the user's vibes, each
-//  showing its first photo. Shows an empty state and an upload strip while a vibe posts.
+//  "My Moments" on the Profile tab: FlirtTime's two-column grid of the user's moments, each
+//  showing its first photo. Shows an empty state and an upload strip while a moment posts.
 //
 
 import UIKit
@@ -14,7 +14,7 @@ final class ProfileMomentsGridView: UIView {
     private static let cardAspect: CGFloat = 1.3048
     private static let spacing: CGFloat = 12
 
-    var onSelect: ((Vibe) -> Void)?
+    var onSelect: ((MomentsPost) -> Void)?
     var onAdd: (() -> Void)?
 
     private let stack = UIStackView()
@@ -44,7 +44,7 @@ final class ProfileMomentsGridView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(vibes: [Vibe]) {
+    func configure(vibes: [MomentsPost]) {
         grid.arrangedSubviews.forEach { $0.removeFromSuperview() }
         emptyView.isHidden = !vibes.isEmpty
         grid.isHidden = vibes.isEmpty
@@ -77,7 +77,7 @@ final class ProfileMomentsGridView: UIView {
 
     // MARK: - Cards
 
-    private func makeCard(for vibe: Vibe, index: Int, total: Int) -> UIView {
+    private func makeCard(for vibe: MomentsPost, index: Int, total: Int) -> UIView {
         let card = MomentCardButton()
         card.backgroundColor = AppColor.AthensGray
         card.layer.cornerRadius = 18
@@ -90,7 +90,7 @@ final class ProfileMomentsGridView: UIView {
         let caption = UILabel.vibeLabel(.medium, 13, style: .footnote, color: .white, lines: 2)
 
         if photos.isEmpty {
-            let background = VibeGradientView(colors: VibeTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+            let background = MomentsGradientView(colors: MomentsTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
             background.isUserInteractionEnabled = false
             card.addSubview(background)
             background.pinEdges(to: card)
@@ -113,7 +113,7 @@ final class ProfileMomentsGridView: UIView {
             card.addSubview(image)
             image.pinEdges(to: card)
 
-            let shade = VibeGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.65)],
+            let shade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.65)],
                                          start: CGPoint(x: 0.5, y: 0.45), end: CGPoint(x: 0.5, y: 1))
             shade.isUserInteractionEnabled = false
             card.addSubview(shade)
@@ -205,7 +205,7 @@ final class ProfileMomentsGridView: UIView {
         config.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
         config.imagePadding = 6
         config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20)
-        config.attributedTitle = AttributedString("Add Moment", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 15)]))
+        config.attributedTitle = AttributedString("Add Moment", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 15)]))
         let add = UIButton(configuration: config)
         add.addAction(UIAction { [weak self] _ in self?.onAdd?() }, for: .touchUpInside)
 

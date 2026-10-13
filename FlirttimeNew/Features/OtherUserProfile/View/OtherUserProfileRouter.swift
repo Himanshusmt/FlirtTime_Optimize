@@ -2,7 +2,7 @@
 //  OtherUserProfileRouter.swift
 //  FlirttimeNew
 //
-//  One place to open another user's profile from any list (e.g. Vibes).
+//  One place to open another user's profile from any list (e.g. Moments).
 //
 
 import UIKit

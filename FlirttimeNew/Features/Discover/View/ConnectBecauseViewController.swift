@@ -11,11 +11,11 @@ final class ConnectBecauseViewController: UIViewController {
 
     var onSend: (([ConnectReason]) -> Void)?
 
-    private let profile: VibeProfile
+    private let profile: MomentsProfile
     private var selected: [ConnectReason] = []
     private var buttons: [(reason: ConnectReason, button: UIButton)] = []
 
-    init(profile: VibeProfile) {
+    init(profile: MomentsProfile) {
         self.profile = profile
         super.init(nibName: nil, bundle: nil)
     }
@@ -61,7 +61,7 @@ final class ConnectBecauseViewController: UIViewController {
         sendConfig.image = UIImage(systemName: "heart.fill")
         sendConfig.imagePadding = 8
         sendConfig.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20)
-        sendConfig.attributedTitle = AttributedString("Send Connection", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 17)]))
+        sendConfig.attributedTitle = AttributedString("Send Connection", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 17)]))
         let sendButton = UIButton(configuration: sendConfig)
         sendButton.addAction(UIAction { [weak self] _ in
             guard let self else { return }
@@ -99,7 +99,7 @@ final class ConnectBecauseViewController: UIViewController {
         config.image = UIImage(systemName: isSelected ? "checkmark.circle.fill" : "circle")
         config.imagePadding = 10
         config.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14)
-        config.attributedTitle = AttributedString(reason.rawValue, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 16)]))
+        config.attributedTitle = AttributedString(reason.rawValue, attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 16)]))
         return config
     }
 

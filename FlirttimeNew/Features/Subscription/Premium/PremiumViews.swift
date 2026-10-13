@@ -54,7 +54,7 @@ final class PremiumHeroView: UIView {
         super.init(frame: .zero)
         layer.cornerRadius = 28
         clipsToBounds = true
-        let background = VibeGradientView(colors: VibeTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+        let background = MomentsGradientView(colors: MomentsTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
         addSubview(background)
         background.pinEdges(to: self)
         addFloatingHearts()
@@ -92,7 +92,7 @@ final class PremiumHeroView: UIView {
         let ring = UIView()
         ring.backgroundColor = UIColor.white.withAlphaComponent(0.2)
         ring.layer.cornerRadius = 46
-        let core = VibeGradientView(colors: [AppColor.MexicanRed, AppColor.Punch], start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+        let core = MomentsGradientView(colors: [AppColor.MexicanRed, AppColor.Punch], start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
         core.layer.cornerRadius = 36
         core.clipsToBounds = true
         core.layer.borderWidth = 3
@@ -191,7 +191,7 @@ final class PremiumCTAButton: UIButton {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func setTitle(_ title: String) {
-        configuration?.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: VibeFont.scaled(.bold, 18)]))
+        configuration?.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: MomentsFont.scaled(.bold, 18)]))
         accessibilityLabel = title
     }
 }
@@ -209,7 +209,7 @@ final class PremiumRestoreButton: UIButton {
         config.image = UIImage(systemName: "arrow.clockwise", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
         config.imagePadding = 6
         config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
-        config.attributedTitle = AttributedString("Restore", attributes: AttributeContainer([.font: VibeFont.scaled(.bold, 15)]))
+        config.attributedTitle = AttributedString("Restore", attributes: AttributeContainer([.font: MomentsFont.scaled(.bold, 15)]))
         config.background.backgroundColor = AppColor.AppWhite
         config.background.strokeColor = PremiumTheme.accent.withAlphaComponent(0.35)
         config.background.strokeWidth = 1.2
@@ -348,7 +348,7 @@ final class PremiumPlanTile: UIControl {
         let isPopular = option.plan.isPopular == true
         let ribbonText = isPopular ? "MOST POPULAR" : savings.map { "SAVE \($0)%" }
         if let ribbonText {
-            let badge = StoreBadgeView(text: ribbonText, colors: isPopular ? VibeTheme.brandGradient : [PremiumTheme.savings])
+            let badge = StoreBadgeView(text: ribbonText, colors: isPopular ? MomentsTheme.brandGradient : [PremiumTheme.savings])
             badge.translatesAutoresizingMaskIntoConstraints = false
             addSubview(badge)
             NSLayoutConstraint.activate([
@@ -505,7 +505,7 @@ final class PremiumShopCard: UIControl {
         let title = UILabel.vibeLabel(.bold, 15, style: .subheadline, color: PremiumTheme.primaryText)
         title.text = "Just need a few coins?"
         let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: PremiumTheme.secondaryText, lines: 0)
-        subtitle.text = "Top up for Super Vibes, compliments and calls."
+        subtitle.text = "Top up for Super Likes, compliments and calls."
         let text = UIStackView(arrangedSubviews: [title, subtitle])
         text.axis = .vertical
         text.spacing = 2
@@ -524,7 +524,7 @@ final class PremiumShopCard: UIControl {
         ])
         isAccessibilityElement = true
         accessibilityTraits = .button
-        accessibilityLabel = "Coin shop. Top up for Super Vibes, compliments and calls."
+        accessibilityLabel = "Coin shop. Top up for Super Likes, compliments and calls."
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -550,7 +550,7 @@ final class PremiumMemberBanner: UIView {
         let title = UILabel.vibeLabel(.bold, 16, style: .headline, color: PremiumTheme.accent)
         title.text = "You're a Premium member"
         let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: PremiumTheme.secondaryText, lines: 0)
-        subtitle.text = "Everything is unlocked. Enjoy the vibes!"
+        subtitle.text = "Everything is unlocked. Enjoy!"
         let text = UIStackView(arrangedSubviews: [title, subtitle])
         text.axis = .vertical
         text.spacing = 2

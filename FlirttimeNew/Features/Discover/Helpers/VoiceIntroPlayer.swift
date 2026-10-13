@@ -28,7 +28,7 @@ final class VoiceIntroPlayer: NSObject {
         synthesizer.delegate = self
     }
 
-    func toggle(_ intro: VibeVoiceIntro, profileID: Int) {
+    func toggle(_ intro: MomentsVoiceIntro, profileID: Int) {
         if playingProfileID == profileID {
             stop()
         } else {
@@ -36,7 +36,7 @@ final class VoiceIntroPlayer: NSObject {
         }
     }
 
-    func play(_ intro: VibeVoiceIntro, profileID: Int) {
+    func play(_ intro: MomentsVoiceIntro, profileID: Int) {
         stop()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
         try? AVAudioSession.sharedInstance().setActive(true)

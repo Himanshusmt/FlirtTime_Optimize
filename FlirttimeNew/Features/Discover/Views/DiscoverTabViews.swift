@@ -2,14 +2,14 @@
 //  DiscoverTabViews.swift
 //  FlirttimeNew
 //
-//  Discover's People / Moments / Interests switcher and the Moments and Interests pages.
+//  Discover's People / Quick Moments / Interests switcher and the Interests page.
 //
 
 import UIKit
 
 // MARK: - Pill tabs
 
-final class VibePillTabsView: UIControl {
+final class MomentsPillTabsView: UIControl {
 
     private(set) var selectedIndex = 0
     private var buttons: [UIButton] = []
@@ -24,7 +24,7 @@ final class VibePillTabsView: UIControl {
             config.cornerStyle = .capsule
             config.titleLineBreakMode = .byTruncatingTail
             config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
-            config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 15, style: .subheadline)]))
+            config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 15, style: .subheadline)]))
             let button = UIButton(configuration: config)
             button.addAction(UIAction { [weak self] _ in self?.select(index, sendsActions: true) }, for: .touchUpInside)
             buttons.append(button)
@@ -57,151 +57,12 @@ final class VibePillTabsView: UIControl {
     }
 }
 
-// MARK: - Moments page
-
-final class DiscoverMomentsView: UIView {
-
-    var onOpenMoment: ((VibeProfile, Int) -> Void)?
-
-    private struct Item {
-        let profile: VibeProfile
-        let index: Int
-        var moment: VibeMoment { profile.moments[index] }
-    }
-
-    private var items: [Item] = []
-    private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
-    private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 12
-        layout.minimumLineSpacing = 12
-        layout.sectionInset = UIEdgeInsets(top: 4, left: 16, bottom: 24, right: 16)
-        let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        view.backgroundColor = .clear
-        view.showsVerticalScrollIndicator = false
-        view.dataSource = self
-        view.delegate = self
-        view.register(MomentCell.self, forCellWithReuseIdentifier: MomentCell.reuseID)
-        return view
-    }()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        addSubview(collectionView)
-        collectionView.pinEdges(to: self)
-        emptyLabel.text = "No Moments to show right now."
-        emptyLabel.textAlignment = .center
-        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(emptyLabel)
-        NSLayoutConstraint.activate([
-            emptyLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            emptyLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 32),
-            emptyLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32)
-        ])
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    func configure(with profiles: [VibeProfile]) {
-        items = profiles.flatMap { profile in profile.moments.indices.map { Item(profile: profile, index: $0) } }
-            .sorted { ($0.moment.postedAt ?? .distantPast) > ($1.moment.postedAt ?? .distantPast) }
-        emptyLabel.isHidden = !items.isEmpty
-        collectionView.reloadData()
-    }
-}
-
-extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        items.count
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentCell.reuseID, for: indexPath) as! MomentCell
-        let item = items[indexPath.item]
-        cell.configure(profile: item.profile, moment: item.moment)
-        return cell
-    }
-
-    func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = floor((collectionView.bounds.width - 16 * 2 - 12) / 2)
-        return CGSize(width: width, height: width * 1.4)
-    }
-
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let item = items[indexPath.item]
-        onOpenMoment?(item.profile, item.index)
-    }
-}
-
-private final class MomentCell: UICollectionViewCell {
-
-    static let reuseID = "MomentCell"
-
-    private let imageView = UIImageView()
-    private let avatar = UIImageView()
-    private let nameLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
-    private let timeLabel = UILabel.vibeLabel(.regular, 11, style: .caption2, color: UIColor.white.withAlphaComponent(0.85))
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.layer.cornerRadius = 20
-        contentView.layer.cornerCurve = .continuous
-        contentView.clipsToBounds = true
-        contentView.backgroundColor = AppColor.AthensGray
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
-        contentView.addSubview(imageView)
-        imageView.pinEdges(to: contentView)
-        let shade = VibeGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.7)],
-                                     start: CGPoint(x: 0.5, y: 0.55), end: CGPoint(x: 0.5, y: 1))
-        contentView.addSubview(shade)
-        shade.pinEdges(to: contentView)
-
-        avatar.contentMode = .scaleAspectFill
-        avatar.clipsToBounds = true
-        avatar.layer.cornerRadius = 14
-        avatar.layer.borderWidth = 2
-        avatar.layer.borderColor = AppColor.Punch.cgColor
-        let texts = UIStackView(arrangedSubviews: [nameLabel, timeLabel])
-        texts.axis = .vertical
-        let row = UIStackView(arrangedSubviews: [avatar, texts])
-        row.spacing = 8
-        row.alignment = .center
-        row.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(row)
-        NSLayoutConstraint.activate([
-            avatar.widthAnchor.constraint(equalToConstant: 28),
-            avatar.heightAnchor.constraint(equalToConstant: 28),
-            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
-            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
-        ])
-        isAccessibilityElement = true
-        accessibilityTraits = .button
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    func configure(profile: VibeProfile, moment: VibeMoment) {
-        imageView.loadImage(path: moment.imagePath, placeholder: UIImage(named: "ProfileBlur"))
-        avatar.loadImage(path: profile.photos.first, placeholder: UIImage(named: "ProfileBlur"))
-        nameLabel.text = profile.displayName
-        timeLabel.text = moment.postedAgoText
-        accessibilityLabel = "\(profile.displayName)'s moment" + (moment.postedAgoText.map { ", \($0)" } ?? "")
-    }
-
-    override var isHighlighted: Bool {
-        didSet { UIView.animate(withDuration: 0.15) { self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity } }
-    }
-}
-
 // MARK: - Interests page
 
 final class DiscoverInterestsView: UIView {
 
-    var onSelectProfile: ((VibeProfile) -> Void)?
-    var onDiscoverInterest: ((VibeInterest) -> Void)?
+    var onSelectProfile: ((MomentsProfile) -> Void)?
+    var onDiscoverInterest: ((MomentsInterest) -> Void)?
 
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
@@ -218,9 +79,9 @@ final class DiscoverInterestsView: UIView {
         self.onDiscoverInterest?(selected)
     }
 
-    private var profiles: [VibeProfile] = []
-    private var counts: [(interest: VibeInterest, count: Int)] = []
-    private var selected: VibeInterest?
+    private var profiles: [MomentsProfile] = []
+    private var counts: [(interest: MomentsInterest, count: Int)] = []
+    private var selected: MomentsInterest?
     private var showsAllInterests = false
 
     override init(frame: CGRect) {
@@ -270,9 +131,9 @@ final class DiscoverInterestsView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(with profiles: [VibeProfile]) {
+    func configure(with profiles: [MomentsProfile]) {
         self.profiles = profiles
-        var tally: [VibeInterest: Int] = [:]
+        var tally: [MomentsInterest: Int] = [:]
         profiles.forEach { $0.interests.forEach { tally[$0, default: 0] += 1 } }
         counts = tally.map { ($0.key, $0.value) }.sorted { $0.count != $1.count ? $0.count > $1.count : $0.interest.title < $1.interest.title }
         if selected == nil || !counts.contains(where: { $0.interest == selected }) {
@@ -286,7 +147,7 @@ final class DiscoverInterestsView: UIView {
         let visible = showsAllInterests ? counts : Array(counts.prefix(6))
         seeAllInterestsButton.isHidden = counts.count <= 6
         seeAllInterestsButton.configuration?.attributedTitle = AttributedString(showsAllInterests ? "Show Less" : "See All", attributes: AttributeContainer([
-            .font: VibeFont.scaled(.medium, 14, style: .subheadline)
+            .font: MomentsFont.scaled(.medium, 14, style: .subheadline)
         ]))
         stride(from: 0, to: visible.count, by: 3).forEach { start in
             let tiles = visible[start..<min(start + 3, visible.count)].map { tile(for: $0.interest, count: $0.count) }
@@ -320,14 +181,14 @@ final class DiscoverInterestsView: UIView {
         var config = UIButton.Configuration.plain()
         config.baseForegroundColor = AppColor.Punch
         config.contentInsets = .zero
-        config.attributedTitle = AttributedString("See All", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+        config.attributedTitle = AttributedString("See All", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
         let button = UIButton(configuration: config)
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button
     }
 
-    private func tile(for interest: VibeInterest, count: Int) -> UIView {
-        let color = VibeInterestCatalog.color(for: interest)
+    private func tile(for interest: MomentsInterest, count: Int) -> UIView {
+        let color = MomentsInterestCatalog.color(for: interest)
         let isSelected = interest == selected
         let button = UIButton(type: .custom)
         button.backgroundColor = isSelected ? color.withAlphaComponent(0.16) : AppColor.AppWhite
@@ -343,7 +204,7 @@ final class DiscoverInterestsView: UIView {
         let iconBackground = UIView()
         iconBackground.backgroundColor = color.withAlphaComponent(0.14)
         iconBackground.layer.cornerRadius = 14
-        let icon = UIImageView(image: UIImage(systemName: VibeInterestCatalog.symbol(for: interest),
+        let icon = UIImageView(image: UIImage(systemName: MomentsInterestCatalog.symbol(for: interest),
                                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)))
         icon.tintColor = color
         icon.contentMode = .center
@@ -381,7 +242,7 @@ final class DiscoverInterestsView: UIView {
         return button
     }
 
-    private func personCard(_ profile: VibeProfile) -> UIView {
+    private func personCard(_ profile: MomentsProfile) -> UIView {
         let button = UIButton(type: .custom)
         let image = UIImageView()
         image.contentMode = .scaleAspectFill

@@ -142,4 +142,11 @@ class BaseViewController: UIViewController {
         safariVC.modalPresentationStyle = .pageSheet // Optional, for iPad compatibility
         present(safariVC, animated: true, completion: nil)
     }
+
+    func loadTermsAndConditions() {
+        guard let url = URL(string: "https://flirttime.in/page/terms") else { return }
+        let safariVC = SFSafariViewController(url: url)
+        safariVC.modalPresentationStyle = .pageSheet
+        present(safariVC, animated: true, completion: nil)
+    }
 }

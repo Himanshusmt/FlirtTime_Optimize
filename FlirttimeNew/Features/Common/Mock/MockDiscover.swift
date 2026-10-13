@@ -41,6 +41,7 @@ final class MockDiscover {
 
     private let seenKey = "mock_discover_seen_ids"
     private let blockedKey = "mock_discover_blocked_ids"
+    private let reportedKey = "mock_discover_reported_ids"
     private var actionCount = 0
 
     private var simulatesFailures: Bool {
@@ -51,10 +52,14 @@ final class MockDiscover {
 
     // MARK: - Endpoints
 
-    func voiceIntro(userID: Int) -> VibeVoiceIntro? {
+    func distanceKm(userID: Int) -> Double? {
+        extras[userID]?.distanceKm
+    }
+
+    func voiceIntro(userID: Int) -> MomentsVoiceIntro? {
         guard let transcript = extras[userID]?.voiceTranscript else { return nil }
         let words = transcript.split(separator: " ").count
-        return VibeVoiceIntro(transcript: transcript, duration: max(4, Double(words) / 2.5), audioURL: nil)
+        return MomentsVoiceIntro(transcript: transcript, duration: max(4, Double(words) / 2.5), audioURL: nil)
     }
 
     func recommendationsJSON() -> [String: Any] {
@@ -90,6 +95,24 @@ final class MockDiscover {
         UserDefaults.standard.set(Array(ids), forKey: blockedKey)
     }
 
+    func unblock(userID: Int) {
+        var ids = blockedIDs
+        ids.remove(userID)
+        UserDefaults.standard.set(Array(ids), forKey: blockedKey)
+    }
+
+    func report(userID: Int) {
+        var ids = reportedUserIDs
+        ids.insert(userID)
+        UserDefaults.standard.set(Array(ids), forKey: reportedKey)
+    }
+
+    var blockedUserIDs: Set<Int> { blockedIDs }
+
+    var reportedUserIDs: Set<Int> {
+        Set(UserDefaults.standard.array(forKey: reportedKey) as? [Int] ?? [])
+    }
+
     func markSeen(_ userID: Int) {
         var ids = seenIDs
         ids.insert(userID)
@@ -110,6 +133,7 @@ final class MockDiscover {
     func reset() {
         resetSeen()
         UserDefaults.standard.removeObject(forKey: blockedKey)
+        UserDefaults.standard.removeObject(forKey: reportedKey)
     }
 
     // MARK: - Helpers
@@ -131,7 +155,8 @@ final class MockDiscover {
                 let postedAt = Date().addingTimeInterval(-Double((index + 1) * (person.id % 7 + 1)) * 3600)
                 return ["id": person.id * 100 + index, "image": photo, "type": "image",
                         "caption": caption, "created_at": ISO8601DateFormatter().string(from: postedAt)]
-            }
+            },
+            "moments_count": person.moments.count + (person.id * 13) % 60
         ]
         if let distance = extra?.distanceKm {
             json["distance"] = distance

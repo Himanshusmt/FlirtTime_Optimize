@@ -21,7 +21,7 @@ final class QuickMomentActivityViewController: UIViewController {
     }
 
     private struct Row {
-        let author: VibeAuthor?
+        let author: MomentsAuthor?
         let detail: String
         let trailing: String?
         let createdAt: String?
@@ -52,10 +52,10 @@ final class QuickMomentActivityViewController: UIViewController {
         view.backgroundColor = AppColor.AppWhite
 
         rows[.replies] = (moment.replies ?? [])
-            .sorted { (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast) }
+            .sorted { (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast) }
             .map { Row(author: $0.author, detail: $0.body, trailing: nil, createdAt: $0.createdAt) }
         rows[.reactions] = (moment.reactions ?? [])
-            .sorted { (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast) }
+            .sorted { (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast) }
             .map { Row(author: $0.author, detail: "Reacted to your quick moment", trailing: $0.emoji, createdAt: $0.createdAt) }
 
         let title = UILabel.vibeLabel(.bold, 20, style: .headline, color: AppColor.AppBlack)
@@ -158,11 +158,11 @@ private final class ActivityCell: UITableViewCell {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(author: VibeAuthor?, detail: String, trailing: String?, createdAt: String?) {
+    func configure(author: MomentsAuthor?, detail: String, trailing: String?, createdAt: String?) {
         avatar.loadImage(path: author?.profilePicture, placeholder: UIImage(named: "ProfileBlur"))
         let name = author?.displayName ?? "Someone"
         nameLabel.text = name
-        timeLabel.text = VibeDate.timeAgo(from: createdAt)
+        timeLabel.text = MomentsDate.timeAgo(from: createdAt)
         detailLabel.text = detail
         trailingLabel.text = trailing
         trailingLabel.isHidden = trailing == nil

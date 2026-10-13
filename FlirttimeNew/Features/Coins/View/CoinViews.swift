@@ -63,13 +63,13 @@ final class CoinBalancePill: UIControl {
         layer.shadowRadius = 8
         layer.shadowOffset = CGSize(width: 0, height: 3)
 
-        let coinGlow = VibeGradientView(colors: [VibeTheme.gold.withAlphaComponent(0.28), AppColor.BrightSun.withAlphaComponent(0.18)])
+        let coinGlow = MomentsGradientView(colors: [MomentsTheme.gold.withAlphaComponent(0.28), AppColor.BrightSun.withAlphaComponent(0.18)])
         coinBadge.addSubview(coinGlow)
         coinGlow.pinEdges(to: coinBadge)
         coinImage.translatesAutoresizingMaskIntoConstraints = false
         coinBadge.addSubview(coinImage)
 
-        let plusGradient = VibeGradientView(colors: VibeTheme.brandGradient)
+        let plusGradient = MomentsGradientView(colors: MomentsTheme.brandGradient)
         plusBadge.addSubview(plusGradient)
         plusGradient.pinEdges(to: plusBadge)
         let plusImage = UIImageView(image: UIImage(systemName: "plus",
@@ -154,7 +154,7 @@ final class CoinBalanceCard: UIView {
         super.init(frame: .zero)
         layer.cornerRadius = 24
         clipsToBounds = true
-        let background = VibeGradientView(colors: VibeTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+        let background = MomentsGradientView(colors: MomentsTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
         addSubview(background)
         background.pinEdges(to: self)
 
@@ -173,7 +173,7 @@ final class CoinBalanceCard: UIView {
         amountRow.spacing = 10
         amountRow.alignment = .center
         let hint = UILabel.vibeLabel(.regular, 13, style: .footnote, color: UIColor.white.withAlphaComponent(0.85), lines: 0)
-        hint.text = "Use coins for Super Vibes, compliments and calls."
+        hint.text = "Use coins for Super Likes, compliments and calls."
         let stack = UIStackView(arrangedSubviews: [caption, amountRow, hint])
         stack.axis = .vertical
         stack.alignment = .leading
@@ -226,13 +226,13 @@ final class CoinPremiumUpsellCard: UIControl {
         layer.borderColor = AppColor.Punch.withAlphaComponent(0.4).cgColor
 
         let icon = UIImageView(image: UIImage(systemName: "crown.fill"))
-        icon.tintColor = VibeTheme.gold
+        icon.tintColor = MomentsTheme.gold
         icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
         icon.setContentHuggingPriority(.required, for: .horizontal)
         let title = UILabel.vibeLabel(.bold, 15, style: .subheadline, color: AppColor.AppBlack)
         title.text = "Go Premium"
         let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray, lines: 0)
-        subtitle.text = "Unlimited Vibes, free chats and bonus coins with every plan."
+        subtitle.text = "Unlimited Likes, free chats and bonus coins with every plan."
         let text = UIStackView(arrangedSubviews: [title, subtitle])
         text.axis = .vertical
         text.spacing = 2
@@ -247,7 +247,7 @@ final class CoinPremiumUpsellCard: UIControl {
         row.pinEdges(to: self, insets: UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16))
         isAccessibilityElement = true
         accessibilityTraits = .button
-        accessibilityLabel = "Go Premium. Unlimited Vibes, free chats and bonus coins with every plan."
+        accessibilityLabel = "Go Premium. Unlimited Likes, free chats and bonus coins with every plan."
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -315,7 +315,7 @@ final class CoinPackCardView: UIControl {
         return view
     }()
 
-    private let topTint = VibeGradientView(colors: [AppColor.Punch.withAlphaComponent(0.12), AppColor.AppWhite.withAlphaComponent(0)],
+    private let topTint = MomentsGradientView(colors: [AppColor.Punch.withAlphaComponent(0.12), AppColor.AppWhite.withAlphaComponent(0)],
                                            start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
 
     init() {
@@ -386,7 +386,7 @@ final class CoinPackCardView: UIControl {
         amountLabel.text = coins.formatted()
         bonusLabel.text = bonus > 0 ? "+\(bonus.formatted()) bonus" : " "
         priceButton.configuration?.attributedTitle = AttributedString(option.displayPrice, attributes: AttributeContainer([
-            .font: VibeFont.scaled(.bold, 13, style: .footnote)
+            .font: MomentsFont.scaled(.bold, 13, style: .footnote)
         ]))
         priceButton.titleLabel?.adjustsFontSizeToFitWidth = true
         priceButton.titleLabel?.minimumScaleFactor = 0.7
@@ -396,7 +396,7 @@ final class CoinPackCardView: UIControl {
         let highlight = option.isBestValue ? "BEST VALUE" : option.isPopular ? "POPULAR" : nil
         if let highlight {
             let badge = StoreBadgeView(text: highlight,
-                                       colors: option.isBestValue ? [VibeTheme.gold, AppColor.BrightSun] : VibeTheme.brandGradient)
+                                       colors: option.isBestValue ? [MomentsTheme.gold, AppColor.BrightSun] : MomentsTheme.brandGradient)
             badge.translatesAutoresizingMaskIntoConstraints = false
             addSubview(badge)
             NSLayoutConstraint.activate([
@@ -405,7 +405,7 @@ final class CoinPackCardView: UIControl {
             ])
             self.badge = badge
         }
-        let accent: UIColor? = highlight == nil ? nil : (option.isBestValue ? VibeTheme.gold : AppColor.Punch)
+        let accent: UIColor? = highlight == nil ? nil : (option.isBestValue ? MomentsTheme.gold : AppColor.Punch)
         surface.layer.borderColor = accent?.cgColor
         surface.layer.borderWidth = accent == nil ? 0 : 1.5
         card.layer.shadowColor = (accent ?? .black).cgColor

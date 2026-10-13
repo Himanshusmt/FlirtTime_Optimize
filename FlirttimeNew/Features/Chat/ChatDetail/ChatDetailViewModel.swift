@@ -2672,6 +2672,10 @@ final class ChatDetailViewModel: ObservableObject {
             completion(false)
             return
         }
+        if ChatMockSeeder.isMockMode {
+            createMockConversation(completion: completion)
+            return
+        }
         guard let session = userListViewModel.sessionManager
                 ?? sessionManager
                 ?? Container.sharedContainer.resolve(SessionManager.self) else {
@@ -2722,6 +2726,24 @@ final class ChatDetailViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// No chat backend in mock mode, so the new direct conversation only lives in the local database.
+    private func createMockConversation(completion: @escaping (Bool) -> Void) {
+        let newId = "mock-conv-\(selectedUserChatID)"
+        selectedId = newId
+        ChatNotificationState.shared.activeConversationId = newId
+        if let conversation = buildNewConversation(newId) {
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ChatConversationUpsert"),
+                object: nil,
+                userInfo: ["conversation": conversation]
+            )
+            Task {
+                try? await self.conversationRepository?.saveConversation(conversation)
+            }
+        }
+        completion(true)
     }
 
     private static func conversationId(fromCreateResponse response: [String: Any]) -> String {

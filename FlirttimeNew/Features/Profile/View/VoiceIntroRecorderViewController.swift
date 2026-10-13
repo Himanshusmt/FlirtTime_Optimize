@@ -358,7 +358,7 @@ final class VoiceIntroRecorderViewController: UIViewController, UIAdaptivePresen
         config.imagePlacement = .top
         config.imagePadding = 4
         config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 8, bottom: 10, trailing: 8)
-        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 13, style: .footnote)]))
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 13, style: .footnote)]))
         button.configuration = config
     }
 

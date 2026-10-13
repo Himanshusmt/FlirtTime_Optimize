@@ -3,7 +3,7 @@
 //  FlirttimeNew
 //
 //  Quick Moments: short story-style photo or text posts that other users react to and reply on.
-//  Separate from Moments (the vibe feed).
+//  Separate from Moments (the moment feed).
 //
 
 import Foundation
@@ -29,7 +29,7 @@ struct QuickMoment: Codable {
     let mediaPath: String?
     /// The text of a text Quick Moment, or the caption of a photo one.
     let text: String?
-    /// Index into `VibeTheme.storyBackgrounds` for text Quick Moments.
+    /// Index into `MomentsTheme.storyBackgrounds` for text Quick Moments.
     let background: Int?
     let createdAt: String?
     var reactions: [QuickMomentReaction]?
@@ -42,25 +42,25 @@ struct QuickMomentReaction: Codable {
     let id: String
     let emoji: String
     let createdAt: String?
-    let author: VibeAuthor?
+    let author: MomentsAuthor?
 }
 
 struct QuickMomentReply: Codable {
     let id: String
     let body: String
     let createdAt: String?
-    let author: VibeAuthor?
+    let author: MomentsAuthor?
 }
 
 extension QuickMoment {
-    /// Story frame for `VibeMomentsViewController` and the profile bubbles.
-    func storyMoment(id: Int) -> VibeMoment {
+    /// Story frame for `QuickMomentViewController` and the profile bubbles.
+    func storyMoment(id: Int) -> MomentsStory {
         let caption = text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return VibeMoment(id: id,
+        return MomentsStory(id: id,
                           imagePath: mediaPath ?? "",
                           isVideo: false,
                           caption: caption?.isEmpty == false ? caption : nil,
-                          postedAt: VibeDate.date(from: createdAt),
+                          postedAt: MomentsDate.date(from: createdAt),
                           textBackground: background ?? 0,
                           reactionsCount: reactions?.count ?? 0,
                           repliesCount: replies?.count ?? 0,

@@ -35,7 +35,7 @@ enum StoreUI {
         config.baseForegroundColor = color
         config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6)
         config.attributedTitle = AttributedString(title, attributes: AttributeContainer([
-            .font: VibeFont.scaled(.medium, 13, style: .footnote),
+            .font: MomentsFont.scaled(.medium, 13, style: .footnote),
             .underlineStyle: NSUnderlineStyle.single.rawValue
         ]))
         let button = UIButton(configuration: config)
@@ -48,17 +48,17 @@ enum StoreUI {
 final class StoreBadgeView: UIView {
 
     private let label = UILabel.vibeLabel(.bold, 11, style: .caption2, color: .white)
-    private var gradient: VibeGradientView?
+    private var gradient: MomentsGradientView?
 
     var text: String? {
         get { label.text }
         set { label.text = newValue }
     }
 
-    init(text: String, colors: [UIColor] = VibeTheme.brandGradient, textColor: UIColor = .white) {
+    init(text: String, colors: [UIColor] = MomentsTheme.brandGradient, textColor: UIColor = .white) {
         super.init(frame: .zero)
         if colors.count > 1 {
-            let gradient = VibeGradientView(colors: colors, start: CGPoint(x: 0, y: 0.5), end: CGPoint(x: 1, y: 0.5))
+            let gradient = MomentsGradientView(colors: colors, start: CGPoint(x: 0, y: 0.5), end: CGPoint(x: 1, y: 0.5))
             addSubview(gradient)
             gradient.pinEdges(to: self)
             self.gradient = gradient

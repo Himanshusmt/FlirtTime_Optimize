@@ -18,6 +18,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     private static let aboutCollapsedLines = 3
+    private static let headerToNameSpacing: CGFloat = 10
     private static let momentsPerRow: CGFloat = 3
 
     // MARK: - Set by the presenting screen
@@ -34,6 +35,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     // MARK: - Header
 
+    @IBOutlet private weak var contentStackView: UIStackView!
+    @IBOutlet private weak var headerView: UIView!
     @IBOutlet private weak var coverImageView: UIImageView!
     @IBOutlet private weak var avatarImageView: UIImageView!
     @IBOutlet private weak var onlineDotView: UIView!
@@ -63,11 +66,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     @IBOutlet private weak var photosCountLabel: UILabel!
     @IBOutlet private weak var photosCollectionView: UICollectionView!
     @IBOutlet private weak var interestsSectionView: UIView!
-    @IBOutlet private weak var interestsChipsView: VibeChipsView!
+    @IBOutlet private weak var interestsChipsView: MomentsChipsView!
     @IBOutlet private weak var aboutMeSectionView: UIView!
     @IBOutlet private weak var basicInfoTableView: UITableView!
     @IBOutlet private weak var momentsCollectionView: UICollectionView!
     @IBOutlet private weak var seeAllMomentsButton: UIButton!
+    @IBOutlet private weak var momentsCountLabel: UILabel!
     @IBOutlet private weak var noMomentsLabel: UILabel!
 
     // MARK: - Bottom action bar
@@ -83,7 +87,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private var cancellables: Set<AnyCancellable> = []
     private var details: OtherUserProfileDetails?
     private var basicInfo: [OtherUserBasicInfo] = []
-    private var moments: [Vibe] = []
+    private var moments: [MomentsPost] = []
     private var voiceWaveform: VoiceWaveformView?
     private var momentsLayoutWidth: CGFloat = 0
 
@@ -95,6 +99,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        contentStackView.setCustomSpacing(Self.headerToNameSpacing, after: headerView)
         details = makeDetails()
         setBinding()
         showProfile()
@@ -157,8 +162,10 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             self.moments = vibes
             self.noMomentsLabel.isHidden = !vibes.isEmpty
             self.seeAllMomentsButton.isHidden = vibes.isEmpty
-            let total = self.viewModel.momentsTotal
-            self.seeAllMomentsButton.setTitle(total > vibes.count ? "See all (\(total))" : "See all", for: .normal)
+            let total = max(self.viewModel.momentsTotal, vibes.count)
+            self.momentsCountLabel.text = "\(total)"
+            self.momentsCountLabel.isHidden = vibes.isEmpty
+            self.momentsCountLabel.accessibilityLabel = "\(total) moments"
             self.momentsCollectionView.reloadData()
         }.store(in: &cancellables)
 
@@ -221,7 +228,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         photosSectionView.isHidden = details.photos.isEmpty
         photosCollectionView.reloadData()
 
-        let interests = VibeInterestCatalog.interests(for: details.interestIDs)
+        let interests = MomentsInterestCatalog.interests(for: details.interestIDs)
         interestsChipsView.configure(interests, highlighted: [])
         interestsSectionView.isHidden = interests.isEmpty
 
@@ -232,7 +239,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         quickMomentsSectionView.isHidden = true
     }
 
-    private func showVoiceIntro(_ intro: VibeVoiceIntro?) {
+    private func showVoiceIntro(_ intro: MomentsVoiceIntro?) {
         voiceIntroSectionView.isHidden = intro == nil
         guard intro != nil, let details else { return }
         if voiceWaveform == nil {
@@ -287,6 +294,15 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         showSafetyOptions(from: sender)
     }
 
+    @IBAction private func avatarTapped(_ sender: UITapGestureRecognizer) {
+        guard let details, details.avatar?.isEmpty == false else { return }
+        let preview: ProfilePhotoPreviewViewController = ProfilePhotoPreviewViewController.instantiateFromStoryboard()
+        preview.photoPath = details.avatar
+        preview.previewImage = avatarImageView.image
+        preview.userName = details.name
+        present(preview, animated: true)
+    }
+
     @IBAction private func aboutTapped(_ sender: UITapGestureRecognizer) {
         let isCollapsed = aboutLabel.numberOfLines != 0
         aboutLabel.numberOfLines = isCollapsed ? 0 : Self.aboutCollapsedLines
@@ -298,13 +314,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     @IBAction private func likeTapped(_ sender: UIButton) {
-        VibeHaptics.threshold()
+        MomentsHaptics.threshold()
         HeartBurst.show(in: view, at: sender.convert(CGPoint(x: sender.bounds.midX, y: sender.bounds.midY), to: view))
         sendInteraction(Constants.ActionType.like)
     }
 
     @IBAction private func superLikeTapped(_ sender: UIButton) {
-        VibeHaptics.superVibe()
+        MomentsHaptics.superVibe()
         sendInteraction(Constants.ActionType.favorite)
     }
 
@@ -322,13 +338,25 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             navigationController?.popViewController(animated: true)
             return
         }
-        // TODO: push ChatViewController once Chat is ported.
         let isMatched = userMatchesData?.matchedUserID != nil
         if UserDataManager.shared.isUserSubscriptionDone == true || isMatched {
-            showComingSoon("Chat")
+            openChat()
         } else {
             showSubscriptionPopUp(subscriptionPopUpType: .chat)
         }
+    }
+
+    private func openChat() {
+        guard let details else { return }
+        let avatarURL = details.avatar.flatMap { path -> String? in
+            guard !path.isEmpty else { return nil }
+            return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
+        }
+        ChatProfileRouter.openChat(userID: details.userID,
+                                   name: details.name,
+                                   avatarPath: avatarURL,
+                                   isVerified: details.isVerified,
+                                   from: self)
     }
 
     private func sendInteraction(_ type: String) {
@@ -336,18 +364,18 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         viewModel.clickActionAPI(interaction_type: type, user_ID: userID)
     }
 
-    /// Same list as Profile's "My Moments", limited to this user's vibes.
+    /// Same list as Profile's "My Moments", limited to this user's moments.
     private func openMoments(focusing vibeID: String? = nil) {
         guard let details else { return }
-        let feed = VibeFeedViewController(scope: .user(id: String(details.userID), name: details.name),
-                                          focusVibeID: vibeID)
+        let feed = MomentsListViewController.make(scope: .user(id: String(details.userID), name: details.name),
+                                                  focusVibeID: vibeID)
         navigationController?.pushViewController(feed, animated: true)
     }
 
     private func openQuickMoment(at index: Int) {
         let frames = viewModel.quickMomentFrames
         guard let details, frames.indices.contains(index) else { return }
-        let profile = VibeProfile(id: details.userID,
+        let profile = MomentsProfile(id: details.userID,
                                   displayName: details.name,
                                   age: details.age,
                                   isVerified: details.isVerified,
@@ -364,7 +392,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                   voiceIntro: nil,
                                   moments: frames,
                                   vibeScore: nil)
-        present(VibeMomentsViewController(profile: profile, startIndex: index, isOwnMoments: false), animated: true)
+        present(QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: false), animated: true)
     }
 
     private func openPhoto(at index: Int) {
@@ -405,8 +433,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private func showReportReasons(from sourceView: UIView) {
         guard let details else { return }
         let sheet = UIAlertController(title: "Report \(details.name)", message: "Why are you reporting this profile?", preferredStyle: .actionSheet)
-        VibeSafety.reportReasons.forEach { reason in
+        MomentsSafety.reportReasons.forEach { reason in
             sheet.addAction(UIAlertAction(title: reason, style: .default) { [weak self] _ in
+                MockDiscover.shared.report(userID: details.userID)
                 self?.aCustomToastView.show(message: "Thanks for letting us know. We'll review this profile.")
             })
         }

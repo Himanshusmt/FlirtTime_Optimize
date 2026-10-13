@@ -7,59 +7,89 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		438F9FF9EE0977E8FFB0CFBC /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB93A3E2B9F80816B7D876E /* StoreManager.swift */; };
-		D325506E31AC6DA3B74949AA /* SubscriptionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E712EC1C8BC567E850631512 /* SubscriptionModel.swift */; };
-		CE2D557AD70CF30C877E5859 /* StoreComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE77CD421F41A856D5BB943 /* StoreComponents.swift */; };
-		99103FDED05B71479233D44A /* PremiumViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */; };
-		F189E90288DF492E06A41554 /* PremiumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE289C6E8EF572061621B105 /* PremiumViewController.swift */; };
-		7888D8467106F3442C78A94A /* PremiumViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */; };
-		7F25E868E9ED1AFCD27272BA /* CoinsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B798B85D88C490E6DEC24C /* CoinsModel.swift */; };
-		AA8A87203B42CD1AAC86E678 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */; };
-		51B6B4E862A83E298688795F /* CoinsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */; };
+		0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */; };
+		07E24E67A8CD476FBCBAE998 /* OtherUserBasicInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */; };
+		0809B175D887C6F88B3CC304 /* MomentsSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979C5020639C47E827599523 /* MomentsSafety.swift */; };
 		0996982E678F42057F067311 /* CoinsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */; };
-		BD1C51838D4DC24BA6AFEB1F /* CoinViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */; };
-		48D62E7C4BE5307737CE8044 /* MockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */; };
-		0809B175D887C6F88B3CC304 /* VibeSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979C5020639C47E827599523 /* VibeSafety.swift */; };
-		1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */; };
-		27E7C7E330200024DCCFFDB3 /* VibeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */; };
-		371C63B8F7E6F7C38B1A178B /* DiscoverViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFC050627BED43E700F948 /* DiscoverViewController.swift */; };
-		6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0589AAB139F188714C1019D /* NotificationViewModel.swift */; };
-		76F5210D32597ED327F229D7 /* VibeCardStackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */; };
-		787E36FBEEFFF9B019D5C293 /* NotificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */; };
-		7ABE1E362790C85688D43430 /* NotificationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */; };
-		869C6A5140428E2EFF4CFD2F /* VibeProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */; };
-		8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44CF9558FE0250560AC807D /* MockNotifications.swift */; };
-		89EF86808206C0DE9041C21A /* VibeRangeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */; };
-		8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */; };
-		8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */; };
-		938094036D624A1FA6C259B0 /* VibeConnectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */; };
-		97EAC81079DCE02E6FAA0FBE /* VibeProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62486E210DA53E8F1B80FC17 /* VibeProfile.swift */; };
-		9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */; };
-		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
-		AEEC82DD04625E1B999859FA /* VibeMomentsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */; };
-		B4D13E3BE4F46F39A4FB5591 /* VibeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */; };
-		B4DF64BE43E8E42844E1A9C2 /* VibeAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */; };
-		C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Vibe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */; };
-		C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */; };
-		C57E2A295829D18EE05B7CD6 /* WhyVibeDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */; };
+		13FEB09872F56FC253A43F13 /* FilteredProfilesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BC3500F600508378CC67EC /* FilteredProfilesViewModel.swift */; };
+		163815D8D834768C1A060099 /* ProfileVoiceIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */; };
 		174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */; };
+		17AF216B893BFBA2A94F82E0 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */; };
+		1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */; };
+		232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */; };
 		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
+		27E7C7E330200024DCCFFDB3 /* MomentsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C089D324A35A65DB2E3AC0 /* MomentsCardView.swift */; };
 		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
+		3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */; };
 		329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */; };
+		371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */; };
+		387133DE17D2ACB96322AA39 /* PrivacySafetyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FF17A4E0395896EA3CEF5E /* PrivacySafetyViewController.swift */; };
+		438F9FF9EE0977E8FFB0CFBC /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB93A3E2B9F80816B7D876E /* StoreManager.swift */; };
+		46FB780E614148ABA73722F8 /* StoryboardDesignableViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C76DDF0B264B66874D9647 /* StoryboardDesignableViews.swift */; };
+		482EA02D52DC1948E2162EDE /* FilteredProfileCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664F2AAAA0E521551C34BB8E /* FilteredProfileCell.swift */; };
+		48D62E7C4BE5307737CE8044 /* MockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */; };
+		493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */; };
 		4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */; };
+		5120A655B0BD69253CB2F1D6 /* ManageNotificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EDDC6661A8B51403CCB69E9 /* ManageNotificationViewController.swift */; };
+		51B6B4E862A83E298688795F /* CoinsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */; };
 		557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */; };
 		56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */; };
+		58655D8851F9EE1DF9ABF552 /* ChangeEmailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D33EB211A4BC1DA1E19E0A /* ChangeEmailViewController.swift */; };
 		5E12006DD0F17692527E52ED /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */; };
+		5F9DD3448D6435DC59C8CAD8 /* HelpSupportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F1942FB161BA17190F830F /* HelpSupportViewController.swift */; };
 		615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098437D832448245A93BC7F2 /* AppEndPoint.swift */; };
+		6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0589AAB139F188714C1019D /* NotificationViewModel.swift */; };
 		6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */; };
+		70519B87F96F4D3A21C3D6C3 /* SettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7184C9C5CD7C20FD764E54 /* SettingsModel.swift */; };
+		72E5F6013980423A8C308C73 /* OtherUserProfileDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF622C351774607B5D64868 /* OtherUserProfileDetails.swift */; };
+		76F5210D32597ED327F229D7 /* MomentsCardStackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17E4050913A2CEB2C6A85F6 /* MomentsCardStackView.swift */; };
+		787E36FBEEFFF9B019D5C293 /* NotificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */; };
+		7888D8467106F3442C78A94A /* PremiumViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */; };
+		7A11C0DE1E5F00A100000002 /* MomentLocationPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A11C0DE1E5F00A100000001 /* MomentLocationPickerViewController.swift */; };
+		7A11C0DE1E5F00A100000004 /* AddMomentComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A11C0DE1E5F00A100000003 /* AddMomentComponents.swift */; };
+		7A11C0DE1E5F00A100000006 /* MomentImageCropViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A11C0DE1E5F00A100000005 /* MomentImageCropViewController.swift */; };
+		7ABE1E362790C85688D43430 /* NotificationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */; };
+		7F25E868E9ED1AFCD27272BA /* CoinsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B798B85D88C490E6DEC24C /* CoinsModel.swift */; };
+		83A05C3353C68A8CE4B419BD /* FAQCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABAF9566CAE985272DC43926 /* FAQCell.swift */; };
+		869C6A5140428E2EFF4CFD2F /* CardDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BCFC391ED16A1CC01A4B43D /* CardDetailViewController.swift */; };
+		8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44CF9558FE0250560AC807D /* MockNotifications.swift */; };
+		89EF86808206C0DE9041C21A /* MomentsRangeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B455408A16941D5D55BD4CF /* MomentsRangeSlider.swift */; };
+		8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */; };
+		8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */; };
+		938094036D624A1FA6C259B0 /* MomentsConnectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627A548CE73A457494EEE59C /* MomentsConnectionViewController.swift */; };
+		94FB84E5F66ACBA057F15869 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A40C1D78FF3C14CF1CE595 /* SettingsViewModel.swift */; };
 		9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */; };
+		97EAC81079DCE02E6FAA0FBE /* MomentsProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62486E210DA53E8F1B80FC17 /* MomentsProfile.swift */; };
+		982D9684054B86814191953B /* FAQViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12F73234E02040202F43C90F /* FAQViewController.swift */; };
+		99103FDED05B71479233D44A /* PremiumViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */; };
+		9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */; };
 		9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D763521B7C6B71DF206B5DDF /* AppConfig.swift */; };
+		9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */; };
+		A1E7C0DE00000000000000B1 /* ExploreSegmentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE00000000000000A1 /* ExploreSegmentHeaderView.swift */; };
+		A1E7C0DE00000000000000B2 /* ExploreTabPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE00000000000000A2 /* ExploreTabPageView.swift */; };
+		A1E7C0DE000000000000C1B1 /* SearchPeopleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C1A1 /* SearchPeopleViewController.swift */; };
+		A1E7C0DE000000000000C2B1 /* SearchPeopleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C2A1 /* SearchPeopleCell.swift */; };
+		A1E7C0DE000000000000C3B1 /* SearchPeopleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */; };
+		A1E7C0DE000000000000C4B1 /* SearchPeople.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */; };
+		A712710E57D93B73CAAC2886 /* FilteredProfilesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A997E988C48ABBBFC52E3B9 /* FilteredProfilesViewController.swift */; };
 		A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */; };
+		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
+		AA8A87203B42CD1AAC86E678 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
-		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
-		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
-		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
+		ABA8E3131442FE3510E2B568 /* Settings.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BABCADFABF14A0789D8A669B /* Settings.storyboard */; };
+		AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */; };
+		B1C2D3E4F5A60718293A4B5D /* OtherUserProfileRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* OtherUserProfileRouter.swift */; };
+		B4D13E3BE4F46F39A4FB5591 /* MomentsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E1BA562B4E8690629FCE44 /* MomentsComponents.swift */; };
+		B4DF64BE43E8E42844E1A9C2 /* MomentsAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DFE8C13039C32BF6338777 /* MomentsAnalytics.swift */; };
 		B8E4D3F2AC5E6B7D9F102E3D /* GestureVerification.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */; };
+		BD1C51838D4DC24BA6AFEB1F /* CoinViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */; };
+		BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2353406368B559954CF0295 /* AppSessionManager.swift */; };
+		C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Moments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */; };
+		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
+		C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */; };
+		C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */; };
+		C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */; };
+		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -69,9 +99,15 @@
 		CC1000000000000000000014 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000013 /* KeychainAccess */; };
 		CC1000000000000000000017 /* RtcBasic in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000016 /* RtcBasic */; };
 		CC100000000000000000001B /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = CC100000000000000000001A /* GoogleMaps */; };
+		CD64905F3A500451C1AA29EC /* VoiceIntroRecorderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */; };
+		CE2D557AD70CF30C877E5859 /* StoreComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE77CD421F41A856D5BB943 /* StoreComponents.swift */; };
 		CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */; };
-		D716281BD622D3187A227B72 /* VibeHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */; };
+		D0363B0F96B9442581D7C327 /* OtherUserPhotoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF221435927846A4B47EC013 /* OtherUserPhotoCell.swift */; };
+		D325506E31AC6DA3B74949AA /* SubscriptionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E712EC1C8BC567E850631512 /* SubscriptionModel.swift */; };
+		D716281BD622D3187A227B72 /* MomentsHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1ADC3E9400DA4E069C965EE /* MomentsHaptics.swift */; };
 		DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */; };
+		E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */; };
+		E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */; };
 		E3A2D8CB30776627008D1551 /* ActivityIndicator.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E630776627008D1551 /* ActivityIndicator.xib */; };
 		E3A2D8CC30776627008D1551 /* CustomAlertVW.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E930776627008D1551 /* CustomAlertVW.xib */; };
 		E3A2D8CD30776627008D1551 /* DeleteCustomPopUp.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6EC30776627008D1551 /* DeleteCustomPopUp.xib */; };
@@ -400,7 +436,7 @@
 		E3A2DA1230776627008D1551 /* MockDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D71C30776627008D1551 /* MockDataStore.swift */; };
 		E3A2DA1330776627008D1551 /* MockPeople.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D71D30776627008D1551 /* MockPeople.swift */; };
 		E3A2DA1430776627008D1551 /* MockResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D71E30776627008D1551 /* MockResponses.swift */; };
-		E3A2DA1530776627008D1551 /* MockVibeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D71F30776627008D1551 /* MockVibeStore.swift */; };
+		E3A2DA1530776627008D1551 /* MockMomentsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D71F30776627008D1551 /* MockMomentsStore.swift */; };
 		E3A2DA1630776627008D1551 /* ActionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D72130776627008D1551 /* ActionModel.swift */; };
 		E3A2DA1730776627008D1551 /* GetUserDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D72230776627008D1551 /* GetUserDetails.swift */; };
 		E3A2DA1830776627008D1551 /* MomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D72330776627008D1551 /* MomentModel.swift */; };
@@ -423,26 +459,20 @@
 		E3A2DA2930776627008D1551 /* UserMatchesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74630776627008D1551 /* UserMatchesModel.swift */; };
 		E3A2DA2A30776627008D1551 /* ExploreFilterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */; };
 		E3A2DA2B30776627008D1551 /* ExploreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74930776627008D1551 /* ExploreViewController.swift */; };
-		A1E7C0DE000000000000C4B1 /* SearchPeople.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */; };
-		A1E7C0DE000000000000C3B1 /* SearchPeopleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */; };
-		A1E7C0DE000000000000C2B1 /* SearchPeopleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C2A1 /* SearchPeopleCell.swift */; };
-		A1E7C0DE000000000000C1B1 /* SearchPeopleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C1A1 /* SearchPeopleViewController.swift */; };
-		A1E7C0DE00000000000000B1 /* ExploreSegmentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE00000000000000A1 /* ExploreSegmentHeaderView.swift */; };
-		A1E7C0DE00000000000000B2 /* ExploreTabPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE00000000000000A2 /* ExploreTabPageView.swift */; };
 		E3A2DA2C30776627008D1551 /* ExploreViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74B30776627008D1551 /* ExploreViewModel.swift */; };
-		E3A2DA2D30776627008D1551 /* VibeCommentTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74E30776627008D1551 /* VibeCommentTableViewCell.swift */; };
-		E3A2DA2E30776627008D1551 /* VibeGiftCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74F30776627008D1551 /* VibeGiftCollectionViewCell.swift */; };
-		E3A2DA2F30776627008D1551 /* VibeMediaCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75030776627008D1551 /* VibeMediaCollectionViewCell.swift */; };
-		E3A2DA3030776627008D1551 /* VibeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75130776627008D1551 /* VibeTableViewCell.swift */; };
-		E3A2DA3130776627008D1551 /* VibeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75330776627008D1551 /* VibeModel.swift */; };
-		E3A2DA3230776627008D1551 /* VibeCommentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75530776627008D1551 /* VibeCommentViewController.swift */; };
-		E3A2DA3330776627008D1551 /* VibeFeedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75630776627008D1551 /* VibeFeedViewController.swift */; };
-		E3A2DA3430776627008D1551 /* VibeGiftViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75730776627008D1551 /* VibeGiftViewController.swift */; };
-		E3A2DA3530776627008D1551 /* VibeReceivedGiftsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75830776627008D1551 /* VibeReceivedGiftsViewController.swift */; };
-		E3A2DA3630776627008D1551 /* VibeCommentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75A30776627008D1551 /* VibeCommentViewModel.swift */; };
-		E3A2DA3730776627008D1551 /* VibeFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75B30776627008D1551 /* VibeFeedViewModel.swift */; };
-		E3A2DA3830776627008D1551 /* VibeGiftViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75C30776627008D1551 /* VibeGiftViewModel.swift */; };
-		E3A2DA3930776627008D1551 /* VibeUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75D30776627008D1551 /* VibeUploadViewModel.swift */; };
+		E3A2DA2D30776627008D1551 /* MomentsCommentTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74E30776627008D1551 /* MomentsCommentTableViewCell.swift */; };
+		E3A2DA2E30776627008D1551 /* MomentsGiftCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74F30776627008D1551 /* MomentsGiftCollectionViewCell.swift */; };
+		E3A2DA2F30776627008D1551 /* MomentsMediaCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75030776627008D1551 /* MomentsMediaCollectionViewCell.swift */; };
+		E3A2DA3030776627008D1551 /* MomentsTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75130776627008D1551 /* MomentsTableViewCell.swift */; };
+		E3A2DA3130776627008D1551 /* MomentsPostModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75330776627008D1551 /* MomentsPostModel.swift */; };
+		E3A2DA3230776627008D1551 /* MomentsCommentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75530776627008D1551 /* MomentsCommentViewController.swift */; };
+		E3A2DA3330776627008D1551 /* MomentsListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75630776627008D1551 /* MomentsListViewController.swift */; };
+		E3A2DA3430776627008D1551 /* MomentsGiftViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75730776627008D1551 /* MomentsGiftViewController.swift */; };
+		E3A2DA3530776627008D1551 /* MomentsReceivedGiftsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75830776627008D1551 /* MomentsReceivedGiftsViewController.swift */; };
+		E3A2DA3630776627008D1551 /* MomentsCommentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75A30776627008D1551 /* MomentsCommentViewModel.swift */; };
+		E3A2DA3730776627008D1551 /* MomentsListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75B30776627008D1551 /* MomentsListViewModel.swift */; };
+		E3A2DA3830776627008D1551 /* MomentsGiftViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75C30776627008D1551 /* MomentsGiftViewModel.swift */; };
+		E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */; };
 		E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76030776627008D1551 /* MomentCollectionViewCell.swift */; };
 		E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */; };
 		E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76430776627008D1551 /* ShowOtherUserImageCVC.swift */; };
@@ -452,20 +482,12 @@
 		E3A2DA4030776627008D1551 /* OtherUserPhotoGridViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76C30776627008D1551 /* OtherUserPhotoGridViewController.swift */; };
 		E3A2DA4130776627008D1551 /* OtherUserProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76D30776627008D1551 /* OtherUserProfileViewController.swift */; };
 		E3A2DA4230776627008D1551 /* ShowOtherUserImageVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76E30776627008D1551 /* ShowOtherUserImageVC.swift */; };
+		E3A2DF0230776627008D1551 /* ProfilePhotoPreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2DF0130776627008D1551 /* ProfilePhotoPreviewViewController.swift */; };
 		E3A2DA4330776627008D1551 /* OtherUserProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77030776627008D1551 /* OtherUserProfileViewModel.swift */; };
 		E3A2DA4430776627008D1551 /* RewardCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77330776627008D1551 /* RewardCollectionViewCell.swift */; };
 		E3A2DA4530776627008D1551 /* CustomImagePopUpVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77630776627008D1551 /* CustomImagePopUpVC.swift */; };
 		E3A2DA4630776627008D1551 /* ProfileModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77930776627008D1551 /* ProfileModel.swift */; };
 		E3A2DA4730776627008D1551 /* ProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77B30776627008D1551 /* ProfileViewController.swift */; };
-		9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */; };
-		E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */; };
-		CD64905F3A500451C1AA29EC /* VoiceIntroRecorderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */; };
-		163815D8D834768C1A060099 /* ProfileVoiceIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */; };
-		232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */; };
-		C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */; };
-		0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */; };
-		493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */; };
-		E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */; };
 		E3A2DA4830776627008D1551 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77D30776627008D1551 /* ProfileViewModel.swift */; };
 		E3A2DA4930776627008D1551 /* SetAvatarModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77E30776627008D1551 /* SetAvatarModel.swift */; };
 		E3A2DA4A30776627008D1551 /* SetBannerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D77F30776627008D1551 /* SetBannerModel.swift */; };
@@ -671,77 +693,106 @@
 		E3E889393078C1AA0026295C /* incoming_ringtone.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888843078C1AA0026295C /* incoming_ringtone.caf */; };
 		E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888853078C1AA0026295C /* outgoing_ringback.caf */; };
 		E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7045A9235ADAA76496ED259C /* MockDiscover.swift */; };
-		F690335568303B016201193C /* VibeFiltersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */; };
-		F8CB26514F9C07EB669DE2C9 /* VibeStoryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */; };
-		FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */; };
-		F27CA4D6AF153AE5B5E78AA3 /* AppApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9245D839B28892219B9F8D4 /* AppApiClient.swift */; };
-		D0363B0F96B9442581D7C327 /* OtherUserPhotoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF221435927846A4B47EC013 /* OtherUserPhotoCell.swift */; };
 		ECF3D5B9CE6A4717BE493145 /* OtherUserMomentCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */; };
-		07E24E67A8CD476FBCBAE998 /* OtherUserBasicInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */; };
-		72E5F6013980423A8C308C73 /* OtherUserProfileDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF622C351774607B5D64868 /* OtherUserProfileDetails.swift */; };
-		B1C2D3E4F5A60718293A4B5D /* OtherUserProfileRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* OtherUserProfileRouter.swift */; };
-		46FB780E614148ABA73722F8 /* StoryboardDesignableViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C76DDF0B264B66874D9647 /* StoryboardDesignableViews.swift */; };
+		F189E90288DF492E06A41554 /* PremiumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE289C6E8EF572061621B105 /* PremiumViewController.swift */; };
+		F27CA4D6AF153AE5B5E78AA3 /* AppApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9245D839B28892219B9F8D4 /* AppApiClient.swift */; };
 		F3C00917F0C24A1A9D737F27 /* OtherUserProfile.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3093266E69024EFFBCB45094 /* OtherUserProfile.storyboard */; };
+		F4136FD4299ECBE5717DF5B9 /* PersonalDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58EA2AE092629F6FEB8DA358 /* PersonalDetailsViewController.swift */; };
+		F690335568303B016201193C /* MomentsFiltersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */; };
+		F8CB26514F9C07EB669DE2C9 /* MomentsStoryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */; };
+		FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		DAB93A3E2B9F80816B7D876E /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
-		E712EC1C8BC567E850631512 /* SubscriptionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModel.swift; sourceTree = "<group>"; };
+		07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileVoiceIntroView.swift; sourceTree = "<group>"; };
+		098437D832448245A93BC7F2 /* AppEndPoint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEndPoint.swift; sourceTree = "<group>"; };
+		09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroRecorderViewController.swift; sourceTree = "<group>"; };
+		0A9443AC2280F3B0639910DE /* FlirttimeNew.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlirttimeNew.entitlements; sourceTree = "<group>"; };
 		0EE77CD421F41A856D5BB943 /* StoreComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreComponents.swift; sourceTree = "<group>"; };
-		F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViewModel.swift; sourceTree = "<group>"; };
-		AE289C6E8EF572061621B105 /* PremiumViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViewController.swift; sourceTree = "<group>"; };
-		A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViews.swift; sourceTree = "<group>"; };
+		12F73234E02040202F43C90F /* FAQViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FAQViewController.swift; sourceTree = "<group>"; };
+		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
+		19BC3500F600508378CC67EC /* FilteredProfilesViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilteredProfilesViewModel.swift; sourceTree = "<group>"; };
+		1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentModel.swift; sourceTree = "<group>"; };
+		1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationModel.swift; sourceTree = "<group>"; };
+		1EDDC6661A8B51403CCB69E9 /* ManageNotificationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManageNotificationViewController.swift; sourceTree = "<group>"; };
 		20B798B85D88C490E6DEC24C /* CoinsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsModel.swift; sourceTree = "<group>"; };
+		20C089D324A35A65DB2E3AC0 /* MomentsCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsCardView.swift; sourceTree = "<group>"; };
+		22661A208F524B403C3887C7 /* AppContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewController.swift; sourceTree = "<group>"; };
+		2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverViewModel.swift; sourceTree = "<group>"; };
+		2A997E988C48ABBBFC52E3B9 /* FilteredProfilesViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilteredProfilesViewController.swift; sourceTree = "<group>"; };
+		2BCFC391ED16A1CC01A4B43D /* CardDetailViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardDetailViewController.swift; sourceTree = "<group>"; };
+		2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
+		3093266E69024EFFBCB45094 /* OtherUserProfile.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = OtherUserProfile.storyboard; sourceTree = "<group>"; };
+		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
+		3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserMomentCell.swift; sourceTree = "<group>"; };
+		3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileQuickMomentsView.swift; sourceTree = "<group>"; };
+		40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentsListViewController.swift; sourceTree = "<group>"; };
+		49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverPeopleListViewController.swift; sourceTree = "<group>"; };
+		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
+		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockQuickMomentStore.swift; sourceTree = "<group>"; };
+		52A40C1D78FF3C14CF1CE595 /* SettingsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverTabViews.swift; sourceTree = "<group>"; };
+		58EA2AE092629F6FEB8DA358 /* PersonalDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalDetailsViewController.swift; sourceTree = "<group>"; };
+		5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectBecauseViewController.swift; sourceTree = "<group>"; };
+		5CF622C351774607B5D64868 /* OtherUserProfileDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileDetails.swift; sourceTree = "<group>"; };
+		62486E210DA53E8F1B80FC17 /* MomentsProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsProfile.swift; sourceTree = "<group>"; };
+		627A548CE73A457494EEE59C /* MomentsConnectionViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsConnectionViewController.swift; sourceTree = "<group>"; };
+		63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FilterModel+Moments.swift"; sourceTree = "<group>"; };
+		664F2AAAA0E521551C34BB8E /* FilteredProfileCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilteredProfileCell.swift; sourceTree = "<group>"; };
+		67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WhyMomentsDetailsViewController.swift; sourceTree = "<group>"; };
+		6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserBasicInfoCell.swift; sourceTree = "<group>"; };
+		7045A9235ADAA76496ED259C /* MockDiscover.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDiscover.swift; sourceTree = "<group>"; };
+		71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		7A11C0DE1E5F00A100000001 /* MomentLocationPickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentLocationPickerViewController.swift; sourceTree = "<group>"; };
+		7A11C0DE1E5F00A100000003 /* AddMomentComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMomentComponents.swift; sourceTree = "<group>"; };
+		7A11C0DE1E5F00A100000005 /* MomentImageCropViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentImageCropViewController.swift; sourceTree = "<group>"; };
+		7B455408A16941D5D55BD4CF /* MomentsRangeSlider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsRangeSlider.swift; sourceTree = "<group>"; };
+		7FB6A6E2D71BF2706C814A73 /* AppUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
+		84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentViewController.swift; sourceTree = "<group>"; };
+		868BB79E57AB24F029259346 /* FlirttimeStore.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = FlirttimeStore.storekit; sourceTree = "<group>"; };
+		89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureActionOverlay.swift; sourceTree = "<group>"; };
+		91D33EB211A4BC1DA1E19E0A /* ChangeEmailViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChangeEmailViewController.swift; sourceTree = "<group>"; };
+		931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentActivityViewController.swift; sourceTree = "<group>"; };
+		93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverResponse.swift; sourceTree = "<group>"; };
+		979C5020639C47E827599523 /* MomentsSafety.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsSafety.swift; sourceTree = "<group>"; };
+		9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppErrorResponse.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* OtherUserProfileRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileRouter.swift; sourceTree = "<group>"; };
+		A1E7C0DE00000000000000A1 /* ExploreSegmentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreSegmentHeaderView.swift; sourceTree = "<group>"; };
+		A1E7C0DE00000000000000A2 /* ExploreTabPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreTabPageView.swift; sourceTree = "<group>"; };
+		A1E7C0DE000000000000C1A1 /* SearchPeopleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleViewController.swift; sourceTree = "<group>"; };
+		A1E7C0DE000000000000C2A1 /* SearchPeopleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleCell.swift; sourceTree = "<group>"; };
+		A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleViewModel.swift; sourceTree = "<group>"; };
+		A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = SearchPeople.storyboard; sourceTree = "<group>"; };
+		A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViews.swift; sourceTree = "<group>"; };
+		A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroModel.swift; sourceTree = "<group>"; };
+		A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerificationViewModel.swift; sourceTree = "<group>"; };
+		ABAF9566CAE985272DC43926 /* FAQCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FAQCell.swift; sourceTree = "<group>"; };
+		AE289C6E8EF572061621B105 /* PremiumViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViewController.swift; sourceTree = "<group>"; };
+		B0589AAB139F188714C1019D /* NotificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
+		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
+		B1ADC3E9400DA4E069C965EE /* MomentsHaptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsHaptics.swift; sourceTree = "<group>"; };
+		B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceIntroPlayer.swift; sourceTree = "<group>"; };
 		B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinWallet.swift; sourceTree = "<group>"; };
+		B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerification.swift; sourceTree = "<group>"; };
+		BABCADFABF14A0789D8A669B /* Settings.storyboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file.storyboard; path = Settings.storyboard; sourceTree = "<group>"; };
+		BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsFiltersViewController.swift; sourceTree = "<group>"; };
 		C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewModel.swift; sourceTree = "<group>"; };
 		C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewController.swift; sourceTree = "<group>"; };
 		CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinViews.swift; sourceTree = "<group>"; };
-		EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockStore.swift; sourceTree = "<group>"; };
-		868BB79E57AB24F029259346 /* FlirttimeStore.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = FlirttimeStore.storekit; sourceTree = "<group>"; };
-		1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationModel.swift; sourceTree = "<group>"; };
-		20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeCardView.swift; sourceTree = "<group>"; };
-		28D97C309D61C809CF3B22A2 /* NotificationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewController.swift; sourceTree = "<group>"; };
-		2A91D5F836157CDF84D6F256 /* DiscoverViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverViewModel.swift; sourceTree = "<group>"; };
-		2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeProfileViewController.swift; sourceTree = "<group>"; };
-		49CFC050627BED43E700F948 /* DiscoverViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverViewController.swift; sourceTree = "<group>"; };
-		550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverTabViews.swift; sourceTree = "<group>"; };
-		5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectBecauseViewController.swift; sourceTree = "<group>"; };
-		62486E210DA53E8F1B80FC17 /* VibeProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeProfile.swift; sourceTree = "<group>"; };
-		627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeConnectionViewController.swift; sourceTree = "<group>"; };
-		63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FilterModel+Vibe.swift"; sourceTree = "<group>"; };
-		67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WhyVibeDetailsViewController.swift; sourceTree = "<group>"; };
-		7045A9235ADAA76496ED259C /* MockDiscover.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDiscover.swift; sourceTree = "<group>"; };
-		71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
-		7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeRangeSlider.swift; sourceTree = "<group>"; };
-		84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeMomentsViewController.swift; sourceTree = "<group>"; };
-		89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureActionOverlay.swift; sourceTree = "<group>"; };
-		93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverResponse.swift; sourceTree = "<group>"; };
-		979C5020639C47E827599523 /* VibeSafety.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeSafety.swift; sourceTree = "<group>"; };
-		B0589AAB139F188714C1019D /* NotificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationViewModel.swift; sourceTree = "<group>"; };
-		B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeHaptics.swift; sourceTree = "<group>"; };
-		B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceIntroPlayer.swift; sourceTree = "<group>"; };
-		BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeFiltersViewController.swift; sourceTree = "<group>"; };
-		CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeStoryComponents.swift; sourceTree = "<group>"; };
-		D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeAnalytics.swift; sourceTree = "<group>"; };
-		D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationTableViewCell.swift; sourceTree = "<group>"; };
-		098437D832448245A93BC7F2 /* AppEndPoint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEndPoint.swift; sourceTree = "<group>"; };
-		0A9443AC2280F3B0639910DE /* FlirttimeNew.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = FlirttimeNew.entitlements; sourceTree = "<group>"; };
-		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
-		22661A208F524B403C3887C7 /* AppContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
-		2DE989AA9AA84A2A242F71EB /* AppleSignInManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
-		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
-		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
-		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
-		7FB6A6E2D71BF2706C814A73 /* AppUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
-		B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerification.swift; sourceTree = "<group>"; };
-		9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppErrorResponse.swift; sourceTree = "<group>"; };
-		A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerificationViewModel.swift; sourceTree = "<group>"; };
-		B058E563B9EA4A0051930094 /* UserDetailsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserDetailsViewModel.swift; sourceTree = "<group>"; };
 		CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
+		CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsStoryComponents.swift; sourceTree = "<group>"; };
 		D2353406368B559954CF0295 /* AppSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSessionManager.swift; sourceTree = "<group>"; };
+		D6DFE8C13039C32BF6338777 /* MomentsAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsAnalytics.swift; sourceTree = "<group>"; };
+		D6FF17A4E0395896EA3CEF5E /* PrivacySafetyViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PrivacySafetyViewController.swift; sourceTree = "<group>"; };
 		D763521B7C6B71DF206B5DDF /* AppConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		D9245D839B28892219B9F8D4 /* AppApiClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppApiClient.swift; sourceTree = "<group>"; };
+		D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationTableViewCell.swift; sourceTree = "<group>"; };
+		DA7184C9C5CD7C20FD764E54 /* SettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsModel.swift; sourceTree = "<group>"; };
+		DAB93A3E2B9F80816B7D876E /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
 		DF560E8030764A3500FA3C0D /* FlirttimeNew.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlirttimeNew.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A2D6D730776627008D1551 /* BaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseViewController.swift; sourceTree = "<group>"; };
 		E3A2D6D930776627008D1551 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
@@ -789,7 +840,7 @@
 		E3A2D71C30776627008D1551 /* MockDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataStore.swift; sourceTree = "<group>"; };
 		E3A2D71D30776627008D1551 /* MockPeople.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockPeople.swift; sourceTree = "<group>"; };
 		E3A2D71E30776627008D1551 /* MockResponses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockResponses.swift; sourceTree = "<group>"; };
-		E3A2D71F30776627008D1551 /* MockVibeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockVibeStore.swift; sourceTree = "<group>"; };
+		E3A2D71F30776627008D1551 /* MockMomentsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMomentsStore.swift; sourceTree = "<group>"; };
 		E3A2D72130776627008D1551 /* ActionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionModel.swift; sourceTree = "<group>"; };
 		E3A2D72230776627008D1551 /* GetUserDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetUserDetails.swift; sourceTree = "<group>"; };
 		E3A2D72330776627008D1551 /* MomentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentModel.swift; sourceTree = "<group>"; };
@@ -816,26 +867,20 @@
 		E3A2D74630776627008D1551 /* UserMatchesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMatchesModel.swift; sourceTree = "<group>"; };
 		E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreFilterViewController.swift; sourceTree = "<group>"; };
 		E3A2D74930776627008D1551 /* ExploreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreViewController.swift; sourceTree = "<group>"; };
-		A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = SearchPeople.storyboard; sourceTree = "<group>"; };
-		A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleViewModel.swift; sourceTree = "<group>"; };
-		A1E7C0DE000000000000C2A1 /* SearchPeopleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleCell.swift; sourceTree = "<group>"; };
-		A1E7C0DE000000000000C1A1 /* SearchPeopleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleViewController.swift; sourceTree = "<group>"; };
-		A1E7C0DE00000000000000A1 /* ExploreSegmentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreSegmentHeaderView.swift; sourceTree = "<group>"; };
-		A1E7C0DE00000000000000A2 /* ExploreTabPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreTabPageView.swift; sourceTree = "<group>"; };
 		E3A2D74B30776627008D1551 /* ExploreViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreViewModel.swift; sourceTree = "<group>"; };
-		E3A2D74E30776627008D1551 /* VibeCommentTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeCommentTableViewCell.swift; sourceTree = "<group>"; };
-		E3A2D74F30776627008D1551 /* VibeGiftCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeGiftCollectionViewCell.swift; sourceTree = "<group>"; };
-		E3A2D75030776627008D1551 /* VibeMediaCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeMediaCollectionViewCell.swift; sourceTree = "<group>"; };
-		E3A2D75130776627008D1551 /* VibeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTableViewCell.swift; sourceTree = "<group>"; };
-		E3A2D75330776627008D1551 /* VibeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeModel.swift; sourceTree = "<group>"; };
-		E3A2D75530776627008D1551 /* VibeCommentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeCommentViewController.swift; sourceTree = "<group>"; };
-		E3A2D75630776627008D1551 /* VibeFeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeFeedViewController.swift; sourceTree = "<group>"; };
-		E3A2D75730776627008D1551 /* VibeGiftViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeGiftViewController.swift; sourceTree = "<group>"; };
-		E3A2D75830776627008D1551 /* VibeReceivedGiftsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeReceivedGiftsViewController.swift; sourceTree = "<group>"; };
-		E3A2D75A30776627008D1551 /* VibeCommentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeCommentViewModel.swift; sourceTree = "<group>"; };
-		E3A2D75B30776627008D1551 /* VibeFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeFeedViewModel.swift; sourceTree = "<group>"; };
-		E3A2D75C30776627008D1551 /* VibeGiftViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeGiftViewModel.swift; sourceTree = "<group>"; };
-		E3A2D75D30776627008D1551 /* VibeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeUploadViewModel.swift; sourceTree = "<group>"; };
+		E3A2D74E30776627008D1551 /* MomentsCommentTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsCommentTableViewCell.swift; sourceTree = "<group>"; };
+		E3A2D74F30776627008D1551 /* MomentsGiftCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsGiftCollectionViewCell.swift; sourceTree = "<group>"; };
+		E3A2D75030776627008D1551 /* MomentsMediaCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsMediaCollectionViewCell.swift; sourceTree = "<group>"; };
+		E3A2D75130776627008D1551 /* MomentsTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsTableViewCell.swift; sourceTree = "<group>"; };
+		E3A2D75330776627008D1551 /* MomentsPostModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsPostModel.swift; sourceTree = "<group>"; };
+		E3A2D75530776627008D1551 /* MomentsCommentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsCommentViewController.swift; sourceTree = "<group>"; };
+		E3A2D75630776627008D1551 /* MomentsListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsListViewController.swift; sourceTree = "<group>"; };
+		E3A2D75730776627008D1551 /* MomentsGiftViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsGiftViewController.swift; sourceTree = "<group>"; };
+		E3A2D75830776627008D1551 /* MomentsReceivedGiftsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsReceivedGiftsViewController.swift; sourceTree = "<group>"; };
+		E3A2D75A30776627008D1551 /* MomentsCommentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsCommentViewModel.swift; sourceTree = "<group>"; };
+		E3A2D75B30776627008D1551 /* MomentsListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsListViewModel.swift; sourceTree = "<group>"; };
+		E3A2D75C30776627008D1551 /* MomentsGiftViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsGiftViewModel.swift; sourceTree = "<group>"; };
+		E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsUploadViewModel.swift; sourceTree = "<group>"; };
 		E3A2D76030776627008D1551 /* MomentCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentCollectionViewCell.swift; sourceTree = "<group>"; };
 		E3A2D76130776627008D1551 /* MomentCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MomentCollectionViewCell.xib; sourceTree = "<group>"; };
 		E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreAboutMeTableViewCell.swift; sourceTree = "<group>"; };
@@ -849,6 +894,7 @@
 		E3A2D76C30776627008D1551 /* OtherUserPhotoGridViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserPhotoGridViewController.swift; sourceTree = "<group>"; };
 		E3A2D76D30776627008D1551 /* OtherUserProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileViewController.swift; sourceTree = "<group>"; };
 		E3A2D76E30776627008D1551 /* ShowOtherUserImageVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowOtherUserImageVC.swift; sourceTree = "<group>"; };
+		E3A2DF0130776627008D1551 /* ProfilePhotoPreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoPreviewViewController.swift; sourceTree = "<group>"; };
 		E3A2D77030776627008D1551 /* OtherUserProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileViewModel.swift; sourceTree = "<group>"; };
 		E3A2D77330776627008D1551 /* RewardCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardCollectionViewCell.swift; sourceTree = "<group>"; };
 		E3A2D77430776627008D1551 /* RewardCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = RewardCollectionViewCell.xib; sourceTree = "<group>"; };
@@ -856,15 +902,6 @@
 		E3A2D77730776627008D1551 /* CustomImagePopUpVC.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = CustomImagePopUpVC.xib; sourceTree = "<group>"; };
 		E3A2D77930776627008D1551 /* ProfileModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileModel.swift; sourceTree = "<group>"; };
 		E3A2D77B30776627008D1551 /* ProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewController.swift; sourceTree = "<group>"; };
-		F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileMomentsGridView.swift; sourceTree = "<group>"; };
-		A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroModel.swift; sourceTree = "<group>"; };
-		09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroRecorderViewController.swift; sourceTree = "<group>"; };
-		07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileVoiceIntroView.swift; sourceTree = "<group>"; };
-		3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileQuickMomentsView.swift; sourceTree = "<group>"; };
-		1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentModel.swift; sourceTree = "<group>"; };
-		50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockQuickMomentStore.swift; sourceTree = "<group>"; };
-		931057D218909666C79C7A4F /* QuickMomentActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentActivityViewController.swift; sourceTree = "<group>"; };
-		F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddQuickMomentViewController.swift; sourceTree = "<group>"; };
 		E3A2D77D30776627008D1551 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		E3A2D77E30776627008D1551 /* SetAvatarModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetAvatarModel.swift; sourceTree = "<group>"; };
 		E3A2D77F30776627008D1551 /* SetBannerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetBannerModel.swift; sourceTree = "<group>"; };
@@ -1344,18 +1381,19 @@
 		E3E8888E3078C1AA0026295C /* ChatDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel.xcdatamodel; sourceTree = "<group>"; };
 		E3E8888F3078C1AA0026295C /* ChatDataModel_v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v2.xcdatamodel; sourceTree = "<group>"; };
 		E3E888903078C1AA0026295C /* ChatDataModel_v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v3.xcdatamodel; sourceTree = "<group>"; };
-		F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeCardStackView.swift; sourceTree = "<group>"; };
-		F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VibeComponents.swift; sourceTree = "<group>"; };
-		F44CF9558FE0250560AC807D /* MockNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockNotifications.swift; sourceTree = "<group>"; };
 		E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppTokenStore.swift; sourceTree = "<group>"; };
+		E712EC1C8BC567E850631512 /* SubscriptionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModel.swift; sourceTree = "<group>"; };
 		EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppBackendClient.swift; sourceTree = "<group>"; };
-		FF221435927846A4B47EC013 /* OtherUserPhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserPhotoCell.swift; sourceTree = "<group>"; };
-		3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserMomentCell.swift; sourceTree = "<group>"; };
-		6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserBasicInfoCell.swift; sourceTree = "<group>"; };
-		5CF622C351774607B5D64868 /* OtherUserProfileDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileDetails.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* OtherUserProfileRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserProfileRouter.swift; sourceTree = "<group>"; };
+		EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockStore.swift; sourceTree = "<group>"; };
+		F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViewModel.swift; sourceTree = "<group>"; };
+		F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileMomentsGridView.swift; sourceTree = "<group>"; };
+		F17E4050913A2CEB2C6A85F6 /* MomentsCardStackView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsCardStackView.swift; sourceTree = "<group>"; };
 		F2C76DDF0B264B66874D9647 /* StoryboardDesignableViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryboardDesignableViews.swift; sourceTree = "<group>"; };
-		3093266E69024EFFBCB45094 /* OtherUserProfile.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = OtherUserProfile.storyboard; sourceTree = "<group>"; };
+		F2F1942FB161BA17190F830F /* HelpSupportViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpSupportViewController.swift; sourceTree = "<group>"; };
+		F3E1BA562B4E8690629FCE44 /* MomentsComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsComponents.swift; sourceTree = "<group>"; };
+		F44CF9558FE0250560AC807D /* MockNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockNotifications.swift; sourceTree = "<group>"; };
+		F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddQuickMomentViewController.swift; sourceTree = "<group>"; };
+		FF221435927846A4B47EC013 /* OtherUserPhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserPhotoCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1379,35 +1417,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		4D47FFA00D2C898EFFB81AF5 /* Premium */ = {
-			isa = PBXGroup;
-			children = (
-				F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */,
-				AE289C6E8EF572061621B105 /* PremiumViewController.swift */,
-				A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */,
-			);
-			path = Premium;
-			sourceTree = "<group>";
-		};
-		F7F006F286E5263D14E82F3B /* Coins */ = {
-			isa = PBXGroup;
-			children = (
-				610044AE721497670D1A3BEC /* Model */,
-				4287550D4EDC15418888495F /* ViewModel */,
-				6DB4D6368D18540B120963B0 /* View */,
-			);
-			path = Coins;
-			sourceTree = "<group>";
-		};
-		610044AE721497670D1A3BEC /* Model */ = {
-			isa = PBXGroup;
-			children = (
-				20B798B85D88C490E6DEC24C /* CoinsModel.swift */,
-				B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */,
-			);
-			path = Model;
-			sourceTree = "<group>";
-		};
 		09B86A59C6A48407F822839F /* Api */ = {
 			isa = PBXGroup;
 			children = (
@@ -1420,40 +1429,15 @@
 			path = Api;
 			sourceTree = "<group>";
 		};
-		5474E43D425E3AB7845D4F7D /* Model */ = {
-			isa = PBXGroup;
-			children = (
-				09B86A59C6A48407F822839F /* Api */,
-			);
-			path = Model;
-			sourceTree = "<group>";
-		};
-		4287550D4EDC15418888495F /* ViewModel */ = {
-			isa = PBXGroup;
-			children = (
-				C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */,
-			);
-			path = ViewModel;
-			sourceTree = "<group>";
-		};
-		6DB4D6368D18540B120963B0 /* View */ = {
-			isa = PBXGroup;
-			children = (
-				C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */,
-				CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */,
-			);
-			path = View;
-			sourceTree = "<group>";
-		};
 		16333C80D50BCE51EB7D6611 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */,
-				20C089D324A35A65DB2E3AC0 /* VibeCardView.swift */,
-				CE92159FE181945F42B69FC0 /* VibeStoryComponents.swift */,
-				F3E1BA562B4E8690629FCE44 /* VibeComponents.swift */,
-				F17E4050913A2CEB2C6A85F6 /* VibeCardStackView.swift */,
-				7B455408A16941D5D55BD4CF /* VibeRangeSlider.swift */,
+				20C089D324A35A65DB2E3AC0 /* MomentsCardView.swift */,
+				CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */,
+				F3E1BA562B4E8690629FCE44 /* MomentsComponents.swift */,
+				F17E4050913A2CEB2C6A85F6 /* MomentsCardStackView.swift */,
+				7B455408A16941D5D55BD4CF /* MomentsRangeSlider.swift */,
 				89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */,
 			);
 			name = Views;
@@ -1478,24 +1462,116 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
+		4287550D4EDC15418888495F /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		4A52F8386100D18C989F0376 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */,
+				58EA2AE092629F6FEB8DA358 /* PersonalDetailsViewController.swift */,
+				1EDDC6661A8B51403CCB69E9 /* ManageNotificationViewController.swift */,
+				D6FF17A4E0395896EA3CEF5E /* PrivacySafetyViewController.swift */,
+				91D33EB211A4BC1DA1E19E0A /* ChangeEmailViewController.swift */,
+				2A997E988C48ABBBFC52E3B9 /* FilteredProfilesViewController.swift */,
+				F2F1942FB161BA17190F830F /* HelpSupportViewController.swift */,
+				12F73234E02040202F43C90F /* FAQViewController.swift */,
+			);
+			name = View;
+			path = View;
+			sourceTree = "<group>";
+		};
+		4D47FFA00D2C898EFFB81AF5 /* Premium */ = {
+			isa = PBXGroup;
+			children = (
+				F03E24ED3742C4CE438233F3 /* PremiumViewModel.swift */,
+				AE289C6E8EF572061621B105 /* PremiumViewController.swift */,
+				A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */,
+			);
+			path = Premium;
+			sourceTree = "<group>";
+		};
+		5208B06DF88F9729A4099AC6 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				52A40C1D78FF3C14CF1CE595 /* SettingsViewModel.swift */,
+				19BC3500F600508378CC67EC /* FilteredProfilesViewModel.swift */,
+			);
+			name = ViewModel;
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		5474E43D425E3AB7845D4F7D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				09B86A59C6A48407F822839F /* Api */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		610044AE721497670D1A3BEC /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				20B798B85D88C490E6DEC24C /* CoinsModel.swift */,
+				B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		6D22C75024B141649B735507 /* Cell */ = {
+			isa = PBXGroup;
+			children = (
+				664F2AAAA0E521551C34BB8E /* FilteredProfileCell.swift */,
+				ABAF9566CAE985272DC43926 /* FAQCell.swift */,
+			);
+			name = Cell;
+			path = Cell;
+			sourceTree = "<group>";
+		};
+		6DB4D6368D18540B120963B0 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */,
+				CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
 		7FE86003FB486C8C09498641 /* Model */ = {
 			isa = PBXGroup;
 			children = (
 				93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */,
-				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Vibe.swift */,
-				62486E210DA53E8F1B80FC17 /* VibeProfile.swift */,
+				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */,
+				62486E210DA53E8F1B80FC17 /* MomentsProfile.swift */,
 			);
 			name = Model;
 			path = Model;
 			sourceTree = "<group>";
 		};
+		97E27294D0905C36B38B70DD /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				E97D17864ABF595A1F78CF5D /* Model */,
+				5208B06DF88F9729A4099AC6 /* ViewModel */,
+				4A52F8386100D18C989F0376 /* View */,
+				6D22C75024B141649B735507 /* Cell */,
+			);
+			name = Settings;
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		A1BF91BECE7D4AFE7C48FA95 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				B1ADC3E9400DA4E069C965EE /* VibeHaptics.swift */,
+				B1ADC3E9400DA4E069C965EE /* MomentsHaptics.swift */,
 				B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */,
-				979C5020639C47E827599523 /* VibeSafety.swift */,
-				D6DFE8C13039C32BF6338777 /* VibeAnalytics.swift */,
+				979C5020639C47E827599523 /* MomentsSafety.swift */,
+				D6DFE8C13039C32BF6338777 /* MomentsAnalytics.swift */,
 			);
 			name = Helpers;
 			path = Helpers;
@@ -1513,13 +1589,14 @@
 		AD6DEE7032733990F9DC74B7 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				84C58F9AEB80C2E007644784 /* VibeMomentsViewController.swift */,
-				67360D7C73CE290F03AA74BB /* WhyVibeDetailsViewController.swift */,
+				84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */,
+				67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */,
 				5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */,
-				49CFC050627BED43E700F948 /* DiscoverViewController.swift */,
-				BE0A78A4CAE59CEC71A81696 /* VibeFiltersViewController.swift */,
-				2BCFC391ED16A1CC01A4B43D /* VibeProfileViewController.swift */,
-				627A548CE73A457494EEE59C /* VibeConnectionViewController.swift */,
+				49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */,
+				49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */,
+				BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */,
+				2BCFC391ED16A1CC01A4B43D /* CardDetailViewController.swift */,
+				627A548CE73A457494EEE59C /* MomentsConnectionViewController.swift */,
 			);
 			name = View;
 			path = View;
@@ -1802,6 +1879,9 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D71130776627008D1551 /* AddMomentViewController.swift */,
+				7A11C0DE1E5F00A100000003 /* AddMomentComponents.swift */,
+				7A11C0DE1E5F00A100000001 /* MomentLocationPickerViewController.swift */,
+				7A11C0DE1E5F00A100000005 /* MomentImageCropViewController.swift */,
 				E3A2D71230776627008D1551 /* EditMovementViewController.swift */,
 			);
 			path = View;
@@ -1841,7 +1921,7 @@
 				E3A2D71C30776627008D1551 /* MockDataStore.swift */,
 				E3A2D71D30776627008D1551 /* MockPeople.swift */,
 				E3A2D71E30776627008D1551 /* MockResponses.swift */,
-				E3A2D71F30776627008D1551 /* MockVibeStore.swift */,
+				E3A2D71F30776627008D1551 /* MockMomentsStore.swift */,
 				50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */,
 				7045A9235ADAA76496ED259C /* MockDiscover.swift */,
 				F44CF9558FE0250560AC807D /* MockNotifications.swift */,
@@ -2020,10 +2100,10 @@
 		E3A2D75230776627008D1551 /* Cell */ = {
 			isa = PBXGroup;
 			children = (
-				E3A2D74E30776627008D1551 /* VibeCommentTableViewCell.swift */,
-				E3A2D74F30776627008D1551 /* VibeGiftCollectionViewCell.swift */,
-				E3A2D75030776627008D1551 /* VibeMediaCollectionViewCell.swift */,
-				E3A2D75130776627008D1551 /* VibeTableViewCell.swift */,
+				E3A2D74E30776627008D1551 /* MomentsCommentTableViewCell.swift */,
+				E3A2D74F30776627008D1551 /* MomentsGiftCollectionViewCell.swift */,
+				E3A2D75030776627008D1551 /* MomentsMediaCollectionViewCell.swift */,
+				E3A2D75130776627008D1551 /* MomentsTableViewCell.swift */,
 			);
 			path = Cell;
 			sourceTree = "<group>";
@@ -2031,7 +2111,7 @@
 		E3A2D75430776627008D1551 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				E3A2D75330776627008D1551 /* VibeModel.swift */,
+				E3A2D75330776627008D1551 /* MomentsPostModel.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2039,10 +2119,10 @@
 		E3A2D75930776627008D1551 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				E3A2D75530776627008D1551 /* VibeCommentViewController.swift */,
-				E3A2D75630776627008D1551 /* VibeFeedViewController.swift */,
-				E3A2D75730776627008D1551 /* VibeGiftViewController.swift */,
-				E3A2D75830776627008D1551 /* VibeReceivedGiftsViewController.swift */,
+				E3A2D75530776627008D1551 /* MomentsCommentViewController.swift */,
+				E3A2D75630776627008D1551 /* MomentsListViewController.swift */,
+				E3A2D75730776627008D1551 /* MomentsGiftViewController.swift */,
+				E3A2D75830776627008D1551 /* MomentsReceivedGiftsViewController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -2050,10 +2130,10 @@
 		E3A2D75E30776627008D1551 /* ViewModel */ = {
 			isa = PBXGroup;
 			children = (
-				E3A2D75A30776627008D1551 /* VibeCommentViewModel.swift */,
-				E3A2D75B30776627008D1551 /* VibeFeedViewModel.swift */,
-				E3A2D75C30776627008D1551 /* VibeGiftViewModel.swift */,
-				E3A2D75D30776627008D1551 /* VibeUploadViewModel.swift */,
+				E3A2D75A30776627008D1551 /* MomentsCommentViewModel.swift */,
+				E3A2D75B30776627008D1551 /* MomentsListViewModel.swift */,
+				E3A2D75C30776627008D1551 /* MomentsGiftViewModel.swift */,
+				E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -2105,6 +2185,7 @@
 				E3A2D76C30776627008D1551 /* OtherUserPhotoGridViewController.swift */,
 				E3A2D76D30776627008D1551 /* OtherUserProfileViewController.swift */,
 				E3A2D76E30776627008D1551 /* ShowOtherUserImageVC.swift */,
+				E3A2DF0130776627008D1551 /* ProfilePhotoPreviewViewController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -2201,6 +2282,7 @@
 				E3A2D78330776627008D1551 /* Dashboard.storyboard */,
 				E3A2D78430776627008D1551 /* EditProfile.storyboard */,
 				E3A2D78530776627008D1551 /* Moments.storyboard */,
+				BABCADFABF14A0789D8A669B /* Settings.storyboard */,
 			);
 			path = StoryBoard;
 			sourceTree = "<group>";
@@ -2248,6 +2330,7 @@
 				EED84FF088F28C6E253F4F78 /* Discover */,
 				C774A5A71AE849728B119984 /* NotificationManager */,
 				E1624EEF6A809F1E08A2B8FA /* Notification */,
+				97E27294D0905C36B38B70DD /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -3149,6 +3232,15 @@
 			path = Chat;
 			sourceTree = "<group>";
 		};
+		E97D17864ABF595A1F78CF5D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				DA7184C9C5CD7C20FD764E54 /* SettingsModel.swift */,
+			);
+			name = Model;
+			path = Model;
+			sourceTree = "<group>";
+		};
 		EED84FF088F28C6E253F4F78 /* Discover */ = {
 			isa = PBXGroup;
 			children = (
@@ -3160,6 +3252,16 @@
 			);
 			name = Discover;
 			path = Discover;
+			sourceTree = "<group>";
+		};
+		F7F006F286E5263D14E82F3B /* Coins */ = {
+			isa = PBXGroup;
+			children = (
+				610044AE721497670D1A3BEC /* Model */,
+				4287550D4EDC15418888495F /* ViewModel */,
+				6DB4D6368D18540B120963B0 /* View */,
+			);
+			path = Coins;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -3557,6 +3659,7 @@
 				E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */,
 				E3A2D9EB30776627008D1551 /* Assets.xcassets in Resources */,
 				E3A2D9ED30776627008D1551 /* LaunchScreen.storyboard in Resources */,
+				ABA8E3131442FE3510E2B568 /* Settings.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3617,6 +3720,9 @@
 				E3A2DA0B30776627008D1551 /* UserDataManager.swift in Sources */,
 				E3A2DA0C30776627008D1551 /* EditImageCollCell.swift in Sources */,
 				E3A2DA0D30776627008D1551 /* AddMomentViewController.swift in Sources */,
+				7A11C0DE1E5F00A100000004 /* AddMomentComponents.swift in Sources */,
+				7A11C0DE1E5F00A100000002 /* MomentLocationPickerViewController.swift in Sources */,
+				7A11C0DE1E5F00A100000006 /* MomentImageCropViewController.swift in Sources */,
 				E3A2DA0E30776627008D1551 /* EditMovementViewController.swift in Sources */,
 				E3A2DA0F30776627008D1551 /* AttributesModel.swift in Sources */,
 				E3E888913078C1AA0026295C /* AgoraCallModels.swift in Sources */,
@@ -3791,7 +3897,7 @@
 				E3A2DA1230776627008D1551 /* MockDataStore.swift in Sources */,
 				E3A2DA1330776627008D1551 /* MockPeople.swift in Sources */,
 				E3A2DA1430776627008D1551 /* MockResponses.swift in Sources */,
-				E3A2DA1530776627008D1551 /* MockVibeStore.swift in Sources */,
+				E3A2DA1530776627008D1551 /* MockMomentsStore.swift in Sources */,
 				E3A2DA1630776627008D1551 /* ActionModel.swift in Sources */,
 				E3A2DA1730776627008D1551 /* GetUserDetails.swift in Sources */,
 				E3A2DA1830776627008D1551 /* MomentModel.swift in Sources */,
@@ -3820,19 +3926,19 @@
 				A1E7C0DE00000000000000B1 /* ExploreSegmentHeaderView.swift in Sources */,
 				A1E7C0DE00000000000000B2 /* ExploreTabPageView.swift in Sources */,
 				E3A2DA2C30776627008D1551 /* ExploreViewModel.swift in Sources */,
-				E3A2DA2D30776627008D1551 /* VibeCommentTableViewCell.swift in Sources */,
-				E3A2DA2E30776627008D1551 /* VibeGiftCollectionViewCell.swift in Sources */,
-				E3A2DA2F30776627008D1551 /* VibeMediaCollectionViewCell.swift in Sources */,
-				E3A2DA3030776627008D1551 /* VibeTableViewCell.swift in Sources */,
-				E3A2DA3130776627008D1551 /* VibeModel.swift in Sources */,
-				E3A2DA3230776627008D1551 /* VibeCommentViewController.swift in Sources */,
-				E3A2DA3330776627008D1551 /* VibeFeedViewController.swift in Sources */,
-				E3A2DA3430776627008D1551 /* VibeGiftViewController.swift in Sources */,
-				E3A2DA3530776627008D1551 /* VibeReceivedGiftsViewController.swift in Sources */,
-				E3A2DA3630776627008D1551 /* VibeCommentViewModel.swift in Sources */,
-				E3A2DA3730776627008D1551 /* VibeFeedViewModel.swift in Sources */,
-				E3A2DA3830776627008D1551 /* VibeGiftViewModel.swift in Sources */,
-				E3A2DA3930776627008D1551 /* VibeUploadViewModel.swift in Sources */,
+				E3A2DA2D30776627008D1551 /* MomentsCommentTableViewCell.swift in Sources */,
+				E3A2DA2E30776627008D1551 /* MomentsGiftCollectionViewCell.swift in Sources */,
+				E3A2DA2F30776627008D1551 /* MomentsMediaCollectionViewCell.swift in Sources */,
+				E3A2DA3030776627008D1551 /* MomentsTableViewCell.swift in Sources */,
+				E3A2DA3130776627008D1551 /* MomentsPostModel.swift in Sources */,
+				E3A2DA3230776627008D1551 /* MomentsCommentViewController.swift in Sources */,
+				E3A2DA3330776627008D1551 /* MomentsListViewController.swift in Sources */,
+				E3A2DA3430776627008D1551 /* MomentsGiftViewController.swift in Sources */,
+				E3A2DA3530776627008D1551 /* MomentsReceivedGiftsViewController.swift in Sources */,
+				E3A2DA3630776627008D1551 /* MomentsCommentViewModel.swift in Sources */,
+				E3A2DA3730776627008D1551 /* MomentsListViewModel.swift in Sources */,
+				E3A2DA3830776627008D1551 /* MomentsGiftViewModel.swift in Sources */,
+				E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */,
 				E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */,
 				E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */,
 				E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */,
@@ -3842,6 +3948,7 @@
 				E3A2DA4030776627008D1551 /* OtherUserPhotoGridViewController.swift in Sources */,
 				E3A2DA4130776627008D1551 /* OtherUserProfileViewController.swift in Sources */,
 				E3A2DA4230776627008D1551 /* ShowOtherUserImageVC.swift in Sources */,
+				E3A2DF0230776627008D1551 /* ProfilePhotoPreviewViewController.swift in Sources */,
 				E3A2DA4330776627008D1551 /* OtherUserProfileViewModel.swift in Sources */,
 				E3A2DA4430776627008D1551 /* RewardCollectionViewCell.swift in Sources */,
 				E3A2DA4530776627008D1551 /* CustomImagePopUpVC.swift in Sources */,
@@ -3893,26 +4000,27 @@
 				E3A2DA6930776627008D1551 /* SceneDelegate.swift in Sources */,
 				CFBAE365C3829A79E2899AA5 /* DiscoverViewModel.swift in Sources */,
 				DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */,
-				C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Vibe.swift in Sources */,
-				97EAC81079DCE02E6FAA0FBE /* VibeProfile.swift in Sources */,
-				AEEC82DD04625E1B999859FA /* VibeMomentsViewController.swift in Sources */,
-				C57E2A295829D18EE05B7CD6 /* WhyVibeDetailsViewController.swift in Sources */,
+				C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Moments.swift in Sources */,
+				97EAC81079DCE02E6FAA0FBE /* MomentsProfile.swift in Sources */,
+				AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */,
+				C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */,
 				9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */,
-				371C63B8F7E6F7C38B1A178B /* DiscoverViewController.swift in Sources */,
-				F690335568303B016201193C /* VibeFiltersViewController.swift in Sources */,
-				869C6A5140428E2EFF4CFD2F /* VibeProfileViewController.swift in Sources */,
-				938094036D624A1FA6C259B0 /* VibeConnectionViewController.swift in Sources */,
+				3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */,
+				371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */,
+				F690335568303B016201193C /* MomentsFiltersViewController.swift in Sources */,
+				869C6A5140428E2EFF4CFD2F /* CardDetailViewController.swift in Sources */,
+				938094036D624A1FA6C259B0 /* MomentsConnectionViewController.swift in Sources */,
 				C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */,
-				27E7C7E330200024DCCFFDB3 /* VibeCardView.swift in Sources */,
-				F8CB26514F9C07EB669DE2C9 /* VibeStoryComponents.swift in Sources */,
-				B4D13E3BE4F46F39A4FB5591 /* VibeComponents.swift in Sources */,
-				76F5210D32597ED327F229D7 /* VibeCardStackView.swift in Sources */,
-				89EF86808206C0DE9041C21A /* VibeRangeSlider.swift in Sources */,
+				27E7C7E330200024DCCFFDB3 /* MomentsCardView.swift in Sources */,
+				F8CB26514F9C07EB669DE2C9 /* MomentsStoryComponents.swift in Sources */,
+				B4D13E3BE4F46F39A4FB5591 /* MomentsComponents.swift in Sources */,
+				76F5210D32597ED327F229D7 /* MomentsCardStackView.swift in Sources */,
+				89EF86808206C0DE9041C21A /* MomentsRangeSlider.swift in Sources */,
 				8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */,
-				D716281BD622D3187A227B72 /* VibeHaptics.swift in Sources */,
+				D716281BD622D3187A227B72 /* MomentsHaptics.swift in Sources */,
 				8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */,
-				0809B175D887C6F88B3CC304 /* VibeSafety.swift in Sources */,
-				B4DF64BE43E8E42844E1A9C2 /* VibeAnalytics.swift in Sources */,
+				0809B175D887C6F88B3CC304 /* MomentsSafety.swift in Sources */,
+				B4DF64BE43E8E42844E1A9C2 /* MomentsAnalytics.swift in Sources */,
 				FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */,
 				6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */,
 				1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */,
@@ -3938,6 +4046,19 @@
 				CB427D849A8B659E90DB344E /* AppUser.swift in Sources */,
 				B8E4D3F2AC5E6B7D9F102E3D /* GestureVerification.swift in Sources */,
 				6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */,
+				70519B87F96F4D3A21C3D6C3 /* SettingsModel.swift in Sources */,
+				94FB84E5F66ACBA057F15869 /* SettingsViewModel.swift in Sources */,
+				13FEB09872F56FC253A43F13 /* FilteredProfilesViewModel.swift in Sources */,
+				17AF216B893BFBA2A94F82E0 /* SettingsViewController.swift in Sources */,
+				F4136FD4299ECBE5717DF5B9 /* PersonalDetailsViewController.swift in Sources */,
+				5120A655B0BD69253CB2F1D6 /* ManageNotificationViewController.swift in Sources */,
+				387133DE17D2ACB96322AA39 /* PrivacySafetyViewController.swift in Sources */,
+				58655D8851F9EE1DF9ABF552 /* ChangeEmailViewController.swift in Sources */,
+				A712710E57D93B73CAAC2886 /* FilteredProfilesViewController.swift in Sources */,
+				5F9DD3448D6435DC59C8CAD8 /* HelpSupportViewController.swift in Sources */,
+				982D9684054B86814191953B /* FAQViewController.swift in Sources */,
+				482EA02D52DC1948E2162EDE /* FilteredProfileCell.swift in Sources */,
+				83A05C3353C68A8CE4B419BD /* FAQCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

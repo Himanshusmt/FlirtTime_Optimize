@@ -45,13 +45,13 @@ class ProfileViewController: BaseViewController {
     private let quickMomentsView = ProfileQuickMomentsView()
     private let quickMomentsHint = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray, lines: 0)
     private lazy var quickMomentsHintContainer = padded(quickMomentsHint, top: 0)
-    private let interestsChips = VibeChipsView()
+    private let interestsChips = MomentsChipsView()
     private lazy var interestsContainer = padded(section("My Interests", content: interestsChips, actionTitle: "Edit") { [weak self] in
         self?.openEditProfile()
     }, top: 28)
     private let momentsGrid = ProfileMomentsGridView()
     private let momentsSeeAllButton = UIButton(type: .system)
-    private let uploadViewModel = VibeUploadViewModel.shared
+    private let uploadViewModel = MomentsUploadViewModel.shared
     private let photosRow = UIStackView()
     private lazy var photosContainer = padded(section("My Photos", content: horizontalScroller(for: photosRow, height: 150), actionTitle: "Edit") { [weak self] in
         self?.openEditProfile()
@@ -121,7 +121,7 @@ class ProfileViewController: BaseViewController {
             self.momentsSeeAllButton.isHidden = vibes.isEmpty
             self.momentsSeeAllButton.configuration?.attributedTitle = AttributedString(
                 total > vibes.count ? "See all (\(total))" : "See all",
-                attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+                attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
         }.store(in: &desposeBag)
 
         uploadViewModel.$uploadProgress.receive(on: DispatchQueue.main).sink { [weak self] progress in
@@ -168,7 +168,7 @@ class ProfileViewController: BaseViewController {
         let completion = model.profile_complete ?? 0
         progressRing.setProgressWithAnimation(duration: 1.2, value: Float(completion) / 100)
         completionButton.configuration?.attributedTitle = AttributedString("\(completion)% complete", attributes: AttributeContainer([
-            .font: VibeFont.scaled(.medium, 13, style: .footnote)
+            .font: MomentsFont.scaled(.medium, 13, style: .footnote)
         ]))
         completionButton.accessibilityLabel = "Profile \(completion) percent complete. Edit profile"
 
@@ -185,7 +185,7 @@ class ProfileViewController: BaseViewController {
         aboutLabel.text = about.isEmpty ? nil : "“\(about)”"
         aboutLabel.isHidden = about.isEmpty
 
-        let interests = VibeInterestCatalog.interests(for: info?.interests ?? [])
+        let interests = MomentsInterestCatalog.interests(for: info?.interests ?? [])
         interestsChips.configure(interests, highlighted: [])
         interestsContainer.isHidden = interests.isEmpty
 
@@ -248,9 +248,9 @@ class ProfileViewController: BaseViewController {
         coverImageView.isAccessibilityElement = true
         coverImageView.accessibilityLabel = "Cover photo"
 
-        let topShade = VibeGradientView(colors: [UIColor.black.withAlphaComponent(0.35), .clear],
+        let topShade = MomentsGradientView(colors: [UIColor.black.withAlphaComponent(0.35), .clear],
                                         start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
-        let bottomFade = VibeGradientView(colors: [AppColor.AppWhite.withAlphaComponent(0), AppColor.AppWhite],
+        let bottomFade = MomentsGradientView(colors: [AppColor.AppWhite.withAlphaComponent(0), AppColor.AppWhite],
                                           start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
 
         let settings = circleButton(symbol: "gearshape.fill", label: "Settings")
@@ -399,7 +399,7 @@ class ProfileViewController: BaseViewController {
         edit.baseForegroundColor = AppColor.Punch
         edit.image = UIImage(systemName: "pencil", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
         edit.imagePadding = 8
-        edit.attributedTitle = AttributedString("Edit Profile", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 16)]))
+        edit.attributedTitle = AttributedString("Edit Profile", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 16)]))
         let editButton = UIButton(configuration: edit)
         editButton.addAction(UIAction { [weak self] _ in self?.openEditProfile() }, for: .touchUpInside)
 
@@ -409,7 +409,7 @@ class ProfileViewController: BaseViewController {
         add.baseForegroundColor = .white
         add.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
         add.imagePadding = 8
-        add.attributedTitle = AttributedString("Add Moment", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 16)]))
+        add.attributedTitle = AttributedString("Add Moment", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 16)]))
         let addButton = UIButton(configuration: add)
         addButton.layer.shadowColor = AppColor.Punch.cgColor
         addButton.layer.shadowOpacity = 0.35
@@ -469,7 +469,7 @@ class ProfileViewController: BaseViewController {
         var config = UIButton.Configuration.plain()
         config.baseForegroundColor = AppColor.Punch
         config.contentInsets = .zero
-        config.attributedTitle = AttributedString("See all", attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+        config.attributedTitle = AttributedString("See all", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
         momentsSeeAllButton.configuration = config
         momentsSeeAllButton.setContentHuggingPriority(.required, for: .horizontal)
         momentsSeeAllButton.accessibilityLabel = "See all, My Moments"
@@ -491,7 +491,7 @@ class ProfileViewController: BaseViewController {
     // MARK: Premium
 
     private func makePremiumCard() -> UIView {
-        let card = VibeGradientView(colors: VibeTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
+        let card = MomentsGradientView(colors: MomentsTheme.brandGradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 1, y: 1))
         card.isUserInteractionEnabled = true
         card.layer.cornerRadius = 22
         card.layer.cornerCurve = .continuous
@@ -501,7 +501,7 @@ class ProfileViewController: BaseViewController {
         card.layer.shadowOffset = CGSize(width: 0, height: 6)
 
         let crown = UIImageView(image: UIImage(systemName: "crown.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 26, weight: .bold)))
-        crown.tintColor = VibeTheme.gold
+        crown.tintColor = MomentsTheme.gold
         crown.contentMode = .center
         crown.backgroundColor = .white
         crown.layer.cornerRadius = 28
@@ -521,7 +521,7 @@ class ProfileViewController: BaseViewController {
         config.baseBackgroundColor = .white
         config.baseForegroundColor = AppColor.Punch
         config.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 18, bottom: 9, trailing: 18)
-        config.attributedTitle = AttributedString("Upgrade to premium", attributes: AttributeContainer([.font: VibeFont.scaled(.bold, 15)]))
+        config.attributedTitle = AttributedString("Upgrade to premium", attributes: AttributeContainer([.font: MomentsFont.scaled(.bold, 15)]))
         let upgrade = UIButton(configuration: config)
         upgrade.addAction(UIAction { [weak self] _ in self?.openPremium() }, for: .touchUpInside)
 
@@ -597,7 +597,7 @@ class ProfileViewController: BaseViewController {
             var config = UIButton.Configuration.plain()
             config.baseForegroundColor = AppColor.Punch
             config.contentInsets = .zero
-            config.attributedTitle = AttributedString(actionTitle, attributes: AttributeContainer([.font: VibeFont.scaled(.medium, 14, style: .subheadline)]))
+            config.attributedTitle = AttributedString(actionTitle, attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
             let button = UIButton(configuration: config)
             button.setContentHuggingPriority(.required, for: .horizontal)
             button.accessibilityLabel = "\(actionTitle), \(title)"
@@ -626,12 +626,12 @@ class ProfileViewController: BaseViewController {
     }
 
     private func openMyMoments(focusing vibeID: String? = nil) {
-        navigationController?.pushViewController(VibeFeedViewController(scope: .currentUser, focusVibeID: vibeID), animated: true)
+        navigationController?.pushViewController(MomentsListViewController.make(scope: .currentUser, focusVibeID: vibeID), animated: true)
     }
 
     private func openAddMoment() {
         guard !uploadViewModel.isUploading else {
-            aCustomToastView.show(message: "Please wait, your last vibe is still uploading")
+            aCustomToastView.show(message: "Please wait, your last moment is still uploading")
             return
         }
         let aAddMomentViewController: AddMomentViewController = AddMomentViewController.instantiateFromStoryboard()
@@ -694,7 +694,7 @@ class ProfileViewController: BaseViewController {
         let moments = aProfileViewModel.quickMomentFrames
         guard moments.indices.contains(index) else { return }
         let info = userProfileData?.userInfo
-        let profile = VibeProfile(id: info?.userID ?? info?.id ?? 0,
+        let profile = MomentsProfile(id: info?.userID ?? info?.id ?? 0,
                                   displayName: (info?.displayName ?? info?.fullname ?? "You").firstLetterCapitalized,
                                   age: nil,
                                   isVerified: false,
@@ -711,17 +711,15 @@ class ProfileViewController: BaseViewController {
                                   voiceIntro: nil,
                                   moments: moments,
                                   vibeScore: nil)
-        let viewer = VibeMomentsViewController(profile: profile, startIndex: index, isOwnMoments: true)
+        let viewer = QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: true)
         viewer.onShowActivity = { [weak self] index, presenter in self?.showQuickMomentActivity(at: index, from: presenter) }
         viewer.onDelete = { [weak self] index in self?.deleteQuickMoment(at: index) }
         present(viewer, animated: true)
     }
 
     private func settingsTapped() {
-        // Settings is not ported yet; it hosts logout until it is.
-        aDeleteCustomPopUp.show(message: Constants.logOut.logout, button1Text: Constants.AlertButtons.yes, button2Text: Constants.AlertButtons.No, deleteType: .logout) { [weak self] in
-            self?.navigateToLoginScreen()
-        }
+        let aSettingsViewController: SettingsViewController = SettingsViewController.instantiateFromStoryboard()
+        navigationController?.pushViewController(aSettingsViewController, animated: true)
     }
 
     private func openImageSelectionMethodPopUp() {

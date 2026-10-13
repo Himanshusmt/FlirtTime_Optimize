@@ -135,6 +135,9 @@ enum MockPeople {
         if let banner = p.banner {
             json["banner"] = banner
         }
+        if let distance = MockDiscover.shared.distanceKm(userID: p.id) {
+            json["distance"] = distance
+        }
         p.attributes.forEach { json[userInfoKey(forAlias: $0.key)] = $0.value }
         return json
     }

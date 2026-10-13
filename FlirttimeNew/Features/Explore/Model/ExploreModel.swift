@@ -199,9 +199,10 @@ struct SenderProfile: Codable {
     let activeChatID: Int?
     let createdAt: String
     let updatedAt: String
+    let distance: Double?
 
     enum CodingKeys: String, CodingKey {
-        case id
+        case id, distance
         case userID = "user_id"
         case fullname, displayName = "display_name"
         case dob, gender, relationship, sexuality, height, weight

@@ -17,6 +17,8 @@ final class SearchPeopleCell: UICollectionViewCell {
     @IBOutlet private weak var locationStackView: UIStackView!
     @IBOutlet private weak var locationLabel: UILabel!
     @IBOutlet private weak var onlineBadgeView: UIView!
+    @IBOutlet private weak var distanceStackView: UIStackView!
+    @IBOutlet private weak var distanceLabel: UILabel!
 
     override var isHighlighted: Bool {
         didSet {
@@ -48,5 +50,9 @@ final class SearchPeopleCell: UICollectionViewCell {
         locationLabel.text = person.location
         locationStackView.isHidden = person.location?.isEmpty ?? true
         onlineBadgeView.isHidden = person.isOnline != true
+
+        let distanceText = person.distanceShow == false ? nil : person.distance?.kmAwayText
+        distanceLabel.text = distanceText
+        distanceStackView.isHidden = distanceText == nil
     }
 }

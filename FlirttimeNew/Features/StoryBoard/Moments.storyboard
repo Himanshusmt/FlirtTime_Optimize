@@ -1209,7 +1209,7 @@
                                                     <constraint firstItem="b40-GH-lTJ" firstAttribute="top" secondItem="Rqh-hc-3Tl" secondAttribute="top" constant="5" id="UYm-rl-YUF"/>
                                                     <constraint firstItem="b40-GH-lTJ" firstAttribute="leading" secondItem="Rqh-hc-3Tl" secondAttribute="leading" constant="15" id="Yfe-0V-N4P"/>
                                                     <constraint firstItem="Fl8-yj-D3K" firstAttribute="trailing" secondItem="b40-GH-lTJ" secondAttribute="trailing" id="nMR-H1-nh5"/>
-                                                    <constraint firstAttribute="bottom" secondItem="Fl8-yj-D3K" secondAttribute="bottom" constant="10" id="pGJ-8x-V16"/>
+                                                    <constraint firstAttribute="bottom" secondItem="Fl8-yj-D3K" secondAttribute="bottom" constant="30" id="pGJ-8x-V16"/>
                                                     <constraint firstItem="Fl8-yj-D3K" firstAttribute="top" secondItem="b40-GH-lTJ" secondAttribute="bottom" constant="10" id="xZs-M0-ifn"/>
                                                 </constraints>
                                             </view>
@@ -1219,7 +1219,7 @@
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NsB-7X-ofj">
                                                         <rect key="frame" x="0.0" y="0.0" width="393" height="376"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                                        <state key="normal" backgroundImage="addPhoto_image"/>
+                                                        <state key="normal"/>
                                                         <connections>
                                                             <action selector="addMomentButtonTappe:" destination="BAj-9F-kaS" eventType="touchUpInside" id="viz-H3-y8w"/>
                                                         </connections>
@@ -1404,40 +1404,6 @@
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="dpJ-8H-p5q">
                                                 <rect key="frame" x="0.0" y="513" width="393" height="50"/>
                                                 <subviews>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="mEV-3A-JQG">
-                                                        <rect key="frame" x="0.0" y="0.0" width="393" height="50"/>
-                                                        <subviews>
-                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cox-GS-KH4">
-                                                                <rect key="frame" x="129" y="2.6666666666666288" width="135" height="45"/>
-                                                                <color key="backgroundColor" red="1" green="0.95686274509803915" blue="0.9137254901960784" alpha="1" colorSpace="calibratedRGB"/>
-                                                                <constraints>
-                                                                    <constraint firstAttribute="width" constant="135" id="NNe-L2-Eue"/>
-                                                                    <constraint firstAttribute="height" constant="45" id="pKB-6o-45Z"/>
-                                                                </constraints>
-                                                                <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="12"/>
-                                                                <color key="tintColor" name="#D92B2B"/>
-                                                                <inset key="titleEdgeInsets" minX="10" minY="0.0" maxX="0.0" maxY="0.0"/>
-                                                                <inset key="imageEdgeInsets" minX="-10" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                                                <state key="normal" title="Add more" image="addIcon">
-                                                                    <color key="titleColor" name="#D92B2B"/>
-                                                                </state>
-                                                                <userDefinedRuntimeAttributes>
-                                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                                        <real key="value" value="22"/>
-                                                                    </userDefinedRuntimeAttribute>
-                                                                </userDefinedRuntimeAttributes>
-                                                                <connections>
-                                                                    <action selector="addMoreMomentButtonTapped:" destination="BAj-9F-kaS" eventType="touchUpInside" id="45O-VY-GO5"/>
-                                                                </connections>
-                                                            </button>
-                                                        </subviews>
-                                                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                                                        <constraints>
-                                                            <constraint firstAttribute="height" constant="50" id="0mr-Ae-4g5"/>
-                                                            <constraint firstItem="cox-GS-KH4" firstAttribute="centerX" secondItem="mEV-3A-JQG" secondAttribute="centerX" id="C1J-dh-Mae"/>
-                                                            <constraint firstItem="cox-GS-KH4" firstAttribute="centerY" secondItem="mEV-3A-JQG" secondAttribute="centerY" id="aEj-kj-Qx4"/>
-                                                        </constraints>
-                                                    </view>
                                                     <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fbV-Bj-qbx">
                                                         <rect key="frame" x="0.0" y="0.0" width="393" height="81"/>
                                                         <subviews>
@@ -1493,14 +1459,15 @@
                                             <constraint firstAttribute="trailing" secondItem="RfL-sL-2dt" secondAttribute="trailing" id="HZv-xe-xdv"/>
                                             <constraint firstAttribute="trailing" secondItem="dpJ-8H-p5q" secondAttribute="trailing" id="PTT-tZ-WS9"/>
                                             <constraint firstItem="Rqh-hc-3Tl" firstAttribute="top" secondItem="TzE-Ph-W7X" secondAttribute="top" id="Qka-bl-jgE"/>
-                                            <constraint firstItem="RfL-sL-2dt" firstAttribute="top" secondItem="Rqh-hc-3Tl" secondAttribute="bottom" constant="10" id="ctZ-dO-rRh"/>
-                                            <constraint firstItem="dpJ-8H-p5q" firstAttribute="top" secondItem="RfL-sL-2dt" secondAttribute="bottom" constant="20" id="eOR-UG-AqW"/>
+                                            <constraint firstItem="RfL-sL-2dt" firstAttribute="top" secondItem="Rqh-hc-3Tl" secondAttribute="bottom" constant="8" id="ctZ-dO-rRh"/>
+                                            <constraint firstItem="dpJ-8H-p5q" firstAttribute="top" secondItem="RfL-sL-2dt" secondAttribute="bottom" constant="8" id="eOR-UG-AqW"/>
                                             <constraint firstAttribute="trailing" secondItem="Rqh-hc-3Tl" secondAttribute="trailing" id="fxP-9Q-Vr2"/>
                                             <constraint firstItem="Rqh-hc-3Tl" firstAttribute="leading" secondItem="TzE-Ph-W7X" secondAttribute="leading" id="g6T-0K-IPO"/>
                                             <constraint firstItem="dpJ-8H-p5q" firstAttribute="leading" secondItem="TzE-Ph-W7X" secondAttribute="leading" id="gvh-Jf-qkg"/>
                                             <constraint firstItem="6wo-jF-FvM" firstAttribute="top" secondItem="RfL-sL-2dt" secondAttribute="top" constant="15" id="jM9-Ji-8YU"/>
                                             <constraint firstItem="RfL-sL-2dt" firstAttribute="leading" secondItem="TzE-Ph-W7X" secondAttribute="leading" id="jTx-j5-1OL"/>
                                             <constraint firstItem="6wo-jF-FvM" firstAttribute="leading" secondItem="TzE-Ph-W7X" secondAttribute="leading" constant="3" id="nBh-hQ-IeU"/>
+                                            <constraint firstAttribute="bottom" relation="greaterThanOrEqual" secondItem="dpJ-8H-p5q" secondAttribute="bottom" constant="16" id="Lc7-Pk-2rB"/>
                                         </constraints>
                                     </view>
                                 </subviews>
@@ -1584,7 +1551,6 @@
                     </view>
                     <extendedEdge key="edgesForExtendedLayout" top="YES"/>
                     <connections>
-                        <outlet property="addMoreButton" destination="cox-GS-KH4" id="N4C-PQ-FZv"/>
                         <outlet property="addMoreButtonImage" destination="NsB-7X-ofj" id="g4G-tY-iur"/>
                         <outlet property="discardButton" destination="Waq-ES-gUZ" id="K5x-lQ-mVp"/>
                         <outlet property="img11" destination="mZc-kz-FbO" id="1sN-5W-4kb"/>
@@ -1598,7 +1564,9 @@
                         <outlet property="img33" destination="QdF-8l-XzS" id="VaC-g9-DTS"/>
                         <outlet property="img34" destination="iLp-UJ-7I1" id="4CQ-pr-gIp"/>
                         <outlet property="img35" destination="88f-J5-p29" id="EBb-V5-bf2"/>
+                        <outlet property="captionBottomConstraint" destination="pGJ-8x-V16" id="Cb3-Kq-9wE"/>
                         <outlet property="nameLabel" destination="xhN-0Y-V9x" id="LDo-dE-FQg"/>
+                        <outlet property="optionsStackView" destination="dpJ-8H-p5q" id="Op7-Sv-k3D"/>
                         <outlet property="profileImageView" destination="xDU-kq-JxK" id="hew-v9-9pP"/>
                         <outlet property="replaceButtonStack" destination="6wo-jF-FvM" id="9cL-Wg-g1w"/>
                         <outlet property="selectedMomentsCollection" destination="IFi-oH-k58" id="XyW-9k-xp2"/>
@@ -1698,7 +1666,6 @@
         <image name="ProfileBlur" width="375" height="202"/>
         <image name="addCoverPhoto" width="333" height="127"/>
         <image name="addIcon" width="16" height="16"/>
-        <image name="addPhoto_image" width="375" height="375"/>
         <image name="backTransprant" width="35" height="35"/>
         <image name="blackCross" width="24" height="24"/>
         <image name="blackEditProfile" width="15" height="16"/>

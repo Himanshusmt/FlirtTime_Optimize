@@ -49,7 +49,7 @@ final class ProfileQuickMomentsView: UIView {
         ])
     }
 
-    func configure(moments: [VibeMoment], avatarPath: String?) {
+    func configure(moments: [MomentsStory], avatarPath: String?) {
         stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         if showsAddButton {
             stack.addArrangedSubview(addItem(avatarPath: avatarPath))
@@ -100,9 +100,9 @@ final class ProfileQuickMomentsView: UIView {
         return item
     }
 
-    private func momentItem(_ moment: VibeMoment, index: Int, total: Int) -> UIView {
+    private func momentItem(_ moment: MomentsStory, index: Int, total: Int) -> UIView {
         let size = Self.bubbleSize
-        let ring = VibeGradientView(colors: VibeTheme.brandGradient)
+        let ring = MomentsGradientView(colors: MomentsTheme.brandGradient)
         ring.layer.cornerRadius = size / 2
         ring.clipsToBounds = true
 
@@ -115,7 +115,7 @@ final class ProfileQuickMomentsView: UIView {
 
         let content: UIView
         if moment.isText {
-            let background = VibeGradientView(colors: VibeTheme.storyBackground(moment.textBackground))
+            let background = MomentsGradientView(colors: MomentsTheme.storyBackground(moment.textBackground))
             let text = UILabel.vibeLabel(.bold, 10, style: .caption2, color: .white, lines: 3)
             text.text = moment.caption
             text.textAlignment = .center
@@ -157,7 +157,7 @@ final class ProfileQuickMomentsView: UIView {
             ])
         }
 
-        let time = moment.postedAt.map { VibeDate.timeAgo(from: VibeDate.string(from: $0)) }
+        let time = moment.postedAt.map { MomentsDate.timeAgo(from: MomentsDate.string(from: $0)) }
         let item = makeItem(circle: bubble, title: time ?? " ", titleColor: AppColor.DoveGray)
         item.accessibilityLabel = (showsAddButton ? "Your quick moment" : "Quick moment") + " \(index + 1) of \(total)"
             + (moment.postedAgoText.map { ", \($0)" } ?? "")

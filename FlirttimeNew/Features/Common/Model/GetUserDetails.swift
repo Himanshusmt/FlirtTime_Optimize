@@ -141,6 +141,9 @@ struct UserDetailInfo: Codable {
     let memExpired: String?
     let createdAt: String?
     let updatedAt: String?
+    let notifySettings: NotifySettings?
+    /// Kilometres from the current user; only sent by people search / listing endpoints.
+    let distance: Double?
     var img_type:String?
     
     // Custom coding keys to map snake_case to camelCase
@@ -176,6 +179,8 @@ struct UserDetailInfo: Codable {
         case memExpired = "mem_expired"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case notifySettings = "notify_settings"
+        case distance
     }
     
     init(from decoder: Decoder) throws {
@@ -238,6 +243,14 @@ struct UserDetailInfo: Codable {
                 memExpired = try? container.decode(String.self, forKey: .memExpired)
                 createdAt = try? container.decode(String.self, forKey: .createdAt)
                 updatedAt = try? container.decode(String.self, forKey: .updatedAt)
+                notifySettings = try? container.decode(NotifySettings.self, forKey: .notifySettings)
+                if let km = try? container.decode(Double.self, forKey: .distance) {
+                    distance = km
+                } else if let kmString = try? container.decode(String.self, forKey: .distance) {
+                    distance = Double(kmString)
+                } else {
+                    distance = nil
+                }
             
         }
 }

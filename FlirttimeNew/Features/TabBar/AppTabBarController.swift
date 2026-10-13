@@ -95,7 +95,10 @@ class AppTabBarController: UITabBarController, Instantiable {
         }
     }
 
+    /// Hides both center tap targets; `buttonD` sits above pushed screens and would otherwise
+    /// still switch to Discover when their bottom center is tapped.
     func setCustomButtonHidden(_ hidden: Bool) {
+        AppTabBarController.buttonD.isHidden = hidden
         AppTabBarController.customButton.isHidden = hidden
         AppTabBarController.buttonBottomConstraint?.constant = hidden ? -40 : -20
         AppTabBarController.customButton.superview?.layoutIfNeeded()

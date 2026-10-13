@@ -2,8 +2,8 @@
 //  AddMomentViewController.swift
 //  FlirttimeNew
 //
-//  FlirtTime's "Add Moment" screen, used by the Home tab to post a vibe. Share hands the
-//  photos to `VibeUploadViewModel` and pops right away; the feed shows the upload progress.
+//  FlirtTime's "Add Moment" screen, used by the Home tab to post a moment. Share hands the
+//  photos to `MomentsUploadViewModel` and pops right away; the feed shows the upload progress.
 //
 
 import UIKit
@@ -21,13 +21,13 @@ class AddMomentViewController: BaseViewController, Instantiable {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var threeDotButton: UIButton!
     @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var addMoreButton: UIButton!
     @IBOutlet weak var shareButton: UIButton!
     @IBOutlet weak var replaceButtonStack: UIStackView!
     @IBOutlet weak var selectedMomentsView: UIView!
     @IBOutlet weak var selectedMomentsCollection: UICollectionView!
     @IBOutlet weak var discardButton: UIButton!
     @IBOutlet weak var textViewheight: NSLayoutConstraint!
+    @IBOutlet weak var captionBottomConstraint: NSLayoutConstraint!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var tagTextView: UITextView!
     @IBOutlet weak var tagTextViewHeight: NSLayoutConstraint!
@@ -51,22 +51,35 @@ class AddMomentViewController: BaseViewController, Instantiable {
 
     @IBOutlet weak var view3HeighConstraints: NSLayoutConstraint!
     @IBOutlet weak var addMoreButtonImage: UIButton!
+    @IBOutlet weak var optionsStackView: UIStackView!
 
     static var storyboardName: StringConvertible {
         return StoryboardName.moments
     }
 
-    /// Called after Share, once the upload has been handed to `VibeUploadViewModel`.
+    /// Called after Share, once the upload has been handed to `MomentsUploadViewModel`.
     var callBackAction: (() -> Void)?
 
-    private let uploadViewModel = VibeUploadViewModel.shared
+    private let uploadViewModel = MomentsUploadViewModel.shared
     private var addMomentArray: [UIImage] = []
-    private let maxImages = MockVibeStore.maxImagesPerVibe
+    private let maxImages = MockMomentsStore.maxImagesPerVibe
     private let maxCaptionLength = 500
+    private var selectedPlace: MomentPlace?
+
+    private lazy var photoPlaceholderView = AddMomentPhotoPlaceholderView(maxPhotos: maxImages)
+    private let captionCountLabel = UILabel()
+    private var isShowingCaptionPlaceholder = true
+    private let photosBar = AddMomentPhotosBar()
+    private let locationSection = AddMomentLocationSection()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setUI()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        resizeCaption()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -75,25 +88,114 @@ class AddMomentViewController: BaseViewController, Instantiable {
     }
 
     private func setUI() {
-        addMoreButton.isHidden = true
         selectedMomentsView.isHidden = true
         addMoreButtonImage.isHidden = false
         profileImageView.layer.cornerRadius = profileImageView.frame.height / 2
-        let author = MockVibeStore.shared.currentUserAuthor
+        let author = MockMomentsStore.shared.currentUserAuthor
         nameLabel.text = author.displayName
         profileImageView.loadImage(path: author.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
-        textView.delegate = self
-        textView.text = Constants.AddMoment.placeholder
-        textView.textColor = UIColor.lightGray
+        setUpCaptionTextView()
         view3HeighConstraints.constant = 0
         shareButtonValidation(isHide: true)
+        setUpCaptionCounter()
+        setUpPhotoPlaceholder()
+        setUpPhotosBar()
+        setUpLocationSection()
+    }
+
+    private func setUpPhotosBar() {
+        photosBar.onAddMore = { [weak self] in
+            guard let self, self.addMomentArray.count < self.maxImages else { return }
+            self.openImageSelectionMethodPopUp()
+        }
+        photosBar.isHidden = true
+        optionsStackView.insertArrangedSubview(photosBar, at: 0)
+        optionsStackView.setCustomSpacing(8, after: photosBar)
+    }
+
+    private func setUpCaptionTextView() {
+        textView.delegate = self
+        textView.isScrollEnabled = false
+        textView.font = .fredoka(.regular, size: 15)
+        textView.tintColor = AppColor.Punch
+        textView.textContainer.lineFragmentPadding = 0
+        textView.textContainerInset = UIEdgeInsets(top: 6, left: 0, bottom: 6, right: 0)
+        showCaptionPlaceholder()
+    }
+
+    private func showCaptionPlaceholder() {
+        isShowingCaptionPlaceholder = true
+        textView.text = Constants.AddMoment.placeholder
+        textView.textColor = AppColor.Bombay
+    }
+
+    private func setUpCaptionCounter() {
+        captionCountLabel.font = .fredoka(.regular, size: 12)
+        captionCountLabel.textAlignment = .right
+        captionCountLabel.translatesAutoresizingMaskIntoConstraints = false
+        textView.superview?.addSubview(captionCountLabel)
+        NSLayoutConstraint.activate([
+            captionCountLabel.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 2),
+            captionCountLabel.trailingAnchor.constraint(equalTo: textView.trailingAnchor)
+        ])
+        updateCaptionCount()
+    }
+
+    private func updateCaptionCount() {
+        let count = isShowingCaptionPlaceholder ? 0 : textView.text.count
+        captionCountLabel.text = "\(count)/\(maxCaptionLength)"
+        captionCountLabel.textColor = count >= maxCaptionLength ? AppColor.Punch : AppColor.SilverChalice
+        captionCountLabel.accessibilityLabel = "\(count) of \(maxCaptionLength) characters"
+    }
+
+    private func setUpPhotoPlaceholder() {
+        photoPlaceholderView.translatesAutoresizingMaskIntoConstraints = false
+        addMoreButtonImage.addSubview(photoPlaceholderView)
+        NSLayoutConstraint.activate([
+            photoPlaceholderView.topAnchor.constraint(equalTo: addMoreButtonImage.topAnchor, constant: 4),
+            photoPlaceholderView.bottomAnchor.constraint(equalTo: addMoreButtonImage.bottomAnchor, constant: -4),
+            photoPlaceholderView.leadingAnchor.constraint(equalTo: addMoreButtonImage.leadingAnchor, constant: 16),
+            photoPlaceholderView.trailingAnchor.constraint(equalTo: addMoreButtonImage.trailingAnchor, constant: -16)
+        ])
+        addMoreButtonImage.accessibilityLabel = "Add photos"
+        addMoreButtonImage.addTarget(self, action: #selector(placeholderTouchDown), for: [.touchDown, .touchDragEnter])
+        addMoreButtonImage.addTarget(self, action: #selector(placeholderTouchUp),
+                                     for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
+    }
+
+    private func setUpLocationSection() {
+        locationSection.onAddTapped = { [weak self] in
+            self?.openLocationPicker()
+        }
+        locationSection.onClear = { [weak self] in
+            self?.setSelectedPlace(nil)
+        }
+        guard let captionContainer = textView.superview else { return }
+        locationSection.translatesAutoresizingMaskIntoConstraints = false
+        captionContainer.addSubview(locationSection)
+        captionBottomConstraint.isActive = false
+        NSLayoutConstraint.activate([
+            locationSection.topAnchor.constraint(equalTo: captionCountLabel.bottomAnchor, constant: 8),
+            locationSection.leadingAnchor.constraint(equalTo: captionContainer.leadingAnchor),
+            locationSection.trailingAnchor.constraint(equalTo: captionContainer.trailingAnchor),
+            locationSection.bottomAnchor.constraint(equalTo: captionContainer.bottomAnchor)
+        ])
+        setSelectedPlace(nil)
+    }
+
+    private func setSelectedPlace(_ place: MomentPlace?) {
+        selectedPlace = place
+        UIView.performWithoutAnimation {
+            locationSection.configure(selected: place)
+        }
     }
 
     private func prepareImages(imageArr: [UIImage]) {
         let count = imageArr.count
         replaceButtonStack.isHidden = count <= 0
         addMoreButtonImage.isHidden = count > 0
-        addMoreButton.isHidden = count == 0 || count >= maxImages
+        photosBar.isHidden = count == 0
+        photosBar.configure(count: count, max: maxImages)
         view1.isHidden = true
         view2.isHidden = true
         view3.isHidden = true
@@ -142,17 +244,27 @@ class AddMomentViewController: BaseViewController, Instantiable {
 
     // MARK: - Actions
 
-    @IBAction func addMoreMomentButtonTapped(_ sender: UIButton) {
-        guard addMomentArray.count < maxImages else { return }
-        openImageSelectionMethodPopUp()
-    }
-
     @IBAction func addMomentButtonTappe(_ sender: UIButton) {
         openImageSelectionMethodPopUp()
     }
 
+    @objc private func placeholderTouchDown() {
+        photoPlaceholderView.setPressed(true)
+    }
+
+    @objc private func placeholderTouchUp() {
+        photoPlaceholderView.setPressed(false)
+    }
+
+    private func openLocationPicker() {
+        view.endEditing(true)
+        MomentLocationPickerViewController.present(from: self) { [weak self] place in
+            self?.setSelectedPlace(place)
+        }
+    }
+
     @IBAction func discardButtonTapped(_ sender: UIButton) {
-        if addMomentArray.count > 0 {
+        if addMomentArray.count > 0 || selectedPlace != nil {
             aDeleteCustomPopUp.show(message: Constants.AddMoment.discard, button1Text: Constants.AlertButtons.cancel, button2Text: Constants.AlertButtons.yesDiscard) {
                 self.navigationController?.popViewController(animated: true)
             }
@@ -167,12 +279,9 @@ class AddMomentViewController: BaseViewController, Instantiable {
 
     @IBAction func shareButtonTapped(_ sender: UIButton) {
         guard !addMomentArray.isEmpty else { return }
-        var body = textView.text ?? ""
-        if body == Constants.AddMoment.placeholder {
-            body = ""
-        }
-        guard uploadViewModel.startUpload(images: addMomentArray, caption: body) else {
-            aCustomToastView.show(message: "Please wait, your last vibe is still uploading")
+        let body = isShowingCaptionPlaceholder ? "" : (textView.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard uploadViewModel.startUpload(images: addMomentArray, caption: body, location: selectedPlace?.displayText) else {
+            aCustomToastView.show(message: "Please wait, your last moment is still uploading")
             return
         }
         textView.resignFirstResponder()
@@ -244,7 +353,7 @@ extension AddMomentViewController {
         aFaceVerificationViewController.callBackAction = { [weak self] image in
             guard let image else { return }
             DispatchQueue.main.async {
-                self?.addSelectedMomentImages([MomentImageProcessing.prepare(image)])
+                self?.cropPickedImages([MomentImageProcessing.prepare(image)])
             }
         }
         aFaceVerificationViewController.modalPresentationStyle = .overCurrentContext
@@ -264,9 +373,33 @@ extension AddMomentViewController: PHPickerViewControllerDelegate {
     }
 
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        dismiss(animated: true)
-        MomentImageProcessing.loadImages(from: results) { [weak self] images in
-            self?.addSelectedMomentImages(images)
+        guard !results.isEmpty else {
+            dismiss(animated: true)
+            return
+        }
+        var pickedImages: [UIImage] = []
+        let group = DispatchGroup()
+        group.enter()
+        dismiss(animated: true) { group.leave() }
+        group.enter()
+        MomentImageProcessing.loadImages(from: results) { images in
+            pickedImages = images
+            group.leave()
+        }
+        group.notify(queue: .main) { [weak self] in
+            self?.cropPickedImages(pickedImages)
+        }
+    }
+}
+
+extension AddMomentViewController {
+
+    /// Camera and gallery photos are cropped to the feed's photo shape before being added.
+    private func cropPickedImages(_ images: [UIImage]) {
+        let room = maxImages - addMomentArray.count
+        guard room > 0, !images.isEmpty else { return }
+        MomentImageCropViewController.present(images: Array(images.prefix(room)), from: self) { [weak self] cropped in
+            self?.addSelectedMomentImages(cropped)
         }
     }
 }
@@ -274,29 +407,58 @@ extension AddMomentViewController: PHPickerViewControllerDelegate {
 // MARK: - Caption
 extension AddMomentViewController: UITextViewDelegate {
 
+    /// Pasted text is trimmed to whatever still fits.
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        guard let current = textView.text, let swiftRange = Range(range, in: current) else { return true }
+        let remaining = maxCaptionLength - (current.count - current[swiftRange].count)
+        guard text.count > remaining else { return true }
+        guard remaining > 0 else { return false }
+        let inserted = String(text.prefix(remaining))
+        textView.text = (current as NSString).replacingCharacters(in: range, with: inserted)
+        textView.selectedRange = NSRange(location: range.location + (inserted as NSString).length, length: 0)
+        textViewDidChange(textView)
+        return false
+    }
+
     func textViewDidChange(_ textView: UITextView) {
         if textView.text.count > maxCaptionLength {
             textView.text = String(textView.text.prefix(maxCaptionLength))
         }
-        guard let lineHeight = textView.font?.lineHeight, lineHeight > 0 else { return }
-        let numberOfLines = textView.contentSize.height / lineHeight
-        textViewheight.constant = Int(numberOfLines) > 5 ? 113.0 : textView.contentSize.height
-        textView.layoutIfNeeded()
+        updateCaptionCount()
+        resizeCaption()
+        scrollCaretIntoView()
+    }
+
+    /// The caption grows with its text; the page scrolls instead of the text view.
+    private func resizeCaption() {
+        let fitting = textView.sizeThatFits(CGSize(width: textView.bounds.width, height: .greatestFiniteMagnitude))
+        let height = max(35, ceil(fitting.height))
+        guard textViewheight.constant != height else { return }
+        textViewheight.constant = height
+        view.layoutIfNeeded()
+    }
+
+    private func scrollCaretIntoView() {
+        guard let caret = textView.selectedTextRange?.end,
+              let pageScrollView = sequence(first: textView.superview, next: { $0?.superview })
+                .compactMap({ $0 as? UIScrollView }).first else { return }
+        let caretRect = textView.caretRect(for: caret).insetBy(dx: 0, dy: -12)
+        pageScrollView.scrollRectToVisible(textView.convert(caretRect, to: pageScrollView), animated: false)
     }
 
     func textViewDidBeginEditing(_ textView: UITextView) {
-        if textView.textColor == UIColor.lightGray {
-            textView.text = nil
-            textView.textColor = UIColor.black
-        }
+        guard isShowingCaptionPlaceholder else { return }
+        isShowingCaptionPlaceholder = false
+        textView.text = nil
+        textView.textColor = AppColor.MineShaft
     }
 
     func textViewDidEndEditing(_ textView: UITextView) {
-        if textView.text.isEmpty || textView.text == Constants.AddMoment.placeholder {
-            textView.text = Constants.AddMoment.placeholder
-            textView.textColor = UIColor.lightGray
-            textViewheight.constant = 35
+        if textView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            showCaptionPlaceholder()
+            resizeCaption()
         }
+        updateCaptionCount()
     }
 }
 

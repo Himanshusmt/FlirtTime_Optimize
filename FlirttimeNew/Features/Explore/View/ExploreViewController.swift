@@ -296,7 +296,7 @@ class ExploreViewController: BaseViewController {
     }
 
     @IBAction func applyFilterButtonTapped(_ sender: UIButton) {
-        VibeFiltersViewController.present(from: tabBarController ?? self, filters: .saved) { filters in
+        MomentsFiltersViewController.present(from: tabBarController ?? self, filters: .saved) { filters in
             UserDataManager.shared.filterDataModel = filters
         }
     }
@@ -309,6 +309,10 @@ class ExploreViewController: BaseViewController {
     private func age(from dob: String?) -> Int? {
         guard let dob, !dob.isEmpty else { return nil }
         return calculateAge(from: dob)
+    }
+
+    private func distanceText(km: Double?, isHidden: Bool) -> String? {
+        isHidden ? nil : km?.kmAwayText
     }
 }
 
@@ -331,25 +335,33 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         case .likes:
             let interaction = aUserInteraction?.data?[indexPath.item]
             let info = interaction?.userInfo
-            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob), subtitle: info?.location,
+            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob),
+                           distanceText: distanceText(km: info?.distance, isHidden: info?.distanceShow == false),
+                           subtitle: info?.location,
                            isVerified: info?.isActive == true, isOnline: info?.isOnline == true,
                            isSuperLike: interaction?.interactionType == 2, isLocked: !isSubscribed)
         case .youLiked:
             let interaction = aMyLikeResp?.data[indexPath.item]
             let info = interaction?.userInfo
-            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob), subtitle: info?.location,
+            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob),
+                           distanceText: distanceText(km: info?.distance, isHidden: info?.distanceShow == false),
+                           subtitle: info?.location,
                            isVerified: info?.isActive == true, isOnline: info?.isOnline == true,
                            isSuperLike: interaction?.interactionType == 2, isLocked: false)
         case .matches:
             let match = aMyMatches?.data[indexPath.item]
-            cell.configure(imagePath: match?.avatar, name: match?.displayName, age: age(from: match?.dob), subtitle: match?.location,
+            cell.configure(imagePath: match?.avatar, name: match?.displayName, age: age(from: match?.dob),
+                           distanceText: distanceText(km: match?.distance, isHidden: match?.distanceShow == false),
+                           subtitle: match?.location,
                            isVerified: match?.isActive == true, isOnline: match?.isOnline == true,
                            isSuperLike: false, isLocked: false)
         case .compliments:
             let compliment = aComplimentListResponse?.data?.compliments?[indexPath.item]
             let sender = compliment?.sender
             let message = compliment.map { "\u{201C}\($0.content)\u{201D}" }
-            cell.configure(imagePath: sender?.avatar, name: sender?.displayName, age: age(from: sender?.dob), subtitle: message,
+            cell.configure(imagePath: sender?.avatar, name: sender?.displayName, age: age(from: sender?.dob),
+                           distanceText: distanceText(km: sender?.distance, isHidden: sender?.distanceShow == false),
+                           subtitle: message,
                            isVerified: sender?.isActive == true, isOnline: sender?.isOnline == true,
                            isSuperLike: false, isLocked: !isSubscribed)
         }
