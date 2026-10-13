@@ -43,8 +43,11 @@ struct Vibe: Codable {
 
 struct VibeMedia: Codable {
     let id: String?
+    /// Full-size image, for feed cards and full screen.
     let filePath: String?
     let fileType: String?
+    /// 400x400 thumbnail, for grids.
+    var thumbnailPath: String? = nil
 }
 
 struct VibeAuthor: Codable {

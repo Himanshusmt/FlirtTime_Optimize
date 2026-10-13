@@ -8,6 +8,8 @@ import UIKit
 protocol VibeTableViewCellDelegate: AnyObject {
     func vibeCellDidTapLike(_ cell: VibeTableViewCell)
     func vibeCellDidDoubleTapLike(_ cell: VibeTableViewCell)
+    /// Long press on the like button: show who liked the vibe.
+    func vibeCellDidLongPressLike(_ cell: VibeTableViewCell)
     func vibeCellDidTapComment(_ cell: VibeTableViewCell)
     func vibeCellDidTapGift(_ cell: VibeTableViewCell)
     func vibeCellDidTapMore(_ cell: VibeTableViewCell)
@@ -224,6 +226,12 @@ final class VibeTableViewCell: UITableViewCell {
         ])
 
         likeButton.addTarget(self, action: #selector(likeTapped), for: .touchUpInside)
+        likeButton.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(likeLongPressed(_:))))
+        likeButton.accessibilityCustomActions = [UIAccessibilityCustomAction(name: "See likes") { [weak self] _ in
+            guard let self else { return false }
+            self.delegate?.vibeCellDidLongPressLike(self)
+            return true
+        }]
         commentButton.addTarget(self, action: #selector(commentTapped), for: .touchUpInside)
         giftButton.addTarget(self, action: #selector(giftTapped), for: .touchUpInside)
         moreButton.addTarget(self, action: #selector(moreTapped), for: .touchUpInside)
@@ -295,6 +303,12 @@ final class VibeTableViewCell: UITableViewCell {
     @objc private func likeTapped() {
         bounce(likeButton)
         delegate?.vibeCellDidTapLike(self)
+    }
+
+    @objc private func likeLongPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        delegate?.vibeCellDidLongPressLike(self)
     }
 
     @objc private func doubleTapped(_ gesture: UITapGestureRecognizer) {
@@ -471,7 +485,9 @@ extension VibeTableViewCell: UICollectionViewDataSource, UICollectionViewDelegat
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: VibeMediaCollectionViewCell.identifier, for: indexPath) as? VibeMediaCollectionViewCell else {
             return UICollectionViewCell()
         }
-        cell.configure(path: media[indexPath.item].filePath)
+        let item = media[indexPath.item]
+        let thumbnail = item.thumbnailPath?.isEmpty == false ? item.thumbnailPath : nil
+        cell.configure(path: thumbnail ?? item.filePath)
         return cell
     }
 

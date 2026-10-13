@@ -62,7 +62,7 @@ class EditMovementViewController: BaseViewController, Instantiable {
                 }
             }
         }
-        aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
+        aImageSelectionMethodVC.modalPresentationStyle = .overFullScreen
         navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
     }
 
@@ -148,7 +148,7 @@ extension EditMovementViewController {
                 self?.apply(MomentImageProcessing.prepare(image))
             }
         }
-        aFaceVerificationViewController.modalPresentationStyle = .overCurrentContext
+        aFaceVerificationViewController.modalPresentationStyle = .overFullScreen
         navigationController?.present(aFaceVerificationViewController, animated: true, completion: nil)
     }
 }

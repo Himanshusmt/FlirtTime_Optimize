@@ -60,6 +60,31 @@ enum AppEndPoint: CustomStringConvertible {
     case blockUser(userId: String)
     case reportUser(userId: String)
 
+    // Media — S3 presigned uploads
+    case mediaPresignedURL
+    case onboardingPhotos
+
+    // Moments — VibeFeedViewModel / VibeUploadViewModel / VibeCommentViewModel
+    case moments
+    case myMoments
+    case momentLike(momentId: String)
+    case momentComments(momentId: String)
+    case momentLikes(momentId: String)
+    case momentReport(momentId: String)
+
+    // Quick Moments (24h stories) — ProfileViewModel / QuickMomentActivityViewController
+    case quickMoments
+    case quickMomentsTray
+    case myQuickMoments
+    case userQuickMoments(userId: String)
+    case quickMomentUploadURL
+    case quickMoment(momentId: String)
+    case quickMomentReactions(momentId: String)
+    case quickMomentReact(momentId: String)
+    case quickMomentReply(momentId: String)
+    case quickMomentView(momentId: String)
+    case quickMomentViewers(momentId: String)
+
     var description: String {
         switch self {
         case .health: return "health"
@@ -79,6 +104,25 @@ enum AppEndPoint: CustomStringConvertible {
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
+        case .mediaPresignedURL: return "api/v1/media/presigned-url"
+        case .onboardingPhotos: return "api/v1/onboarding/photos"
+        case .moments: return "api/v1/moments"
+        case .myMoments: return "api/v1/moments/me"
+        case .momentLike(let momentId): return "api/v1/moments/\(momentId)/like"
+        case .momentComments(let momentId): return "api/v1/moments/\(momentId)/comments"
+        case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
+        case .momentReport(let momentId): return "api/v1/moments/\(momentId)/report"
+        case .quickMoments: return "api/v1/quick-moments"
+        case .quickMomentsTray: return "api/v1/quick-moments/tray"
+        case .myQuickMoments: return "api/v1/quick-moments/me"
+        case .userQuickMoments(let userId): return "api/v1/quick-moments/user/\(userId)"
+        case .quickMomentUploadURL: return "api/v1/quick-moments/upload-url"
+        case .quickMoment(let momentId): return "api/v1/quick-moments/\(momentId)"
+        case .quickMomentReactions(let momentId): return "api/v1/quick-moments/\(momentId)/reactions"
+        case .quickMomentReact(let momentId): return "api/v1/quick-moments/\(momentId)/react"
+        case .quickMomentReply(let momentId): return "api/v1/quick-moments/\(momentId)/reply"
+        case .quickMomentView(let momentId): return "api/v1/quick-moments/\(momentId)/view"
+        case .quickMomentViewers(let momentId): return "api/v1/quick-moments/\(momentId)/viewers"
         }
     }
 
@@ -92,7 +136,12 @@ enum AppEndPoint: CustomStringConvertible {
             return true
         case .me, .updateProfile, .gestureUpload, .profilePhotoUpload,
              .discoveryPeople, .discoveryAction,
-             .userProfile, .blockUser, .reportUser:
+             .userProfile, .blockUser, .reportUser,
+             .mediaPresignedURL, .onboardingPhotos,
+             .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
+             .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
+             .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
+             .quickMomentView, .quickMomentViewers:
             return false
         }
     }

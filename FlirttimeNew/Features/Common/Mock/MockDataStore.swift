@@ -153,7 +153,6 @@ final class MockDataStore {
         VibeUploadViewModel.shared.cancel()
         LocalImageStore.shared.removeAll()
         MockVibeStore.shared.reset()
-        MockQuickMomentStore.shared.reset()
         MockDiscover.shared.reset()
         MockStore.shared.reset()
         CoinWallet.shared.refresh()

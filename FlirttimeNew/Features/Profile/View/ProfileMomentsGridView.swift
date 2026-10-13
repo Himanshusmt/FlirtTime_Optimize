@@ -85,7 +85,7 @@ final class ProfileMomentsGridView: UIView {
         card.clipsToBounds = true
         card.heightAnchor.constraint(equalTo: card.widthAnchor, multiplier: Self.cardAspect).isActive = true
 
-        let photos = (vibe.media ?? []).compactMap(\.filePath).filter { !$0.isEmpty }
+        let photos = (vibe.media ?? []).compactMap { $0.thumbnailPath ?? $0.filePath }.filter { !$0.isEmpty }
         let text = vibe.caption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let caption = UILabel.vibeLabel(.medium, 13, style: .footnote, color: .white, lines: 2)
 

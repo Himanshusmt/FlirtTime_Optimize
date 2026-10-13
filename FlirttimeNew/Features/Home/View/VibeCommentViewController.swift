@@ -214,13 +214,14 @@ final class VibeCommentViewController: BaseViewController {
             self.loadingIndicator.stopAnimating()
             switch result {
             case .success:
-                self.commentTextField.isEnabled = true
                 self.tableView.reloadData()
                 self.updateEmptyState()
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
             case .failure(let error):
                 self.emptyStateLabel.text = error.message
                 self.emptyStateLabel.isHidden = false
             }
+            self.commentTextField.isEnabled = true
             self.refreshSendState()
         }
     }
@@ -241,7 +242,7 @@ final class VibeCommentViewController: BaseViewController {
                 self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
                 self.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
                 self.updateEmptyState()
-                self.onCommentsCountChanged?(self.viewModel.comments.count)
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
             case .failure(let error):
                 self.commentTextField.text = text
                 self.aCustomToastView.show(message: error.message)
