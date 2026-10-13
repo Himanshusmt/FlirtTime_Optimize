@@ -169,6 +169,9 @@ final class VibeGiftViewController: BaseViewController {
             if case .failure(let error) = result {
                 self.aCustomToastView.show(message: error.message)
             }
+            if let name = self.viewModel.recipientName, !name.isEmpty {
+                self.titleLabel.text = "Send a gift to \(name)"
+            }
             self.collectionView.reloadData()
             self.refreshState()
         }

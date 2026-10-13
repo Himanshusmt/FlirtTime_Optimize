@@ -103,12 +103,9 @@ final class ConnectBecauseViewController: UIViewController {
         return config
     }
 
+    /// One reason at most: `connections/request` takes a single `reason`.
     private func toggle(_ reason: ConnectReason) {
-        if let index = selected.firstIndex(of: reason) {
-            selected.remove(at: index)
-        } else {
-            selected.append(reason)
-        }
+        selected = selected.contains(reason) ? [] : [reason]
         for entry in buttons {
             let isSelected = selected.contains(entry.reason)
             entry.button.configuration = reasonConfiguration(entry.reason, isSelected: isSelected)

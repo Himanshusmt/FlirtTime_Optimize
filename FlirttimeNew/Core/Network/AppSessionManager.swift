@@ -164,6 +164,23 @@ final class AppSessionManager {
                                                          parameters: params, encoding: URLEncoding.queryString))
     }
 
+    /// Active interests, A to Z.
+    func interestsCatalog() -> Single<[InterestCatalogItem]> {
+        let request: Single<InterestsCatalogData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .interestsCatalog))
+        return request.map { data in
+            data.interests
+                .filter { $0.isActive != false }
+                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+    }
+
+    /// Sends a connection request with an optional "Connect because…" reason.
+    func sendConnectionRequest(targetUserId: String, reason: String?) -> Single<ConnectionRequestResult> {
+        var params: [String: Any] = ["targetUserId": targetUserId]
+        if let reason, !reason.isEmpty { params["reason"] = reason }
+        return backendClient.load(request: AppApiRequest(method: .post, endPoint: .connectionRequest, parameters: params))
+    }
+
     /// `action` is "like", "nope" or "super_like".
     func discoveryAction(targetUserId: String, action: String) -> Single<DiscoveryActionResult> {
         let params: [String: Any] = ["targetUserId": targetUserId, "action": action]
@@ -250,6 +267,30 @@ final class AppSessionManager {
     /// People who liked the moment; `limit` max 100.
     func momentLikes(momentId: String, page: Int, limit: Int) -> Single<MomentLikesData> {
         backendClient.load(request: AppApiRequest(method: .get, endPoint: .momentLikes(momentId: momentId),
+                                                  parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
+    }
+
+    // MARK: - Moment gifts
+
+    /// Gift options for the "Send a gift" sheet plus the signed-in user's coin balance.
+    func momentGiftCatalog(momentId: String) -> Single<MomentGiftsData> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .momentGifts(momentId: momentId)))
+    }
+
+    /// Deducts the sender's coins. `data` may be empty, so it's decoded leniently.
+    func sendMomentGift(momentId: String, giftCode: String, quantity: Int = 1, message: String? = nil) -> Single<MomentGiftSendData?> {
+        var params: [String: Any] = ["giftCode": giftCode, "quantity": quantity]
+        if let message, !message.isEmpty { params["message"] = message }
+        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .momentGifts(momentId: momentId), parameters: params))
+            .map { json in
+                guard let data = json["data"] as? [String: Any],
+                      let body = try? JSONSerialization.data(withJSONObject: data) else { return nil }
+                return try? JSONDecoder().decode(MomentGiftSendData.self, from: body)
+            }
+    }
+
+    func momentReceivedGifts(momentId: String, page: Int, limit: Int) -> Single<MomentReceivedGiftsPage> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .momentGiftsReceived(momentId: momentId),
                                                   parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
     }
 

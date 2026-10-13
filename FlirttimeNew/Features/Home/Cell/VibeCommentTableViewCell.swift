@@ -117,7 +117,12 @@ final class VibeCommentTableViewCell: UITableViewCell {
         nameLabel.text = receivedGift.sender?.displayName
         timeLabel.text = VibeDate.timeAgo(from: receivedGift.createdAt)
         let coins = receivedGift.coinsUsed ?? receivedGift.gift?.amount ?? 0
-        bodyLabel.text = "Sent you a \(receivedGift.gift?.title ?? "gift") · \(coins) coins"
-        trailingLabel.text = receivedGift.gift?.icon
+        var body = "Sent you a \(receivedGift.gift?.title ?? "gift") · \(coins) coins"
+        if let message = receivedGift.message?.trimmingCharacters(in: .whitespacesAndNewlines), !message.isEmpty {
+            body += "\n\"\(message)\""
+        }
+        bodyLabel.text = body
+        let icon = receivedGift.gift?.icon
+        trailingLabel.text = icon?.hasPrefix("http") == true ? "🎁" : icon
     }
 }

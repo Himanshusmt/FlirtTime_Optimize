@@ -54,6 +54,8 @@ enum AppEndPoint: CustomStringConvertible {
     // Discover — DiscoverViewModel
     case discoveryPeople
     case discoveryAction
+    case interestsCatalog
+    case connectionRequest
 
     // Vibe Details — VibeProfileViewController
     case userProfile(userId: String)
@@ -70,6 +72,8 @@ enum AppEndPoint: CustomStringConvertible {
     case momentLike(momentId: String)
     case momentComments(momentId: String)
     case momentLikes(momentId: String)
+    case momentGifts(momentId: String)
+    case momentGiftsReceived(momentId: String)
     case momentReport(momentId: String)
 
     // Quick Moments (24h stories) — ProfileViewModel / QuickMomentActivityViewController
@@ -101,6 +105,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .profilePhotoUpload: return "api/v1/onboarding/profile-photo"
         case .discoveryPeople: return "api/v1/discovery/people"
         case .discoveryAction: return "api/v1/discovery/actions"
+        case .interestsCatalog: return "api/v1/interests"
+        case .connectionRequest: return "api/v1/connections/request"
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
@@ -111,6 +117,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .momentLike(let momentId): return "api/v1/moments/\(momentId)/like"
         case .momentComments(let momentId): return "api/v1/moments/\(momentId)/comments"
         case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
+        case .momentGifts(let momentId): return "api/v1/moments/\(momentId)/gifts"
+        case .momentGiftsReceived(let momentId): return "api/v1/moments/\(momentId)/gifts/received"
         case .momentReport(let momentId): return "api/v1/moments/\(momentId)/report"
         case .quickMoments: return "api/v1/quick-moments"
         case .quickMomentsTray: return "api/v1/quick-moments/tray"
@@ -135,10 +143,11 @@ enum AppEndPoint: CustomStringConvertible {
              .appleLogin:
             return true
         case .me, .updateProfile, .gestureUpload, .profilePhotoUpload,
-             .discoveryPeople, .discoveryAction,
+             .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
              .userProfile, .blockUser, .reportUser,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
+             .momentGifts, .momentGiftsReceived,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers:

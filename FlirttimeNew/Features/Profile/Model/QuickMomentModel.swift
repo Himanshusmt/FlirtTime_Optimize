@@ -253,20 +253,58 @@ struct QuickMomentTrayItem: Codable {
     let activeCount: Int
     let previewUrl: String?
     let previewText: String?
+    /// Hex background of a text preview.
+    let previewBackground: String?
     let latestAt: String?
+    /// "24m", already formatted by the backend.
+    let latestTimeAgo: String?
     let topReactions: [String]
     let reactionsCount: Int
+    /// Active stories, newest first.
+    let stories: [QuickMoment]
+
+    /// `myStatus` sends `hasActive`; other users are only listed while they have stories.
+    var hasActive: Bool { activeCount > 0 || !stories.isEmpty }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         user = nestedUser(in: c, decoder: decoder)
         hasUnread = c.bool("hasUnread", "isUnread", "unread") ?? false
-        activeCount = c.int("activeCount", "storiesCount", "count", "momentsCount") ?? 0
-        previewUrl = c.string("previewUrl", "thumbnailUrl", "imageUrl", "mediaUrl")
-        previewText = c.string("previewText", "text")
-        latestAt = c.string("latestAt", "lastPostedAt", "createdAt")
+        let stories = (c.first([QuickMoment].self, "stories", "quickMoments", "moments") ?? []).sorted {
+            (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
+        }
+        self.stories = stories
+        let isActive = c.bool("hasActive", "isActive")
+        activeCount = isActive == false ? 0 : (c.int("totalActive", "totalStories", "activeCount", "storiesCount", "count", "momentsCount") ?? stories.count)
+        let preview = c.first(QuickMomentPreview.self, "preview", "latest", "latestStory")
+        previewUrl = preview?.thumbnailUrl ?? preview?.imageUrl ?? c.string("previewUrl", "thumbnailUrl", "imageUrl", "mediaUrl")
+        previewText = preview?.text ?? c.string("previewText", "text")
+        previewBackground = preview?.backgroundColor ?? c.string("backgroundColor")
+        latestAt = c.string("latestAt", "lastPostedAt", "createdAt") ?? stories.first?.createdAt
+        latestTimeAgo = c.string("latestTimeAgo", "timeAgo")
         topReactions = c.first([String].self, "topReactions") ?? []
         reactionsCount = c.int("reactionsCount", "reactionCount") ?? 0
+    }
+
+    /// Time shown on the card, preferring the backend's own label.
+    var timeText: String? {
+        latestTimeAgo ?? (latestAt.map { VibeDate.timeAgo(from: $0) }).flatMap { $0.isEmpty ? nil : $0 }
+    }
+}
+
+/// `preview` of a tray entry: the latest story without an id.
+struct QuickMomentPreview: Codable {
+    let imageUrl: String?
+    let thumbnailUrl: String?
+    let text: String?
+    let backgroundColor: String?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        imageUrl = c.string("imageUrl", "mediaUrl", "publicUrl", "url")
+        thumbnailUrl = c.string("thumbnailUrl")
+        text = c.string("text", "caption")
+        backgroundColor = c.string("backgroundColor")
     }
 }
 
@@ -281,8 +319,8 @@ struct QuickMomentTray: Codable {
             return
         }
         let c = try decoder.container(keyedBy: QMKey.self)
-        me = c.first(QuickMomentTrayItem.self, "me", "own", "myStory", "self")
-        users = c.first([QuickMomentTrayItem].self, "users", "tray", "stories", "items", "others") ?? []
+        me = c.first(QuickMomentTrayItem.self, "myStatus", "me", "own", "myStory", "self")
+        users = c.first([QuickMomentTrayItem].self, "otherUsers", "users", "tray", "items", "others") ?? []
     }
 }
 
@@ -317,6 +355,16 @@ enum QuickMomentColors {
     static func backgroundIndex(for hex: String?) -> Int {
         guard let hex = hex?.lowercased() else { return 0 }
         return VibeTheme.storyBackgrounds.firstIndex { self.hex($0.first ?? .black) == hex } ?? 0
+    }
+
+    /// The palette gradient for a known hex; otherwise that color fading to a darker shade.
+    static func gradient(for hex: String?) -> [UIColor] {
+        guard let hex = hex?.lowercased(), hex.hasPrefix("#") else { return VibeTheme.storyBackground(0) }
+        if let known = VibeTheme.storyBackgrounds.first(where: { self.hex($0.first ?? .black) == hex }) { return known }
+        let color = UIColor(hex: hex)
+        var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+        color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        return [color, UIColor(hue: hue, saturation: saturation, brightness: brightness * 0.7, alpha: alpha)]
     }
 
     private static func hex(_ color: UIColor) -> String {

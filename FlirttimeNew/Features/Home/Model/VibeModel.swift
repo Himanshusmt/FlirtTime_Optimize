@@ -134,6 +134,8 @@ struct VibeGift: Codable {
     /// Remote icon URL from the API; the mock catalog uses an emoji instead.
     let icon: String?
     let amount: Int?
+    /// Backend `giftCode`, e.g. "rose"; `nil` for mock gifts.
+    var code: String? = nil
 }
 
 struct VibeSendGiftResponse: Codable {
@@ -161,6 +163,7 @@ struct VibeReceivedGift: Codable {
     let createdAt: String?
     let gift: VibeGift?
     let sender: VibeAuthor?
+    var message: String? = nil
 }
 
 // MARK: - Helpers

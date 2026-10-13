@@ -68,6 +68,45 @@ struct DiscoveryTag: Codable {
     }
 }
 
+// MARK: - Connection request
+
+/// The `data` of POST `connections/request`.
+struct ConnectionRequestResult: Codable {
+    let requestId: String?
+    let targetUserId: String?
+    /// "pending" until the other person accepts.
+    let status: String?
+    let isMatched: Bool?
+    let matchId: String?
+    let reason: String?
+    let message: String?
+    let momentId: String?
+
+    var didMatch: Bool {
+        isMatched == true || ["accepted", "matched", "connected"].contains(status?.lowercased() ?? "")
+    }
+}
+
+// MARK: - Interests catalog
+
+/// The `data` of GET `interests`.
+struct InterestsCatalogData: Codable {
+    let interests: [InterestCatalogItem]
+}
+
+struct InterestCatalogItem: Codable, Equatable {
+    /// Backend UUID, sent as `interestId` to `discovery/people`.
+    let id: String
+    let name: String
+    let icon: String?
+    let category: String?
+    let isActive: Bool?
+
+    var vibeInterest: VibeInterest? {
+        VibeInterestCatalog.interest(named: name, emoji: icon)
+    }
+}
+
 // MARK: - Actions
 
 /// The `data` of POST `discovery/actions`.

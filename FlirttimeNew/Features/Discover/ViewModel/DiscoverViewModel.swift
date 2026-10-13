@@ -25,6 +25,12 @@ final class DiscoverViewModel {
     @Published private(set) var interestFilter: VibeInterest?
     /// Saved filter-sheet preferences, applied before the interest filter.
     @Published private(set) var preferences: FilterModel = .saved
+    /// Quick Moments story tray for the Moments tab; `nil` until loaded.
+    @Published private(set) var quickMomentTray: QuickMomentTray?
+    /// Interests tab tiles from GET `interests`.
+    @Published private(set) var interestCatalog: [InterestCatalogItem] = []
+    /// People for the selected interest tile; `profiles` is `nil` while loading.
+    @Published private(set) var interestPeople: (interestId: String, profiles: [VibeProfile]?)?
 
     /// Set while an action is being sent; further gestures are ignored until it completes or fails.
     private(set) var actionInProgress = false
@@ -48,6 +54,7 @@ final class DiscoverViewModel {
     private var isFetchingPage = false
     /// Everyone already shown or acted on, so a later page never repeats a card.
     private var seenUserIDs = Set<String>()
+    private var isLoadingInterestCatalog = false
 
     init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
@@ -153,12 +160,14 @@ final class DiscoverViewModel {
     // MARK: - Actions
 
     /// Sends `action` for `profile`, removing it from the deck straight away so the next card is ready.
+    /// `viaConnectSheet`: an Interested from the "Connect because…" sheet goes to `connections/request` with the reason.
     /// Returns `false` (and does nothing) while another action is still in flight.
     @discardableResult
     func perform(_ action: VibeAction,
                  on profile: VibeProfile,
                  reasons: [ConnectReason] = [],
                  reaction: VibeReaction? = nil,
+                 viaConnectSheet: Bool = false,
                  completion: @escaping (Result<VibeActionOutcome, VibeActionError>) -> Void) -> Bool {
         guard !actionInProgress else { return false }
         actionInProgress = true
@@ -174,11 +183,20 @@ final class DiscoverViewModel {
             return true
         }
 
-        sessionManager.discoveryAction(targetUserId: targetUserID, action: action.apiAction)
+        let request: Single<Bool>
+        if viaConnectSheet, action == .interested {
+            request = sessionManager.sendConnectionRequest(targetUserId: targetUserID, reason: reasons.first?.rawValue)
+                .map(\.didMatch)
+        } else {
+            request = sessionManager.discoveryAction(targetUserId: targetUserID, action: action.apiAction)
+                .map { $0.isMatched == true }
+        }
+
+        request
             .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] result in
+            .subscribe(onSuccess: { [weak self] isMatch in
                 self?.finish(action, on: profile, reasons: reasons, reaction: reaction,
-                             isMatch: result.isMatched == true, completion: completion)
+                             isMatch: isMatch, completion: completion)
             }, onFailure: { [weak self] error in
                 self?.actionInProgress = false
                 let statusCode = (error as? APIHTTPError)?.statusCode
@@ -239,6 +257,104 @@ final class DiscoverViewModel {
                 completion(.success(()))
             }, onFailure: { error in
                 completion(.failure(error))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // MARK: - Interests catalog
+
+    func loadInterestCatalog() {
+        guard interestCatalog.isEmpty, !isLoadingInterestCatalog else { return }
+        isLoadingInterestCatalog = true
+        sessionManager.interestsCatalog()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] items in
+                self?.isLoadingInterestCatalog = false
+                self?.interestCatalog = items
+            }, onFailure: { [weak self] _ in
+                self?.isLoadingInterestCatalog = false
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func loadPeople(for item: InterestCatalogItem) {
+        if interestPeople?.interestId == item.id, interestPeople?.profiles != nil { return }
+        interestPeople = (item.id, nil)
+        sessionManager.discoveryPeople(page: 1, limit: 20, interestId: item.id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self, self.interestPeople?.interestId == item.id else { return }
+                let profiles = (response.users ?? []).compactMap(DiscoverViewModel.makeProfile(from:))
+                self.interestPeople = (item.id, profiles)
+            }, onFailure: { [weak self] _ in
+                guard let self, self.interestPeople?.interestId == item.id else { return }
+                self.interestPeople = (item.id, [])
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // MARK: - Quick Moments
+
+    func loadQuickMomentTray() {
+        sessionManager.quickMomentsTray()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] tray in
+                self?.quickMomentTray = tray
+            }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
+    /// A user's active stories, newest first; falls back to the tray's copy when the request fails or is empty.
+    func quickMoments(of item: QuickMomentTrayItem, completion: @escaping ([QuickMoment]) -> Void) {
+        guard let userId = item.user?.id else {
+            completion(item.stories)
+            return
+        }
+        sessionManager.userQuickMoments(userId: userId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { moments in
+                let sorted = moments.sorted {
+                    (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
+                }
+                completion(sorted.isEmpty ? item.stories : sorted)
+            }, onFailure: { _ in
+                completion(item.stories)
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func markQuickMomentViewed(id: String) {
+        sessionManager.markQuickMomentViewed(momentId: id)
+            .subscribe(onSuccess: { }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
+    func deleteQuickMoment(id: String, completion: @escaping (String?) -> Void) {
+        sessionManager.deleteQuickMoment(momentId: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.loadQuickMomentTray()
+                completion(nil)
+            }, onFailure: { error in
+                completion(parseError(error) ?? "Couldn't delete your quick moment")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func reactToQuickMoment(id: String, emoji: String, onFailure: @escaping (String) -> Void) {
+        sessionManager.reactToQuickMoment(momentId: id, emoji: emoji)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in }, onFailure: { error in
+                onFailure(parseError(error) ?? "Couldn't send your reaction")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func replyToQuickMoment(id: String, message: String, onFailure: @escaping (String) -> Void) {
+        sessionManager.replyToQuickMoment(momentId: id, message: message)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in }, onFailure: { error in
+                onFailure(parseError(error) ?? "Couldn't send your reply")
             })
             .disposed(by: disposeBag)
     }

@@ -234,3 +234,138 @@ struct MomentLike: Codable {
     let createdAt: String?
     let user: MomentPerson?
 }
+
+// MARK: - Gifts (GET / POST moments/:id/gifts, GET moments/:id/gifts/received)
+// No sample responses yet, so the decoders accept a few key names.
+
+private func giftCoinBalance(in c: KeyedDecodingContainer<QMKey>) -> Int? {
+    if let balance = c.int("userBalance", "coinBalance", "balance", "senderBalance", "remainingBalance", "newBalance") {
+        return balance
+    }
+    for key in ["wallet", "sender", "user"] {
+        if let nested = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey(key)),
+           let balance = nested.int("newBalance", "balance", "coinBalance") {
+            return balance
+        }
+    }
+    return nil
+}
+
+struct MomentGiftItem: Codable {
+    /// Sent as `giftCode`, e.g. "rose".
+    let code: String
+    let name: String?
+    /// Emoji or image URL.
+    let icon: String?
+    let coins: Int
+    let displayOrder: Int?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        displayOrder = c.int("displayOrder", "orderIndex")
+        guard let code = c.string("giftCode", "code", "slug", "id") else {
+            throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath, debugDescription: "Gift without code"))
+        }
+        self.code = code
+        name = c.string("name", "title", "giftName")
+        icon = c.string("icon", "emoji", "iconUrl", "imageUrl")
+        coins = c.int("coins", "pricePerUnit", "price", "amount", "coinCost", "cost", "coinsUsed", "totalCoins") ?? 0
+    }
+
+    var vibeGift: VibeGift {
+        VibeGift(id: code.stableID, title: name ?? code.capitalized, icon: icon, amount: coins, code: code)
+    }
+}
+
+/// The `data` of GET `moments/:id/gifts`.
+struct MomentGiftsData: Codable {
+    let gifts: [MomentGiftItem]
+    let coinBalance: Int?
+    let recipientName: String?
+
+    init(from decoder: Decoder) throws {
+        if let array = try? [MomentGiftItem](from: decoder) {
+            gifts = array
+            coinBalance = nil
+            recipientName = nil
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        gifts = (c.first([MomentGiftItem].self, "gifts", "catalog", "items", "giftOptions") ?? [])
+            .sorted { ($0.displayOrder ?? .max) < ($1.displayOrder ?? .max) }
+        coinBalance = giftCoinBalance(in: c)
+        let moment = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("moment"))
+        recipientName = c.string("recipientName", "creatorName")
+            ?? c.first(QuickMomentUser.self, "recipient", "creator", "author")?.name
+            ?? moment?.first(QuickMomentUser.self, "creator", "author", "user")?.name
+    }
+}
+
+/// The `data` of POST `moments/:id/gifts`.
+struct MomentGiftSendData: Codable {
+    let coinBalance: Int?
+    let giftsCount: Int?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        coinBalance = giftCoinBalance(in: c)
+        giftsCount = c.int("totalMomentGifts", "giftsCount", "giftCount", "totalGifts")
+    }
+}
+
+struct MomentReceivedGift: Codable {
+    let id: String
+    let createdAt: String?
+    let quantity: Int
+    let coins: Int?
+    let message: String?
+    let gift: MomentGiftItem?
+    let sender: VibeAuthor?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        id = c.string("id", "transactionId", "giftTransactionId") ?? UUID().uuidString
+        createdAt = c.string("createdAt", "sentAt")
+        let nestedGift = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("gift"))
+        quantity = c.int("quantity") ?? nestedGift?.int("quantity") ?? 1
+        coins = c.int("totalCoins", "coinsUsed", "coins", "amount") ?? nestedGift?.int("totalCoins")
+        message = c.string("message", "note")
+        gift = c.first(MomentGiftItem.self, "gift") ?? (try? MomentGiftItem(from: decoder))
+        sender = c.first(QuickMomentUser.self, "sender", "user", "from", "fromUser")?.author
+    }
+
+    var vibeReceivedGift: VibeReceivedGift {
+        let base = gift?.vibeGift
+        let name = quantity > 1 ? "\(quantity) × \(base?.title ?? "gift")" : base?.title
+        let shown = base.map { VibeGift(id: $0.id, title: name, icon: $0.icon, amount: $0.amount, code: $0.code) }
+        return VibeReceivedGift(id: id, giftId: base?.id, coinsUsed: coins ?? (base?.amount ?? 0) * quantity,
+                                createdAt: createdAt, gift: shown, sender: sender, message: message)
+    }
+}
+
+/// The `data` of GET `moments/:id/gifts/received`.
+struct MomentReceivedGiftsPage: Codable {
+    let gifts: [MomentReceivedGift]
+    let total: Int?
+    let totalCoins: Int?
+    let page: Int?
+    let totalPages: Int?
+
+    init(from decoder: Decoder) throws {
+        if let array = try? [MomentReceivedGift](from: decoder) {
+            gifts = array
+            total = nil
+            totalCoins = nil
+            page = nil
+            totalPages = nil
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        gifts = c.first([MomentReceivedGift].self, "gifts", "items", "received", "receivedGifts", "rows") ?? []
+        let pagination = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("pagination"))
+        total = c.int("totalGiftsCount", "totalGifts", "total", "count") ?? pagination?.int("total", "totalItems")
+        totalCoins = c.int("totalCoins", "coinsReceived", "totalCoinsReceived")
+        page = c.int("page") ?? pagination?.int("page", "currentPage")
+        totalPages = c.int("totalPages") ?? pagination?.int("totalPages", "pages")
+    }
+}
