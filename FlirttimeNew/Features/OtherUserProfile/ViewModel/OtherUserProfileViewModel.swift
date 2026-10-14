@@ -76,6 +76,35 @@ class OtherUserProfileViewModel {
             .disposed(by: disposeBag)
     }
 
+    /// The signed-in user's own moments, quick moments and voice intro (Edit Profile preview).
+    func loadOwnProfile() {
+        sessionManager.myMoments(page: 1, limit: Self.momentsPreviewLimit)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] page in
+                self?.momentsTotal = page.total ?? page.vibes.count
+                self?.moments = Array(page.vibes.prefix(Self.momentsPreviewLimit))
+            }, onFailure: { [weak self] _ in
+                self?.momentsTotal = 0
+                self?.moments = []
+            })
+            .disposed(by: disposeBag)
+
+        sessionManager.myQuickMoments()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] moments in
+                self?.quickMoments = moments.sorted {
+                    (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
+                }
+            })
+            .disposed(by: disposeBag)
+
+        VoiceIntroService.fetch { [weak self] result in
+            if case .success(let intro) = result {
+                self?.voiceIntro = intro?.playerIntro
+            }
+        }
+    }
+
     func getVoiceIntro(userID: Int) {
         respond { [weak self] in
             self?.voiceIntro = MockDiscover.shared.voiceIntro(userID: userID)

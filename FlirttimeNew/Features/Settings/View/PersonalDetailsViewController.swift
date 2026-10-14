@@ -13,6 +13,7 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
     }
 
     @IBOutlet private weak var fullNameLabel: UILabel!
+    @IBOutlet private weak var usernameLabel: UILabel!
     @IBOutlet private weak var emailLabel: UILabel!
     @IBOutlet private weak var phoneLabel: UILabel!
     @IBOutlet private weak var dobLabel: UILabel!
@@ -36,11 +37,17 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
     }()
 
     private static let nameMaxLength = 50
+    private static let usernameLength = 3...30
+    private static let minimumAge = 18
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        noteLabel.text = "Date of birth and location can't be changed. Email and phone changes are coming soon."
-        makeNameRowEditable()
+        noteLabel.text = "Location can't be changed here. Email and phone changes need a verification code."
+        makeRowEditable(fullNameLabel, hint: "Edit your full name", action: #selector(editNameTapped))
+        makeRowEditable(usernameLabel, hint: "Edit your username", action: #selector(editUsernameTapped))
+        makeRowEditable(emailLabel, hint: "Change your email", action: #selector(editEmailTapped))
+        makeRowEditable(phoneLabel, hint: "Change your phone number", action: #selector(editPhoneTapped))
+        makeRowEditable(dobLabel, hint: "Change your date of birth", action: #selector(editDateOfBirthTapped))
         setBinding()
     }
 
@@ -54,6 +61,7 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
         viewModel.$appUser.receive(on: DispatchQueue.main).sink { [weak self] user in
             guard let self, let user else { return }
             self.fullNameLabel.text = Self.valueOrPlaceholder(Self.fullName(of: user))
+            self.usernameLabel.text = Self.valueOrPlaceholder(Self.username(of: user))
             self.emailLabel.text = Self.valueOrPlaceholder(user.email)
             self.phoneLabel.text = Self.valueOrPlaceholder(user.phone)
             self.dobLabel.text = Self.valueOrPlaceholder(user.dateOfBirth
@@ -84,11 +92,18 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
-    // MARK: - Name
+    /// Saved as `nickName`; falls back to the account username.
+    private static func username(of user: AppUser) -> String? {
+        [user.nickName, user.username]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
 
-    /// Adds a pencil to the Full name row and opens the editor on tap.
-    private func makeNameRowEditable() {
-        guard let textStack = fullNameLabel.superview, let row = textStack.superview else { return }
+    // MARK: - Editable rows
+
+    /// Adds a pencil to the row holding `label` and calls `action` on tap.
+    private func makeRowEditable(_ label: UILabel, hint: String, action: Selector) {
+        guard let textStack = label.superview, let row = textStack.superview else { return }
 
         let pencil = UIImageView(image: UIImage(systemName: "pencil"))
         pencil.tintColor = AppColor.Punch
@@ -111,8 +126,8 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
 
         row.isUserInteractionEnabled = true
         row.accessibilityTraits.insert(.button)
-        row.accessibilityHint = "Edit your full name"
-        row.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(editNameTapped)))
+        row.accessibilityHint = hint
+        row.addGestureRecognizer(UITapGestureRecognizer(target: self, action: action))
     }
 
     @objc private func editNameTapped() {
@@ -150,14 +165,129 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
     }
 
     private func saveName(_ name: String) {
+        save(["fullName": name], message: "Name updated")
+    }
+
+    private func save(_ fields: [String: Any], message: String) {
         setLoading(true)
-        viewModel.updateFullName(name) { [weak self] success in
+        viewModel.updateProfile(fields) { [weak self] success in
             guard let self else { return }
             self.setLoading(false)
             if success {
-                self.aCustomToastView.show(message: "Name updated")
+                self.aCustomToastView.show(message: message)
             }
         }
+    }
+
+    // MARK: - Username
+
+    @objc private func editUsernameTapped() {
+        let current = viewModel.appUser.flatMap(Self.username(of:)) ?? ""
+        let alert = UIAlertController(title: "Username", message: "This is the name people see on your profile.", preferredStyle: .alert)
+        alert.addTextField { field in
+            field.text = current
+            field.placeholder = "Your username"
+            field.autocapitalizationType = .none
+            field.autocorrectionType = .no
+            field.textContentType = .nickname
+            field.clearButtonMode = .whileEditing
+        }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            guard let self else { return }
+            let username = (alert?.textFields?.first?.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard username != current else { return }
+            guard let error = Self.usernameValidationError(username) else {
+                self.save(["nickName": username], message: "Username updated")
+                return
+            }
+            self.showNewAlertPopUp(Title: "Username", Msg: error, isSuccess: false) { _ in }
+        })
+        present(alert, animated: true)
+    }
+
+    private static func usernameValidationError(_ username: String) -> String? {
+        guard usernameLength.contains(username.count) else {
+            return "Username must be \(usernameLength.lowerBound) to \(usernameLength.upperBound) characters."
+        }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "._"))
+        guard username.unicodeScalars.allSatisfy(allowed.contains) else {
+            return "Username can only contain letters, numbers, dots and underscores."
+        }
+        return nil
+    }
+
+    // MARK: - Email / phone
+
+    @objc private func editEmailTapped() {
+        openChangeContact(.email)
+    }
+
+    @objc private func editPhoneTapped() {
+        openChangeContact(.phone)
+    }
+
+    private func openChangeContact(_ kind: SettingsViewModel.ContactKind) {
+        let changeViewController = ChangeEmailViewController.instantiateFromStoryboard()
+        changeViewController.kind = kind
+        navigationController?.pushViewController(changeViewController, animated: true)
+    }
+
+    // MARK: - Date of birth
+
+    @objc private func editDateOfBirthTapped() {
+        let calendar = Calendar.current
+        let latest = calendar.date(byAdding: .year, value: -Self.minimumAge, to: Date()) ?? Date()
+        let current = viewModel.appUser?.dateOfBirth
+            .map { String($0.prefix(10)) }
+            .flatMap(Self.apiDateFormatter.date(from:))
+
+        let picker = UIDatePicker()
+        picker.datePickerMode = .date
+        picker.preferredDatePickerStyle = .wheels
+        picker.maximumDate = latest
+        picker.minimumDate = calendar.date(byAdding: .year, value: -100, to: Date())
+        picker.date = min(current ?? latest, latest)
+
+        let sheet = UIViewController()
+        sheet.view.backgroundColor = .systemBackground
+        let titleLabel = UILabel()
+        titleLabel.text = "Date of birth"
+        titleLabel.font = UIFont(name: "Fredoka-SemiBold", size: 18) ?? .boldSystemFont(ofSize: 18)
+        let note = UILabel()
+        note.text = "You must be at least \(Self.minimumAge) to use Flirt Time."
+        note.font = UIFont(name: "Fredoka-Regular", size: 14) ?? .systemFont(ofSize: 14)
+        note.textColor = .secondaryLabel
+        note.numberOfLines = 0
+        let saveButton = UIButton(type: .system)
+        saveButton.setTitle("Save", for: .normal)
+        saveButton.setTitleColor(.white, for: .normal)
+        saveButton.titleLabel?.font = UIFont(name: "Fredoka-SemiBold", size: 17) ?? .boldSystemFont(ofSize: 17)
+        saveButton.backgroundColor = AppColor.Punch
+        saveButton.layer.cornerRadius = 25
+        saveButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        saveButton.addAction(UIAction { [weak self, weak sheet, weak picker] _ in
+            guard let self, let picker else { return }
+            let chosen = Self.apiDateFormatter.string(from: picker.date)
+            sheet?.dismiss(animated: true)
+            guard chosen != current.map(Self.apiDateFormatter.string(from:)) else { return }
+            self.save(["dateOfBirth": chosen], message: "Date of birth updated")
+        }, for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, note, picker, saveButton])
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        sheet.view.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: sheet.view.topAnchor, constant: 24),
+            stack.leadingAnchor.constraint(equalTo: sheet.view.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: sheet.view.trailingAnchor, constant: -20)
+        ])
+
+        sheet.sheetPresentationController?.detents = [.medium()]
+        sheet.sheetPresentationController?.prefersGrabberVisible = true
+        present(sheet, animated: true)
     }
 
     // MARK: - Actions

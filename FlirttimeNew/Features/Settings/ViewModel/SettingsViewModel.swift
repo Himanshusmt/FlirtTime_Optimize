@@ -13,6 +13,8 @@ final class SettingsViewModel {
     @Published private(set) var user: UserDetailsData?
     /// The signed-in account from `auth/me` (cached first, then refreshed).
     @Published private(set) var appUser: AppUser?
+    /// `users/profile`, for the header photo and verified badge.
+    @Published private(set) var myProfile: MyProfileData?
     @Published var errorMessage: String?
 
     private let store = MockDataStore.shared
@@ -43,28 +45,25 @@ final class SettingsViewModel {
                 self.errorMessage = parseError(error) ?? "Unable to load your details"
             })
             .disposed(by: disposeBag)
+        sessionManager.myProfile()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] profile in
+                self?.myProfile = profile
+            }, onFailure: { _ in })
+            .disposed(by: disposeBag)
     }
 
-    /// The backend requires the full body on every PATCH, so the other fields are sent back unchanged.
-    func updateFullName(_ name: String, completion: @escaping (Bool) -> Void) {
-        let current = appUser ?? UserDataManager.shared.appUser
-        var params: [String: Any] = [
-            "fullName": name,
-            "nickName": current?.nickName ?? current?.username ?? ""
-        ]
-        if let dateOfBirth = current?.dateOfBirth { params["dateOfBirth"] = String(dateOfBirth.prefix(10)) }
-        if let gender = current?.gender { params["gender"] = gender }
-        if let about = current?.about { params["about"] = about }
-
+    /// Sends only `fields` (e.g. `fullName`, `nickName`, `dateOfBirth`), then reloads the account.
+    func updateProfile(_ fields: [String: Any], completion: @escaping (Bool) -> Void) {
         let sessionManager = self.sessionManager
-        sessionManager.updateProfileFields(params)
+        sessionManager.updateProfileFields(fields)
             .flatMap { sessionManager.getMe() }
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] user in
                 if let user { self?.appUser = user }
                 completion(true)
             }, onFailure: { [weak self] error in
-                self?.errorMessage = parseError(error) ?? "Unable to update your name"
+                self?.errorMessage = parseError(error) ?? "Unable to save your changes"
                 completion(false)
             })
             .disposed(by: disposeBag)
@@ -81,23 +80,70 @@ final class SettingsViewModel {
         user = store.currentUserResponse()?.data
     }
 
-    func requestEmailChangeCode(for email: String, completion: @escaping (Result<Void, MomentsError>) -> Void) {
-        respond {
-            completion(.success(()))
+    // MARK: - Change email / phone
+
+    enum ContactKind { case email, phone }
+
+    private var contactVerificationId: String?
+
+    /// Sends a code to the new email, or to `countryCode` + `value` for a phone. Returns the resend delay in seconds.
+    func requestContactCode(kind: ContactKind, value: String, countryCode: String? = nil,
+                            completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+        let request: Single<OTPResponse>
+        switch kind {
+        case .email: request = sessionManager.requestProfileEmailOTP(email: value)
+        case .phone: request = sessionManager.requestProfilePhoneOTP(countryCode: countryCode ?? "", phone: value)
         }
+        handleCode(request, completion: completion)
     }
 
-    func verifyEmailChange(email: String, code: String, completion: @escaping (Result<Void, MomentsError>) -> Void) {
-        respond { [weak self] in
-            guard let self else { return }
-            guard code.count == ChangeEmailViewController.codeLength, code.allSatisfy(\.isNumber) else {
-                completion(.failure(MomentsError(message: "That code doesn't look right. Please try again.")))
-                return
-            }
-            self.store.updateUser(with: ["email": email])
-            self.user = self.store.currentUserResponse()?.data
-            completion(.success(()))
+    func resendContactCode(kind: ContactKind, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+        guard let verificationId = contactVerificationId else {
+            completion(.failure(MomentsError(message: "Please request a new code.")))
+            return
         }
+        let request: Single<OTPResponse>
+        switch kind {
+        case .email: request = sessionManager.resendProfileEmailOTP(verificationId: verificationId)
+        case .phone: request = sessionManager.resendProfilePhoneOTP(verificationId: verificationId)
+        }
+        handleCode(request, completion: completion)
+    }
+
+    func verifyContactCode(kind: ContactKind, code: String, completion: @escaping (Result<Void, MomentsError>) -> Void) {
+        guard let verificationId = contactVerificationId else {
+            completion(.failure(MomentsError(message: "Please request a new code.")))
+            return
+        }
+        let sessionManager = self.sessionManager
+        let verify: Single<Void>
+        switch kind {
+        case .email: verify = sessionManager.verifyProfileEmailOTP(verificationId: verificationId, otp: code)
+        case .phone: verify = sessionManager.verifyProfilePhoneOTP(verificationId: verificationId, otp: code)
+        }
+        verify
+            .flatMap { sessionManager.getMe().catchAndReturn(nil) }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] user in
+                if let user { self?.appUser = user }
+                self?.contactVerificationId = nil
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "That code doesn't look right. Please try again.")))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func handleCode(_ request: Single<OTPResponse>, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                if let id = response.verificationId, !id.isEmpty { self?.contactVerificationId = id }
+                completion(.success(response.resendAfter))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Couldn't send the code. Please try again.")))
+            })
+            .disposed(by: disposeBag)
     }
 
     func deleteAccount(completion: @escaping () -> Void) {

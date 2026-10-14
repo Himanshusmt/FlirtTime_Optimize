@@ -48,6 +48,14 @@ enum AppEndPoint: CustomStringConvertible {
     // My Profile — ProfileViewModel
     case myProfile
 
+    // Change email / phone (logged in) — ChangeEmailViewController
+    case profileEmailRequestOTP
+    case profileEmailVerifyOTP
+    case profileEmailResendOTP
+    case profilePhoneRequestOTP
+    case profilePhoneVerifyOTP
+    case profilePhoneResendOTP
+
     // Voice intro — VoiceIntroService (POST / GET / DELETE)
     case voiceIntro
 
@@ -120,6 +128,12 @@ enum AppEndPoint: CustomStringConvertible {
         case .appleLogin: return "api/v1/auth/apple"
         case .me: return "api/v1/auth/me"
         case .updateProfile, .myProfile: return "api/v1/users/profile"
+        case .profileEmailRequestOTP: return "api/v1/users/profile/email/request-otp"
+        case .profileEmailVerifyOTP: return "api/v1/users/profile/email/verify-otp"
+        case .profileEmailResendOTP: return "api/v1/users/profile/email/resend-otp"
+        case .profilePhoneRequestOTP: return "api/v1/users/profile/phone/request-otp"
+        case .profilePhoneVerifyOTP: return "api/v1/users/profile/phone/verify-otp"
+        case .profilePhoneResendOTP: return "api/v1/users/profile/phone/resend-otp"
         case .voiceIntro: return "api/v1/onboarding/audio"
         case .moreAboutMe: return "api/v1/users/more-about-me"
         case .onboardingInterests: return "api/v1/onboarding/interests"
@@ -171,7 +185,9 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .updateProfile, .myProfile, .voiceIntro, .gestureUpload, .profilePhotoUpload,
+        case .me, .updateProfile, .myProfile, .voiceIntro,
+             .profileEmailRequestOTP, .profileEmailVerifyOTP, .profileEmailResendOTP,
+             .profilePhoneRequestOTP, .profilePhoneVerifyOTP, .profilePhoneResendOTP, .gestureUpload, .profilePhotoUpload,
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
              .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,

@@ -147,12 +147,13 @@ class ProfileViewController: BaseViewController {
             guard let self, let model else { return }
             self.aActivityIndicator.hide()
             self.coverImageView.loadImage(path: model.data?.image_url, placeholder: UIImage(named: "addCoverPhoto"))
+            self.aProfileViewModel.getMyProfile()
         }.store(in: &desposeBag)
 
         aBannerModel.$errorBannerMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
-            guard let self, error != nil else { return }
+            guard let self, let error else { return }
             self.aActivityIndicator.hide()
-            self.showImageAlertPopUp(TitleMsg: "Picture upload failed", TitleBtn: "Discard")
+            self.showImageAlertPopUp(TitleMsg: error, TitleBtn: "Discard")
         }.store(in: &desposeBag)
     }
 

@@ -6,21 +6,33 @@
 //
 
 import UIKit
+import RxSwift
+import Swinject
 
-// TODO: replace with the ApiName.uploadBannerImage multipart request.
 class SetBannerModel: NSObject {
 
     @Published var aUploadBannerModel:UploadProfileImageModel?
     @Published var errorBannerMessage:String?
 
+    private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
+
+    private static let maxImageBytes = 5 * 1024 * 1024
+
     func uploadCoverPhotoAPI(image:UIImage) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self = self else { return }
-            guard let name = MockDataStore.shared.setBanner(image) else {
-                self.errorBannerMessage = "Picture upload failed"
-                return
-            }
-            self.aUploadBannerModel = UploadProfileImageModel.mockUpload(fileName: name, message: "Cover photo updated successfully")
+        guard let imageData = image.jpegData(maxBytes: Self.maxImageBytes) else {
+            errorBannerMessage = "Picture upload failed"
+            return
         }
+        sessionManager.updateCoverPicture(imageData: imageData)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] url in
+                let payload: [String: Any] = ["status": true, "message": "Cover photo updated successfully",
+                                              "data": ["image_url": url]]
+                self?.aUploadBannerModel = EditProfileAPIMapper.decode(UploadProfileImageModel.self, from: payload)
+            }, onFailure: { [weak self] error in
+                self?.errorBannerMessage = parseError(error) ?? "Picture upload failed"
+            })
+            .disposed(by: disposeBag)
     }
 }

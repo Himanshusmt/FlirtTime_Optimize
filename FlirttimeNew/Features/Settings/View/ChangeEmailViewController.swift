@@ -2,8 +2,8 @@
 //  ChangeEmailViewController.swift
 //  FlirttimeNew
 //
-//  Two steps on one screen (both laid out in Settings.storyboard): enter the new address,
-//  then confirm it with the code we email to it.
+//  Two steps on one screen (both laid out in Settings.storyboard): enter the new email or phone,
+//  then confirm it with the code we send to it.
 //
 
 import UIKit
@@ -15,9 +15,19 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         return StoryboardName.settings
     }
 
-    static let codeLength = 4
+    static let codeLength = 6
     private static let resendDelay = 30
+    private static let phoneDigits = 6...15
 
+    var kind: SettingsViewModel.ContactKind = .email
+
+    @IBOutlet private weak var titleLabel: UILabel!
+    @IBOutlet private weak var heroIconImageView: UIImageView!
+    @IBOutlet private weak var heroTitleLabel: UILabel!
+    @IBOutlet private weak var heroSubtitleLabel: UILabel!
+    @IBOutlet private weak var currentIconImageView: UIImageView!
+    @IBOutlet private weak var currentCaptionLabel: UILabel!
+    @IBOutlet private weak var newValueCaptionLabel: UILabel!
     @IBOutlet private weak var currentEmailLabel: UILabel!
     @IBOutlet private weak var emailFieldView: UIView!
     @IBOutlet private weak var emailTextField: UITextField!
@@ -30,12 +40,31 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
 
     private let viewModel = SettingsViewModel()
     private var cancellables: Set<AnyCancellable> = []
-    private var pendingEmail: String?
+    private var pendingValue: String?
     private var resendTimer: Timer?
     private var resendSecondsLeft = 0
+    private var countryCode = "+91"
+    private var regionCode: String?
+    private lazy var countryCodeButton = UIButton(type: .system)
 
-    private var enteredEmail: String {
-        emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+    private var enteredValue: String {
+        let text = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        switch kind {
+        case .email: return text.lowercased()
+        case .phone: return text.filter(\.isNumber)
+        }
+    }
+
+    private var isValueValid: Bool {
+        switch kind {
+        case .email: return enteredValue.isValidEmail()
+        case .phone: return Self.phoneDigits.contains(enteredValue.count)
+        }
+    }
+
+    /// The new value as shown to the user, e.g. "+91 9876543210".
+    private func displayValue(_ value: String) -> String {
+        kind == .phone ? "\(countryCode) \(value)" : value
     }
 
     private var enteredCode: String {
@@ -44,8 +73,11 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        configureForKind()
         setBinding()
         codeSectionView.isHidden = true
+        codeTextField.keyboardType = .numberPad
+        codeTextField.textContentType = .oneTimeCode
         updateFieldFocus(emailFieldView, focused: false)
         updateFieldFocus(codeFieldView, focused: false)
         updatePrimaryButton()
@@ -54,7 +86,7 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
-        viewModel.loadProfile()
+        viewModel.loadAccount()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -62,17 +94,50 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         resendTimer?.invalidate()
     }
 
+    private func configureForKind() {
+        guard kind == .phone else { return }
+        titleLabel.text = "Change phone"
+        heroIconImageView.image = UIImage(systemName: "iphone.gen3")
+        heroTitleLabel.text = "Want to change your phone number?"
+        heroSubtitleLabel.text = "We'll text a verification code to your new number to make sure it's yours."
+        currentIconImageView.image = UIImage(systemName: "phone.fill")
+        currentCaptionLabel.text = "Current phone"
+        newValueCaptionLabel.text = "New phone number"
+        emailTextField.placeholder = "Phone number"
+        emailTextField.keyboardType = .phonePad
+        emailTextField.textContentType = .telephoneNumber
+        emailTextField.autocapitalizationType = .none
+
+        if let data = CountryDataManager.shared.filterCountryData, let dialCode = data.dial_code {
+            countryCode = dialCode
+            regionCode = CountryDataManager.shared.regionCode
+        }
+        countryCodeButton.setTitleColor(AppColor.AppBlack, for: .normal)
+        countryCodeButton.titleLabel?.font = emailTextField.font
+        countryCodeButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+        countryCodeButton.addTarget(self, action: #selector(countryCodeTapped), for: .touchUpInside)
+        updateCountryCodeButton()
+        emailTextField.leftView = countryCodeButton
+        emailTextField.leftViewMode = .always
+    }
+
+    private func updateCountryCodeButton() {
+        countryCodeButton.setTitle("\(countryCode) ▾", for: .normal)
+        countryCodeButton.sizeToFit()
+    }
+
     private func setBinding() {
-        viewModel.$user.receive(on: DispatchQueue.main).sink { [weak self] user in
+        viewModel.$appUser.receive(on: DispatchQueue.main).sink { [weak self] user in
             guard let self, let user else { return }
-            let email = user.email?.trimmingCharacters(in: .whitespaces) ?? ""
-            self.currentEmailLabel.text = email.isEmpty ? "No email added yet" : email
+            let current = (self.kind == .email ? user.email : user.phone)?.trimmingCharacters(in: .whitespaces) ?? ""
+            let placeholder = self.kind == .email ? "No email added yet" : "No phone number added yet"
+            self.currentEmailLabel.text = current.isEmpty ? placeholder : current
         }.store(in: &cancellables)
     }
 
     private func updatePrimaryButton() {
-        let isCodeStep = pendingEmail != nil
-        let isValid = isCodeStep ? enteredCode.count == Self.codeLength : enteredEmail.isValidEmail()
+        let isCodeStep = pendingValue != nil
+        let isValid = isCodeStep ? enteredCode.count == Self.codeLength : isValueValid
         primaryButton.setTitle(isCodeStep ? "Verify & save" : "Send code", for: .normal)
         primaryButton.isEnabled = isValid
         primaryButton.alpha = isValid ? 1 : 0.5
@@ -84,22 +149,23 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func sendCode(to email: String) {
+    private func sendCode(to value: String) {
         setLoading(true)
-        viewModel.requestEmailChangeCode(for: email) { [weak self] result in
+        viewModel.requestContactCode(kind: kind, value: value, countryCode: countryCode) { [weak self] result in
             guard let self else { return }
             self.setLoading(false)
             switch result {
-            case .success:
-                self.pendingEmail = email
-                self.codeInfoLabel.text = "Enter the \(Self.codeLength)-digit code we sent to \(email)"
+            case .success(let resendAfter):
+                self.pendingValue = value
+                self.codeInfoLabel.text = "Enter the \(Self.codeLength)-digit code we sent to \(self.displayValue(value))"
                 self.emailTextField.isEnabled = false
+                self.countryCodeButton.isEnabled = false
                 UIView.animate(withDuration: 0.25) {
                     self.codeSectionView.isHidden = false
                     self.view.layoutIfNeeded()
                 }
                 self.codeTextField.becomeFirstResponder()
-                self.startResendCountdown()
+                self.startResendCountdown(resendAfter)
                 self.updatePrimaryButton()
             case .failure(let error):
                 self.showNewAlertPopUp(Title: "Error", Msg: error.message, isSuccess: false) { _ in }
@@ -107,15 +173,15 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func verify(email: String) {
+    private func verify() {
         setLoading(true)
-        viewModel.verifyEmailChange(email: email, code: enteredCode) { [weak self] result in
+        viewModel.verifyContactCode(kind: kind, code: enteredCode) { [weak self] result in
             guard let self else { return }
             self.setLoading(false)
             switch result {
             case .success:
                 self.view.endEditing(true)
-                self.aCustomToastView.show(message: "Your email has been updated")
+                self.aCustomToastView.show(message: self.kind == .email ? "Your email has been updated" : "Your phone number has been updated")
                 self.navigationController?.popViewController(animated: true)
             case .failure(let error):
                 self.codeFieldView.layer.borderColor = AppColor.AlertBottomFailure.cgColor
@@ -124,8 +190,8 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func startResendCountdown() {
-        resendSecondsLeft = Self.resendDelay
+    private func startResendCountdown(_ seconds: Int? = nil) {
+        resendSecondsLeft = seconds.flatMap { $0 > 0 ? $0 : nil } ?? Self.resendDelay
         resendTimer?.invalidate()
         updateResendButton()
         resendTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
@@ -144,6 +210,19 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
 
     // MARK: - Actions
 
+    @objc private func countryCodeTapped() {
+        let picker = CountryListViewController.instantiateFromStoryboard()
+        picker.regionCode = regionCode
+        picker.selectionCallBack = { [weak self] selected in
+            guard let self, let dialCode = selected.dial_code else { return }
+            self.regionCode = selected.code
+            self.countryCode = dialCode
+            self.updateCountryCodeButton()
+        }
+        picker.modalPresentationStyle = .overCurrentContext
+        navigationController?.present(picker, animated: true)
+    }
+
     @IBAction private func backButtonTapped(_ sender: UIButton) {
         navigationController?.popViewController(animated: true)
     }
@@ -156,24 +235,36 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
     }
 
     @IBAction private func primaryTapped(_ sender: UIButton) {
-        if let pendingEmail {
-            verify(email: pendingEmail)
+        if pendingValue != nil {
+            verify()
         } else {
             view.endEditing(true)
-            sendCode(to: enteredEmail)
+            sendCode(to: enteredValue)
         }
     }
 
     @IBAction private func resendTapped(_ sender: UIButton) {
-        guard let pendingEmail else { return }
-        sendCode(to: pendingEmail)
+        guard pendingValue != nil else { return }
+        setLoading(true)
+        viewModel.resendContactCode(kind: kind) { [weak self] result in
+            guard let self else { return }
+            self.setLoading(false)
+            switch result {
+            case .success(let resendAfter):
+                self.aCustomToastView.show(message: "A new code is on its way")
+                self.startResendCountdown(resendAfter)
+            case .failure(let error):
+                self.showNewAlertPopUp(Title: "Error", Msg: error.message, isSuccess: false) { _ in }
+            }
+        }
     }
 
     @IBAction private func changeAddressTapped(_ sender: UIButton) {
-        pendingEmail = nil
+        pendingValue = nil
         resendTimer?.invalidate()
         codeTextField.text = nil
         emailTextField.isEnabled = true
+        countryCodeButton.isEnabled = true
         UIView.animate(withDuration: 0.25) {
             self.codeSectionView.isHidden = true
             self.view.layoutIfNeeded()

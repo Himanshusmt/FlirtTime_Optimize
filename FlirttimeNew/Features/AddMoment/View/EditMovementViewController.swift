@@ -121,16 +121,9 @@ extension EditMovementViewController: UICollectionViewDelegate, UICollectionView
 // MARK: - Camera / photo library
 extension EditMovementViewController {
 
+    /// `PHPickerViewController` runs out of process and needs no photo-library permission.
     private func requestPhotoLibraryAccess() {
-        PHPhotoLibrary.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
-                if status == .authorized || status == .limited {
-                    self?.openSingleSelectionLibrary()
-                } else {
-                    self?.showPhotoLibraryAccessAlert()
-                }
-            }
-        }
+        openSingleSelectionLibrary()
     }
 
     private func checkCameraAuthorization() {

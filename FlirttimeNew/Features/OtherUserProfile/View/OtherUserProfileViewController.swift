@@ -106,7 +106,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         configureActionBar()
         viewModel.loadJSON()
         viewModel.getCheckUserSubscribedAPI()
-        if let userID = details?.userID {
+        if isMyProfile {
+            viewModel.loadOwnProfile()
+        } else if let userID = details?.userID {
             viewModel.getMoments(userID: userID)
             viewModel.getQuickMoments(userID: userID)
             viewModel.getVoiceIntro(userID: userID)
@@ -228,7 +230,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         photosSectionView.isHidden = details.photos.isEmpty
         photosCollectionView.reloadData()
 
-        let interests = MomentsInterestCatalog.interests(for: details.interestIDs)
+        let interests = isMyProfile
+            ? EditProfileAPIMapper.momentsInterests(for: details.interestIDs)
+            : MomentsInterestCatalog.interests(for: details.interestIDs)
         interestsChipsView.configure(interests, highlighted: [])
         interestsSectionView.isHidden = interests.isEmpty
 
@@ -367,8 +371,10 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     /// Same list as Profile's "My Moments", limited to this user's moments.
     private func openMoments(focusing vibeID: String? = nil) {
         guard let details else { return }
-        let feed = MomentsListViewController.make(scope: .user(id: String(details.userID), name: details.name),
-                                                  focusVibeID: vibeID)
+        let scope: MomentsListViewController.Scope = isMyProfile
+            ? .currentUser
+            : .user(id: String(details.userID), name: details.name)
+        let feed = MomentsListViewController.make(scope: scope, focusVibeID: vibeID)
         navigationController?.pushViewController(feed, animated: true)
     }
 
@@ -392,7 +398,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                   voiceIntro: nil,
                                   moments: frames,
                                   vibeScore: nil)
-        present(QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: false), animated: true)
+        present(QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: isMyProfile), animated: true)
     }
 
     private func openPhoto(at index: Int) {

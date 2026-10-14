@@ -1365,6 +1365,71 @@
                                                                             <constraint firstAttribute="bottom" secondItem="stg-04-78x" secondAttribute="bottom" id="cst-04-82x"/>
                                                                         </constraints>
                                                                     </view>
+                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-01x" userLabel="Username Row">
+                                                                        <rect key="frame" x="0" y="65.5" width="353" height="65.5"/>
+                                                                        <subviews>
+                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-02x" userLabel="Icon Tile">
+                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
+                                                                                <subviews>
+                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="at" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-03x">
+                                                                                        <rect key="frame" x="10.5" y="10.5" width="19" height="19"/>
+                                                                                        <color key="tintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
+                                                                                        <constraints>
+                                                                                            <constraint firstAttribute="width" constant="19" id="usr-c0-01x"/>
+                                                                                            <constraint firstAttribute="height" constant="19" id="usr-c0-02x"/>
+                                                                                        </constraints>
+                                                                                    </imageView>
+                                                                                </subviews>
+                                                                                <color key="backgroundColor" red="1.0" green="0.9254901960784314" blue="0.9372549019607843" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                <constraints>
+                                                                                    <constraint firstAttribute="width" constant="40" id="usr-c0-03x"/>
+                                                                                    <constraint firstAttribute="height" constant="40" id="usr-c0-04x"/>
+                                                                                    <constraint firstItem="usr-00-03x" firstAttribute="centerX" secondItem="usr-00-02x" secondAttribute="centerX" id="usr-c0-05x"/>
+                                                                                    <constraint firstItem="usr-00-03x" firstAttribute="centerY" secondItem="usr-00-02x" secondAttribute="centerY" id="usr-c0-06x"/>
+                                                                                </constraints>
+                                                                                <userDefinedRuntimeAttributes>
+                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
+                                                                                </userDefinedRuntimeAttributes>
+                                                                            </view>
+                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-04x">
+                                                                                <rect key="frame" x="70" y="14" width="267" height="37.5"/>
+                                                                                <subviews>
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Username" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="1" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-05x" userLabel="Username Caption">
+                                                                                        <rect key="frame" x="0" y="0" width="267" height="16"/>
+                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
+                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <nil key="highlightedColor"/>
+                                                                                    </label>
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="—" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-06x" userLabel="Username Value">
+                                                                                        <rect key="frame" x="0" y="18" width="267" height="19.5"/>
+                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
+                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <nil key="highlightedColor"/>
+                                                                                    </label>
+                                                                                </subviews>
+                                                                            </stackView>
+                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="usr-00-07x" userLabel="Separator">
+                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
+                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                <constraints>
+                                                                                    <constraint firstAttribute="height" constant="1" id="usr-c0-07x"/>
+                                                                                </constraints>
+                                                                            </view>
+                                                                        </subviews>
+                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        <constraints>
+                                                                            <constraint firstItem="usr-00-02x" firstAttribute="leading" secondItem="usr-00-01x" secondAttribute="leading" constant="16" id="usr-c0-08x"/>
+                                                                            <constraint firstItem="usr-00-02x" firstAttribute="centerY" secondItem="usr-00-01x" secondAttribute="centerY" id="usr-c0-09x"/>
+                                                                            <constraint firstItem="usr-00-04x" firstAttribute="leading" secondItem="usr-00-02x" secondAttribute="trailing" constant="14" id="usr-c0-10x"/>
+                                                                            <constraint firstItem="usr-00-04x" firstAttribute="top" secondItem="usr-00-01x" secondAttribute="top" constant="14" id="usr-c0-11x"/>
+                                                                            <constraint firstAttribute="bottom" secondItem="usr-00-04x" secondAttribute="bottom" constant="14" id="usr-c0-12x"/>
+                                                                            <constraint firstAttribute="trailing" secondItem="usr-00-04x" secondAttribute="trailing" constant="16" id="usr-c0-13x"/>
+                                                                            <constraint firstItem="usr-00-07x" firstAttribute="leading" secondItem="usr-00-04x" secondAttribute="leading" id="usr-c0-14x"/>
+                                                                            <constraint firstAttribute="trailing" secondItem="usr-00-07x" secondAttribute="trailing" id="usr-c0-15x"/>
+                                                                            <constraint firstAttribute="bottom" secondItem="usr-00-07x" secondAttribute="bottom" id="usr-c0-16x"/>
+                                                                        </constraints>
+                                                                    </view>
                                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-04-83x" userLabel="Email Row">
                                                                         <rect key="frame" x="0" y="65.5" width="353" height="65.5"/>
                                                                         <subviews>
@@ -1714,6 +1779,7 @@
                     <navigationItem key="navigationItem" id="nav-05-96x"/>
                     <connections>
                         <outlet property="fullNameLabel" destination="stg-04-69x" id="out-04-70x"/>
+                        <outlet property="usernameLabel" destination="usr-00-06x" id="usr-o0-01x"/>
                         <outlet property="emailLabel" destination="stg-04-93x" id="out-04-94x"/>
                         <outlet property="phoneLabel" destination="stg-05-17x" id="out-05-18x"/>
                         <outlet property="dobLabel" destination="stg-05-41x" id="out-05-42x"/>
@@ -4036,6 +4102,13 @@
                     <navigationItem key="navigationItem" id="nav-14-31x"/>
                     <connections>
                         <outlet property="currentEmailLabel" destination="stg-13-77x" id="out-13-78x"/>
+                        <outlet property="titleLabel" destination="stg-13-29x" id="out-13-29o"/>
+                        <outlet property="heroIconImageView" destination="stg-13-59x" id="out-13-59o"/>
+                        <outlet property="heroTitleLabel" destination="stg-13-64x" id="out-13-64o"/>
+                        <outlet property="heroSubtitleLabel" destination="stg-13-65x" id="out-13-65o"/>
+                        <outlet property="currentIconImageView" destination="stg-13-71x" id="out-13-71o"/>
+                        <outlet property="currentCaptionLabel" destination="stg-13-76x" id="out-13-76o"/>
+                        <outlet property="newValueCaptionLabel" destination="stg-13-92x" id="out-13-92o"/>
                         <outlet property="emailFieldView" destination="stg-13-93x" id="out-13-95x"/>
                         <outlet property="emailTextField" destination="stg-13-96x" id="out-13-99x"/>
                         <outlet property="codeInfoLabel" destination="stg-14-05x" id="out-14-06x"/>

@@ -132,10 +132,83 @@ final class AppSessionManager {
         backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .myProfile))
     }
 
-    /// `fullName` and `nickName` are required; `dateOfBirth` and `gender` can't change once set.
+    /// Pass only the fields that change. `dateOfBirth` must be "yyyy-MM-dd" and 18+.
+    ///
+    /// The server requires the whole profile on every PATCH, so the current `fullName`, `nickName`,
+    /// `dateOfBirth`, `gender` and `about` from `auth/me` are always sent, with `params` on top.
     func updateProfileFields(_ params: [String: Any]) -> Single<Void> {
-        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
+        let backendClient = self.backendClient
+        return getMe()
+            .catchAndReturn(UserDataManager.shared.appUser)
+            .flatMap { user -> Single<Void> in
+                var body = Self.requiredProfileFields(from: user)
+                body.merge(params) { _, new in new }
+                return backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: body))
+                    .map { _ in () }
+            }
+    }
+
+    private static func requiredProfileFields(from user: AppUser?) -> [String: Any] {
+        func text(_ value: String?) -> String? {
+            guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+            return value
+        }
+        let nameParts = [user?.firstName, user?.lastName].compactMap(text)
+        let fullName = text(user?.fullName) ?? (nameParts.isEmpty ? nil : nameParts.joined(separator: " "))
+        var fields: [String: Any] = [:]
+        fields["fullName"] = fullName
+        fields["nickName"] = text(user?.nickName) ?? text(user?.username) ?? text(user?.firstName) ?? fullName
+        fields["dateOfBirth"] = text(user?.dateOfBirth).map { String($0.prefix(10)) }
+        fields["gender"] = text(user?.gender)
+        fields["about"] = text(user?.about)
+        return fields
+    }
+
+    /// Uploads the cover to S3, then saves its key as `coverPicture`. Returns the image URL.
+    func updateCoverPicture(imageData: Data) -> Single<String> {
+        uploadImageToS3(imageData, folder: "uploads")
+            .flatMap { [weak self] upload -> Single<String> in
+                guard let self else { return .error(APIError.apiError("Cover photo upload failed")) }
+                guard let key = upload.resolvedKey ?? upload.publicUrl else {
+                    return .error(APIError.apiError("Couldn't start the photo upload"))
+                }
+                return self.updateProfileFields(["coverPicture": key]).map { upload.publicUrl ?? key }
+            }
+    }
+
+    // MARK: - Change email / phone (logged in)
+
+    func requestProfileEmailOTP(email: String) -> Single<OTPResponse> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .profileEmailRequestOTP,
+                                                  parameters: ["email": email.lowercased()]))
+    }
+
+    func verifyProfileEmailOTP(verificationId: String, otp: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .profileEmailVerifyOTP,
+                                                      parameters: ["verificationId": verificationId, "otp": otp]))
             .map { _ in () }
+    }
+
+    func resendProfileEmailOTP(verificationId: String) -> Single<OTPResponse> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .profileEmailResendOTP,
+                                                  parameters: ["verificationId": verificationId]))
+    }
+
+    /// `countryCode` must include the plus sign, e.g. "+91".
+    func requestProfilePhoneOTP(countryCode: String, phone: String) -> Single<OTPResponse> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .profilePhoneRequestOTP,
+                                                  parameters: ["countryCode": countryCode, "phone": phone]))
+    }
+
+    func verifyProfilePhoneOTP(verificationId: String, otp: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .profilePhoneVerifyOTP,
+                                                      parameters: ["verificationId": verificationId, "otp": otp]))
+            .map { _ in () }
+    }
+
+    func resendProfilePhoneOTP(verificationId: String) -> Single<OTPResponse> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .profilePhoneResendOTP,
+                                                  parameters: ["verificationId": verificationId]))
     }
 
     /// Keys: drinking, education, height, religion, sexuality, smoking, weight, eyeColor, hairColor, living, relationship.
@@ -183,7 +256,7 @@ final class AppSessionManager {
 
     // MARK: - Media (S3)
 
-    /// `folder` is "moments" | "photos" | "quick-moments" | "avatars".
+    /// `folder` is "uploads" | "photos" | "moments" | "verifications" | "avatars" | "quick-moments" | "audio".
     func presignedUpload(folder: String, mimeType: String = "image/jpeg") -> Single<PresignedUpload> {
         backendClient.load(request: AppApiRequest(method: .post, endPoint: .mediaPresignedURL,
                                                   parameters: ["folder": folder, "mimeType": mimeType]))

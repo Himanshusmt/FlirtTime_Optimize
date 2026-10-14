@@ -330,16 +330,9 @@ class AddMomentViewController: BaseViewController, Instantiable {
 // MARK: - Camera / photo library
 extension AddMomentViewController {
 
+    /// `PHPickerViewController` runs out of process and needs no photo-library permission.
     private func requestPhotoLibraryAccess() {
-        PHPhotoLibrary.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
-                if status == .authorized || status == .limited {
-                    self?.openMultipleSelectionLibrary()
-                } else {
-                    self?.showPhotoLibraryAccessAlert()
-                }
-            }
-        }
+        openMultipleSelectionLibrary()
     }
 
     private func checkCameraAuthorization() {

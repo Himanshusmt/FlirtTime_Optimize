@@ -42,14 +42,20 @@ final class SettingsViewController: BaseViewController, Instantiable {
     }
 
     private func setBinding() {
-        viewModel.$user.receive(on: DispatchQueue.main).sink { [weak self] user in
-            guard let self, let user else { return }
-            let info = user.userInfo
-            self.nameLabel.text = (info?.displayName ?? info?.fullname ?? "").firstLetterCapitalized
-            self.contactLabel.text = user.email ?? user.phone.map { "+\(user.phoneCode ?? "") \($0)" }
-            self.verifiedImageView.isHidden = info?.gestureIsVerified != true
-            self.avatarImageView.loadImage(path: info?.avatar, placeholder: UIImage(named: "ProfileBlur"))
-        }.store(in: &cancellables)
+        viewModel.$appUser.combineLatest(viewModel.$myProfile)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] user, data in
+                guard let self, user != nil || data != nil else { return }
+                let profile = data?.profile
+                let name = [user?.username, profile?.displayName, user?.fullName]
+                    .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+                    .first { !$0.isEmpty } ?? ""
+                self.nameLabel.text = name.firstLetterCapitalized
+                self.contactLabel.text = [user?.email, user?.phone].compactMap { $0 }.first { !$0.isEmpty }
+                self.verifiedImageView.isHidden = (profile?.isVerified ?? user?.isFaceVerified) != true
+                let avatar = profile?.avatarURL ?? user?.profilePicture
+                self.avatarImageView.loadImage(path: avatar, placeholder: UIImage(named: "ProfileBlur"))
+            }.store(in: &cancellables)
 
         viewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
             guard let self, let error else { return }
