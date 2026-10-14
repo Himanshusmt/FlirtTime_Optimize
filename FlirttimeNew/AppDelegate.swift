@@ -26,6 +26,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func startStore() {
         StoreManager.shared.start()
         _ = CoinWallet.shared
+        CoinPackStore.shared.preload()
         PremiumViewModel.refreshMembership()
     }
 

@@ -103,7 +103,7 @@ final class MockStore {
                 "price": pack.3,
                 "currency": "INR",
                 "bonus_coins": pack.4,
-                "is_active": 1,
+                "is_active": true,
                 "apple_product_id": pack.1,
                 "google_product_id": pack.1,
                 "sort_order": index + 1

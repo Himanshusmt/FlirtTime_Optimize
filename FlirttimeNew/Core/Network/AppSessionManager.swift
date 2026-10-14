@@ -407,6 +407,15 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    // MARK: - Coins
+
+    /// The list is paginated (default limit 10), so ask for every pack in one page.
+    func coinPackages() -> Single<CoinsModel> {
+        backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .coinPackages,
+                                                        parameters: ["page": 1, "limit": 50],
+                                                        encoding: URLEncoding.queryString))
+    }
+
     // MARK: - Session
 
     func logout() {

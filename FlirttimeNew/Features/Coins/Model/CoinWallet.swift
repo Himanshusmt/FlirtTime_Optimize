@@ -40,8 +40,7 @@ final class CoinWallet {
 
     /// Coin packs approved after the purchase sheet closed (Ask to Buy, interrupted purchases).
     private func creditDeferred(_ transaction: Transaction) {
-        guard let packs = MockDataStore.shared.decode(CoinsModel.self, from: MockStore.shared.coinPackagesJSON())?.data,
-              let pack = packs.first(where: { $0.storeProductID == transaction.productID }) else { return }
+        guard let pack = CoinPackStore.shared.pack(forProductID: transaction.productID) else { return }
         let json = MockStore.shared.purchaseCoinsJSON(package: pack, transactionID: String(transaction.id))
         if let balance = MockDataStore.shared.decode(CoinPurchaseResponse.self, from: json)?.data?.balance {
             update(balance)

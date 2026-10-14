@@ -7,13 +7,14 @@ import Foundation
 import Combine
 import StoreKit
 
-// TODO: replace the MockStore responses with the coin-packages and coin purchase requests.
+// TODO: replace the MockStore response with the coin purchase request.
 final class CoinsViewModel {
 
     struct PackOption: Hashable {
         let pack: CoinData
         let product: Product?
 
+        /// Localized App Store price. The server amount is only used when that product is missing.
         var displayPrice: String {
             if let product { return product.displayPrice }
             return PremiumViewModel.format(Decimal(string: pack.price ?? "") ?? 0, currency: pack.currency)
@@ -44,34 +45,31 @@ final class CoinsViewModel {
     @Published private(set) var purchasingPackID: Int?
     let events = PassthroughSubject<PurchaseEvent, Never>()
 
+    private let packStore = CoinPackStore.shared
+
+    init() {
+        packStore.$options.assign(to: &$options)
+        packStore.$state
+            .map { state -> State in
+                switch state {
+                case .idle, .loading: return .loading
+                case .loaded: return .loaded
+                case .failed(let message): return .failed(message)
+                }
+            }
+            .assign(to: &$state)
+    }
+
     private func respond(_ block: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
     }
 
+    /// Uses the packs preloaded at launch; refetches only if that load failed or hasn't run.
     func load() {
-        state = .loading
         CoinWallet.shared.refresh()
-        respond { [weak self] in
-            guard let self else { return }
-            guard let response = MockDataStore.shared.decode(CoinsModel.self, from: MockStore.shared.coinPackagesJSON()),
-                  response.status == true else {
-                self.state = .failed("Couldn't load coin packs right now")
-                return
-            }
-            let packs = (response.data ?? [])
-                .filter { $0.isActive != 0 }
-                .sorted { ($0.sortOrder ?? .max) < ($1.sortOrder ?? .max) }
-            Task { await self.attachProducts(to: packs) }
+        if packStore.options.isEmpty {
+            packStore.preload()
         }
-    }
-
-    @MainActor
-    private func attachProducts(to packs: [CoinData]) async {
-        let products = (try? await StoreManager.shared.products(for: packs.compactMap(\.storeProductID))) ?? []
-        options = packs.map { pack in
-            PackOption(pack: pack, product: products.first { $0.id == pack.storeProductID })
-        }
-        state = options.isEmpty ? .failed("No coin packs available right now") : .loaded
     }
 
     func purchase(_ option: PackOption) {
