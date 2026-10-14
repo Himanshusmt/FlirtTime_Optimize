@@ -82,7 +82,10 @@ final class CoinsViewModel {
         Task { @MainActor in
             do {
                 switch try await StoreManager.shared.purchase(product) {
-                case .purchased(let transaction):
+                case .purchased(let transaction, let signedTransaction):
+                    let parameters = Self.purchaseParameters(pack: option.pack, product: product,
+                                                             transaction: transaction, signedTransaction: signedTransaction)
+                    Self.log(parameters, pack: option.pack)
                     credit(option.pack, transactionID: String(transaction.id))
                 case .pending:
                     purchasingPackID = nil
@@ -111,5 +114,37 @@ final class CoinsViewModel {
             }
             self.events.send(.purchased(coins: pack.totalCoins, message: response.message))
         }
+    }
+
+    /// Body for the backend's coin purchase verification. The server should verify
+    /// `signed_transaction` with Apple, then credit `package_id` once per `transaction_id`.
+    static func purchaseParameters(pack: CoinData, product: Product,
+                                   transaction: Transaction, signedTransaction: String) -> [String: Any] {
+        [
+            "platform": "ios",
+            "package_id": pack.id ?? 0,
+            "product_id": transaction.productID,
+            "transaction_id": String(transaction.id),
+            "original_transaction_id": String(transaction.originalID),
+            "purchase_date": ISO8601DateFormatter().string(from: transaction.purchaseDate),
+            "price": NSDecimalNumber(decimal: product.price).stringValue,
+            "currency": product.priceFormatStyle.currencyCode,
+            "environment": transaction.environment.rawValue,
+            "signed_transaction": signedTransaction
+        ]
+    }
+
+    private static func log(_ parameters: [String: Any], pack: CoinData) {
+        let body = (try? JSONSerialization.data(withJSONObject: parameters, options: [.prettyPrinted, .sortedKeys]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "\(parameters)"
+        AppLogger.debug("""
+
+        ===== COIN PURCHASE =====
+        Package: \(pack.name ?? "-") (id \(pack.id ?? 0))
+        Coins: \(pack.coins ?? 0) + \(pack.bonusCoins ?? 0) bonus = \(pack.totalCoins)
+        Backend request body:
+        \(body)
+        =========================
+        """)
     }
 }
