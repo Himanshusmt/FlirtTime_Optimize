@@ -849,7 +849,8 @@ class EditProfileViewController: BaseViewController, Instantiable {
         
         self.aEditProfileViewModel.$aUploadCoverPhotoResponseModel.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
-                if let imageUrl = URL(string: model?.data?.image_url ?? "") {
+                if let path = model?.data?.image_url, !path.isEmpty,
+                   let imageUrl = URL(string: Self.mediaURL(path)) {
                     DispatchQueue.main.async {
                         self.addCoverPhotoButton.isHidden = true
                         self.editCoverView.isHidden = false
@@ -1213,69 +1214,35 @@ class EditProfileViewController: BaseViewController, Instantiable {
     }
 
     func openImageSelectionMethodPopUp(){
-        
-        if self.imageSelectedIndex == 0 {
-//            self.showNewAlertPopUp(Title: "Message", Msg: "You can only drag and change the image, as it's primary image section", isSuccess: false, CompletionHandler: {(success) -> Void in
-//        
-//            })
-            
-            let aImageSelectionMethodVC:ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
-            aImageSelectionMethodVC.fromEditProfileScreen = true
-            aImageSelectionMethodVC.selectImageType = self.selectImageType
+        let aImageSelectionMethodVC:ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
+        aImageSelectionMethodVC.fromEditProfileScreen = true
+        aImageSelectionMethodVC.selectImageType = self.selectImageType
 
-            aImageSelectionMethodVC.isContainImage = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0] != nil
-            if self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0] != nil && self.selectImageType == .addSelfImage {
-                
-                aImageSelectionMethodVC.isShowImage = true
-                aImageSelectionMethodVC.isShowAvatarImage = true
-                aImageSelectionMethodVC.strURLImg = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0]?.image
-                
-            } else if self.selectImageType == .addCoverImage && self.addCoverPhotoButton.isHidden == true {
-                
-                aImageSelectionMethodVC.isShowImage = true
-                aImageSelectionMethodVC.strURLImg = self.coverImage.image
-            }
-            
-            aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
-            self.navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
-
-            
-            
-            
-        } else {
-            let aImageSelectionMethodVC:ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
-            aImageSelectionMethodVC.fromEditProfileScreen = true
-            aImageSelectionMethodVC.selectImageType = self.selectImageType
-
-            aImageSelectionMethodVC.isContainImage = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0] != nil
-            if self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0] != nil && self.selectImageType == .addSelfImage {
-                
-                aImageSelectionMethodVC.isShowImage = true
-                aImageSelectionMethodVC.strURLImg = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0]?.image
-                
-            } else if self.selectImageType == .addCoverImage && self.addCoverPhotoButton.isHidden == true {
-                
-                aImageSelectionMethodVC.isShowImage = true
-                aImageSelectionMethodVC.strURLImg = self.coverImage.image
-            }
-            
-            aImageSelectionMethodVC.callBack = { [weak self] data in
-                if data {
-                    self?.checkCameraAuthorization()
-                }else{
-                    self?.requestPhotoLibraryAccess()
-                }
-            }
-            aImageSelectionMethodVC.deletePictureCallBack = { [weak self] data in
-                if let id = self?.deleteImageID {
-                    self?.aEditProfileViewModel.deleteImageAPI(id:id)
-                }
-                
-            }
-            aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
-            self.navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
-
+        let slotImage = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0]
+        aImageSelectionMethodVC.isContainImage = slotImage != nil
+        if slotImage != nil && self.selectImageType == .addSelfImage {
+            aImageSelectionMethodVC.isShowImage = true
+            aImageSelectionMethodVC.isShowAvatarImage = self.imageSelectedIndex == 0
+            aImageSelectionMethodVC.strURLImg = slotImage?.image
+        } else if self.selectImageType == .addCoverImage && self.addCoverPhotoButton.isHidden == true {
+            aImageSelectionMethodVC.isShowImage = true
+            aImageSelectionMethodVC.strURLImg = self.coverImage.image
         }
+
+        aImageSelectionMethodVC.callBack = { [weak self] data in
+            if data {
+                self?.checkCameraAuthorization()
+            }else{
+                self?.requestPhotoLibraryAccess()
+            }
+        }
+        aImageSelectionMethodVC.deletePictureCallBack = { [weak self] data in
+            if let id = self?.deleteImageID {
+                self?.aEditProfileViewModel.deleteImageAPI(id:id)
+            }
+        }
+        aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
+        self.navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
     }
 }
 
@@ -1692,18 +1659,9 @@ extension EditProfileViewController: UITableViewDelegate, UITableViewDataSource{
 extension EditProfileViewController:PHPickerViewControllerDelegate{
 
     // Function to request photo library access permission
+    /// `PHPickerViewController` runs out of process and needs no photo-library permission.
     func requestPhotoLibraryAccess() {
-        PHPhotoLibrary.requestAuthorization { [weak self] status in
-            if status == .authorized { // Permission granted by the user
-                self?.openMultipleSelectionLibrary()
-            } else {
-                // Permission denied by the user
-                // Show alert for photo library access permission
-                DispatchQueue.main.async {
-                    self?.showPhotoLibraryAccessAlert()
-                }
-            }
-        }
+        openMultipleSelectionLibrary()
     }
 
     func checkCameraAuthorization() {

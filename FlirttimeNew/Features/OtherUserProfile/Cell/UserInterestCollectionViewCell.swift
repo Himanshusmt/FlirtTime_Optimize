@@ -20,11 +20,6 @@ class UserInterestCollectionViewCell: UICollectionViewCell {
 //Interest
     func setData(data:attOptions?){
         self.labelName.text = data?.title
-        let imgStr = ApiName.imgBaseURL + (data?.photo ?? "")
-        if let imageUrl = URL(string: imgStr) {
-            DispatchQueue.main.async {
-                self.interestIcon.loadImage(with: imageUrl)
-            }
-        }
+        self.interestIcon.setInterestIcon(data?.photo)
     }
 }

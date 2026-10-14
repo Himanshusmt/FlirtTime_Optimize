@@ -324,7 +324,12 @@ enum MomentsInterestCatalog {
         "cooking": "🍳", "reading": "📚", "fitness": "💪", "lyrics music": "🎵", "pets": "🐾",
         "party": "🎉", "shopping": "🛍️", "sports": "⚽", "cinema": "🎬", "television": "📺",
         "gaming": "🎮", "travelling": "✈️", "photography": "📷", "extreme": "🪂", "yoga": "🧘",
-        "writing": "✍️", "dance": "💃", "planting": "🌱", "drawing": "🎨", "handcraft": "🧶"
+        "writing": "✍️", "dance": "💃", "planting": "🌱", "drawing": "🎨", "handcraft": "🧶",
+        "art": "🎨", "drinks": "🍹", "exercise": "🏋️", "karaoke": "🎤", "music": "🎵",
+        "running": "🏃", "swimming": "🏊", "tennis": "🎾", "hiking": "🥾", "coffee": "☕",
+        "food": "🍕", "foodie": "🍜", "travel": "✈️", "movies": "🎬", "books": "📚",
+        "fashion": "👗", "wine": "🍷", "cycling": "🚴", "football": "⚽", "cricket": "🏏",
+        "singing": "🎤", "beach": "🏖️", "meditation": "🧘", "anime": "🍥", "technology": "💻"
     ]
 
     private static let conversationStarters: [String: String] = [

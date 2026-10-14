@@ -10,7 +10,7 @@ import UIKit
 import RxSwift
 import Swinject
 
-// TODO: cover photo, email OTP and phone still use MockDataStore — no backend API yet.
+// TODO: email OTP and phone still use MockDataStore — no backend API yet.
 class EditProfileViewModel{
 
     var aAMoreAboutMe:[MoreAboutMe] = [MoreAboutMe(key:"height",index: 6),MoreAboutMe(key: "exercise",index:7),MoreAboutMe(key:"education" ,index: 0),MoreAboutMe(key:"drinking" ,index:1),MoreAboutMe(key:"smoking",index: 2),MoreAboutMe(key:"looking-for" ,index: 5),MoreAboutMe(key: "kids",index: 3),MoreAboutMe(key:"horoscope" ,index: 9),MoreAboutMe(key:"party" ,index: 8),MoreAboutMe(key:"religion" ,index: 4)]
@@ -56,9 +56,20 @@ class EditProfileViewModel{
     }
 
     func uploadCoverPhotoAPI(image:UIImage) {
-        respond { [weak self] in
-            self?.errorMessage = "Cover photo upload isn't available yet."
+        guard let imageData = image.jpegData(maxBytes: Self.maxImageBytes) else {
+            errorMessage = Constants.ImageErrorTypes.errorUserImage
+            return
         }
+        sessionManager.updateCoverPicture(imageData: imageData)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] url in
+                let payload: [String: Any] = ["status": true, "message": "Cover photo updated",
+                                              "data": ["image_url": url]]
+                self?.aUploadCoverPhotoResponseModel = EditProfileAPIMapper.decode(UploadProfileImageModel.self, from: payload)
+            }, onFailure: { [weak self] error in
+                self?.errorMessage = parseError(error) ?? "Cover photo upload failed"
+            })
+            .disposed(by: disposeBag)
     }
 
     func getProfileMoreAboutMeQuestion() {
@@ -278,9 +289,13 @@ class EditProfileViewModel{
         if !gallery.isEmpty, !gallery.contains(where: { $0["is_primary"] as? Bool == true }) {
             gallery[0]["is_primary"] = true
         }
-        if !gallery.contains(where: { $0["is_primary"] as? Bool == true }), let avatar = info["avatar"] as? String {
+        if let primary = gallery.first(where: { $0["is_primary"] as? Bool == true })?["filename"] as? String {
+            info["avatar"] = primary
+        } else if let avatar = info["avatar"] as? String {
             gallery.insert(["id": 0, "filename": avatar, "filefor": "gallery", "status": 1, "is_primary": true], at: 0)
         }
+        info["images"] = gallery.map { ["image": $0["filename"] ?? "", "type": "gallery", "is_primary": $0["is_primary"] ?? false] }
+        info["is_active"] = info["gesture_is_verified"]
 
         var details: [String: Any] = [
             "user_images": gallery,
@@ -364,7 +379,7 @@ enum EditProfileAPIMapper {
         guard let model, !interestCatalog.isEmpty, var data = model.data,
               let index = data.firstIndex(where: { $0.alias == Constants.QuestionOption.interests }) else { return model }
         data[index].aOptions = interestCatalog.map {
-            attOptions(id: photoID($0.id), attribute_id: nil, title: $0.name, isSelected: nil, photo: nil)
+            attOptions(id: photoID($0.id), attribute_id: nil, title: $0.name, isSelected: nil, photo: $0.vibeInterest?.emoji)
         }
         return AttributesModel(status: model.status, message: model.message, data: data)
     }
@@ -382,6 +397,14 @@ enum EditProfileAPIMapper {
         }
         guard let name else { return nil }
         return optionID(alias: Constants.QuestionOption.interests, title: name)
+    }
+
+    /// Chips for the given picker option ids, using the catalog names and emoji.
+    static func momentsInterests(for ids: [Int]) -> [MomentsInterest] {
+        guard !interestCatalog.isEmpty else { return MomentsInterestCatalog.interests(for: ids) }
+        return ids.compactMap { id in
+            interestCatalog.first { photoID($0.id) == id }?.vibeInterest
+        }
     }
 
     static func interestUUID(optionID: Int) -> String? {
