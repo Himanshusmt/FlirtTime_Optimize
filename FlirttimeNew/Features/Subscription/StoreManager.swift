@@ -9,7 +9,8 @@ import Foundation
 import StoreKit
 
 enum StorePurchaseResult {
-    case purchased(Transaction)
+    /// `signedTransaction` is the App Store JWS the backend verifies with Apple.
+    case purchased(Transaction, signedTransaction: String)
     case cancelled
     /// Waiting on Ask to Buy or SCA; the transaction arrives later through `Transaction.updates`.
     case pending
@@ -48,6 +49,7 @@ final class StoreManager {
         updatesTask = Task.detached { [weak self] in
             for await update in Transaction.updates {
                 guard let self, let transaction = try? self.verified(update) else { continue }
+                Self.log("TRANSACTION UPDATE", transaction, signedTransaction: update.jwsRepresentation)
                 await transaction.finish()
                 await MainActor.run {
                     NotificationCenter.default.post(name: StoreManager.entitlementsDidChange, object: transaction)
@@ -81,11 +83,14 @@ final class StoreManager {
         switch try await product.purchase(options: options) {
         case .success(let verification):
             let transaction = try verified(verification)
+            Self.log("PURCHASE SUCCESS", transaction, signedTransaction: verification.jwsRepresentation)
             await transaction.finish()
-            return .purchased(transaction)
+            return .purchased(transaction, signedTransaction: verification.jwsRepresentation)
         case .userCancelled:
+            AppLogger.debug("[StoreKit] PURCHASE CANCELLED: \(product.id)")
             return .cancelled
         case .pending:
+            AppLogger.debug("[StoreKit] PURCHASE PENDING (Ask to Buy / SCA): \(product.id)")
             return .pending
         @unknown default:
             return .cancelled
@@ -120,6 +125,24 @@ final class StoreManager {
     }
 
     // MARK: - Helpers
+
+    private static func log(_ title: String, _ transaction: Transaction, signedTransaction: String) {
+        AppLogger.debug("""
+
+        ===== STOREKIT \(title) =====
+        Product ID: \(transaction.productID)
+        Product Type: \(transaction.productType.rawValue)
+        Transaction ID: \(transaction.id)
+        Original Transaction ID: \(transaction.originalID)
+        Purchase Date: \(transaction.purchaseDate)
+        Quantity: \(transaction.purchasedQuantity)
+        Environment: \(transaction.environment.rawValue)
+        App Account Token: \(transaction.appAccountToken?.uuidString ?? "none")
+        Signed Transaction (JWS):
+        \(signedTransaction)
+        ==============================
+        """)
+    }
 
     private func verified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {

@@ -125,7 +125,7 @@ final class PremiumViewModel {
         Task { @MainActor in
             do {
                 switch try await StoreManager.shared.purchase(product) {
-                case .purchased(let transaction):
+                case .purchased(let transaction, _):
                     sendSubscription(for: option, transaction: transaction, restored: false)
                 case .pending:
                     isPurchasing = false
