@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 final class ProfileVoiceIntroView: UIView {
 
@@ -23,6 +24,9 @@ final class ProfileVoiceIntroView: UIView {
 
     private let style: Style
     private var intro: UserVoiceIntro?
+    /// Length read from the audio file; preferred over the API's `duration`, which can be wrong.
+    private var fileDuration: Double?
+    private var durationTask: Task<Void, Never>?
 
     private let stack = UIStackView()
     private let playerCard = UIView()
@@ -62,6 +66,7 @@ final class ProfileVoiceIntroView: UIView {
             stopIfPlaying()
             let seed = (intro?.audioURL ?? "").unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }
             rebuildWaveform(seed: seed)
+            loadFileDuration(from: playable ? intro?.playableURL : nil)
         }
         self.intro = playable ? intro : nil
         playerCard.isHidden = !playable
@@ -73,6 +78,20 @@ final class ProfileVoiceIntroView: UIView {
     func stopIfPlaying() {
         if VoiceIntroPlayer.shared.playingProfileID == Self.playerID {
             VoiceIntroPlayer.shared.stop()
+        }
+    }
+
+    private func loadFileDuration(from url: URL?) {
+        durationTask?.cancel()
+        fileDuration = nil
+        guard let url else { return }
+        durationTask = Task { [weak self] in
+            guard let time = try? await AVURLAsset(url: url).load(.duration), time.seconds.isFinite, time.seconds > 0,
+                  !Task.isCancelled else { return }
+            await MainActor.run {
+                self?.fileDuration = time.seconds
+                self?.playerChanged()
+            }
         }
     }
 
@@ -135,7 +154,7 @@ final class ProfileVoiceIntroView: UIView {
     @objc private func playerChanged() {
         let player = VoiceIntroPlayer.shared
         let isPlaying = player.playingProfileID == Self.playerID
-        let duration = intro?.duration ?? 0
+        let duration = fileDuration ?? intro?.duration ?? 0
         playButton.setImage(UIImage(systemName: isPlaying ? "pause.fill" : "play.fill",
                                     withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .bold)), for: .normal)
         playButton.accessibilityLabel = isPlaying ? "Pause your voice intro" : "Play your voice intro, \(Int(duration.rounded())) seconds"

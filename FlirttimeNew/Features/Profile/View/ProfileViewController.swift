@@ -94,6 +94,7 @@ class ProfileViewController: BaseViewController {
 
     private func loadData() {
         aProfileViewModel.getProfileDataAPI()
+        aProfileViewModel.getMyProfile()
         aProfileViewModel.getQuickMoments()
         aProfileViewModel.getMyMoments()
     }
@@ -104,13 +105,17 @@ class ProfileViewController: BaseViewController {
         aProfileViewModel.$aUserProfileModel.receive(on: DispatchQueue.main).sink { [weak self] model in
             guard let self, let model else { return }
             self.userProfileData = model
-            self.setUserProfileData(model)
+        }.store(in: &desposeBag)
+
+        aProfileViewModel.$myProfile.receive(on: DispatchQueue.main).sink { [weak self] data in
+            guard let self, let data else { return }
+            self.setMyProfile(data)
         }.store(in: &desposeBag)
 
         aProfileViewModel.$quickMoments.receive(on: DispatchQueue.main).sink { [weak self] moments in
             guard let self else { return }
             let frames = moments.enumerated().map { $1.storyMoment(id: $0) }
-            self.quickMomentsView.configure(moments: frames, avatarPath: self.userProfileData?.userInfo?.avatar)
+            self.quickMomentsView.configure(moments: frames, avatarPath: self.avatarPath)
             self.quickMomentsHintContainer.isHidden = !moments.isEmpty
         }.store(in: &desposeBag)
 
@@ -151,49 +156,55 @@ class ProfileViewController: BaseViewController {
         }.store(in: &desposeBag)
     }
 
-    private func setUserProfileData(_ model: UserDetailsData) {
-        let info = model.userInfo
+    private var avatarPath: String? {
+        aProfileViewModel.myProfile?.profile?.profilePhoto?.bestURL
+    }
 
-        if let banner = info?.banner, !banner.isEmpty {
-            coverImageUrl = ApiName.imgBaseURL + banner
-            coverImageView.loadImage(path: banner, placeholder: UIImage(named: "addCoverPhoto"))
+    /// The username from `auth/me`; `users/profile` only sends the nickname as `displayName`.
+    private var headerName: String {
+        let username = UserDataManager.shared.appUser?.username?.trimmingCharacters(in: .whitespaces) ?? ""
+        if !username.isEmpty { return username }
+        return (aProfileViewModel.myProfile?.profile?.displayName ?? "").firstLetterCapitalized
+    }
+
+    private func setMyProfile(_ data: MyProfileData) {
+        let info = data.profile
+
+        if let cover = info?.coverPhoto?.bestURL {
+            coverImageUrl = cover.hasPrefix("http") ? cover : ApiName.imgBaseURL + cover
+            coverImageView.loadImage(path: cover, placeholder: UIImage(named: "addCoverPhoto"))
         } else {
             coverImageUrl = nil
             coverImageView.image = UIImage(named: "addCoverPhoto")
         }
-        avatarImageView.loadImage(path: info?.avatar, placeholder: UIImage(named: "ProfileBlur"))
-        voiceIntroView.configure(intro: model.voiceIntro)
-        quickMomentsView.configure(moments: aProfileViewModel.quickMomentFrames, avatarPath: info?.avatar)
+        avatarImageView.loadImage(path: avatarPath, placeholder: UIImage(named: "ProfileBlur"))
+        voiceIntroView.configure(intro: data.voiceIntro?.userVoiceIntro)
+        quickMomentsView.configure(moments: aProfileViewModel.quickMomentFrames, avatarPath: avatarPath)
 
-        let completion = model.profile_complete ?? 0
+        let completion = min(max(info?.completionPercentage ?? 0, 0), 100)
         progressRing.setProgressWithAnimation(duration: 1.2, value: Float(completion) / 100)
         completionButton.configuration?.attributedTitle = AttributedString("\(completion)% complete", attributes: AttributeContainer([
             .font: MomentsFont.scaled(.medium, 13, style: .footnote)
         ]))
         completionButton.accessibilityLabel = "Profile \(completion) percent complete. Edit profile"
 
-        let name = (info?.displayName ?? info?.fullname ?? "").firstLetterCapitalized
-        let age = DiscoverViewModel.age(from: info?.dob)
-        nameLabel.text = age.map { "\(name), \($0)" } ?? name
-        verifiedImageView.isHidden = info?.isActive != true
+        let name = headerName
+        nameLabel.text = info?.age.map { "\(name), \($0)" } ?? name
+        verifiedImageView.isHidden = info?.isVerified != true
 
-        let location = info?.location?.trimmingCharacters(in: .whitespaces) ?? ""
+        let location = info?.locationText ?? ""
         locationLabel.text = location.isEmpty ? nil : "📍 \(location)"
         locationLabel.isHidden = location.isEmpty
 
-        let about = info?.aboutMe?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let about = info?.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         aboutLabel.text = about.isEmpty ? nil : "“\(about)”"
         aboutLabel.isHidden = about.isEmpty
 
-        let interests = MomentsInterestCatalog.interests(for: info?.interests ?? [])
+        let interests = data.vibeInterests
         interestsChips.configure(interests, highlighted: [])
         interestsContainer.isHidden = interests.isEmpty
 
-        let photos = (info?.images ?? [])
-            .sorted { ($0.is_primary ?? false) && !($1.is_primary ?? false) }
-            .compactMap(\.image)
-            .filter { !$0.isEmpty }
-        setPhotos(photos)
+        setPhotos(info?.photoURLs ?? [])
     }
 
     // MARK: - UI
@@ -433,9 +444,10 @@ class ProfileViewController: BaseViewController {
 
     private func recordVoiceIntro() {
         voiceIntroView.stopIfPlaying()
-        VoiceIntroRecorderViewController.present(from: self) { [weak self] _ in
+        VoiceIntroRecorderViewController.present(from: self) { [weak self] intro in
             guard let self else { return }
-            self.aProfileViewModel.getProfileDataAPI()
+            self.voiceIntroView.configure(intro: intro)
+            self.aProfileViewModel.getMyProfile()
             self.aCustomToastView.show(message: "Voice intro saved")
         }
     }
@@ -693,17 +705,18 @@ class ProfileViewController: BaseViewController {
     private func openQuickMoment(at index: Int) {
         let moments = aProfileViewModel.quickMomentFrames
         guard moments.indices.contains(index) else { return }
-        let info = userProfileData?.userInfo
-        let profile = MomentsProfile(id: info?.userID ?? info?.id ?? 0,
-                                  displayName: (info?.displayName ?? info?.fullname ?? "You").firstLetterCapitalized,
+        let info = aProfileViewModel.myProfile?.profile
+        let name = headerName
+        let profile = MomentsProfile(id: (info?.id ?? UserDataManager.shared.appUser?.id ?? "").stableID,
+                                  displayName: name.isEmpty ? "You" : name,
                                   age: nil,
-                                  isVerified: false,
-                                  gender: info?.gender,
+                                  isVerified: info?.isVerified == true,
+                                  gender: nil,
                                   city: nil,
                                   distanceKm: nil,
                                   isOnline: nil,
                                   datingIntent: nil,
-                                  photos: [info?.avatar].compactMap { $0 },
+                                  photos: [avatarPath].compactMap { $0 },
                                   about: "",
                                   interests: [],
                                   sharedInterests: [],

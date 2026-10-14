@@ -45,6 +45,18 @@ enum AppEndPoint: CustomStringConvertible {
     // Introduce yourself — UserDetailsViewController
     case updateProfile
 
+    // My Profile — ProfileViewModel
+    case myProfile
+
+    // Voice intro — VoiceIntroService (POST / GET / DELETE)
+    case voiceIntro
+
+    // Edit Profile — EditProfileViewModel / EditAboutViewModel
+    case moreAboutMe
+    case onboardingInterests
+    case onboardingPhoto(photoId: String)
+    case onboardingPhotoPrimary(photoId: String)
+
     // Gesture selfie — GestureVerificationViewController
     case gestureUpload
 
@@ -107,7 +119,12 @@ enum AppEndPoint: CustomStringConvertible {
         case .phoneResendOTP: return "api/v1/auth/phone/resend-otp"
         case .appleLogin: return "api/v1/auth/apple"
         case .me: return "api/v1/auth/me"
-        case .updateProfile: return "api/v1/users/profile"
+        case .updateProfile, .myProfile: return "api/v1/users/profile"
+        case .voiceIntro: return "api/v1/onboarding/audio"
+        case .moreAboutMe: return "api/v1/users/more-about-me"
+        case .onboardingInterests: return "api/v1/onboarding/interests"
+        case .onboardingPhoto(let photoId): return "api/v1/onboarding/photos/\(photoId)"
+        case .onboardingPhotoPrimary(let photoId): return "api/v1/onboarding/photos/\(photoId)/primary"
         case .gestureUpload: return "api/v1/gesture-upload"
         case .profilePhotoUpload: return "api/v1/onboarding/profile-photo"
         case .discoveryPeople: return "api/v1/discovery/people"
@@ -154,7 +171,8 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .updateProfile, .gestureUpload, .profilePhotoUpload,
+        case .me, .updateProfile, .myProfile, .voiceIntro, .gestureUpload, .profilePhotoUpload,
+             .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
              .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
              .userProfile, .blockUser, .reportUser,

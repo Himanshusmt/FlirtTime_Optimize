@@ -176,6 +176,11 @@ class EditAboutYouViewController: BaseViewController, Instantiable {
                 }
             }
         }.store(in: &desposeBag)
+
+        self.aEditAboutYouViewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
+        }.store(in: &desposeBag)
     }
 
     private func setupCollectionViewLayout() {

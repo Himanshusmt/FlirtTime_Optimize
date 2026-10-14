@@ -138,6 +138,16 @@ class EditProfileViewController: BaseViewController, Instantiable {
 
         voiceIntroView.onRecord = { [weak self] in self?.recordVoiceIntro() }
         voiceIntroView.onDelete = { [weak self] in self?.confirmDeleteVoiceIntro() }
+        voiceIntroView.configure(intro: nil)
+        loadVoiceIntro()
+    }
+
+    private func loadVoiceIntro() {
+        VoiceIntroService.fetch { [weak self] result in
+            guard let self, case .success(let intro) = result else { return }
+            self.userDetailInfo?.voiceIntro = intro
+            self.voiceIntroView.configure(intro: intro)
+        }
     }
 
     private func recordVoiceIntro() {
@@ -289,7 +299,6 @@ class EditProfileViewController: BaseViewController, Instantiable {
             ("eyecolor", userInfo.eyeColour),
             ("haircolor", userInfo.hairColour),
             ("living", userInfo.living),
-            ("children", userInfo.children),
             ("smoking", userInfo.smoking),
             ("drinking", userInfo.drinking),
             ("motherTongue", userInfo.motherTongue),
@@ -441,7 +450,6 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.displayNameTextField.text = self.userDetailInfo?.userInfo?.displayName?.trimmText()
         
         self.cityPlaceTextField.text = self.userDetailInfo?.userInfo?.location
-        self.voiceIntroView.configure(intro: self.userDetailInfo?.voiceIntro)
         
         if self.updatedTextValue != "" {
             self.aboutTextView.text = updatedTextValue
@@ -458,7 +466,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         //URL(string: self.coverImageUrl ?? "")
         if self.userDetailInfo?.userInfo?.banner != nil {
             
-            self.coverImageUrl = "\(ApiName.imgBaseURL)" + "\((self.userDetailInfo?.userInfo?.banner) ?? "")"
+            self.coverImageUrl = Self.mediaURL(self.userDetailInfo?.userInfo?.banner)
             print("img url .........",self.coverImageUrl ?? "")
             if let imageUrl = URL(string: self.coverImageUrl ?? "") {
                 DispatchQueue.main.async {
@@ -488,16 +496,29 @@ class EditProfileViewController: BaseViewController, Instantiable {
         
     }
 
+    /// Backend photos are full URLs; legacy ones are S3 keys.
+    static func mediaURL(_ path: String?) -> String {
+        let path = path ?? ""
+        return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
+    }
+
     func getUIImageFromImageURL(){
         var userImg:[UserImage] = []
         var avatarImg:[UserImage] = []
         avatarImg = self.userDetailInfo?.user_images?.filter{ $0.isPrimary == true && $0.filefor == "gallery"} ?? []
         userImg  = self.userDetailInfo?.user_images?.filter{ $0.isPrimary == false && $0.filefor == "gallery"} ?? []
+        if avatarImg.isEmpty {
+            self.aEditProfileViewModel.images[0] = nil
+        }
+        for index in (min(userImg.count, 5) + 1)..<self.aEditProfileViewModel.images.count {
+            self.aEditProfileViewModel.images[index] = nil
+        }
+        self.imageCollectionView.reloadData()
         for (index,item) in (avatarImg).enumerated(){
             guard index < 1 else {return}
             if index == 0 && avatarImg.count > 0 {
-                
-                let img = ApiName.imgBaseURL+""+(avatarImg[0].filename ?? "")
+
+                let img = Self.mediaURL(avatarImg[0].filename)
                 if let imageUrl = URL(string: img) {
                     self.downloadImage(from: imageUrl) { image in
                         guard image != nil else {return}
@@ -512,7 +533,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         for (index,item) in (userImg).enumerated(){
             guard index < 5 else {return}
 
-                let img = ApiName.imgBaseURL+""+(item.filename ?? "")
+                let img = Self.mediaURL(item.filename)
                 if let imageUrl = URL(string: img) {
                     self.downloadImage(from: imageUrl) { image in
                         guard image != nil else {return}
@@ -926,7 +947,8 @@ class EditProfileViewController: BaseViewController, Instantiable {
         }.store(in: &desposeBag)
         
         self.aEditProfileViewModel.$errorAboutMe.receive(on: DispatchQueue.main).sink { model in
-            if model != nil {
+            if let model {
+                self.aCustomToastView.show(message: model)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     self.callBackAction?()
                     self.view.isUserInteractionEnabled = true
@@ -1717,7 +1739,11 @@ extension EditProfileViewController {
             self.aEditProfileViewModel.uploadCoverPhotoAPI(image: imgPic)
         }else{
             upLoadedImg = [imgPic]
-            self.aEditProfileViewModel.uploadProfilePhotoAPI(image: imgPic)
+            let slot = self.imageSelectedIndex ?? 0
+            let existing = slot < self.aEditProfileViewModel.images.count ? self.aEditProfileViewModel.images[slot] : nil
+            self.aEditProfileViewModel.uploadProfilePhotoAPI(image: imgPic,
+                                                             replacing: existing?.id,
+                                                             asPrimary: existing != nil && slot == 0)
         }
     }
 }

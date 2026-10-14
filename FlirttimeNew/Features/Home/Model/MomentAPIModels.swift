@@ -26,7 +26,7 @@ struct MomentItem: Codable {
     let audience: String?
     /// "active" once published.
     let status: String?
-    let location: String?
+    let location: MomentLocation?
     let locationLabel: String?
     let timeAgo: String?
     let createdAt: String?
@@ -49,6 +49,25 @@ struct MomentItem: Codable {
     /// "heart" | "fire" | "clap" | "laugh" | "wow"; `nil` when the viewer hasn't reacted.
     let viewerReaction: String?
     let creator: MomentCreator?
+}
+
+/// `location` as a plain string or an object such as `{ "name": "Mumbai" }`.
+struct MomentLocation: Codable {
+    let name: String?
+
+    init(from decoder: Decoder) throws {
+        if let text = try? decoder.singleValueContainer().decode(String.self) {
+            name = text
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        name = c.string("name", "label", "city")
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(name)
+    }
 }
 
 struct MomentMedia: Codable {
@@ -121,7 +140,7 @@ extension MomentFeedData {
 extension MomentItem {
     func vibe(fallbackAuthor: MomentsAuthor? = nil) -> MomentsPost? {
         guard let id = momentId ?? id, !id.isEmpty else { return nil }
-        let place = locationLabel ?? location
+        let place = locationLabel ?? location?.name
         let author: MomentsAuthor
         if let creator {
             author = MomentsAuthor(userId: creator.userId ?? creator.id,
