@@ -498,6 +498,12 @@ final class AppSessionManager {
                                                         encoding: URLEncoding.queryString))
     }
 
+    // MARK: - Subscriptions
+
+    func subscriptionPlans() -> Single<SubscriptionModel> {
+        backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .subscriptions))
+    }
+
     // MARK: - Session
 
     func logout() {

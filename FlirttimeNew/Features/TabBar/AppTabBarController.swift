@@ -32,6 +32,7 @@ class AppTabBarController: UITabBarController, Instantiable {
         self.delegate = self
         setButton()
         buttonAction()
+        SubscriptionPlanStore.shared.preloadIfNeeded()
     }
 
     override func viewWillAppear(_ animated: Bool) {

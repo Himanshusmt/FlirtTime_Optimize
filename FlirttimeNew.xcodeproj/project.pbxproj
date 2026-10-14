@@ -24,6 +24,7 @@
 		371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */; };
 		387133DE17D2ACB96322AA39 /* PrivacySafetyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FF17A4E0395896EA3CEF5E /* PrivacySafetyViewController.swift */; };
 		438F9FF9EE0977E8FFB0CFBC /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB93A3E2B9F80816B7D876E /* StoreManager.swift */; };
+		5B5B7A110000000000000002 /* SubscriptionPlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B5B7A110000000000000001 /* SubscriptionPlanStore.swift */; };
 		46FB780E614148ABA73722F8 /* StoryboardDesignableViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C76DDF0B264B66874D9647 /* StoryboardDesignableViews.swift */; };
 		482EA02D52DC1948E2162EDE /* FilteredProfileCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664F2AAAA0E521551C34BB8E /* FilteredProfileCell.swift */; };
 		48D62E7C4BE5307737CE8044 /* MockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */; };
@@ -806,6 +807,7 @@
 		D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationTableViewCell.swift; sourceTree = "<group>"; };
 		DA7184C9C5CD7C20FD764E54 /* SettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsModel.swift; sourceTree = "<group>"; };
 		DAB93A3E2B9F80816B7D876E /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
+		5B5B7A110000000000000001 /* SubscriptionPlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPlanStore.swift; sourceTree = "<group>"; };
 		DF560E8030764A3500FA3C0D /* FlirttimeNew.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlirttimeNew.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3A2D6D730776627008D1551 /* BaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseViewController.swift; sourceTree = "<group>"; };
 		E3A2D6D930776627008D1551 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
@@ -2302,6 +2304,7 @@
 				E3A2D78830776627008D1551 /* SubscriptionPopUp.xib */,
 				4D47FFA00D2C898EFFB81AF5 /* Premium */,
 				DAB93A3E2B9F80816B7D876E /* StoreManager.swift */,
+				5B5B7A110000000000000001 /* SubscriptionPlanStore.swift */,
 				E712EC1C8BC567E850631512 /* SubscriptionModel.swift */,
 				0EE77CD421F41A856D5BB943 /* StoreComponents.swift */,
 				868BB79E57AB24F029259346 /* FlirttimeStore.storekit */,
@@ -3684,6 +3687,7 @@
 				ECF3D5B9CE6A4717BE493145 /* OtherUserMomentCell.swift in Sources */,
 				D0363B0F96B9442581D7C327 /* OtherUserPhotoCell.swift in Sources */,
 				438F9FF9EE0977E8FFB0CFBC /* StoreManager.swift in Sources */,
+				5B5B7A110000000000000002 /* SubscriptionPlanStore.swift in Sources */,
 				D325506E31AC6DA3B74949AA /* SubscriptionModel.swift in Sources */,
 				CE2D557AD70CF30C877E5859 /* StoreComponents.swift in Sources */,
 				99103FDED05B71479233D44A /* PremiumViewModel.swift in Sources */,

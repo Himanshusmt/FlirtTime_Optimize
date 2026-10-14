@@ -111,6 +111,9 @@ enum AppEndPoint: CustomStringConvertible {
     // Coin Shop — CoinPackStore
     case coinPackages
 
+    // Premium — SubscriptionPlanStore
+    case subscriptions
+
     var description: String {
         switch self {
         case .health: return "health"
@@ -164,6 +167,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .quickMomentView(let momentId): return "api/v1/quick-moments/\(momentId)/view"
         case .quickMomentViewers(let momentId): return "api/v1/quick-moments/\(momentId)/viewers"
         case .coinPackages: return "api/v1/coin-packages"
+        case .subscriptions: return "api/v1/subscriptions"
         }
     }
 
@@ -186,7 +190,7 @@ enum AppEndPoint: CustomStringConvertible {
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers,
-             .coinPackages:
+             .coinPackages, .subscriptions:
             return false
         }
     }

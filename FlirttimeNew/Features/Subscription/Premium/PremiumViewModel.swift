@@ -7,7 +7,7 @@ import Foundation
 import Combine
 import StoreKit
 
-// TODO: replace the MockStore responses with the subscriptions / subscription/create / subscription/check requests.
+// TODO: replace the MockStore responses with the subscription/create / subscription/check requests.
 final class PremiumViewModel {
 
     struct PlanOption: Hashable {
@@ -67,6 +67,28 @@ final class PremiumViewModel {
     @Published private(set) var isSubscribed = UserDataManager.shared.isUserSubscriptionDone == true
     let events = PassthroughSubject<PurchaseEvent, Never>()
 
+    private let planStore = SubscriptionPlanStore.shared
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        planStore.$options
+            .sink { [weak self] options in
+                guard let self else { return }
+                self.options = options
+                self.selectedIndex = options.firstIndex { $0.plan.isPopular == true } ?? 0
+            }
+            .store(in: &cancellables)
+        planStore.$state
+            .map { state -> State in
+                switch state {
+                case .idle, .loading: return .loading
+                case .loaded: return .loaded
+                case .failed(let message): return .failed(message)
+                }
+            }
+            .assign(to: &$state)
+    }
+
     var selectedOption: PlanOption? {
         options.indices.contains(selectedIndex) ? options[selectedIndex] : nil
     }
@@ -85,32 +107,10 @@ final class PremiumViewModel {
 
     // MARK: - Loading
 
+    /// Uses the plans preloaded at launch; refetches only if that load failed or hasn't run.
     func load() {
-        state = .loading
-        respond { [weak self] in
-            guard let self else { return }
-            guard let response = MockDataStore.shared.decode(SubscriptionModel.self, from: MockStore.shared.subscriptionPlansJSON()),
-                  response.status == true else {
-                self.state = .failed("Couldn't load plans right now")
-                return
-            }
-            let plans = (response.data ?? [])
-                .filter { $0.isActive != false }
-                .sorted { ($0.sortOrder ?? .max) < ($1.sortOrder ?? .max) }
-            Task { await self.attachProducts(to: plans) }
-        }
+        planStore.preloadIfNeeded()
         refreshStatus()
-    }
-
-    @MainActor
-    private func attachProducts(to plans: [SubscriptionPlanData]) async {
-        let ids = plans.compactMap(\.appleProductID)
-        let products = (try? await StoreManager.shared.products(for: ids)) ?? []
-        options = plans.map { plan in
-            PlanOption(plan: plan, product: products.first { $0.id == plan.appleProductID })
-        }
-        selectedIndex = options.firstIndex { $0.plan.isPopular == true } ?? 0
-        state = options.isEmpty ? .failed("No plans available right now") : .loaded
     }
 
     // MARK: - Purchase
