@@ -64,6 +64,7 @@ class AddMomentViewController: BaseViewController, Instantiable {
     private var addMomentArray: [UIImage] = []
     private let maxImages = 5
     private let maxCaptionLength = 500
+//    private var selectedPlace: MomentPlace?
     private var selectedPlace: MomentPlace?
 
     private lazy var photoPlaceholderView = AddMomentPhotoPlaceholderView(maxPhotos: maxImages)
