@@ -392,7 +392,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                   voiceIntro: nil,
                                   moments: frames,
                                   vibeScore: nil)
-        present(QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: false), animated: true)
+        let viewer = QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: false)
+        if !isOwnProfile {
+            viewer.onMomentShown = { [weak self] index in self?.viewModel.markQuickMomentViewed(at: index) }
+        }
+        present(viewer, animated: true)
     }
 
     private func openPhoto(at index: Int) {

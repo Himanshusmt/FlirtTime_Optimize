@@ -76,6 +76,14 @@ class OtherUserProfileViewModel {
             .disposed(by: disposeBag)
     }
 
+    func markQuickMomentViewed(at index: Int) {
+        guard quickMoments.indices.contains(index), !quickMoments[index].hasViewed else { return }
+        quickMoments[index].hasViewed = true
+        sessionManager.markQuickMomentViewed(momentId: quickMoments[index].id)
+            .subscribe(onSuccess: { }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
     func getVoiceIntro(userID: Int) {
         respond { [weak self] in
             self?.voiceIntro = MockDiscover.shared.voiceIntro(userID: userID)
