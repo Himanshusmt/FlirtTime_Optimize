@@ -187,6 +187,26 @@ final class AppSessionManager {
         return backendClient.load(request: AppApiRequest(method: .post, endPoint: .discoveryAction, parameters: params))
     }
 
+    // MARK: - Interactions
+
+    /// `type` is "likes" | "you_liked" | "matches" | "compliments"; pass the previous page's `nextCursor` for more.
+    func interactions(type: String, limit: Int = 20, cursor: String? = nil) -> Single<InteractionPage> {
+        var params: [String: Any] = ["type": type, "limit": limit]
+        if let cursor, !cursor.isEmpty { params["cursor"] = cursor }
+        return backendClient.load(request: AppApiRequest(method: .get, endPoint: .interactions,
+                                                         parameters: params, encoding: URLEncoding.queryString))
+    }
+
+    func interactionCounts() -> Single<InteractionCounts> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .interactionCounts))
+    }
+
+    /// Idempotent; only the recipient can mark an interaction read.
+    func markInteractionRead(interactionId: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .interactionRead(interactionId: interactionId)))
+            .map { _ in () }
+    }
+
     // MARK: - Other users
 
     func otherUserProfile(userId: String) -> Single<OtherUserProfile> {

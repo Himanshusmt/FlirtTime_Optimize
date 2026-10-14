@@ -83,7 +83,7 @@ struct QuickMomentUser: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         id = c.string("userId", "id", "_id")
-        name = c.string("name", "nickName", "displayName", "username")
+        name = c.string("username", "name", "nickName", "displayName")
         fullName = c.string("fullName", "name")
         photo = c.string("profilePhoto", "profilePicture", "avatar", "photo", "imageUrl")
         isVerified = c.bool("isVerified", "verified", "isFaceVerified")

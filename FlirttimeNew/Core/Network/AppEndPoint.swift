@@ -57,6 +57,11 @@ enum AppEndPoint: CustomStringConvertible {
     case interestsCatalog
     case connectionRequest
 
+    // Explore tabs — ExploreViewModel
+    case interactions
+    case interactionCounts
+    case interactionRead(interactionId: String)
+
     // Vibe Details — VibeProfileViewController
     case userProfile(userId: String)
     case blockUser(userId: String)
@@ -109,6 +114,9 @@ enum AppEndPoint: CustomStringConvertible {
         case .discoveryAction: return "api/v1/discovery/actions"
         case .interestsCatalog: return "api/v1/interests"
         case .connectionRequest: return "api/v1/connections/request"
+        case .interactions: return "api/v1/interactions"
+        case .interactionCounts: return "api/v1/interactions/counts"
+        case .interactionRead(let interactionId): return "api/v1/interactions/\(interactionId)/read"
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
@@ -148,6 +156,7 @@ enum AppEndPoint: CustomStringConvertible {
             return true
         case .me, .updateProfile, .gestureUpload, .profilePhotoUpload,
              .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
+             .interactions, .interactionCounts, .interactionRead,
              .userProfile, .blockUser, .reportUser,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,

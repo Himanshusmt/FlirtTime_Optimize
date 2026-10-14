@@ -20,21 +20,8 @@ class ExploreViewController: BaseViewController {
     private let selectionFeedback = UISelectionFeedbackGenerator()
 
     private var desposeBag:Set<AnyCancellable> = []
-    var aUserInteraction:InteractionResponse?
-    var aMyLikeResp:MyLikeInteractionResponse?
-    var aMyMatches:MatchResponse?
-    var aComplimentListResponse: ComplimentListResponse?
-    var aReadComplimentResponse: ReadComplimentResponse?
     var strSelectedLike:String?
     var aExploreViewModel = ExploreViewModel()
-
-    private static let dobFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone.current
-        return formatter
-    }()
 
     private var isSubscribed: Bool {
         UserDataManager.shared.isUserSubscriptionDone == true
@@ -55,7 +42,7 @@ class ExploreViewController: BaseViewController {
         self.checkHideCustomButton(hide: false)
         self.scrollToTab(ExploreTab(interactionType: strSelectedLike) ?? .likes, animated: false)
         self.refreshUpsell()
-        self.aExploreViewModel.getStatucCountApi()
+        self.aExploreViewModel.loadCounts()
         ExploreTab.allCases.forEach(loadTab)
     }
     
@@ -128,7 +115,7 @@ class ExploreViewController: BaseViewController {
             page.collectionView.delegate = self
             page.collectionView.dataSource = self
             page.onRefresh = { [weak self] in
-                self?.aExploreViewModel.getStatucCountApi()
+                self?.aExploreViewModel.loadCounts()
                 self?.loadTab(tab)
             }
             page.onUpsellTap = { [weak self] in
@@ -141,76 +128,17 @@ class ExploreViewController: BaseViewController {
     }
 
     func setUpBinding(){
-        self.aExploreViewModel.$aUserInteraction.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let model else { return }
-            self.aUserInteraction = model.status ? model : nil
-            self.reloadPage(.likes)
-        }).store(in: &desposeBag)
+        aExploreViewModel.tabDidUpdate.receive(on: DispatchQueue.main).sink { [weak self] tab in
+            self?.reloadPage(tab)
+        }.store(in: &desposeBag)
 
-        self.aExploreViewModel.$errorMessage.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] error in
-            guard let self, error != nil else { return }
-            self.aUserInteraction = nil
-            self.reloadPage(.likes)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$aMyLikeResponse.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let model else { return }
-            self.aMyLikeResp = model
-            self.reloadPage(.youLiked)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$errorMyLikeMessage.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] error in
-            guard let self, error != nil else { return }
-            self.aMyLikeResp = nil
-            self.reloadPage(.youLiked)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$aMyMatches.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let model else { return }
-            self.aMyMatches = model
-            self.reloadPage(.matches)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$errorMyMatches.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] error in
-            guard let self, error != nil else { return }
-            self.aMyMatches = nil
-            self.reloadPage(.matches)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$aComplimentListResponse.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let model else { return }
-            self.aComplimentListResponse = model
-            self.reloadPage(.compliments)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$errorCompliment.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] error in
-            guard let self, error != nil else { return }
-            self.aComplimentListResponse = nil
-            self.reloadPage(.compliments)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$getStatusCount.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let data = model?.data else { return }
-            self.segmentHeader.setCount(data.like_count ?? 0, for: .likes)
-            self.segmentHeader.setCount((data.like_you_count ?? 0) + (data.favorite_count ?? 0), for: .youLiked)
-            self.segmentHeader.setCount(data.match_count ?? 0, for: .matches)
-            self.segmentHeader.setCount(data.compliment_count ?? 0, for: .compliments)
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$aReadComplimentResponse.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] model in
-            guard let self, let model else { return }
-            self.aReadComplimentResponse = model
-            if model.data != nil {
-                self.showComingSoon("Chat")
-            }
-        }).store(in: &desposeBag)
-
-        self.aExploreViewModel.$errorReadCompliment.receive(on: DispatchQueue.main).sink(receiveValue: { [weak self] error in
-            guard let self, error != nil else { return }
-            self.showNewAlertPopUp(Title: "Error", Msg: "Compliment data not found", isSuccess: false, CompletionHandler: {(success) -> Void in
-
-            })
-        }).store(in: &desposeBag)
+        aExploreViewModel.$counts.receive(on: DispatchQueue.main).sink { [weak self] counts in
+            guard let self, let counts else { return }
+            self.segmentHeader.setCount(counts.likes, for: .likes)
+            self.segmentHeader.setCount(counts.youLiked, for: .youLiked)
+            self.segmentHeader.setCount(counts.matches, for: .matches)
+            self.segmentHeader.setCount(counts.compliments, for: .compliments)
+        }.store(in: &desposeBag)
     }
 
     // MARK: - Tabs
@@ -251,22 +179,11 @@ class ExploreViewController: BaseViewController {
 
     private func loadTab(_ tab: ExploreTab) {
         pages[tab.rawValue].setLoading(itemCount(for: tab) == 0)
-        switch tab {
-        case .likes:
-            aExploreViewModel.getUserIneractionAPI(interactioType: tab.interactionType)
-        case .youLiked:
-            aExploreViewModel.getUserIneractionMyLikeAPI(interactioType: tab.interactionType)
-        case .matches:
-            aExploreViewModel.getUserMatchesAPI()
-        case .compliments:
-            aExploreViewModel.getComplimentListApi()
-        }
+        aExploreViewModel.load(tab)
     }
 
     private func reloadPage(_ tab: ExploreTab) {
-        let count = itemCount(for: tab)
-        pages[tab.rawValue].reload(itemCount: count)
-        segmentHeader.setCount(count, for: tab)
+        pages[tab.rawValue].reload(itemCount: itemCount(for: tab))
     }
 
     private func refreshUpsell() {
@@ -275,12 +192,7 @@ class ExploreViewController: BaseViewController {
     }
 
     private func itemCount(for tab: ExploreTab) -> Int {
-        switch tab {
-        case .likes: return aUserInteraction?.data?.count ?? 0
-        case .youLiked: return aMyLikeResp?.data.count ?? 0
-        case .matches: return aMyMatches?.data.count ?? 0
-        case .compliments: return aComplimentListResponse?.data?.compliments?.count ?? 0
-        }
+        aExploreViewModel.cards(for: tab).count
     }
 
     // MARK: - Actions
@@ -300,20 +212,6 @@ class ExploreViewController: BaseViewController {
             UserDataManager.shared.filterDataModel = filters
         }
     }
-
-    func calculateAge(from dateString: String) -> Int? {
-        guard let birthDate = Self.dobFormatter.date(from: dateString) else { return nil }
-        return Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year
-    }
-
-    private func age(from dob: String?) -> Int? {
-        guard let dob, !dob.isEmpty else { return nil }
-        return calculateAge(from: dob)
-    }
-
-    private func distanceText(km: Double?, isHidden: Bool) -> String? {
-        isHidden ? nil : km?.kmAwayText
-    }
 }
 
 extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
@@ -330,72 +228,72 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: UserInteractionCVC.identifier, for: indexPath) as? UserInteractionCVC else {
             return UICollectionViewCell()
         }
+        let tab = tab(for: collectionView)
+        guard let card = aExploreViewModel.cards(for: tab).item(at: indexPath.item) else { return cell }
 
-        switch tab(for: collectionView) {
+        let subtitle: String?
+        let isLocked: Bool
+        switch tab {
         case .likes:
-            let interaction = aUserInteraction?.data?[indexPath.item]
-            let info = interaction?.userInfo
-            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob),
-                           distanceText: distanceText(km: info?.distance, isHidden: info?.distanceShow == false),
-                           subtitle: info?.location,
-                           isVerified: info?.isActive == true, isOnline: info?.isOnline == true,
-                           isSuperLike: interaction?.interactionType == 2, isLocked: !isSubscribed)
-        case .youLiked:
-            let interaction = aMyLikeResp?.data[indexPath.item]
-            let info = interaction?.userInfo
-            cell.configure(imagePath: info?.avatar, name: info?.displayName, age: age(from: info?.dob),
-                           distanceText: distanceText(km: info?.distance, isHidden: info?.distanceShow == false),
-                           subtitle: info?.location,
-                           isVerified: info?.isActive == true, isOnline: info?.isOnline == true,
-                           isSuperLike: interaction?.interactionType == 2, isLocked: false)
-        case .matches:
-            let match = aMyMatches?.data[indexPath.item]
-            cell.configure(imagePath: match?.avatar, name: match?.displayName, age: age(from: match?.dob),
-                           distanceText: distanceText(km: match?.distance, isHidden: match?.distanceShow == false),
-                           subtitle: match?.location,
-                           isVerified: match?.isActive == true, isOnline: match?.isOnline == true,
-                           isSuperLike: false, isLocked: false)
+            subtitle = card.city
+            isLocked = !isSubscribed
+        case .youLiked, .matches:
+            subtitle = card.city
+            isLocked = false
         case .compliments:
-            let compliment = aComplimentListResponse?.data?.compliments?[indexPath.item]
-            let sender = compliment?.sender
-            let message = compliment.map { "\u{201C}\($0.content)\u{201D}" }
-            cell.configure(imagePath: sender?.avatar, name: sender?.displayName, age: age(from: sender?.dob),
-                           distanceText: distanceText(km: sender?.distance, isHidden: sender?.distanceShow == false),
-                           subtitle: message,
-                           isVerified: sender?.isActive == true, isOnline: sender?.isOnline == true,
-                           isSuperLike: false, isLocked: !isSubscribed)
+            let message = card.message.map { "\u{201C}\($0)\u{201D}" }
+            subtitle = [card.category, message].compactMap { $0 }.joined(separator: " \u{00B7} ")
+            isLocked = !isSubscribed
         }
+        let showsHeart = tab == .youLiked ? (card.isMatched == true || card.isSuperLike == true) : card.isSuperLike == true
+        cell.configure(imagePath: card.photo, name: card.name, age: card.age,
+                       distanceText: card.distanceKm?.kmAwayText,
+                       subtitle: subtitle,
+                       isVerified: card.isVerified == true, isOnline: card.isOnline == true,
+                       isSuperLike: showsHeart, isLocked: isLocked)
         return cell
     }
 
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let aOtherUserProfileViewController:OtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
-        aOtherUserProfileViewController.fromExploreScreen = true
-
-        switch tab(for: collectionView) {
-        case .likes:
-            guard isSubscribed else {
-                self.showSubscriptionPopUp(subscriptionPopUpType: .superLike)
-                return
-            }
-            aOtherUserProfileViewController.userDetailInfo = self.aUserInteraction?.data?[indexPath.item].userInfo
-            self.navigationController?.pushViewController(aOtherUserProfileViewController, animated: true)
-        case .youLiked:
-            aOtherUserProfileViewController.userDetailInfo = self.aMyLikeResp?.data[indexPath.item].userInfo
-            aOtherUserProfileViewController.isShowSuperLikeView = self.aMyLikeResp?.data[indexPath.item].interactionType == 1 ? true : false
-            aOtherUserProfileViewController.fromExploreYouLike = true
-            self.navigationController?.pushViewController(aOtherUserProfileViewController, animated: true)
-        case .matches:
-            aOtherUserProfileViewController.fromExploreMatches = true
-            aOtherUserProfileViewController.userMatchesData = self.aMyMatches?.data[indexPath.item]
-            self.navigationController?.pushViewController(aOtherUserProfileViewController, animated: true)
-        case .compliments:
-            guard isSubscribed else {
-                self.showSubscriptionPopUp(subscriptionPopUpType: .chat)
-                return
-            }
-            self.aExploreViewModel.readComplimentApi(id: self.aComplimentListResponse?.data?.compliments?[indexPath.item].id ?? 0)
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        let tab = tab(for: collectionView)
+        if indexPath.item >= itemCount(for: tab) - 4 {
+            aExploreViewModel.loadMore(tab)
         }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let tab = tab(for: collectionView)
+        guard let card = aExploreViewModel.cards(for: tab).item(at: indexPath.item) else { return }
+
+        switch tab {
+        case .likes where !isSubscribed:
+            showSubscriptionPopUp(subscriptionPopUpType: .superLike)
+            return
+        case .compliments where !isSubscribed:
+            showSubscriptionPopUp(subscriptionPopUpType: .chat)
+            return
+        case .compliments:
+            aExploreViewModel.markRead(card, in: tab)
+        default:
+            break
+        }
+        openProfile(card, from: tab)
+    }
+
+    private func openProfile(_ card: InteractionCard, from tab: ExploreTab) {
+        guard let profile = DiscoverViewModel.makeProfile(from: card), let userId = card.userId else { return }
+        let profileVC = CardDetailViewController(profile: profile)
+        profileVC.hidesBottomBarWhenPushed = true
+        profileVC.onAction = { [weak self] action, _, _ in
+            guard let self else { return }
+            self.navigationController?.popViewController(animated: true)
+            guard tab == .likes else { return }
+            self.aExploreViewModel.act(action.apiAction, on: userId) { [weak self] in
+                self?.aExploreViewModel.loadCounts()
+                [.likes, .matches].forEach { self?.loadTab($0) }
+            }
+        }
+        navigationController?.pushViewController(profileVC, animated: true)
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {

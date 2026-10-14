@@ -395,16 +395,22 @@ final class DiscoverViewModel {
 
     // MARK: - Mapping
 
+    /// Usernames are shown exactly as registered; `name` (the nickname) is only a fallback.
+    static func displayName(username: String?, name: String?) -> String {
+        let handle = username?.trimmingCharacters(in: .whitespaces) ?? ""
+        if !handle.isEmpty { return handle }
+        return (name ?? "").trimmingCharacters(in: .whitespaces).firstLetterCapitalized
+    }
+
     static func makeProfile(from person: DiscoveryPerson) -> MomentsProfile? {
         guard let userID = person.userId, !userID.isEmpty else { return nil }
 
         let interests = uniqueInterests(person.interestTags ?? [])
         let shared = uniqueInterests(person.sharedInterests ?? [])
-        let name = (person.name ?? "").trimmingCharacters(in: .whitespaces)
         let photos = [person.profilePhoto].compactMap { $0 }.filter { !$0.isEmpty }
 
         var profile = MomentsProfile(id: userID.stableID,
-                                  displayName: name.firstLetterCapitalized,
+                                  displayName: displayName(username: person.username, name: person.name),
                                   age: person.age,
                                   isVerified: person.isVerified == true,
                                   gender: nil,
@@ -424,6 +430,30 @@ final class DiscoverViewModel {
         return profile
     }
 
+    /// Starting card for an Explore tab person; `CardDetailViewController` loads the rest.
+    static func makeProfile(from card: InteractionCard) -> MomentsProfile? {
+        guard let userID = card.userId, !userID.isEmpty else { return nil }
+        var profile = MomentsProfile(id: userID.stableID,
+                                  displayName: displayName(username: card.name, name: nil),
+                                  age: card.age,
+                                  isVerified: card.isVerified == true,
+                                  gender: nil,
+                                  city: cityName(from: card.city),
+                                  distanceKm: card.distanceKm,
+                                  isOnline: card.isOnline,
+                                  datingIntent: nil,
+                                  photos: [card.photo].compactMap { $0 }.filter { !$0.isEmpty },
+                                  about: "",
+                                  interests: [],
+                                  sharedInterests: [],
+                                  reasons: [],
+                                  voiceIntro: nil,
+                                  moments: [],
+                                  vibeScore: nil)
+        profile.remoteUserId = userID
+        return profile
+    }
+
     /// Full profile from `users/:userId/profile`; anything the API leaves empty keeps the card's value.
     static func makeProfile(from detail: OtherUserProfile, merging base: MomentsProfile) -> MomentsProfile {
         let photo = detail.profilePhoto ?? ""
@@ -433,7 +463,7 @@ final class DiscoverViewModel {
         let shared = detail.sharedInterests.map(uniqueInterests) ?? base.sharedInterests
         let explanation = detail.vibeExplanation?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let apiReasons = explanation.isEmpty ? [] : [explanation]
-        let name = detail.name?.trimmingCharacters(in: .whitespaces) ?? ""
+        let name = displayName(username: detail.username, name: detail.name)
         let about = detail.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         let voice: MomentsVoiceIntro? = detail.voiceIntro.flatMap { intro in
@@ -455,7 +485,7 @@ final class DiscoverViewModel {
         }
 
         var profile = MomentsProfile(id: base.id,
-                                  displayName: name.isEmpty ? base.displayName : name.firstLetterCapitalized,
+                                  displayName: name.isEmpty ? base.displayName : name,
                                   age: detail.age ?? base.age,
                                   isVerified: detail.isVerified ?? base.isVerified,
                                   gender: base.gender,

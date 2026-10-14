@@ -459,6 +459,7 @@
 		E3A2DA2630776627008D1551 /* EditProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D73F30776627008D1551 /* EditProfileViewModel.swift */; };
 		E3A2DA2730776627008D1551 /* UserInteractionCVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74230776627008D1551 /* UserInteractionCVC.swift */; };
 		E3A2DA2830776627008D1551 /* ExploreModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74530776627008D1551 /* ExploreModel.swift */; };
+		7E1A2B3C4D5E6F7081920A1C /* InteractionAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */; };
 		E3A2DA2930776627008D1551 /* UserMatchesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74630776627008D1551 /* UserMatchesModel.swift */; };
 		E3A2DA2A30776627008D1551 /* ExploreFilterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */; };
 		E3A2DA2B30776627008D1551 /* ExploreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74930776627008D1551 /* ExploreViewController.swift */; };
@@ -872,6 +873,7 @@
 		E3A2D73F30776627008D1551 /* EditProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileViewModel.swift; sourceTree = "<group>"; };
 		E3A2D74230776627008D1551 /* UserInteractionCVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserInteractionCVC.swift; sourceTree = "<group>"; };
 		E3A2D74530776627008D1551 /* ExploreModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreModel.swift; sourceTree = "<group>"; };
+		7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionAPIModels.swift; sourceTree = "<group>"; };
 		E3A2D74630776627008D1551 /* UserMatchesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMatchesModel.swift; sourceTree = "<group>"; };
 		E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreFilterViewController.swift; sourceTree = "<group>"; };
 		E3A2D74930776627008D1551 /* ExploreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreViewController.swift; sourceTree = "<group>"; };
@@ -2072,6 +2074,7 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D74530776627008D1551 /* ExploreModel.swift */,
+				7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */,
 				E3A2D74630776627008D1551 /* UserMatchesModel.swift */,
 			);
 			path = Model;
@@ -3932,6 +3935,7 @@
 				E3A2DA2630776627008D1551 /* EditProfileViewModel.swift in Sources */,
 				E3A2DA2730776627008D1551 /* UserInteractionCVC.swift in Sources */,
 				E3A2DA2830776627008D1551 /* ExploreModel.swift in Sources */,
+				7E1A2B3C4D5E6F7081920A1C /* InteractionAPIModels.swift in Sources */,
 				E3A2DA2930776627008D1551 /* UserMatchesModel.swift in Sources */,
 				E3A2DA2A30776627008D1551 /* ExploreFilterViewController.swift in Sources */,
 				E3A2DA2B30776627008D1551 /* ExploreViewController.swift in Sources */,

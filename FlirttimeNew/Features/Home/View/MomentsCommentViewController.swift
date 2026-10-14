@@ -319,8 +319,11 @@ extension MomentsCommentViewController: UITableViewDataSource {
             return UITableViewCell()
         }
         let comment = viewModel.comments[indexPath.row]
-        cell.configure(with: comment)
-        if viewModel.canDelete(at: indexPath.row) {
+        let canDelete = viewModel.canDelete(at: indexPath.row)
+        cell.configure(with: comment, onDelete: canDelete ? { [weak self] in
+            self?.confirmDelete(commentId: comment.id)
+        } : nil)
+        if canDelete {
             cell.accessibilityCustomActions = [
                 UIAccessibilityCustomAction(name: "Delete comment") { [weak self] _ in
                     self?.confirmDelete(commentId: comment.id)
