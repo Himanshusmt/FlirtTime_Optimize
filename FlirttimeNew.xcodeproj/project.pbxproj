@@ -93,6 +93,7 @@
 		C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */; };
 		C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */; };
 		C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */; };
+		7E1A2B3C4D5E6F7081920B2B /* MyProfileAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F7081920B2A /* MyProfileAPIModels.swift */; };
 		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
@@ -461,6 +462,7 @@
 		E3A2DA2630776627008D1551 /* EditProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D73F30776627008D1551 /* EditProfileViewModel.swift */; };
 		E3A2DA2730776627008D1551 /* UserInteractionCVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74230776627008D1551 /* UserInteractionCVC.swift */; };
 		E3A2DA2830776627008D1551 /* ExploreModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74530776627008D1551 /* ExploreModel.swift */; };
+		7E1A2B3C4D5E6F7081920A1C /* InteractionAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */; };
 		E3A2DA2930776627008D1551 /* UserMatchesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74630776627008D1551 /* UserMatchesModel.swift */; };
 		E3A2DA2A30776627008D1551 /* ExploreFilterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */; };
 		E3A2DA2B30776627008D1551 /* ExploreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D74930776627008D1551 /* ExploreViewController.swift */; };
@@ -719,6 +721,7 @@
 		13051A0D3DEBCD2AD92F5F0C /* VerifyOTPViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewModel.swift; sourceTree = "<group>"; };
 		19BC3500F600508378CC67EC /* FilteredProfilesViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FilteredProfilesViewModel.swift; sourceTree = "<group>"; };
 		1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickMomentModel.swift; sourceTree = "<group>"; };
+		7E1A2B3C4D5E6F7081920B2A /* MyProfileAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyProfileAPIModels.swift; sourceTree = "<group>"; };
 		1E2D015C5629361D3ACC4EC2 /* NotificationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationModel.swift; sourceTree = "<group>"; };
 		1EDDC6661A8B51403CCB69E9 /* ManageNotificationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManageNotificationViewController.swift; sourceTree = "<group>"; };
 		20B798B85D88C490E6DEC24C /* CoinsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsModel.swift; sourceTree = "<group>"; };
@@ -874,6 +877,7 @@
 		E3A2D73F30776627008D1551 /* EditProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileViewModel.swift; sourceTree = "<group>"; };
 		E3A2D74230776627008D1551 /* UserInteractionCVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserInteractionCVC.swift; sourceTree = "<group>"; };
 		E3A2D74530776627008D1551 /* ExploreModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreModel.swift; sourceTree = "<group>"; };
+		7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionAPIModels.swift; sourceTree = "<group>"; };
 		E3A2D74630776627008D1551 /* UserMatchesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMatchesModel.swift; sourceTree = "<group>"; };
 		E3A2D74830776627008D1551 /* ExploreFilterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreFilterViewController.swift; sourceTree = "<group>"; };
 		E3A2D74930776627008D1551 /* ExploreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreViewController.swift; sourceTree = "<group>"; };
@@ -2060,6 +2064,7 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D74530776627008D1551 /* ExploreModel.swift */,
+				7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */,
 				E3A2D74630776627008D1551 /* UserMatchesModel.swift */,
 			);
 			path = Model;
@@ -2234,6 +2239,7 @@
 			children = (
 				E3A2D77930776627008D1551 /* ProfileModel.swift */,
 				1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */,
+				7E1A2B3C4D5E6F7081920B2A /* MyProfileAPIModels.swift */,
 				A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */,
 			);
 			path = Model;
@@ -3919,6 +3925,7 @@
 				E3A2DA2630776627008D1551 /* EditProfileViewModel.swift in Sources */,
 				E3A2DA2730776627008D1551 /* UserInteractionCVC.swift in Sources */,
 				E3A2DA2830776627008D1551 /* ExploreModel.swift in Sources */,
+				7E1A2B3C4D5E6F7081920A1C /* InteractionAPIModels.swift in Sources */,
 				E3A2DA2930776627008D1551 /* UserMatchesModel.swift in Sources */,
 				E3A2DA2A30776627008D1551 /* ExploreFilterViewController.swift in Sources */,
 				E3A2DA2B30776627008D1551 /* ExploreViewController.swift in Sources */,
@@ -3964,6 +3971,7 @@
 				E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */,
 				9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */,
 				C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */,
+				7E1A2B3C4D5E6F7081920B2B /* MyProfileAPIModels.swift in Sources */,
 				493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */,
 				E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */,
 				E3A2DA4830776627008D1551 /* ProfileViewModel.swift in Sources */,

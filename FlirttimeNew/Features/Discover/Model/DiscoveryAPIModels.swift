@@ -24,6 +24,7 @@ struct DiscoveryPagination: Codable {
 
 struct DiscoveryPerson: Codable {
     let userId: String?
+    let username: String?
     let name: String?
     let age: Int?
     let city: String?
@@ -123,6 +124,7 @@ struct DiscoveryActionResult: Codable {
 /// The `data` of GET `users/:userId/profile`.
 struct OtherUserProfile: Codable {
     let userId: String?
+    let username: String?
     let name: String?
     let age: Int?
     let city: String?
@@ -143,13 +145,14 @@ struct OtherUserProfile: Codable {
     let canConnect: Bool?
 
     private enum CodingKeys: String, CodingKey {
-        case userId, name, age, city, distanceKm, isVerified, profilePhoto, bio, vibeScore, vibeExplanation,
+        case userId, username, name, age, city, distanceKm, isVerified, profilePhoto, bio, vibeScore, vibeExplanation,
              voiceIntro, moments, interests, sharedInterests, myAction, isMatched, canConnect
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         userId = try container.decodeIfPresent(String.self, forKey: .userId)
+        username = try? container.decodeIfPresent(String.self, forKey: .username)
         name = try container.decodeIfPresent(String.self, forKey: .name)
         age = try container.decodeIfPresent(Int.self, forKey: .age)
         city = try container.decodeIfPresent(String.self, forKey: .city)

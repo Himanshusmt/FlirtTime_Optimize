@@ -26,7 +26,7 @@ struct MomentItem: Codable {
     let audience: String?
     /// "active" once published.
     let status: String?
-    let location: String?
+    let location: MomentLocation?
     let locationLabel: String?
     let timeAgo: String?
     let createdAt: String?
@@ -51,6 +51,25 @@ struct MomentItem: Codable {
     let creator: MomentCreator?
 }
 
+/// `location` as a plain string or an object such as `{ "name": "Mumbai" }`.
+struct MomentLocation: Codable {
+    let name: String?
+
+    init(from decoder: Decoder) throws {
+        if let text = try? decoder.singleValueContainer().decode(String.self) {
+            name = text
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        name = c.string("name", "label", "city")
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(name)
+    }
+}
+
 struct MomentMedia: Codable {
     let mediaId: String?
     let id: String?
@@ -73,6 +92,8 @@ struct MomentCreator: Codable {
     let name: String?
     let fullName: String?
     let username: String?
+    /// Full-size photo; `profilePhoto` is its thumbnail.
+    let profilePicture: String?
     let profilePhoto: String?
     let isVerified: Bool?
 }
@@ -90,9 +111,9 @@ extension MomentsAuthor {
     /// The signed-in user, from the saved `auth/me` response.
     static var currentUser: MomentsAuthor {
         let user = UserDataManager.shared.appUser
-        let nickName = user?.nickName?.trimmingCharacters(in: .whitespaces) ?? ""
+        let username = user?.username?.trimmingCharacters(in: .whitespaces) ?? ""
         return MomentsAuthor(userId: user?.id,
-                          userName: nickName.isEmpty ? user?.username : nickName,
+                          userName: username.isEmpty ? user?.nickName : username,
                           fullName: user?.fullName ?? "You",
                           profilePicture: user?.profilePicture,
                           verified: user?.isFaceVerified,
@@ -119,13 +140,13 @@ extension MomentFeedData {
 extension MomentItem {
     func vibe(fallbackAuthor: MomentsAuthor? = nil) -> MomentsPost? {
         guard let id = momentId ?? id, !id.isEmpty else { return nil }
-        let place = locationLabel ?? location
+        let place = locationLabel ?? location?.name
         let author: MomentsAuthor
         if let creator {
             author = MomentsAuthor(userId: creator.userId ?? creator.id,
-                                userName: creator.name ?? creator.username,
+                                userName: creator.username ?? creator.name,
                                 fullName: creator.fullName ?? creator.name,
-                                profilePicture: creator.profilePhoto,
+                                profilePicture: creator.profilePicture ?? creator.profilePhoto,
                                 verified: creator.isVerified,
                                 location: place)
         } else {
@@ -184,15 +205,21 @@ struct MomentPerson: Codable {
     let id: String?
     let userId: String?
     let name: String?
+    let username: String?
     let fullName: String?
+    let profilePicture: String?
     let profilePhoto: String?
+    let profilePhotoUrl: String?
     let avatar: String?
     let isVerified: Bool?
     let city: String?
 
     var author: MomentsAuthor {
-        MomentsAuthor(userId: id ?? userId, userName: name, fullName: fullName ?? name,
-                   profilePicture: profilePhoto ?? avatar, verified: isVerified, location: city)
+        let photo = [profilePicture, profilePhoto, profilePhotoUrl, avatar]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty }
+        return MomentsAuthor(userId: id ?? userId, userName: username ?? name, fullName: fullName ?? name,
+                          profilePicture: photo, verified: isVerified, location: city)
     }
 }
 
@@ -217,9 +244,14 @@ struct MomentComment: Codable {
         let currentUserId = UserDataManager.shared.appUser?.id
         let authorId = user?.id ?? user?.userId
         let isMine = isMyComment == true || (currentUserId != nil && authorId == currentUserId)
+        var author = user?.author ?? (isMine ? .currentUser : nil)
+        if isMine, let current = author, current.profilePicture?.isEmpty ?? true {
+            author = MomentsAuthor(userId: current.userId, userName: current.userName, fullName: current.fullName,
+                                profilePicture: MomentsAuthor.currentUser.profilePicture,
+                                verified: current.verified, location: current.location)
+        }
         return MomentsComment(id: id, vibeId: momentId, body: comment ?? message, createdAt: createdAt,
-                           author: user?.author ?? (isMyComment == true ? .currentUser : nil),
-                           isMine: isMine)
+                           author: author, isMine: isMine)
     }
 }
 

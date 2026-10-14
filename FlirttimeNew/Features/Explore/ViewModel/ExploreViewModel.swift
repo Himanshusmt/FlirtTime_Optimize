@@ -4,172 +4,121 @@
 //
 //  Created by SMT Sourabh on 21/05/24.
 //
+import Combine
 import Foundation
-import UIKit
+import RxSwift
+import Swinject
 
-// TODO: replace the MockPeople responses with ApiName.getUserInteractions / getMatchList /
-// getComplimentList / readCompliment / getStatusCount requests.
-class ExploreViewModel  {
+/// Likes, You Liked, Matches and Compliments tabs (`GET interactions?type=`) and their badge counts.
+final class ExploreViewModel {
 
-    @Published var aUserInteraction:InteractionResponse?
-    @Published var errorMessage:String?
-    @Published var aMyLikeResponse:MyLikeInteractionResponse?
-    @Published var errorMyLikeMessage:String?
-    @Published var aComplimentListResponse: ComplimentListResponse?
-    @Published var aReadComplimentResponse: ReadComplimentResponse?
+    private(set) var items: [ExploreTab: [InteractionCard]] = [:]
+    private(set) var errors: [ExploreTab: String] = [:]
+    @Published private(set) var counts: InteractionCounts?
+    /// Fires on the main queue when a tab's cards change or its request fails.
+    let tabDidUpdate = PassthroughSubject<ExploreTab, Never>()
 
-    @Published var aMyMatches:MatchResponse?
-    @Published var errorMyMatches:String?
-    @Published var errorCompliment: String?
-    @Published var errorReadCompliment: String?
-    @Published var globleArray: [MyLikeInteractionResponse] = []
-    @Published var getStatusCount:GetCountModel?
+    private let pageSize = 20
+    private var nextCursor: [ExploreTab: String] = [:]
+    private var hasMore: [ExploreTab: Bool] = [:]
+    private var loading: Set<ExploreTab> = []
+    /// Bumped on every first-page load so a slower, older response can't overwrite a newer one.
+    private var generation: [ExploreTab: Int] = [:]
 
-    private let store = MockDataStore.shared
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
 
-    private func respond(_ block: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
+    init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
     }
 
-    private func interactionJSON(index: Int, person: MockPerson, type: Int, userInfoKey: String, incoming: Bool) -> [String: Any] {
-        let me = store.currentUserID
-        return [
-            "id": 500 + index,
-            "user_id": incoming ? person.id : me,
-            "to_user_id": incoming ? me : person.id,
-            "interaction_type": type,
-            "created_at": "2026-10-0\(index + 1) 10:00:00",
-            "updated_at": "2026-10-0\(index + 1) 10:00:00",
-            userInfoKey: MockPeople.userInfoJSON(person)
-        ]
+    func cards(for tab: ExploreTab) -> [InteractionCard] {
+        items[tab] ?? []
     }
 
-    private var complimentsJSON: [[String: Any]] {
-        MockPeople.complimentSenders.enumerated().compactMap { index, entry in
-            guard let person = MockPeople.person(id: entry.id) else { return nil }
-            return [
-                "id": 700 + index,
-                "sender_id": person.id,
-                "receiver_id": store.currentUserID,
-                "content": entry.text,
-                "is_read": 0,
-                "created_at": "2026-10-0\(index + 1) 10:00:00",
-                "updated_at": "2026-10-0\(index + 1) 10:00:00",
-                "sender": MockPeople.senderProfileJSON(person)
-            ]
-        }
-    }
-}
-
-extension ExploreViewModel {
-
-    func getUserIneractionMyLikeAPI(interactioType: String) {
-        respond { [weak self] in
-            guard let self = self else { return }
-            let data: [[String: Any]] = MockPeople.youLikedIDs.enumerated().compactMap { index, entry in
-                guard let person = MockPeople.person(id: entry.id) else { return nil }
-                return self.interactionJSON(index: index, person: person, type: entry.superLike ? 2 : 1, userInfoKey: "to_user_info", incoming: false)
-            }
-            let payload: [String: Any] = ["status": true, "message": "", "data": data, "img_base_url": ApiName.imgBaseURL]
-            if let model = self.store.decode(MyLikeInteractionResponse.self, from: payload) {
-                self.aMyLikeResponse = model
-            } else {
-                self.errorMyLikeMessage = "Unable to load likes"
-            }
-        }
+    func load(_ tab: ExploreTab) {
+        nextCursor[tab] = nil
+        fetch(tab, cursor: nil)
     }
 
-    func getUserIneractionAPI(interactioType: String) {
-        respond { [weak self] in
-            guard let self = self else { return }
-            let data: [[String: Any]] = MockPeople.likesYouIDs.enumerated().compactMap { index, id in
-                guard let person = MockPeople.person(id: id) else { return nil }
-                return self.interactionJSON(index: index, person: person, type: 1, userInfoKey: "user_info", incoming: true)
-            }
-            let payload: [String: Any] = ["status": true, "message": "", "data": data, "img_base_url": ApiName.imgBaseURL]
-            if let model = self.store.decode(InteractionResponse.self, from: payload) {
-                self.aUserInteraction = model
-            } else {
-                self.errorMessage = "Unable to load likes"
-            }
-        }
+    func loadMore(_ tab: ExploreTab) {
+        guard hasMore[tab] == true, !loading.contains(tab), let cursor = nextCursor[tab] else { return }
+        fetch(tab, cursor: cursor)
     }
 
-    func getUserMatchesAPI() {
-        respond { [weak self] in
-            guard let self = self else { return }
-            let data = MockPeople.matchIDs.compactMap(MockPeople.person(id:)).map(MockPeople.matchedUserJSON)
-            let payload: [String: Any] = ["status": true, "message": "", "data": data]
-            if let model = self.store.decode(MatchResponse.self, from: payload) {
-                self.aMyMatches = model
-            } else {
-                self.errorMyMatches = "Unable to load matches"
-            }
-        }
+    func loadCounts() {
+        sessionManager.interactionCounts()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] counts in
+                self?.counts = counts
+            })
+            .disposed(by: disposeBag)
     }
 
-    func getComplimentListApi() {
-        respond { [weak self] in
-            guard let self = self else { return }
-            let compliments = self.complimentsJSON
-            let payload: [String: Any] = [
-                "status": true,
-                "message": "",
-                "img_base_url": ApiName.imgBaseURL,
-                "data": [
-                    "current_page": 1,
-                    "data": compliments,
-                    "first_page_url": "",
-                    "from": 1,
-                    "last_page": 1,
-                    "last_page_url": "",
-                    "links": [],
-                    "path": "",
-                    "per_page": 20,
-                    "to": compliments.count,
-                    "total": compliments.count
-                ]
-            ]
-            if let model = self.store.decode(ComplimentListResponse.self, from: payload) {
-                self.aComplimentListResponse = model
-            } else {
-                self.errorCompliment = "Unable to load compliments"
-            }
-        }
+    /// Marks a received compliment read locally first, and reverts if the request fails.
+    func markRead(_ card: InteractionCard, in tab: ExploreTab) {
+        guard let id = card.id, card.isRead != true else { return }
+        setRead(true, id: id, in: tab)
+        sessionManager.markInteractionRead(interactionId: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.loadCounts()
+            }, onFailure: { [weak self] _ in
+                self?.setRead(false, id: id, in: tab)
+            })
+            .disposed(by: disposeBag)
     }
 
-    func readComplimentApi(id: Int) {
-        respond { [weak self] in
-            guard let self = self else { return }
-            guard var compliment = self.complimentsJSON.first(where: { $0["id"] as? Int == id }) else {
-                self.errorReadCompliment = "Compliment data not found"
-                return
-            }
-            compliment["sender"] = nil
-            compliment["is_read"] = 1
-            let payload: [String: Any] = ["status": true, "message": "", "data": compliment, "img_base_url": ApiName.imgBaseURL]
-            self.aReadComplimentResponse = self.store.decode(ReadComplimentResponse.self, from: payload)
-        }
+    /// Sends like / nope / super_like from a Likes tab profile.
+    func act(_ action: String, on userId: String, completion: @escaping () -> Void) {
+        sessionManager.discoveryAction(targetUserId: userId, action: action)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in completion() }, onFailure: { _ in completion() })
+            .disposed(by: disposeBag)
     }
 
-    func getStatucCountApi() {
-        respond { [weak self] in
-            guard let self = self else { return }
-            let superLikes = MockPeople.youLikedIDs.filter(\.superLike).count
-            let payload: [String: Any] = [
-                "status": true,
-                "message": "",
-                "img_base_url": ApiName.imgBaseURL,
-                "data": [
-                    "like_count": MockPeople.likesYouIDs.count,
-                    "like_you_count": MockPeople.youLikedIDs.count - superLikes,
-                    "favorite_count": superLikes,
-                    "favorite_you_count": 0,
-                    "match_count": MockPeople.matchIDs.count,
-                    "compliment_count": MockPeople.complimentSenders.count
-                ]
-            ]
-            self.getStatusCount = self.store.decode(GetCountModel.self, from: payload)
+    private func fetch(_ tab: ExploreTab, cursor: String?) {
+        let isFirstPage = cursor == nil
+        let current = (generation[tab] ?? 0) + (isFirstPage ? 1 : 0)
+        generation[tab] = current
+        loading.insert(tab)
+        sessionManager.interactions(type: Self.apiType(for: tab), limit: pageSize, cursor: cursor)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] page in
+                guard let self, self.generation[tab] == current else { return }
+                self.loading.remove(tab)
+                self.nextCursor[tab] = page.nextCursor
+                self.hasMore[tab] = page.hasMore && page.nextCursor != nil
+                self.errors[tab] = nil
+                if isFirstPage {
+                    self.items[tab] = page.items
+                } else {
+                    let existing = Set(self.cards(for: tab).compactMap(\.id))
+                    self.items[tab] = self.cards(for: tab) + page.items.filter { $0.id.map { !existing.contains($0) } ?? true }
+                }
+                self.tabDidUpdate.send(tab)
+            }, onFailure: { [weak self] error in
+                guard let self, self.generation[tab] == current else { return }
+                self.loading.remove(tab)
+                self.errors[tab] = parseError(error) ?? "Unable to load \(tab.title.lowercased())"
+                self.tabDidUpdate.send(tab)
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func setRead(_ isRead: Bool, id: String, in tab: ExploreTab) {
+        guard var list = items[tab], let index = list.firstIndex(where: { $0.id == id }) else { return }
+        list[index].isRead = isRead
+        items[tab] = list
+        tabDidUpdate.send(tab)
+    }
+
+    private static func apiType(for tab: ExploreTab) -> String {
+        switch tab {
+        case .likes: return "likes"
+        case .youLiked: return "you_liked"
+        case .matches: return "matches"
+        case .compliments: return "compliments"
         }
     }
 }

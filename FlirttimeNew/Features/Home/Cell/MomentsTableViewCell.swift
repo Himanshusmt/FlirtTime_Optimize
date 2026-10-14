@@ -273,6 +273,8 @@ final class MomentsTableViewCell: UITableViewCell {
         commentButton.addTarget(self, action: #selector(commentTapped), for: .touchUpInside)
         giftButton.addTarget(self, action: #selector(giftTapped), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
+        // TODO: show again once sharing is backed by the API.
+        shareButton.isHidden = true
         moreButton.addTarget(self, action: #selector(moreTapped), for: .touchUpInside)
 
         [avatarImageView, nameLabel].forEach {

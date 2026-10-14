@@ -82,6 +82,19 @@ extension UIImageView {
             return
         }
         let urlString = path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
-        loadImage(with: URL(string: urlString), placeholder: placeholder, completion: completion)
+        let fullSizeString = urlString.replacingOccurrences(of: "/thumbnails/", with: "/")
+        guard fullSizeString != urlString, let fullSizeURL = URL(string: fullSizeString) else {
+            loadImage(with: URL(string: urlString), placeholder: placeholder, completion: completion)
+            return
+        }
+        // Some S3 thumbnails are not readable (403); the full-size photo usually is.
+        loadImage(with: URL(string: urlString), placeholder: placeholder) { [weak self] image in
+            guard let self else { return }
+            if image != nil {
+                completion?(image)
+            } else if self.loadingURL == URL(string: urlString) {
+                self.loadImage(with: fullSizeURL, placeholder: placeholder, completion: completion)
+            }
+        }
     }
 }

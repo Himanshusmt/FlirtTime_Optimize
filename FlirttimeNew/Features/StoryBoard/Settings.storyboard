@@ -1718,6 +1718,7 @@
                         <outlet property="phoneLabel" destination="stg-05-17x" id="out-05-18x"/>
                         <outlet property="dobLabel" destination="stg-05-41x" id="out-05-42x"/>
                         <outlet property="locationLabel" destination="stg-05-65x" id="out-05-66x"/>
+                        <outlet property="noteLabel" destination="stg-04-53x" id="out-04-99x"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fr-05-97x" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

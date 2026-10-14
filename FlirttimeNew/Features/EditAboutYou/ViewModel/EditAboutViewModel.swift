@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import RxSwift
+import Swinject
 
-// TODO: replace the MockDataStore call with the ApiName.saveIntroduction request.
 class EditAboutViewModel {
 
     var educationalBackGroundArray:MoreAboutMeData?
@@ -33,6 +34,9 @@ class EditAboutViewModel {
     @Published var errorMessage:String?
     @Published var aUserDetailResponseModel:UserDetailResponseModel?
 
+    private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
+
     func validation(data:[MoreAboutOption]?) -> Bool? {
         if ((data?.first(where: {$0.isSelected == true})) != nil){
             return true
@@ -41,10 +45,42 @@ class EditAboutViewModel {
         }
     }
 
+    /// `filteredData` holds `Attributes.json` option ids keyed by legacy field name (and `interests: [Int]`).
+    /// Lifestyle answers go to `users/more-about-me` as option titles; interests go to `onboarding/interests` as catalog UUIDs.
     func callSaveUserDetailsAPI(filteredData:[String:Any]) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            MockDataStore.shared.updateUser(with: filteredData)
-            self?.aUserDetailResponseModel = .mockSuccess("Profile updated successfully")
+        var requests: [Single<Void>] = []
+
+        var values: [String: String] = [:]
+        for field in EditProfileAPIMapper.lifestyleFields {
+            if let id = filteredData[field.legacy] as? Int,
+               let title = EditProfileAPIMapper.optionTitle(alias: field.alias, id: id) {
+                values[field.api] = title
+            }
         }
+        if !values.isEmpty {
+            requests.append(sessionManager.updateMoreAboutMe(values))
+        }
+
+        if let ids = filteredData["interests"] as? [Int] {
+            let uuids = ids.compactMap { EditProfileAPIMapper.interestUUID(optionID: $0) }
+            guard !uuids.isEmpty else {
+                errorMessage = "Couldn't load interests. Please go back and try again."
+                return
+            }
+            requests.append(sessionManager.updateInterests(ids: uuids))
+        }
+
+        guard !requests.isEmpty else {
+            aUserDetailResponseModel = .mockSuccess("Profile updated successfully")
+            return
+        }
+        Single.zip(requests)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] _ in
+                self?.aUserDetailResponseModel = .mockSuccess("Profile updated successfully")
+            }, onFailure: { [weak self] error in
+                self?.errorMessage = parseError(error) ?? "Unable to save your answers"
+            })
+            .disposed(by: disposeBag)
     }
 }

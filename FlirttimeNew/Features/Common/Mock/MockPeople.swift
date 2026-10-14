@@ -91,12 +91,6 @@ enum MockPeople {
     }
 
     static let likesYouIDs = [101, 103, 105, 106, 107]
-    static let youLikedIDs: [(id: Int, superLike: Bool)] = [(102, false), (104, true), (108, false)]
-    static let matchIDs = [101, 103, 107]
-    static let complimentSenders: [(id: Int, text: String)] = [
-        (104, "Your smile in the second picture is everything!"),
-        (106, "Love your vibe, would be great to chat.")
-    ]
 
     // MARK: - JSON builders (mirror the server payloads)
 
@@ -139,24 +133,6 @@ enum MockPeople {
             json["distance"] = distance
         }
         p.attributes.forEach { json[userInfoKey(forAlias: $0.key)] = $0.value }
-        return json
-    }
-
-    static func matchedUserJSON(_ p: MockPerson) -> [String: Any] {
-        var json = userInfoJSON(p)
-        json["matched_user_id"] = p.id
-        json["lat"] = "22.7196"
-        json["lng"] = "75.8577"
-        json["device_type"] = "iOS"
-        json["fcm_token"] = ""
-        return json
-    }
-
-    static func senderProfileJSON(_ p: MockPerson) -> [String: Any] {
-        var json = userInfoJSON(p)
-        json["device_type"] = "iOS"
-        json["fcm_token"] = ""
-        json["mother_tongue"] = nil
         return json
     }
 

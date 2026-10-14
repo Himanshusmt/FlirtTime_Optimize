@@ -7,13 +7,6 @@
 
 import Foundation
 
-// MARK: - Main Response
-struct MatchResponse: Codable {
-    let status: Bool
-    let message: String
-    let data: [MatchedUser]
-}
-
 // MARK: - Matched User
 struct MatchedUser: Codable {
     let matchedUserID, id, userID: Int?

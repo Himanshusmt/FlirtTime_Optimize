@@ -14,6 +14,8 @@ import Swinject
 class ProfileViewModel {
 
     @Published var aUserProfileModel:UserDetailsData?
+    /// Header, about, interests, photos and voice intro from GET `users/profile`.
+    @Published private(set) var myProfile: MyProfileData?
     /// The signed-in user's Quick Moments, newest first.
     @Published private(set) var quickMoments: [QuickMoment] = []
     @Published var errorMessage:String?
@@ -21,7 +23,7 @@ class ProfileViewModel {
     @Published private(set) var myMoments: [MomentsPost]?
     private(set) var myMomentsTotal = 0
 
-    static let myMomentsPreviewLimit = 6
+    static let myMomentsPreviewLimit = 4
 
     private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()
@@ -45,6 +47,17 @@ class ProfileViewModel {
         }
     }
 
+    func getMyProfile() {
+        sessionManager.myProfile()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] profile in
+                self?.myProfile = profile
+            }, onFailure: { [weak self] error in
+                self?.errorMessage = parseError(error) ?? "Unable to load profile"
+            })
+            .disposed(by: disposeBag)
+    }
+
     func getQuickMoments() {
         sessionManager.myQuickMoments()
             .observe(on: MainScheduler.instance)
@@ -64,7 +77,7 @@ class ProfileViewModel {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] page in
                 self?.myMomentsTotal = page.total ?? page.vibes.count
-                self?.myMoments = page.vibes
+                self?.myMoments = Array(page.vibes.prefix(Self.myMomentsPreviewLimit))
             }, onFailure: { [weak self] _ in
                 self?.myMomentsTotal = 0
                 self?.myMoments = []

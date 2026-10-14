@@ -86,6 +86,28 @@ final class AppSessionManager {
         }
     }
 
+    /// Everything the My Profile screen shows except moments and quick moments, which have their own calls.
+    func myProfile() -> Single<MyProfileData> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .myProfile))
+    }
+
+    /// `audio` is an AAC `.m4a` file up to 10 MB; `duration` is in whole seconds (max 60).
+    /// Returns `nil` when the response carries no playable URL.
+    func uploadVoiceIntro(audio: Data, duration: Int) -> Single<UserVoiceIntro?> {
+        let file = AppMultipartFile(name: "audio", fileName: "voice_intro.m4a", mimeType: "audio/x-m4a", data: audio)
+        return backendClient.uploadJSON(endPoint: .voiceIntro, fields: ["duration": "\(duration)"], files: [file])
+            .map { UserVoiceIntro(json: $0) }
+    }
+
+    func voiceIntro() -> Single<UserVoiceIntro?> {
+        backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .voiceIntro))
+            .map { UserVoiceIntro(json: $0) }
+    }
+
+    func deleteVoiceIntro() -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .voiceIntro)).map { _ in () }
+    }
+
     /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "non-binary" | "other".
     /// The backend requires `fullName`.
     func updateProfile(fullName: String,
@@ -101,6 +123,46 @@ final class AppSessionManager {
             "about": about
         ]
         return backendClient.load(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
+    }
+
+    // MARK: - Edit Profile
+
+    /// Raw `users/profile` body; Edit Profile needs fields (photo ids, moreAboutMe) the typed model skips.
+    func myProfileJSON() -> Single<[String: Any]> {
+        backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .myProfile))
+    }
+
+    /// `fullName` and `nickName` are required; `dateOfBirth` and `gender` can't change once set.
+    func updateProfileFields(_ params: [String: Any]) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
+            .map { _ in () }
+    }
+
+    /// Keys: drinking, education, height, religion, sexuality, smoking, weight, eyeColor, hairColor, living, relationship.
+    func updateMoreAboutMe(_ values: [String: String]) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .moreAboutMe, parameters: values))
+            .map { _ in () }
+    }
+
+    func updateInterests(ids: [String]) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .put, endPoint: .onboardingInterests,
+                                                      parameters: ["interestIds": ids]))
+            .map { _ in () }
+    }
+
+    func uploadGalleryPhoto(imageData: Data, isPrimary: Bool) -> Single<[String: Any]> {
+        let file = AppMultipartFile(name: "photo", fileName: "photo.jpg", mimeType: "image/jpeg", data: imageData)
+        return backendClient.uploadJSON(endPoint: .onboardingPhotos, fields: ["isPrimary": isPrimary ? "true" : "false"], files: [file])
+    }
+
+    func deleteGalleryPhoto(id: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .onboardingPhoto(photoId: id)))
+            .map { _ in () }
+    }
+
+    func setPrimaryGalleryPhoto(id: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .onboardingPhotoPrimary(photoId: id)))
+            .map { _ in () }
     }
 
     // MARK: - Verification
@@ -185,6 +247,26 @@ final class AppSessionManager {
     func discoveryAction(targetUserId: String, action: String) -> Single<DiscoveryActionResult> {
         let params: [String: Any] = ["targetUserId": targetUserId, "action": action]
         return backendClient.load(request: AppApiRequest(method: .post, endPoint: .discoveryAction, parameters: params))
+    }
+
+    // MARK: - Interactions
+
+    /// `type` is "likes" | "you_liked" | "matches" | "compliments"; pass the previous page's `nextCursor` for more.
+    func interactions(type: String, limit: Int = 20, cursor: String? = nil) -> Single<InteractionPage> {
+        var params: [String: Any] = ["type": type, "limit": limit]
+        if let cursor, !cursor.isEmpty { params["cursor"] = cursor }
+        return backendClient.load(request: AppApiRequest(method: .get, endPoint: .interactions,
+                                                         parameters: params, encoding: URLEncoding.queryString))
+    }
+
+    func interactionCounts() -> Single<InteractionCounts> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .interactionCounts))
+    }
+
+    /// Idempotent; only the recipient can mark an interaction read.
+    func markInteractionRead(interactionId: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .interactionRead(interactionId: interactionId)))
+            .map { _ in () }
     }
 
     // MARK: - Other users
