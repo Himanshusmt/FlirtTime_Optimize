@@ -8,6 +8,8 @@ import UIKit
 protocol MomentsTableViewCellDelegate: AnyObject {
     func vibeCellDidTapLike(_ cell: MomentsTableViewCell)
     func vibeCellDidDoubleTapLike(_ cell: MomentsTableViewCell)
+    /// Long press on the like button: show who liked the vibe.
+    func vibeCellDidLongPressLike(_ cell: MomentsTableViewCell)
     func vibeCellDidTapComment(_ cell: MomentsTableViewCell)
     func vibeCellDidTapGift(_ cell: MomentsTableViewCell)
     func vibeCellDidTapShare(_ cell: MomentsTableViewCell)
@@ -262,6 +264,12 @@ final class MomentsTableViewCell: UITableViewCell {
         ])
 
         likeButton.addTarget(self, action: #selector(likeTapped), for: .touchUpInside)
+        likeButton.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(likeLongPressed(_:))))
+        likeButton.accessibilityCustomActions = [UIAccessibilityCustomAction(name: "See likes") { [weak self] _ in
+            guard let self else { return false }
+            self.delegate?.vibeCellDidLongPressLike(self)
+            return true
+        }]
         commentButton.addTarget(self, action: #selector(commentTapped), for: .touchUpInside)
         giftButton.addTarget(self, action: #selector(giftTapped), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
@@ -392,6 +400,12 @@ final class MomentsTableViewCell: UITableViewCell {
     @objc private func likeTapped() {
         bounce(likeButton)
         delegate?.vibeCellDidTapLike(self)
+    }
+
+    @objc private func likeLongPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        delegate?.vibeCellDidLongPressLike(self)
     }
 
     @objc private func doubleTapped(_ gesture: UITapGestureRecognizer) {
@@ -577,7 +591,9 @@ extension MomentsTableViewCell: UICollectionViewDataSource, UICollectionViewDele
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentsMediaCollectionViewCell.identifier, for: indexPath) as? MomentsMediaCollectionViewCell else {
             return UICollectionViewCell()
         }
-        cell.configure(path: media[indexPath.item].filePath)
+        let item = media[indexPath.item]
+        let thumbnail = item.thumbnailPath?.isEmpty == false ? item.thumbnailPath : nil
+        cell.configure(path: thumbnail ?? item.filePath)
         return cell
     }
 

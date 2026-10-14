@@ -17,6 +17,7 @@ class StartProfileVerificationViewController: BaseViewController,Instantiable {
     var userImage:UIImage?
     var methodSelection:PhotoSelectionType?
     var directRedirection:Bool? = false
+    private let viewModel = ProfilePhotoViewModel()
 
     static var storyboardName: StringConvertible {
         return StoryboardName.signUp
@@ -24,8 +25,21 @@ class StartProfileVerificationViewController: BaseViewController,Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.bindViewModel()
         self.imageViewGif.setGifImage(name:"pablita-face-id")
         self.labelMakeYourIdentity.setAttriibutText(text1: "Mark your identity\nwith a ", text2: "profile picture.", color: AppColor.Punch, multipleLine: false)
+    }
+
+    private func bindViewModel() {
+        viewModel.onUploaded = { [weak self] in
+            self?.aFlirtCustomPopUp.completeUpload()
+        }
+        viewModel.onError = { [weak self] message in
+            self?.aFlirtCustomPopUp.failUpload(message: message)
+        }
+        aFlirtCustomPopUp.discardAction = { [weak self] in
+            self?.viewModel.cancel()
+        }
     }
 
     @IBAction func backButton(_ sender: UIButton) {
@@ -122,10 +136,27 @@ extension StartProfileVerificationViewController {
         guard let image = selectedImage else {return}
         let imgPic = image.fixedOrientation()
         self.userImage = imgPic
-        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.uploadingPicture, buttonTitle: [Constants.AlertButtons.discard], popUpType: .pictureUploading,image:imgPic, completion2: { data in
-            if data == .pictureUploading {
-                self.navigateToNextScreen()
+        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.uploadingPicture, buttonTitle: [Constants.AlertButtons.discard], popUpType: .pictureUploading,image:imgPic, completion2: { [weak self] data in
+            switch data {
+            case .pictureUploading:
+                self?.navigateToNextScreen()
+            case .picUploadingFailed:
+                self?.retakePhoto()
+            default:
+                break
             }
         })
+        self.viewModel.upload(image: imgPic)
+    }
+
+    func retakePhoto() {
+        switch methodSelection {
+        case .camera:
+            self.checkCameraAuthorization()
+        case .photoLibrary:
+            self.requestPhotoLibraryAccess()
+        default:
+            break
+        }
     }
 }

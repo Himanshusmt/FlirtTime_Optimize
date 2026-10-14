@@ -153,7 +153,6 @@ final class MockDataStore {
         MomentsUploadViewModel.shared.cancel()
         LocalImageStore.shared.removeAll()
         MockMomentsStore.shared.reset()
-        MockQuickMomentStore.shared.reset()
         MockDiscover.shared.reset()
         MockStore.shared.reset()
         CoinWallet.shared.refresh()

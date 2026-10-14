@@ -2,20 +2,22 @@
 //  QuickMomentActivityViewController.swift
 //  FlirttimeNew
 //
-//  Who reacted to and replied on one of the signed-in user's Quick Moments.
+//  Who reacted to and viewed one of the signed-in user's Quick Moments.
 //
 
 import UIKit
+import RxSwift
+import Swinject
 
 final class QuickMomentActivityViewController: UIViewController {
 
     private enum Section: Int, CaseIterable {
-        case replies, reactions
+        case reactions, viewers
 
         var title: String {
             switch self {
-            case .replies: return "Replies"
             case .reactions: return "Reactions"
+            case .viewers: return "Viewers"
             }
         }
     }
@@ -30,6 +32,12 @@ final class QuickMomentActivityViewController: UIViewController {
     private let moment: QuickMoment
     private var rows: [Section: [Row]] = [:]
     private var sections: [Section] { Section.allCases.filter { !(rows[$0] ?? []).isEmpty } }
+
+    private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
+    private let summaryLabel = UILabel.vibeLabel(.regular, 14, style: .subheadline, color: AppColor.DoveGray)
+    private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
+    private let spinner = UIActivityIndicatorView(style: .medium)
 
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .insetGrouped)
@@ -51,30 +59,20 @@ final class QuickMomentActivityViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = AppColor.AppWhite
 
-        rows[.replies] = (moment.replies ?? [])
-            .sorted { (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast) }
-            .map { Row(author: $0.author, detail: $0.body, trailing: nil, createdAt: $0.createdAt) }
-        rows[.reactions] = (moment.reactions ?? [])
-            .sorted { (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast) }
-            .map { Row(author: $0.author, detail: "Reacted to your quick moment", trailing: $0.emoji, createdAt: $0.createdAt) }
-
         let title = UILabel.vibeLabel(.bold, 20, style: .headline, color: AppColor.AppBlack)
         title.text = "Activity"
         title.accessibilityTraits = .header
-        let summary = UILabel.vibeLabel(.regular, 14, style: .subheadline, color: AppColor.DoveGray)
-        let reactions = moment.reactions?.count ?? 0
-        let replies = moment.replies?.count ?? 0
-        summary.text = "\(reactions) \(reactions == 1 ? "reaction" : "reactions") · \(replies) \(replies == 1 ? "reply" : "replies")"
-        let header = UIStackView(arrangedSubviews: [title, summary])
+        updateSummary(reactions: moment.reactionsCount, views: moment.viewsCount)
+        let header = UIStackView(arrangedSubviews: [title, summaryLabel])
         header.axis = .vertical
         header.spacing = 2
 
-        let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
-        emptyLabel.text = "No reactions or replies yet.\nWhen someone reacts or replies, you'll see it here."
+        emptyLabel.text = "No reactions or views yet.\nWhen someone views or reacts, you'll see it here."
         emptyLabel.textAlignment = .center
-        emptyLabel.isHidden = !sections.isEmpty
+        emptyLabel.isHidden = true
+        spinner.hidesWhenStopped = true
 
-        [header, tableView, emptyLabel].forEach {
+        [header, tableView, emptyLabel, spinner].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -90,8 +88,47 @@ final class QuickMomentActivityViewController: UIViewController {
 
             emptyLabel.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 48),
             emptyLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
-            emptyLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32)
+            emptyLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
+
+            spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            spinner.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 48)
         ])
+        loadActivity()
+    }
+
+    private func loadActivity() {
+        spinner.startAnimating()
+        let reactions = sessionManager.quickMomentReactions(momentId: moment.id).map(Optional.some).catchAndReturn(nil)
+        let viewers = sessionManager.quickMomentViewers(momentId: moment.id).map(Optional.some).catchAndReturn(nil)
+        Single.zip(reactions, viewers)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] reactions, viewers in
+                guard let self else { return }
+                self.spinner.stopAnimating()
+                self.rows[.reactions] = (reactions?.reactions ?? [])
+                    .sorted { (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast) }
+                    .map { Row(author: $0.author, detail: "Reacted to your quick moment", trailing: $0.emoji, createdAt: $0.createdAt) }
+                self.rows[.viewers] = (viewers ?? [])
+                    .sorted { (MomentsDate.date(from: $0.viewedAt) ?? .distantPast) > (MomentsDate.date(from: $1.viewedAt) ?? .distantPast) }
+                    .map { Row(author: $0.author, detail: "Viewed your quick moment", trailing: nil, createdAt: $0.viewedAt) }
+                self.updateSummary(reactions: reactions?.total ?? self.moment.reactionsCount,
+                                   views: viewers?.count ?? self.moment.viewsCount)
+                if reactions == nil && viewers == nil {
+                    self.emptyLabel.text = "Couldn't load activity. Please try again."
+                }
+                self.emptyLabel.isHidden = !self.sections.isEmpty
+                self.tableView.reloadData()
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func updateSummary(reactions: Int, views: Int) {
+        let replies = moment.repliesCount
+        summaryLabel.text = [
+            "\(reactions) \(reactions == 1 ? "reaction" : "reactions")",
+            "\(replies) \(replies == 1 ? "reply" : "replies")",
+            "\(views) \(views == 1 ? "view" : "views")"
+        ].joined(separator: " · ")
     }
 }
 

@@ -179,7 +179,7 @@ final class AddQuickMomentViewController: UIViewController {
     private func updateTextState() {
         let text = textView.text ?? ""
         placeholderLabel.isHidden = !text.isEmpty
-        counterLabel.text = "\(text.count)/\(MockQuickMomentStore.maxTextLength)"
+        counterLabel.text = "\(text.count)/\(QuickMoment.maxTextLength)"
         let hasContent = photo != nil || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         shareButton.isEnabled = hasContent
         shareButton.alpha = hasContent ? 1 : 0.5
@@ -232,7 +232,7 @@ extension AddQuickMomentViewController: UITextViewDelegate {
 
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         let current = (textView.text ?? "") as NSString
-        return current.replacingCharacters(in: range, with: text).count <= MockQuickMomentStore.maxTextLength
+        return current.replacingCharacters(in: range, with: text).count <= QuickMoment.maxTextLength
     }
 
     func textViewDidChange(_ textView: UITextView) {

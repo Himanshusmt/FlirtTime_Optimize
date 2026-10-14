@@ -23,6 +23,15 @@ struct AppUser: Codable {
     /// "male" | "female" | "non-binary" | "other"
     let gender: String?
     let about: String?
+    let city: String?
+    let latitude: Double?
+    let longitude: Double?
+    let genderPreference: String?
+    let lookingFor: String?
+    let religion: String?
+    let voicePromptUrl: String?
+    /// Seconds
+    let voicePromptDuration: Double?
     let profilePicture: String?
     let isFaceVerified: Bool?
     let faceVerifiedAt: String?

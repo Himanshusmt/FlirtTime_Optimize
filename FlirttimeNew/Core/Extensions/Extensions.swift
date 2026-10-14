@@ -392,6 +392,18 @@ extension UIImage {
         return normalizedImage ?? self
     }
     
+    /// JPEG data no larger than `maxBytes`, lowering quality from 0.8 in steps of 0.1. Nil if it can't fit.
+    func jpegData(maxBytes: Int) -> Data? {
+        var quality: CGFloat = 0.8
+        var data = jpegData(compressionQuality: quality)
+        while let current = data, current.count > maxBytes, quality > 0.1 {
+            quality -= 0.1
+            data = jpegData(compressionQuality: quality)
+        }
+        guard let data, data.count <= maxBytes else { return nil }
+        return data
+    }
+
     func fixedOrientation() -> UIImage {
             guard let cgImage = self.cgImage else { return self }
 

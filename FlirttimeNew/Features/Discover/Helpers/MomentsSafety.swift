@@ -18,30 +18,46 @@ enum MomentsVerificationInfo {
     }
 }
 
+/// Report reasons accepted by POST `users/:userId/report`; `rawValue` is the API code.
+enum MomentsReportReason: String, CaseIterable {
+    case fakeProfile = "fake_profile"
+    case inappropriateContent = "inappropriate_content"
+    case harassment
+    case spam
+    case scam
+    case underage
+    case other
+
+    var title: String {
+        switch self {
+        case .fakeProfile: return "Fake profile"
+        case .inappropriateContent: return "Inappropriate photos or content"
+        case .harassment: return "Harassment or hate speech"
+        case .spam: return "Spam"
+        case .scam: return "Scam"
+        case .underage: return "Underage user"
+        case .other: return "Something else"
+        }
+    }
+}
+
+/// What the user chose from the safety menu on Vibe Details.
+enum MomentsSafetyAction {
+    case report(MomentsReportReason)
+    case block
+}
+
 enum MomentsSafety {
 
-    static let reportReasons = [
-        "Fake profile",
-        "Inappropriate photos",
-        "Harassment or hate speech",
-        "Scam or spam",
-        "Underage user",
-        "Something else"
-    ]
-
-    // TODO: send the report to the report-user endpoint once it is integrated.
     static func presentReportReasons(for profile: MomentsProfile,
                                      from viewController: UIViewController,
                                      sourceView: UIView,
-                                     completion: @escaping () -> Void) {
+                                     completion: @escaping (MomentsReportReason) -> Void) {
         let sheet = UIAlertController(title: "Report \(profile.displayName)",
                                       message: "Why are you reporting this profile?",
                                       preferredStyle: .actionSheet)
-        reportReasons.forEach { reason in
-            sheet.addAction(UIAlertAction(title: reason, style: .default) { _ in
-                MockDiscover.shared.report(userID: profile.id)
-                completion()
-            })
+        MomentsReportReason.allCases.forEach { reason in
+            sheet.addAction(UIAlertAction(title: reason.title, style: .default) { _ in completion(reason) })
         }
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         sheet.popoverPresentationController?.sourceView = sourceView

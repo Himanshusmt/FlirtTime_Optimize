@@ -6,22 +6,26 @@
 //
 
 import UIKit
+import RxSwift
+import Swinject
 
 final class CardDetailViewController: BaseViewController {
 
     var onAction: ((MomentsAction, [ConnectReason]?, MomentsReaction?) -> Void)?
     var onInterestTapped: ((MomentsInterest) -> Void)?
-    /// `true` when the profile was blocked, `false` when it was reported.
-    var onHide: ((MomentsProfile, Bool) -> Void)?
+    var onSafetyAction: ((MomentsProfile, MomentsSafetyAction) -> Void)?
 
-    private let profile: MomentsProfile
+    private var profile: MomentsProfile
+    private let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
 
     private let scrollView = UIScrollView()
-    private let galleryScrollView = UIScrollView()
-    private let counter = PaddedPillLabel()
+    private var contentView: UIView?
+    private var galleryScrollView = UIScrollView()
+    private var counter = PaddedPillLabel()
     private let bottomBar = UIView()
     private var waveform: VoiceWaveformView?
-    private let playButton = UIButton(type: .custom)
+    private var playButton = UIButton(type: .custom)
 
     init(profile: MomentsProfile) {
         self.profile = profile
@@ -38,6 +42,22 @@ final class CardDetailViewController: BaseViewController {
         setUI()
         NotificationCenter.default.addObserver(self, selector: #selector(playerChanged), name: VoiceIntroPlayer.stateDidChange, object: nil)
         playerChanged()
+        loadDetail()
+    }
+
+    /// The card only carries feed fields; the full profile fills in bio, voice, Moments and the rest.
+    /// On failure the screen keeps showing the card data.
+    private func loadDetail() {
+        guard let userID = profile.remoteUserId else { return }
+        sessionManager.otherUserProfile(userId: userID)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] detail in
+                guard let self else { return }
+                self.profile = DiscoverViewModel.makeProfile(from: detail, merging: self.profile)
+                self.buildContent()
+                self.playerChanged()
+            })
+            .disposed(by: disposeBag)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -58,17 +78,10 @@ final class CardDetailViewController: BaseViewController {
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.showsVerticalScrollIndicator = false
         scrollView.alwaysBounceVertical = true
-        let content = UIView()
-        let gallery = makeGallery()
-        let sheet = makeSheet()
         [scrollView, bottomBar].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
-        [content, gallery, sheet].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
-        scrollView.addSubview(content)
-        content.addSubview(gallery)
-        content.addSubview(sheet)
         setBottomBar()
         let topButtons = makeTopButtons()
 
@@ -78,6 +91,35 @@ final class CardDetailViewController: BaseViewController {
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
 
+            bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            topButtons.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6),
+            topButtons.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            topButtons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
+        ])
+        buildContent()
+    }
+
+    /// Gallery and details for the current `profile`; called again when the full profile arrives.
+    private func buildContent() {
+        contentView?.removeFromSuperview()
+        galleryScrollView = UIScrollView()
+        counter = PaddedPillLabel()
+        playButton = UIButton(type: .custom)
+        waveform = nil
+
+        let content = UIView()
+        let gallery = makeGallery()
+        let sheet = makeSheet()
+        [content, gallery, sheet].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+        scrollView.addSubview(content)
+        content.addSubview(gallery)
+        content.addSubview(sheet)
+        contentView = content
+
+        NSLayoutConstraint.activate([
             content.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             content.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             content.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
@@ -92,15 +134,7 @@ final class CardDetailViewController: BaseViewController {
             sheet.topAnchor.constraint(equalTo: gallery.bottomAnchor, constant: -28),
             sheet.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             sheet.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            sheet.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-
-            bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            topButtons.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 6),
-            topButtons.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            topButtons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
+            sheet.bottomAnchor.constraint(equalTo: content.bottomAnchor)
         ])
     }
 
@@ -500,9 +534,9 @@ final class CardDetailViewController: BaseViewController {
     }
 
     private func showReportReasons(from sourceView: UIView) {
-        MomentsSafety.presentReportReasons(for: profile, from: self, sourceView: sourceView) { [weak self] in
+        MomentsSafety.presentReportReasons(for: profile, from: self, sourceView: sourceView) { [weak self] reason in
             guard let self else { return }
-            self.onHide?(self.profile, false)
+            self.onSafetyAction?(self.profile, .report(reason))
         }
     }
 
@@ -513,7 +547,7 @@ final class CardDetailViewController: BaseViewController {
         alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         alert.addAction(UIAlertAction(title: "Block", style: .destructive) { [weak self] _ in
             guard let self else { return }
-            self.onHide?(self.profile, true)
+            self.onSafetyAction?(self.profile, .block)
         })
         present(alert, animated: true)
     }

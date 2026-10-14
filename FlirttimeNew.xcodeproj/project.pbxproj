@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */; };
 		07E24E67A8CD476FBCBAE998 /* OtherUserBasicInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */; };
 		0809B175D887C6F88B3CC304 /* MomentsSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979C5020639C47E827599523 /* MomentsSafety.swift */; };
 		0996982E678F42057F067311 /* CoinsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */; };
@@ -39,6 +38,7 @@
 		5F9DD3448D6435DC59C8CAD8 /* HelpSupportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F1942FB161BA17190F830F /* HelpSupportViewController.swift */; };
 		615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098437D832448245A93BC7F2 /* AppEndPoint.swift */; };
 		6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0589AAB139F188714C1019D /* NotificationViewModel.swift */; };
+		B2C3D4E5F60718293A4B5C6E /* S3MediaUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* S3MediaUploader.swift */; };
 		6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */; };
 		70519B87F96F4D3A21C3D6C3 /* SettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7184C9C5CD7C20FD764E54 /* SettingsModel.swift */; };
 		72E5F6013980423A8C308C73 /* OtherUserProfileDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF622C351774607B5D64868 /* OtherUserProfileDetails.swift */; };
@@ -75,6 +75,7 @@
 		A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */; };
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
 		AA8A87203B42CD1AAC86E678 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */; };
+		C3D5E7F9A1B2C4D6E8F0A1B3 /* ProfilePhotoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
 		ABA8E3131442FE3510E2B568 /* Settings.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BABCADFABF14A0789D8A669B /* Settings.storyboard */; };
 		AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */; };
@@ -90,6 +91,7 @@
 		C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */; };
 		C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC9CA20EF4381200C78F41E /* QuickMomentModel.swift */; };
 		CB427D849A8B659E90DB344E /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FB6A6E2D71BF2706C814A73 /* AppUser.swift */; };
+		D4E6F8A0B2C3D5E7F9A1B2C4 /* ProfilePhotoUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */; };
 		CC1000000000000000000003 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000002 /* Swinject */; };
 		CC1000000000000000000006 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000005 /* RxSwift */; };
 		CC1000000000000000000008 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000000000000000000007 /* RxCocoa */; };
@@ -108,6 +110,7 @@
 		DD7D8FDEBBF1767C567BD709 /* DiscoverResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */; };
 		E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */; };
 		E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */; };
+		E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */; };
 		E3A2D8CB30776627008D1551 /* ActivityIndicator.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E630776627008D1551 /* ActivityIndicator.xib */; };
 		E3A2D8CC30776627008D1551 /* CustomAlertVW.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6E930776627008D1551 /* CustomAlertVW.xib */; };
 		E3A2D8CD30776627008D1551 /* DeleteCustomPopUp.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D6EC30776627008D1551 /* DeleteCustomPopUp.xib */; };
@@ -473,6 +476,8 @@
 		E3A2DA3730776627008D1551 /* MomentsListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75B30776627008D1551 /* MomentsListViewModel.swift */; };
 		E3A2DA3830776627008D1551 /* MomentsGiftViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75C30776627008D1551 /* MomentsGiftViewModel.swift */; };
 		E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */; };
+		A1B2C3D4E5F60718293A4B5D /* MomentAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978877665544 /* MomentAPIModels.swift */; };
+		C3D4E5F60718293A4B5C6D7E /* MomentLikesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7F /* MomentLikesViewController.swift */; };
 		E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76030776627008D1551 /* MomentCollectionViewCell.swift */; };
 		E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */; };
 		E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76430776627008D1551 /* ShowOtherUserImageCVC.swift */; };
@@ -732,7 +737,6 @@
 		49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverPeopleListViewController.swift; sourceTree = "<group>"; };
 		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
 		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
-		50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockQuickMomentStore.swift; sourceTree = "<group>"; };
 		52A40C1D78FF3C14CF1CE595 /* SettingsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverTabViews.swift; sourceTree = "<group>"; };
 		58EA2AE092629F6FEB8DA358 /* PersonalDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PersonalDetailsViewController.swift; sourceTree = "<group>"; };
@@ -782,6 +786,10 @@
 		C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewModel.swift; sourceTree = "<group>"; };
 		C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewController.swift; sourceTree = "<group>"; };
 		CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinViews.swift; sourceTree = "<group>"; };
+		E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoveryAPIModels.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* S3MediaUploader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = S3MediaUploader.swift; sourceTree = "<group>"; };
+		D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoUpload.swift; sourceTree = "<group>"; };
+		C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoViewModel.swift; sourceTree = "<group>"; };
 		CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
 		CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsStoryComponents.swift; sourceTree = "<group>"; };
@@ -881,6 +889,8 @@
 		E3A2D75B30776627008D1551 /* MomentsListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsListViewModel.swift; sourceTree = "<group>"; };
 		E3A2D75C30776627008D1551 /* MomentsGiftViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsGiftViewModel.swift; sourceTree = "<group>"; };
 		E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsUploadViewModel.swift; sourceTree = "<group>"; };
+		F1E2D3C4B5A6978877665544 /* MomentAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentAPIModels.swift; sourceTree = "<group>"; };
+		C3D4E5F60718293A4B5C6D7F /* MomentLikesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentLikesViewController.swift; sourceTree = "<group>"; };
 		E3A2D76030776627008D1551 /* MomentCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentCollectionViewCell.swift; sourceTree = "<group>"; };
 		E3A2D76130776627008D1551 /* MomentCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MomentCollectionViewCell.xib; sourceTree = "<group>"; };
 		E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreAboutMeTableViewCell.swift; sourceTree = "<group>"; };
@@ -1424,6 +1434,7 @@
 				CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */,
 				7FB6A6E2D71BF2706C814A73 /* AppUser.swift */,
 				B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */,
+				D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */,
 				9C2E18B6181D2142D3958CCA /* AppErrorResponse.swift */,
 			);
 			path = Api;
@@ -1548,6 +1559,7 @@
 				93533F37CF3ADE48CBE54983 /* DiscoverResponse.swift */,
 				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */,
 				62486E210DA53E8F1B80FC17 /* MomentsProfile.swift */,
+				E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */,
 			);
 			name = Model;
 			path = Model;
@@ -1690,6 +1702,7 @@
 				D763521B7C6B71DF206B5DDF /* AppConfig.swift */,
 				22661A208F524B403C3887C7 /* AppContainer.swift */,
 				098437D832448245A93BC7F2 /* AppEndPoint.swift */,
+				B2C3D4E5F60718293A4B5C6D /* S3MediaUploader.swift */,
 				37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */,
 				D2353406368B559954CF0295 /* AppSessionManager.swift */,
 				E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */,
@@ -1922,7 +1935,6 @@
 				E3A2D71D30776627008D1551 /* MockPeople.swift */,
 				E3A2D71E30776627008D1551 /* MockResponses.swift */,
 				E3A2D71F30776627008D1551 /* MockMomentsStore.swift */,
-				50FA962AD0F26892B5BB4F77 /* MockQuickMomentStore.swift */,
 				7045A9235ADAA76496ED259C /* MockDiscover.swift */,
 				F44CF9558FE0250560AC807D /* MockNotifications.swift */,
 				EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */,
@@ -2112,6 +2124,7 @@
 			isa = PBXGroup;
 			children = (
 				E3A2D75330776627008D1551 /* MomentsPostModel.swift */,
+				F1E2D3C4B5A6978877665544 /* MomentAPIModels.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2123,6 +2136,7 @@
 				E3A2D75630776627008D1551 /* MomentsListViewController.swift */,
 				E3A2D75730776627008D1551 /* MomentsGiftViewController.swift */,
 				E3A2D75830776627008D1551 /* MomentsReceivedGiftsViewController.swift */,
+				C3D4E5F60718293A4B5C6D7F /* MomentLikesViewController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -2428,6 +2442,7 @@
 				E3A2D7AB30776627008D1551 /* FaceVerificationViewController.swift */,
 				E3A2D7AC30776627008D1551 /* GestureVerificationViewController.swift */,
 				A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */,
+				C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */,
 				E3A2D7AD30776627008D1551 /* PhotoSelectionType.swift */,
 				E3A2D7AE30776627008D1551 /* StartProfileVerificationViewController.swift */,
 				E3A2D7AF30776627008D1551 /* VerificationDoneViewController.swift */,
@@ -3939,6 +3954,8 @@
 				E3A2DA3730776627008D1551 /* MomentsListViewModel.swift in Sources */,
 				E3A2DA3830776627008D1551 /* MomentsGiftViewModel.swift in Sources */,
 				E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5D /* MomentAPIModels.swift in Sources */,
+				C3D4E5F60718293A4B5C6D7E /* MomentLikesViewController.swift in Sources */,
 				E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */,
 				E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */,
 				E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */,
@@ -3960,7 +3977,6 @@
 				E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */,
 				9B302F089555E73E2771E913 /* ProfileMomentsGridView.swift in Sources */,
 				C8A28EE3FCD23D454478D283 /* QuickMomentModel.swift in Sources */,
-				0135E07006B84268EC908EB9 /* MockQuickMomentStore.swift in Sources */,
 				493EEC3ECF33394C70912D7D /* QuickMomentActivityViewController.swift in Sources */,
 				E38B742A8EC9383B62C226DE /* AddQuickMomentViewController.swift in Sources */,
 				E3A2DA4830776627008D1551 /* ProfileViewModel.swift in Sources */,
@@ -3988,6 +4004,7 @@
 				E3A2DA5E30776627008D1551 /* FaceVerificationViewController.swift in Sources */,
 				E3A2DA5F30776627008D1551 /* GestureVerificationViewController.swift in Sources */,
 				A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */,
+				C3D5E7F9A1B2C4D6E8F0A1B3 /* ProfilePhotoViewModel.swift in Sources */,
 				E3A2DA6030776627008D1551 /* PhotoSelectionType.swift in Sources */,
 				E3A2DA6130776627008D1551 /* StartProfileVerificationViewController.swift in Sources */,
 				E3A2DA6230776627008D1551 /* VerificationDoneViewController.swift in Sources */,
@@ -4004,6 +4021,7 @@
 				97EAC81079DCE02E6FAA0FBE /* MomentsProfile.swift in Sources */,
 				AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */,
 				C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */,
+				E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */,
 				9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */,
 				3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */,
 				371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */,
@@ -4033,6 +4051,7 @@
 				9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */,
 				245517BB47B75C7557C83725 /* AppContainer.swift in Sources */,
 				615ADBB315E6E697E55C6445 /* AppEndPoint.swift in Sources */,
+				B2C3D4E5F60718293A4B5C6E /* S3MediaUploader.swift in Sources */,
 				174FF9C38A263B240EC929CD /* AppRequestInterceptor.swift in Sources */,
 				BF90C09A42C1BF39A381B617 /* AppSessionManager.swift in Sources */,
 				2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */,
@@ -4045,6 +4064,7 @@
 				329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */,
 				CB427D849A8B659E90DB344E /* AppUser.swift in Sources */,
 				B8E4D3F2AC5E6B7D9F102E3D /* GestureVerification.swift in Sources */,
+				D4E6F8A0B2C3D5E7F9A1B2C4 /* ProfilePhotoUpload.swift in Sources */,
 				6D0823C1F5542B6BFF9E6793 /* AppErrorResponse.swift in Sources */,
 				70519B87F96F4D3A21C3D6C3 /* SettingsModel.swift in Sources */,
 				94FB84E5F66ACBA057F15869 /* SettingsViewModel.swift in Sources */,

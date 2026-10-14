@@ -2,16 +2,15 @@
 //  MomentsUploadViewModel.swift
 //  FlirttimeNew
 //
-//  Background moment upload started from Add Moment, mirroring FlirtTime's
-//  `AddMomentViewModel.shared`: each photo is uploaded in turn, then the moment is created,
-//  while `uploadProgress` drives the uploading bar on the feed.
+//  Background moment upload started from Add Moment: each photo goes straight to S3 through a
+//  presigned URL, then `POST api/v1/moments` saves the URLs. `uploadProgress` drives the feed's bar.
 //
 
 import UIKit
 import Combine
+import RxSwift
+import Swinject
 
-// TODO: replace MockMomentsStore with one multipart image upload per photo (like
-// ApiName.momentImageUpload) followed by POST vibes/ { caption, media, location }.
 final class MomentsUploadViewModel {
 
     static let shared = MomentsUploadViewModel()
@@ -25,20 +24,18 @@ final class MomentsUploadViewModel {
 
     var isUploading: Bool { uploadProgress != nil }
 
-    private let store = MockMomentsStore.shared
-    private let simulatedRequestDelay: TimeInterval = 0.6
+    private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
+
+    private static let maxImages = 5
+    private static let maxImageBytes = 5 * 1024 * 1024
+    private static let s3Folder = "moments"
 
     private var uploadID = UUID()
     private var timer: Timer?
     private var displayProgress: Float = 0
     private var targetProgress: Float = 0
     private var createdVibe: MomentsPost?
-
-    private struct Draft {
-        let images: [UIImage]
-        let caption: String
-        let location: String?
-    }
 
     /// Returns `false` if another moment is still uploading.
     @discardableResult
@@ -50,8 +47,20 @@ final class MomentsUploadViewModel {
         targetProgress = 0
         createdVibe = nil
         uploadProgress = 0
-        let draft = Draft(images: images, caption: caption, location: location)
-        uploadImage(at: 0, of: draft, uploadedPaths: [], id: id)
+        animateProgress(to: 0.05)
+
+        let caption = caption.trimmingCharacters(in: .whitespacesAndNewlines)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let imageData = images.prefix(Self.maxImages).compactMap(Self.jpegData(for:))
+            DispatchQueue.main.async {
+                guard let self, id == self.uploadID else { return }
+                guard !imageData.isEmpty else {
+                    self.fail(with: "Couldn't prepare your photos.")
+                    return
+                }
+                self.uploadImage(at: 0, of: imageData, caption: caption, location: location, uploaded: [], id: id)
+            }
+        }
         return true
     }
 
@@ -64,41 +73,82 @@ final class MomentsUploadViewModel {
 
     // MARK: - Steps
 
-    /// One step per photo plus a final step for creating the moment.
-    private func uploadImage(at index: Int, of draft: Draft, uploadedPaths: [String], id: UUID) {
+    /// One step per photo plus a final step for creating the moment. Any failed photo fails the upload.
+    private func uploadImage(at index: Int, of images: [Data], caption: String, location: String?,
+                             uploaded: [PresignedUpload], id: UUID) {
         guard id == uploadID else { return }
-        guard index < draft.images.count else {
-            createVibe(from: draft, imagePaths: uploadedPaths, id: id)
+        guard index < images.count else {
+            createMoment(caption: caption, location: location, uploaded: uploaded, id: id)
             return
         }
-        animateProgress(to: Float(index + 1) / Float(draft.images.count + 1))
+        animateProgress(to: Float(index + 1) / Float(images.count + 1))
 
-        let image = draft.images[index]
-        DispatchQueue.global(qos: .userInitiated).async { [store, simulatedRequestDelay] in
-            let path = store.uploadImage(image)
-            DispatchQueue.main.asyncAfter(deadline: .now() + simulatedRequestDelay) { [weak self] in
-                // A failed photo is skipped; the upload only fails if none of them made it.
-                let paths = uploadedPaths + [path].compactMap { $0 }
-                self?.uploadImage(at: index + 1, of: draft, uploadedPaths: paths, id: id)
-            }
-        }
+        sessionManager.uploadImageToS3(images[index], folder: Self.s3Folder)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] upload in
+                self?.uploadImage(at: index + 1, of: images, caption: caption, location: location,
+                                 uploaded: uploaded + [upload], id: id)
+            }, onFailure: { [weak self] error in
+                guard let self, id == self.uploadID else { return }
+                self.fail(with: parseError(error) ?? "Photo upload failed")
+            })
+            .disposed(by: disposeBag)
     }
 
-    private func createVibe(from draft: Draft, imagePaths: [String], id: UUID) {
-        guard !imagePaths.isEmpty else {
-            fail(with: "Image uploads failed.")
+    private func createMoment(caption: String, location: String?, uploaded: [PresignedUpload], id: UUID) {
+        let imageKeys = uploaded.compactMap(\.resolvedKey)
+        guard imageKeys.count == uploaded.count else {
+            fail(with: "Photo upload failed")
             return
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + simulatedRequestDelay) { [weak self] in
-            guard let self, id == self.uploadID else { return }
-            let response = self.store.createVibe(caption: draft.caption, imagePaths: imagePaths, location: draft.location)
-            guard response.success == true, let vibe = response.data else {
-                self.fail(with: response.message ?? "Unable to post your moment")
-                return
+        sessionManager.createMoment(caption: caption, location: location, imageKeys: imageKeys)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] vibe in
+                guard let self, id == self.uploadID else { return }
+                self.createdVibe = vibe ?? self.placeholderVibe(caption: caption)
+                self.animateProgress(to: 1)
+            }, onFailure: { [weak self] error in
+                guard let self, id == self.uploadID else { return }
+                self.fail(with: parseError(error) ?? "Unable to post your moment")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Used only when the backend doesn't return the created moment; image URLs come from the backend,
+    /// so the feed refreshes to show it.
+    private func placeholderVibe(caption: String) -> MomentsPost {
+        let author = MomentsAuthor.currentUser
+        return MomentsPost(id: UUID().uuidString,
+             userId: author.userId,
+             caption: caption,
+             media: [],
+             likesCount: 0,
+             commentsCount: 0,
+             giftCount: 0,
+             hasLiked: false,
+             createdAt: MomentsDate.string(from: Date()),
+             author: author)
+    }
+
+    /// JPEG under the backend's 5 MB limit, lowering quality and then size until it fits.
+    private static func jpegData(for image: UIImage) -> Data? {
+        var current = image
+        for _ in 0..<4 {
+            for quality in [0.8, 0.6, 0.4] as [CGFloat] {
+                if let data = current.jpegData(compressionQuality: quality), data.count <= maxImageBytes {
+                    return data
+                }
             }
-            self.createdVibe = vibe
-            self.animateProgress(to: 1)
+            let size = CGSize(width: current.size.width * current.scale * 0.7,
+                              height: current.size.height * current.scale * 0.7)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            let source = current
+            current = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                source.draw(in: CGRect(origin: .zero, size: size))
+            }
         }
+        return nil
     }
 
     private func fail(with message: String) {

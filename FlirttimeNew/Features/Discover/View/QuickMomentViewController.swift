@@ -9,12 +9,19 @@ import UIKit
 
 final class QuickMomentViewController: UIViewController {
 
-    var onReport: ((MomentsProfile) -> Void)?
+    var onReport: ((MomentsProfile, MomentsReportReason) -> Void)?
     var onViewProfile: ((MomentsProfile) -> Void)?
     /// Own Quick Moments: show who reacted and replied. Called with the moment index and the viewer to present from.
     var onShowActivity: ((Int, UIViewController) -> Void)?
     /// Own Quick Moments: delete the moment at the index. The viewer dismisses itself first.
     var onDelete: ((Int) -> Void)?
+    /// Other people's moments: the moment at the index came on screen (mark it seen).
+    var onMomentShown: ((Int) -> Void)?
+    /// Other people's moments: an emoji reaction on the moment at the index.
+    var onReact: ((Int, String) -> Void)?
+    /// Other people's moments: a reply to the moment at the index.
+    var onReply: ((Int, String) -> Void)?
+    var onDismiss: (() -> Void)?
 
     private enum PauseReason { case holding, typing, sheet, background }
 
@@ -191,6 +198,7 @@ final class QuickMomentViewController: UIViewController {
         guard presentedViewController == nil else { return }
         displayLink?.invalidate()
         displayLink = nil
+        if isBeingDismissed { onDismiss?() }
     }
 
     // MARK: - UI
@@ -488,6 +496,7 @@ final class QuickMomentViewController: UIViewController {
             ]))
             activityButton.accessibilityLabel = activity + ". Show activity"
         }
+        if !isOwnMoments { onMomentShown?(index) }
         imageView.isAccessibilityElement = true
         let owner = isOwnMoments ? "Your" : "\(profile.displayName)'s"
         imageView.accessibilityLabel = "\(owner) moment \(index + 1) of \(profile.moments.count). " + (moment.caption ?? "")
@@ -515,6 +524,7 @@ final class QuickMomentViewController: UIViewController {
                             properties: ["moment_id": moment.id, "reaction": emoji])
         floatEmoji(emoji, from: button)
         showConfirmation("\(emoji) Sent to \(profile.displayName)")
+        onReact?(index, emoji)
         // Give the reaction a moment to land before the Moment moves on.
         elapsed = min(elapsed, Self.momentDuration - 1.5)
     }
@@ -529,6 +539,7 @@ final class QuickMomentViewController: UIViewController {
         updateSendButton()
         view.endEditing(true)
         showConfirmation("Reply sent to \(profile.displayName)")
+        onReply?(index, text)
     }
 
     private func floatEmoji(_ emoji: String, from source: UIView) {
@@ -597,9 +608,9 @@ final class QuickMomentViewController: UIViewController {
         }
         sheet.addAction(UIAlertAction(title: "Report Moment", style: .destructive) { [weak self] _ in
             guard let self else { return }
-            MomentsSafety.presentReportReasons(for: self.profile, from: self, sourceView: sourceView) { [weak self] in
+            MomentsSafety.presentReportReasons(for: self.profile, from: self, sourceView: sourceView) { [weak self] reason in
                 guard let self else { return }
-                self.dismiss(animated: true) { self.onReport?(self.profile) }
+                self.dismiss(animated: true) { self.onReport?(self.profile, reason) }
             }
         })
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))

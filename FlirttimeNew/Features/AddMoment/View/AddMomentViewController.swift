@@ -62,7 +62,7 @@ class AddMomentViewController: BaseViewController, Instantiable {
 
     private let uploadViewModel = MomentsUploadViewModel.shared
     private var addMomentArray: [UIImage] = []
-    private let maxImages = MockMomentsStore.maxImagesPerVibe
+    private let maxImages = 5
     private let maxCaptionLength = 500
     private var selectedPlace: MomentPlace?
 
@@ -91,7 +91,7 @@ class AddMomentViewController: BaseViewController, Instantiable {
         selectedMomentsView.isHidden = true
         addMoreButtonImage.isHidden = false
         profileImageView.layer.cornerRadius = profileImageView.frame.height / 2
-        let author = MockMomentsStore.shared.currentUserAuthor
+        let author = MomentsAuthor.currentUser
         nameLabel.text = author.displayName
         profileImageView.loadImage(path: author.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
         setUpCaptionTextView()
@@ -314,7 +314,7 @@ class AddMomentViewController: BaseViewController, Instantiable {
                 }
             }
         }
-        aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
+        aImageSelectionMethodVC.modalPresentationStyle = .overFullScreen
         navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
     }
 
@@ -356,7 +356,7 @@ extension AddMomentViewController {
                 self?.cropPickedImages([MomentImageProcessing.prepare(image)])
             }
         }
-        aFaceVerificationViewController.modalPresentationStyle = .overCurrentContext
+        aFaceVerificationViewController.modalPresentationStyle = .overFullScreen
         navigationController?.present(aFaceVerificationViewController, animated: true, completion: nil)
     }
 }

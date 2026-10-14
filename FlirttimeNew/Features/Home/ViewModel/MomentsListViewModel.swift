@@ -4,9 +4,10 @@
 //
 
 import Foundation
+import RxSwift
+import Swinject
 
-// TODO: replace the MockMomentsStore responses with GET vibes/?page=&limit=,
-// POST / DELETE vibes/{id}/likes, DELETE vibes/{id} and POST vibes/{id}/report requests.
+/// Moments tab (`GET moments?type=feed`) and "My Moments" (`GET moments/me`).
 final class MomentsListViewModel {
 
     private(set) var vibes: [MomentsPost] = []
@@ -15,28 +16,29 @@ final class MomentsListViewModel {
     /// All moments in this feed across every page, not just the loaded ones.
     private(set) var totalCount = 0
 
-    private let pageSize = 10
+    private let pageSize = 20
     private var currentPage = 0
     /// Bumped on every like tap so only the latest response for a moment is applied.
     private var likeGeneration: [String: Int] = [:]
-    private let store = MockMomentsStore.shared
-    /// Limits the feed to one author's moments; `nil` is the everyone feed.
+    private let onlyCurrentUser: Bool
+    /// Another user's moments come from `MockMomentsStore` until the API exposes them.
     private let authorID: String?
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
 
-    init(onlyCurrentUser: Bool = false) {
-        self.authorID = onlyCurrentUser ? MockMomentsStore.shared.currentUserID : nil
-    }
-
-    init(authorID: String) {
+    init(onlyCurrentUser: Bool = false, authorID: String? = nil,
+         sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.onlyCurrentUser = onlyCurrentUser
         self.authorID = authorID
+        self.sessionManager = sessionManager
     }
 
-    var currentUserID: String { store.currentUserID }
-    var currentUserAuthor: MomentsAuthor { store.currentUserAuthor }
-
-    private func respond(_ block: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
+    convenience init(authorID: String) {
+        self.init(onlyCurrentUser: false, authorID: authorID)
     }
+
+    var currentUserID: String? { UserDataManager.shared.appUser?.id }
+    var currentUserAuthor: MomentsAuthor { .currentUser }
 
     private static func authorID(of vibe: MomentsPost) -> String? {
         vibe.author?.userId ?? vibe.userId
@@ -48,7 +50,9 @@ final class MomentsListViewModel {
     }
 
     func isOwnVibe(_ vibe: MomentsPost) -> Bool {
-        Self.authorID(of: vibe) == currentUserID
+        if onlyCurrentUser { return true }
+        guard let currentUserID else { return false }
+        return Self.authorID(of: vibe) == currentUserID
     }
 
     func index(of vibeId: String) -> Int? {
@@ -69,27 +73,44 @@ final class MomentsListViewModel {
 
     private func fetchPage(_ page: Int, completion: @escaping (Result<Void, MomentsError>) -> Void) {
         isLoading = true
-        respond { [weak self] in
-            guard let self else { return }
-            self.isLoading = false
-            let response = self.store.feed(page: page, limit: self.pageSize,
-                                           authorID: self.authorID)
-            guard response.success == true, let data = response.data else {
-                completion(.failure(MomentsError(message: response.message ?? "Unable to load moments")))
-                return
+        if let authorID {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isLoading = false
+                let data = MockMomentsStore.shared.feed(page: page, limit: self.pageSize, authorID: authorID).data
+                self.apply(rows: data?.rows ?? [], page: page, hasMore: data?.hasMore ?? false, total: data?.count)
+                completion(.success(()))
             }
-            let rows = (data.rows ?? []).filter { !Self.isAuthorBlocked($0) }
-            if page == 1 {
-                self.vibes = rows
-            } else {
-                let existing = Set(self.vibes.map(\.id))
-                self.vibes.append(contentsOf: rows.filter { !existing.contains($0.id) })
-            }
-            self.currentPage = page
-            self.hasMore = data.hasMore ?? false
-            self.totalCount = max(data.count ?? 0, self.vibes.count)
-            completion(.success(()))
+            return
         }
+        let request = onlyCurrentUser
+            ? sessionManager.myMoments(page: page, limit: pageSize)
+            : sessionManager.momentsFeed(page: page, limit: pageSize)
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self else { return }
+                self.isLoading = false
+                self.apply(rows: response.vibes, page: page, hasMore: response.hasMore, total: response.total)
+                completion(.success(()))
+            }, onFailure: { [weak self] error in
+                self?.isLoading = false
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to load moments")))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func apply(rows: [MomentsPost], page: Int, hasMore: Bool, total: Int?) {
+        let rows = rows.filter { !Self.isAuthorBlocked($0) }
+        if page == 1 {
+            vibes = rows
+        } else {
+            let existing = Set(vibes.map(\.id))
+            vibes.append(contentsOf: rows.filter { !existing.contains($0.id) })
+        }
+        currentPage = page
+        self.hasMore = hasMore
+        totalCount = max(total ?? 0, vibes.count)
     }
 
     // MARK: - Local updates
@@ -106,27 +127,50 @@ final class MomentsListViewModel {
         return index
     }
 
-    // MARK: - Delete / Report
+    // MARK: - Report
 
     static let reportReasons = ["Spam", "Nudity or sexual content", "Harassment or bullying",
                                 "Hate speech", "Fake profile", "Something else"]
 
-    /// Removes the moment from the feed on success; `completion` receives the removed row.
-    func deleteVibe(vibeId: String, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
-        respond { [weak self] in
-            guard let self else { return }
-            let response = self.store.deleteVibe(vibeId: vibeId)
-            self.finishRemoval(vibeId: vibeId, response: response, fallback: "Unable to delete moment", completion: completion)
+    private static func reportCode(for reason: String) -> String {
+        switch reason {
+        case "Spam": return "spam"
+        case "Nudity or sexual content": return "inappropriate_content"
+        case "Harassment or bullying": return "harassment"
+        case "Hate speech": return "hate_speech"
+        case "Fake profile": return "fake_profile"
+        default: return "other"
         }
     }
 
-    /// Reported moments are hidden from the reporter's feed.
+    /// Reported vibes are hidden from the reporter's feed; `completion` receives the removed row.
     func reportVibe(vibeId: String, reason: String, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
-        respond { [weak self] in
-            guard let self else { return }
-            let response = self.store.reportVibe(vibeId: vibeId, reason: reason)
-            self.finishRemoval(vibeId: vibeId, response: response, fallback: "Unable to report moment", completion: completion)
-        }
+        sessionManager.reportMoment(momentId: vibeId, reason: Self.reportCode(for: reason), description: reason)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                guard let self else { return }
+                let index = self.index(of: vibeId)
+                if let index { self.vibes.remove(at: index) }
+                completion(.success(index))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to report moment")))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Deletes an own moment; `completion` receives the removed row.
+    func deleteVibe(vibeId: String, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+        sessionManager.deleteMoment(momentId: vibeId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                guard let self else { return }
+                let index = self.index(of: vibeId)
+                if let index { self.vibes.remove(at: index) }
+                completion(.success(index))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to delete moment")))
+            })
+            .disposed(by: disposeBag)
     }
 
     /// Blocks the moment's author and drops all of their moments from the feed; returns the removed rows.
@@ -136,17 +180,6 @@ final class MomentsListViewModel {
         let rows = vibes.indices.filter { Self.authorID(of: vibes[$0]) == authorID }
         vibes.removeAll { Self.authorID(of: $0) == authorID }
         return rows
-    }
-
-    private func finishRemoval(vibeId: String, response: MomentsActionResponse, fallback: String,
-                               completion: (Result<Int?, MomentsError>) -> Void) {
-        guard response.success == true else {
-            completion(.failure(MomentsError(message: response.message ?? fallback)))
-            return
-        }
-        let index = self.index(of: vibeId)
-        if let index { vibes.remove(at: index) }
-        completion(.success(index))
     }
 
     // MARK: - Like
@@ -164,35 +197,36 @@ final class MomentsListViewModel {
 
         let generation = (likeGeneration[vibeId] ?? 0) + 1
         likeGeneration[vibeId] = generation
-        respond { [weak self] in
-            guard let self else { return }
-            let response = self.store.setLike(vibeId: vibeId, liked: liked)
-            guard self.likeGeneration[vibeId] == generation else { return }
-            let row = self.updateVibe(id: vibeId) {
-                if response.success == true, let data = response.data {
-                    $0.hasLiked = data.hasLiked
-                    $0.likesCount = data.likesCount
-                } else {
+
+        sessionManager.likeMoment(momentId: vibeId, isLiked: liked)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] json in
+                guard let self, self.likeGeneration[vibeId] == generation else { return }
+                let data = json["data"] as? [String: Any]
+                let row = self.updateVibe(id: vibeId) { vibe in
+                    if let isLiked = (data?["isLiked"] ?? data?["liked"]) as? Bool {
+                        vibe.hasLiked = isLiked
+                    }
+                    if let count = data?["likesCount"] as? Int {
+                        vibe.likesCount = count
+                    }
+                }
+                completion(row)
+            }, onFailure: { [weak self] _ in
+                guard let self, self.likeGeneration[vibeId] == generation else { return }
+                let row = self.updateVibe(id: vibeId) {
                     $0.hasLiked = before.hasLiked
                     $0.likesCount = before.likesCount
                 }
-            }
-            completion(row)
-        }
+                completion(row)
+            })
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Share
 
     /// Records a completed share and returns the row to refresh.
     func recordShare(vibeId: String, completion: @escaping (Int?) -> Void) {
-        respond { [weak self] in
-            guard let self else { return }
-            guard let count = self.store.recordShare(vibeId: vibeId) else {
-                completion(nil)
-                return
-            }
-            let row = self.updateVibe(id: vibeId) { $0.shareCount = count }
-            completion(row)
-        }
+        completion(updateVibe(id: vibeId) { $0.shareCount = ($0.shareCount ?? 0) + 1 })
     }
 }

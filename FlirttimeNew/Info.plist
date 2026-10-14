@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>AppBaseURL</key>
-	<string>http://13.126.105.138:5070</string>
+	<string>https://flirttimeapi.walit.in</string>
 	<key>ChatBaseURL</key>
 	<string>$(CHAT_BASE_URL)</string>
 	<key>ChatMediaBaseURL</key>

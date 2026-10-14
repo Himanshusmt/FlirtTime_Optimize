@@ -6,6 +6,8 @@
 //
 
 import UIKit
+import RxSwift
+import Swinject
 
 // TODO: replace the mock responses with ApiName.getAction / getMomentUserImages /
 // sendCompliments / checkSubscription requests.
@@ -37,6 +39,9 @@ class OtherUserProfileViewModel {
 
     static let momentsPreviewLimit = 5
 
+    private lazy var sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
+
     var quickMomentFrames: [MomentsStory] {
         quickMoments.enumerated().map { $1.storyMoment(id: $0) }
     }
@@ -61,9 +66,14 @@ class OtherUserProfileViewModel {
     }
 
     func getQuickMoments(userID: Int) {
-        respond { [weak self] in
-            self?.quickMoments = MockQuickMomentStore.shared.list(userID: String(userID)).data ?? []
-        }
+        sessionManager.userQuickMoments(userId: String(userID))
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] moments in
+                self?.quickMoments = moments.sorted {
+                    (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
+                }
+            })
+            .disposed(by: disposeBag)
     }
 
     func getVoiceIntro(userID: Int) {

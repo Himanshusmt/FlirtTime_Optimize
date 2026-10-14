@@ -5,8 +5,9 @@
 
 import Foundation
 import Combine
+import RxSwift
+import Swinject
 
-// TODO: replace the MockDiscover responses with the recommendations and getAction requests.
 final class DiscoverViewModel {
 
     enum LoadState: Equatable {
@@ -24,6 +25,12 @@ final class DiscoverViewModel {
     @Published private(set) var interestFilter: MomentsInterest?
     /// Saved filter-sheet preferences, applied before the interest filter.
     @Published private(set) var preferences: FilterModel = .saved
+    /// Quick Moments story tray for the Moments tab; `nil` until loaded.
+    @Published private(set) var quickMomentTray: QuickMomentTray?
+    /// Interests tab tiles from GET `interests`.
+    @Published private(set) var interestCatalog: [InterestCatalogItem] = []
+    /// People for the selected interest tile; `profiles` is `nil` while loading.
+    @Published private(set) var interestPeople: (interestId: String, profiles: [MomentsProfile]?)?
 
     /// Set while an action is being sent; further gestures are ignored until it completes or fails.
     private(set) var actionInProgress = false
@@ -36,8 +43,21 @@ final class DiscoverViewModel {
     var currentProfile: MomentsProfile? { deck.first }
     var nextProfile: MomentsProfile? { deck.dropFirst().first }
 
-    private func respond(_ block: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
+
+    private static let pageSize = 10
+    /// The next page is fetched once this few cards are left.
+    private static let prefetchThreshold = 3
+    private var nextPage = 1
+    private var hasMorePages = true
+    private var isFetchingPage = false
+    /// Everyone already shown or acted on, so a later page never repeats a card.
+    private var seenUserIDs = Set<String>()
+    private var isLoadingInterestCatalog = false
+
+    init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
     }
 
     // MARK: - Loading
@@ -45,24 +65,61 @@ final class DiscoverViewModel {
     func loadRecommendations() {
         guard loadState != .loading else { return }
         loadState = .loading
-        respond { [weak self] in
-            guard let self else { return }
-            guard let response = MockDataStore.shared.decode(DiscoverResponse.self, from: MockDiscover.shared.recommendationsJSON()),
-                  response.status == true else {
-                self.loadState = .failed("Couldn't load new people right now")
-                return
-            }
-            let me = MockDataStore.shared.currentUserResponse()?.data?.userInfo
-            self.queue = (response.data ?? []).compactMap { DiscoverViewModel.makeProfile(from: $0, currentUser: me) }
-            self.rebuildDeck()
-            self.loadState = .loaded
-        }
+        nextPage = 1
+        hasMorePages = true
+        fetchNextPage(replacing: true)
     }
 
     func exploreAgain() {
-        MockDiscover.shared.resetSeen()
+        seenUserIDs.removeAll()
         interestFilter = nil
         loadRecommendations()
+    }
+
+    private func fetchNextPage(replacing: Bool = false) {
+        guard !isFetchingPage, hasMorePages else { return }
+        isFetchingPage = true
+        let page = nextPage
+
+        sessionManager.discoveryPeople(page: page, limit: Self.pageSize)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self else { return }
+                self.isFetchingPage = false
+                self.nextPage = page + 1
+                let users = response.users ?? []
+                self.hasMorePages = response.pagination?.hasMore ?? (users.count >= Self.pageSize)
+
+                let existing = replacing ? Set<String>() : Set(self.queue.compactMap(\.remoteUserId))
+                let profiles = users
+                    .compactMap(DiscoverViewModel.makeProfile(from:))
+                    .filter { profile in
+                        guard let userID = profile.remoteUserId else { return false }
+                        return !existing.contains(userID) && (replacing || !self.seenUserIDs.contains(userID))
+                    }
+                profiles.compactMap(\.remoteUserId).forEach { self.seenUserIDs.insert($0) }
+
+                if replacing {
+                    self.queue = profiles
+                } else {
+                    self.queue += profiles
+                }
+                self.rebuildDeck()
+                if self.loadState != .loaded { self.loadState = .loaded }
+                self.prefetchIfNeeded()
+            }, onFailure: { [weak self] error in
+                guard let self else { return }
+                self.isFetchingPage = false
+                if replacing || self.queue.isEmpty {
+                    self.loadState = .failed(parseError(error) ?? "Couldn't load new people right now")
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func prefetchIfNeeded() {
+        guard loadState == .loaded, queue.count <= Self.prefetchThreshold else { return }
+        fetchNextPage()
     }
 
     // MARK: - Interest discovery
@@ -103,12 +160,14 @@ final class DiscoverViewModel {
     // MARK: - Actions
 
     /// Sends `action` for `profile`, removing it from the deck straight away so the next card is ready.
+    /// `viaConnectSheet`: an Interested from the "Connect because…" sheet goes to `connections/request` with the reason.
     /// Returns `false` (and does nothing) while another action is still in flight.
     @discardableResult
     func perform(_ action: MomentsAction,
                  on profile: MomentsProfile,
                  reasons: [ConnectReason] = [],
                  reaction: MomentsReaction? = nil,
+                 viaConnectSheet: Bool = false,
                  completion: @escaping (Result<MomentsActionOutcome, MomentsActionError>) -> Void) -> Bool {
         guard !actionInProgress else { return false }
         actionInProgress = true
@@ -118,34 +177,56 @@ final class DiscoverViewModel {
             MomentsAnalytics.track(.vibeReactionSent, profileID: profile.id, properties: ["target": reaction.analyticsValue])
         }
 
-        respond { [weak self] in
-            guard let self else { return }
-            let json = MockDiscover.shared.actionJSON(interactionType: action.interactionType, userID: profile.id)
-            guard let json, let model = MockDataStore.shared.decode(ActionData.self, from: json), model.status == true else {
-                self.actionInProgress = false
-                completion(.failure(.network))
-                return
-            }
-            if action == .superVibe, model.data?.membership_required == true || model.data?.coin_required == true {
-                MockDiscover.shared.unmarkSeen(profile.id)
-                self.actionInProgress = false
-                completion(.failure(.membershipRequired))
-                return
-            }
-            let isMatch = model.data?.is_match == true
-            if action.sendsConnection {
-                MomentsAnalytics.track(.connectionRequestSent, profileID: profile.id,
-                                    properties: ["reasons": reasons.map(\.rawValue),
-                                                 "super": action == .superVibe,
-                                                 "reaction": reaction?.analyticsValue ?? ""])
-            }
-            if isMatch {
-                MomentsAnalytics.track(.connectionCreated, profileID: profile.id)
-            }
-            self.actionInProgress = false
-            completion(.success(MomentsActionOutcome(action: action, profile: profile, isMatch: isMatch, reaction: reaction)))
+        guard let targetUserID = profile.remoteUserId else {
+            actionInProgress = false
+            DispatchQueue.main.async { completion(.failure(.network)) }
+            return true
         }
+
+        let request: Single<Bool>
+        if viaConnectSheet, action == .interested {
+            request = sessionManager.sendConnectionRequest(targetUserId: targetUserID, reason: reasons.first?.rawValue)
+                .map(\.didMatch)
+        } else {
+            request = sessionManager.discoveryAction(targetUserId: targetUserID, action: action.apiAction)
+                .map { $0.isMatched == true }
+        }
+
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] isMatch in
+                self?.finish(action, on: profile, reasons: reasons, reaction: reaction,
+                             isMatch: isMatch, completion: completion)
+            }, onFailure: { [weak self] error in
+                self?.actionInProgress = false
+                let statusCode = (error as? APIHTTPError)?.statusCode
+                if action == .superVibe, statusCode == 402 || statusCode == 403 {
+                    completion(.failure(.membershipRequired))
+                } else {
+                    completion(.failure(.network))
+                }
+            })
+            .disposed(by: disposeBag)
         return true
+    }
+
+    private func finish(_ action: MomentsAction,
+                        on profile: MomentsProfile,
+                        reasons: [ConnectReason],
+                        reaction: MomentsReaction?,
+                        isMatch: Bool,
+                        completion: @escaping (Result<MomentsActionOutcome, MomentsActionError>) -> Void) {
+        if action.sendsConnection {
+            MomentsAnalytics.track(.connectionRequestSent, profileID: profile.id,
+                                properties: ["reasons": reasons.map(\.rawValue),
+                                             "super": action == .superVibe,
+                                             "reaction": reaction?.analyticsValue ?? ""])
+        }
+        if isMatch {
+            MomentsAnalytics.track(.connectionCreated, profileID: profile.id)
+        }
+        actionInProgress = false
+        completion(.success(MomentsActionOutcome(action: action, profile: profile, isMatch: isMatch, reaction: reaction)))
     }
 
     /// Puts a profile back on top of the deck (e.g. after a failed action the user wants to keep).
@@ -155,14 +236,127 @@ final class DiscoverViewModel {
         rebuildDeck()
     }
 
-    /// Report / block: the profile leaves Discover without sending an interaction.
-    func hide(_ profile: MomentsProfile, block: Bool) {
-        if block {
-            MockDiscover.shared.block(userID: profile.id)
-        } else {
-            MockDiscover.shared.markSeen(profile.id)
+    /// Reports or blocks `profile`; on success it leaves Discover. Fails with a message for the user.
+    func apply(_ safetyAction: MomentsSafetyAction, to profile: MomentsProfile,
+               completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let userID = profile.remoteUserId else {
+            completion(.failure(APIError.apiError("This profile can't be reported right now")))
+            return
         }
-        remove(profileID: profile.id)
+        let request: Single<Void>
+        switch safetyAction {
+        case .report(let reason):
+            request = sessionManager.reportUser(userId: userID, reason: reason.rawValue, description: reason.title)
+        case .block:
+            request = sessionManager.blockUser(userId: userID, reason: "Blocked from Discover").map { _ in () }
+        }
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.remove(profileID: profile.id)
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(error))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // MARK: - Interests catalog
+
+    func loadInterestCatalog() {
+        guard interestCatalog.isEmpty, !isLoadingInterestCatalog else { return }
+        isLoadingInterestCatalog = true
+        sessionManager.interestsCatalog()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] items in
+                self?.isLoadingInterestCatalog = false
+                self?.interestCatalog = items
+            }, onFailure: { [weak self] _ in
+                self?.isLoadingInterestCatalog = false
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func loadPeople(for item: InterestCatalogItem) {
+        if interestPeople?.interestId == item.id, interestPeople?.profiles != nil { return }
+        interestPeople = (item.id, nil)
+        sessionManager.discoveryPeople(page: 1, limit: 20, interestId: item.id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self, self.interestPeople?.interestId == item.id else { return }
+                let profiles = (response.users ?? []).compactMap(DiscoverViewModel.makeProfile(from:))
+                self.interestPeople = (item.id, profiles)
+            }, onFailure: { [weak self] _ in
+                guard let self, self.interestPeople?.interestId == item.id else { return }
+                self.interestPeople = (item.id, [])
+            })
+            .disposed(by: disposeBag)
+    }
+
+    // MARK: - Quick Moments
+
+    func loadQuickMomentTray() {
+        sessionManager.quickMomentsTray()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] tray in
+                self?.quickMomentTray = tray
+            }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
+    /// A user's active stories, newest first; falls back to the tray's copy when the request fails or is empty.
+    func quickMoments(of item: QuickMomentTrayItem, completion: @escaping ([QuickMoment]) -> Void) {
+        guard let userId = item.user?.id else {
+            completion(item.stories)
+            return
+        }
+        sessionManager.userQuickMoments(userId: userId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { moments in
+                let sorted = moments.sorted {
+                    (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
+                }
+                completion(sorted.isEmpty ? item.stories : sorted)
+            }, onFailure: { _ in
+                completion(item.stories)
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func markQuickMomentViewed(id: String) {
+        sessionManager.markQuickMomentViewed(momentId: id)
+            .subscribe(onSuccess: { }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
+    func deleteQuickMoment(id: String, completion: @escaping (String?) -> Void) {
+        sessionManager.deleteQuickMoment(momentId: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.loadQuickMomentTray()
+                completion(nil)
+            }, onFailure: { error in
+                completion(parseError(error) ?? "Couldn't delete your quick moment")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func reactToQuickMoment(id: String, emoji: String, onFailure: @escaping (String) -> Void) {
+        sessionManager.reactToQuickMoment(momentId: id, emoji: emoji)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in }, onFailure: { error in
+                onFailure(parseError(error) ?? "Couldn't send your reaction")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func replyToQuickMoment(id: String, message: String, onFailure: @escaping (String) -> Void) {
+        sessionManager.replyToQuickMoment(momentId: id, message: message)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in }, onFailure: { error in
+                onFailure(parseError(error) ?? "Couldn't send your reply")
+            })
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Deck
@@ -170,6 +364,7 @@ final class DiscoverViewModel {
     private func remove(profileID: Int) {
         queue.removeAll { $0.id == profileID }
         rebuildDeck()
+        prefetchIfNeeded()
     }
 
     private func rebuildDeck() {
@@ -200,62 +395,99 @@ final class DiscoverViewModel {
 
     // MARK: - Mapping
 
-    static func makeProfile(from user: DiscoverUser, currentUser: UserDetailInfo?) -> MomentsProfile? {
-        guard let info = user.userInfo, let id = info.userID ?? info.id else { return nil }
+    static func makeProfile(from person: DiscoveryPerson) -> MomentsProfile? {
+        guard let userID = person.userId, !userID.isEmpty else { return nil }
 
-        let gallery = (info.images ?? [])
-            .sorted { ($0.is_primary ?? false) && !($1.is_primary ?? false) }
-            .compactMap(\.image)
-            .filter { !$0.isEmpty }
-        let photos = gallery.isEmpty ? [info.avatar].compactMap { $0 } : gallery
+        let interests = uniqueInterests(person.interestTags ?? [])
+        let shared = uniqueInterests(person.sharedInterests ?? [])
+        let name = (person.name ?? "").trimmingCharacters(in: .whitespaces)
+        let photos = [person.profilePhoto].compactMap { $0 }.filter { !$0.isEmpty }
 
-        let interests = MomentsInterestCatalog.interests(for: info.interests ?? [])
-        let myInterestIDs = Set(currentUser?.interests ?? [])
-        let shared = interests.filter { myInterestIDs.contains($0.id) }
-
-        let city = info.locationShow == false ? nil : cityName(from: info.location)
-        let myCity = cityName(from: currentUser?.location)
-        let sameCity = (city != nil && city?.lowercased() == myCity?.lowercased()) ? city : nil
-
-        let voice: MomentsVoiceIntro? = user.voiceIntro.flatMap { intro in
-            guard let transcript = intro.transcript, !transcript.isEmpty else { return nil }
-            return MomentsVoiceIntro(transcript: transcript,
-                                  duration: intro.duration ?? 0,
-                                  audioURL: intro.audioURL.flatMap(URL.init(string:)))
-        }
-
-        let moments = (user.moments ?? []).compactMap { moment -> MomentsStory? in
-            guard let id = moment.id, let image = moment.image, !image.isEmpty else { return nil }
-            return MomentsStory(id: id, imagePath: image, isVideo: moment.type == "video",
-                              caption: moment.caption?.isEmpty == false ? moment.caption : nil,
-                              postedAt: moment.createdAt.flatMap { ISO8601DateFormatter().date(from: $0) })
-        }
-
-        return MomentsProfile(id: id,
-                           displayName: (info.displayName ?? info.fullname ?? "").firstLetterCapitalized,
-                           age: info.ageShow == false ? nil : age(from: info.dob),
-                           isVerified: info.gestureIsVerified == true || info.videoIsVerified == true,
-                           gender: info.gender,
-                           city: city,
-                           distanceKm: info.distanceShow == false ? nil : user.distance,
-                           isOnline: info.onlineShow == false ? nil : info.isOnline,
-                           datingIntent: user.datingIntent,
-                           photos: photos,
-                           about: info.aboutMe ?? "",
-                           interests: interests,
-                           sharedInterests: shared,
-                           reasons: reasons(shared: shared, sameCity: sameCity),
-                           voiceIntro: voice,
-                           moments: moments,
-                           vibeScore: vibeScore(shared: shared.count, mine: myInterestIDs.count,
-                                                theirs: interests.count, sameCity: sameCity != nil),
-                           momentsCount: max(user.momentsCount ?? 0, moments.count))
+        var profile = MomentsProfile(id: userID.stableID,
+                                  displayName: name.firstLetterCapitalized,
+                                  age: person.age,
+                                  isVerified: person.isVerified == true,
+                                  gender: nil,
+                                  city: cityName(from: person.city),
+                                  distanceKm: person.distanceKm,
+                                  isOnline: nil,
+                                  datingIntent: nil,
+                                  photos: photos,
+                                  about: "",
+                                  interests: interests,
+                                  sharedInterests: shared,
+                                  reasons: reasons(shared: shared, sameCity: nil),
+                                  voiceIntro: nil,
+                                  moments: [],
+                                  vibeScore: person.vibeScore)
+        profile.remoteUserId = userID
+        return profile
     }
 
-    static func vibeScore(shared: Int, mine: Int, theirs: Int, sameCity: Bool) -> Int? {
-        guard shared > 0 else { return nil }
-        let overlap = Double(shared) / Double(max(1, min(mine, theirs)))
-        return min(99, 60 + Int((overlap * 34).rounded()) + (sameCity ? 5 : 0))
+    /// Full profile from `users/:userId/profile`; anything the API leaves empty keeps the card's value.
+    static func makeProfile(from detail: OtherUserProfile, merging base: MomentsProfile) -> MomentsProfile {
+        let photo = detail.profilePhoto ?? ""
+        let photos = photo.isEmpty ? base.photos : [photo]
+
+        let interests = uniqueInterests(detail.interests ?? [])
+        let shared = detail.sharedInterests.map(uniqueInterests) ?? base.sharedInterests
+        let explanation = detail.vibeExplanation?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let apiReasons = explanation.isEmpty ? [] : [explanation]
+        let name = detail.name?.trimmingCharacters(in: .whitespaces) ?? ""
+        let about = detail.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        let voice: MomentsVoiceIntro? = detail.voiceIntro.flatMap { intro in
+            let audioURL = intro.url.flatMap { URL(string: $0.hasPrefix("http") ? $0 : ApiName.imgBaseURL + $0) }
+            let transcript = intro.transcript ?? ""
+            guard audioURL != nil || !transcript.isEmpty else { return nil }
+            return MomentsVoiceIntro(transcript: transcript, duration: intro.duration ?? 0, audioURL: audioURL)
+        }
+
+        let moments = (detail.moments ?? []).compactMap { moment -> MomentsStory? in
+            let path = moment.thumbnailUrl ?? moment.mediaUrl ?? ""
+            let caption = moment.caption?.isEmpty == false ? moment.caption : nil
+            guard !path.isEmpty || caption != nil else { return nil }
+            return MomentsStory(id: (moment.momentId ?? moment.id ?? path).stableID,
+                              imagePath: path,
+                              isVideo: moment.mediaType == "video",
+                              caption: caption,
+                              postedAt: moment.createdAt.flatMap(date(fromISO:)))
+        }
+
+        var profile = MomentsProfile(id: base.id,
+                                  displayName: name.isEmpty ? base.displayName : name.firstLetterCapitalized,
+                                  age: detail.age ?? base.age,
+                                  isVerified: detail.isVerified ?? base.isVerified,
+                                  gender: base.gender,
+                                  city: cityName(from: detail.city) ?? base.city,
+                                  distanceKm: detail.distanceKm ?? base.distanceKm,
+                                  isOnline: base.isOnline,
+                                  datingIntent: base.datingIntent,
+                                  photos: photos,
+                                  about: about.isEmpty ? base.about : about,
+                                  interests: interests.isEmpty ? base.interests : interests,
+                                  sharedInterests: shared,
+                                  reasons: apiReasons.isEmpty ? reasons(shared: shared, sameCity: nil) : apiReasons,
+                                  voiceIntro: voice ?? base.voiceIntro,
+                                  moments: moments.isEmpty ? base.moments : moments,
+                                  vibeScore: detail.vibeScore ?? base.vibeScore)
+        profile.remoteUserId = base.remoteUserId
+        return profile
+    }
+
+    /// "2026-10-12T10:14:35.577Z", with or without fractional seconds.
+    private static func date(fromISO string: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: string) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: string)
+    }
+
+    private static func uniqueInterests(_ tags: [DiscoveryTag]) -> [MomentsInterest] {
+        var seen = Set<Int>()
+        return tags.compactMap { MomentsInterestCatalog.interest(named: $0.name, emoji: $0.emoji) }
+            .filter { seen.insert($0.id).inserted }
     }
 
     /// Only real overlap is used; with nothing in common the honest fallback is shown instead.

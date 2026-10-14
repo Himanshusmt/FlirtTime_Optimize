@@ -47,8 +47,11 @@ struct MomentsPost: Codable {
 
 struct MomentsMedia: Codable {
     let id: String?
+    /// Full-size image, for feed cards and full screen.
     let filePath: String?
     let fileType: String?
+    /// 400x400 thumbnail, for grids.
+    var thumbnailPath: String? = nil
 }
 
 struct MomentsAuthor: Codable {
@@ -110,6 +113,8 @@ struct MomentsComment: Codable {
     let body: String?
     let createdAt: String?
     let author: MomentsAuthor?
+    /// Written by the signed-in user, so it can be deleted.
+    var isMine: Bool? = nil
 }
 
 struct CreateMomentsCommentResponse: Codable {
@@ -135,6 +140,8 @@ struct MomentsGift: Codable {
     /// Remote icon URL from the API; the mock catalog uses an emoji instead.
     let icon: String?
     let amount: Int?
+    /// Backend `giftCode`, e.g. "rose"; `nil` for mock gifts.
+    var code: String? = nil
 }
 
 struct MomentsSendGiftResponse: Codable {
@@ -162,6 +169,7 @@ struct MomentsReceivedGift: Codable {
     let createdAt: String?
     let gift: MomentsGift?
     let sender: MomentsAuthor?
+    var message: String? = nil
 }
 
 // MARK: - Helpers

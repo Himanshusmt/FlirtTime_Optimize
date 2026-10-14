@@ -35,6 +35,7 @@ final class MomentsReceivedGiftsViewController: BaseViewController {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 64
         tableView.dataSource = self
+        tableView.delegate = self
         tableView.register(MomentsCommentTableViewCell.self, forCellReuseIdentifier: MomentsCommentTableViewCell.identifier)
         return tableView
     }()
@@ -115,15 +116,39 @@ final class MomentsReceivedGiftsViewController: BaseViewController {
             self.loadingIndicator.stopAnimating()
             switch result {
             case .success:
-                let count = self.viewModel.receivedGifts.count
-                self.summaryLabel.text = "\(count) \(count == 1 ? "gift" : "gifts") · \(self.viewModel.totalReceivedCoins) coins"
-                self.emptyStateLabel.isHidden = count > 0
+                self.updateSummary()
+                self.emptyStateLabel.isHidden = !self.viewModel.receivedGifts.isEmpty
                 self.tableView.reloadData()
             case .failure(let error):
                 self.emptyStateLabel.text = error.message
                 self.emptyStateLabel.isHidden = false
             }
         }
+    }
+
+    private func loadMoreGifts() {
+        viewModel.loadMoreReceivedGifts { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.updateSummary()
+                self.tableView.reloadData()
+            case .failure(let error):
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+    }
+
+    private func updateSummary() {
+        let count = viewModel.totalReceivedGifts
+        summaryLabel.text = "\(count) \(count == 1 ? "gift" : "gifts") · \(viewModel.totalReceivedCoins) coins"
+    }
+}
+
+extension MomentsReceivedGiftsViewController: UITableViewDelegate {
+
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if indexPath.row >= viewModel.receivedGifts.count - 3 { loadMoreGifts() }
     }
 }
 

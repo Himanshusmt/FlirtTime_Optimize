@@ -311,9 +311,13 @@ final class MomentsListViewController: BaseViewController, Instantiable {
                 guard let self else { return }
                 switch result {
                 case .success(let vibe):
-                    self.viewModel.prepend(vibe)
-                    self.tableView.reloadData()
-                    self.updateEmptyState()
+                    if vibe.media?.isEmpty == false {
+                        self.viewModel.prepend(vibe)
+                        self.tableView.reloadData()
+                        self.updateEmptyState()
+                    } else {
+                        self.loadFeed(showLoader: false)
+                    }
                     self.aCustomToastView.show(message: "Your moment is live")
                 case .failure(let error):
                     self.aCustomToastView.show(message: error.message)
@@ -510,6 +514,16 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         cell.updateCounts(with: viewModel.vibes[indexPath.row])
     }
 
+    func vibeCellDidLongPressLike(_ cell: MomentsTableViewCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        let vibe = viewModel.vibes[indexPath.row]
+        guard (vibe.likesCount ?? 0) > 0 else {
+            aCustomToastView.show(message: "No likes yet")
+            return
+        }
+        presentAsSheet(MomentLikesViewController(momentId: vibe.id), detents: [.medium(), .large()])
+    }
+
     func vibeCellDidTapComment(_ cell: MomentsTableViewCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let vibe = viewModel.vibes[indexPath.row]
@@ -627,15 +641,18 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
 private extension MomentsListViewController {
 
     func confirmDelete(_ vibe: MomentsPost) {
-        aDeleteCustomPopUp.show(message: "Are you sure you want to delete this moment?",
-                                button1Text: Constants.AlertButtons.cancel,
-                                button2Text: Constants.AlertButtons.yesDelete) { [weak self] in
+        let alert = UIAlertController(title: "Delete this moment?",
+                                      message: "It will be removed for everyone. This can't be undone.",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
             guard let self else { return }
             self.aActivityIndicator.show()
             self.viewModel.deleteVibe(vibeId: vibe.id) { [weak self] result in
                 self?.handleRemoval(result, successMessage: "Moment deleted")
             }
-        }
+        })
+        present(alert, animated: true)
     }
 
     func showReportReasons(for vibe: MomentsPost, sourceView: UIView) {
