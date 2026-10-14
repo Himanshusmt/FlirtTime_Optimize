@@ -157,7 +157,7 @@ class ProfileViewController: BaseViewController {
     }
 
     private var avatarPath: String? {
-        aProfileViewModel.myProfile?.profile?.profilePhoto?.bestURL
+        aProfileViewModel.myProfile?.profile?.avatarURL
     }
 
     /// The username from `auth/me`; `users/profile` only sends the nickname as `displayName`.

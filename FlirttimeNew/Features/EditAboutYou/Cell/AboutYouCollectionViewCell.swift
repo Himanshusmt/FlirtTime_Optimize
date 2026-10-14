@@ -39,6 +39,7 @@ class AboutYouCollectionViewCell: UICollectionViewCell {
     //var editProfileMoreAboutYouData:MoreAboutMeData?
     var editProfileMoreAboutYouData:[attOptions]?
     var fromEditProfileScreen:Bool? = false
+    static let editProfileInterestLimit = 5
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -152,7 +153,7 @@ class AboutYouCollectionViewCell: UICollectionViewCell {
         //self.headerLabelTwo.text = " " //data2?.generalText
         
         self.headerLabelTwo.isHidden = false
-        self.headerLabelTwo.text = "You can choose minimum 5"
+        self.headerLabelTwo.text = "Choose up to \(Self.editProfileInterestLimit) interests"
         
         self.fromEditProfileScreen = true
         
@@ -212,7 +213,8 @@ extension AboutYouCollectionViewCell: UICollectionViewDelegate, UICollectionView
             
         })
         
-        if totalSelCount < 10 {
+        let selectionLimit = self.fromEditProfileScreen == true ? Self.editProfileInterestLimit : 10
+        if totalSelCount < selectionLimit {
             
             self.selectedOptionDataArray = self.selectedOptionDataArray?.enumerated().map({ (index,data) in
                 var updatedData = data

@@ -152,6 +152,9 @@ class EditAboutYouViewController: BaseViewController, Instantiable {
         }
         
         self.previousButton.isHidden = true
+        if self.isInterest == true {
+            self.updateInterestData(total: self.aMoreAboutMeQuestionData.first?.aOptions?.filter { $0.isSelected == true }.count ?? 0)
+        }
 //        self.aEditAboutViewModel.educationalBackGroundArray = self.aMoreAboutMeQuestionData?.data?[1]
 //        self.aEditAboutViewModel.drinkAlcoholArray = self.aMoreAboutMeQuestionData?.data?[2]
 //        self.aEditAboutViewModel.smokingPreferenceArray = self.aMoreAboutMeQuestionData?.data?[3]
@@ -367,9 +370,12 @@ class EditAboutYouViewController: BaseViewController, Instantiable {
     }
     
     func updateInterestData(total:Int){
-        self.nextButton.backgroundColor = total >= 5 ? AppColor.Punch.withAlphaComponent(1) : AppColor.Punch.withAlphaComponent(0.5)
-        self.nextButton.isUserInteractionEnabled = total >= 5 ? true : false
+        let canSave = total >= Self.minInterests
+        self.nextButton.backgroundColor = canSave ? AppColor.Punch.withAlphaComponent(1) : AppColor.Punch.withAlphaComponent(0.5)
+        self.nextButton.isUserInteractionEnabled = canSave
     }
+
+    static let minInterests = 1
 
     func setNextButtonUI(index:Int){
         let subDotArray = [self.subDotView1,self.subDotView2,self.subDotView3,self.subDotView4,self.subDotView5,self.subDotView6,self.subDotView7,self.subDotView8,self.subDotView9,self.subDotView10,self.subDotView11,self.subDotView12]

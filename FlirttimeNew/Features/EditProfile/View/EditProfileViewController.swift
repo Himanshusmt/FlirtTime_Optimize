@@ -880,7 +880,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.aAttributesViewModel.$aAttributesModel.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
                 print("cur.......",self.userDetailInfo!)
-                self.editProfileMoreAboutQuestionData = model
+                self.editProfileMoreAboutQuestionData = EditProfileAPIMapper.withCatalogInterests(model)
                 self.setEditAboutYouData()
             }
             self.interestCollectionView.reloadData()
@@ -1466,9 +1466,7 @@ extension EditProfileViewController: UICollectionViewDataSource, UICollectionVie
         switch collectionView{
         case interestCollectionView:
             //let count = self.moreAllSelectedInterestData[0].aOptions?.count
-            let itemCount = self.moreAllSelectedInterestData.first?.aOptions?.count ?? 0
-            //self.aEditProfileViewModel.arrayInterest?.count ?? 0
-            if itemCount == indexPath.row {
+            if !self.moreAllInterestData.isEmpty {
 //                let aAboutYouViewController:AboutYouViewController = AboutYouViewController.instantiateFromStoryboard()
 //                //aAboutYouViewController.selectedIndex = 3
 //                aAboutYouViewController.fromEditProfile = true

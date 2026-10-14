@@ -46,6 +46,8 @@ class EditProfileViewModel{
     private var photoUUIDs: [Int: String] = [:]
     private var profileFullName: String?
     private var profileNickName: String?
+    private var profileDateOfBirth: String?
+    private var profileGender: String?
 
     private static let maxImageBytes = 5 * 1024 * 1024
 
@@ -82,10 +84,14 @@ class EditProfileViewModel{
     }
 
     func callCheckExistingData() {
-        sessionManager.myProfileJSON()
+        let catalog = sessionManager.interestsCatalog().catchAndReturn([])
+        Single.zip(sessionManager.myProfileJSON(), catalog)
             .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] json in
+            .subscribe(onSuccess: { [weak self] json, catalog in
                 guard let self = self else { return }
+                if !catalog.isEmpty {
+                    EditProfileAPIMapper.interestCatalog = catalog
+                }
                 guard let data = self.legacyResponse(from: json) else {
                     self.errorMessage = "Unable to load profile"
                     return
@@ -154,13 +160,20 @@ class EditProfileViewModel{
             .disposed(by: disposeBag)
     }
 
-    /// Only `about_me` is sent from this screen; the backend requires `fullName` and `nickName` on every PATCH.
+    /// Only `about_me` changes from this screen; the backend requires the full body
+    /// (`fullName`, `nickName`, `dateOfBirth`, `gender`) on every PATCH, so the loaded values are sent back as-is.
     func callSaveUserDetailsAPI(filteredData:[String:Any]) {
         let appUser = UserDataManager.shared.appUser
         var params: [String: Any] = [
             "fullName": profileFullName ?? appUser?.fullName ?? "",
             "nickName": profileNickName ?? appUser?.nickName ?? ""
         ]
+        if let dateOfBirth = profileDateOfBirth ?? appUser?.dateOfBirth {
+            params["dateOfBirth"] = dateOfBirth
+        }
+        if let gender = profileGender ?? appUser?.gender {
+            params["gender"] = gender
+        }
         if let about = filteredData["about_me"] as? String {
             params["about"] = about
         }
@@ -227,8 +240,10 @@ class EditProfileViewModel{
         ]
         info["fullname"] = profileFullName
         info["display_name"] = profileNickName
-        info["dob"] = Self.text(profile["dateOfBirth"]) ?? appUser?.dateOfBirth
-        info["gender"] = EditProfileAPIMapper.genderID(Self.text(profile["gender"]) ?? appUser?.gender)
+        profileDateOfBirth = (Self.text(profile["dateOfBirth"]) ?? appUser?.dateOfBirth).map { String($0.prefix(10)) }
+        profileGender = Self.text(profile["gender"]) ?? appUser?.gender
+        info["dob"] = profileDateOfBirth
+        info["gender"] = EditProfileAPIMapper.genderID(profileGender)
         info["about_me"] = Self.text(profile["bio"]) ?? Self.text(profile["about"])
         info["location"] = Self.locationText(profile["location"]) ?? Self.text(profile["city"]) ?? appUser?.city
         info["avatar"] = Self.photoURL(profile["profilePhoto"])
@@ -244,8 +259,9 @@ class EditProfileViewModel{
         let interests = (data["interests"] as? [[String: Any]]) ?? (profile["interests"] as? [[String: Any]]) ?? []
         info["interests"] = interests.compactMap { item -> Int? in
             let nested = item["interest"] as? [String: Any]
-            guard let name = Self.text(item["name"]) ?? Self.text(nested?["name"]) else { return nil }
-            return EditProfileAPIMapper.optionID(alias: Constants.QuestionOption.interests, title: name)
+            let uuid = Self.text(item["interestId"]) ?? Self.text(nested?["id"]) ?? Self.text(item["id"])
+            let name = Self.text(item["name"]) ?? Self.text(nested?["name"])
+            return EditProfileAPIMapper.interestOptionID(uuid: uuid, name: name)
         }
 
         photoUUIDs = [:]
@@ -338,6 +354,38 @@ enum EditProfileAPIMapper {
         attributes.first { $0.alias == alias }?
             .aOptions?.first { $0.id == id }?.title?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// `GET interests`; when loaded, the interest picker uses these instead of `Attributes.json`.
+    static var interestCatalog: [InterestCatalogItem] = []
+
+    /// Swaps the bundled interest options for the backend catalog (ids hashed from the UUIDs).
+    static func withCatalogInterests(_ model: AttributesModel?) -> AttributesModel? {
+        guard let model, !interestCatalog.isEmpty, var data = model.data,
+              let index = data.firstIndex(where: { $0.alias == Constants.QuestionOption.interests }) else { return model }
+        data[index].aOptions = interestCatalog.map {
+            attOptions(id: photoID($0.id), attribute_id: nil, title: $0.name, isSelected: nil, photo: nil)
+        }
+        return AttributesModel(status: model.status, message: model.message, data: data)
+    }
+
+    /// Picker option id for a saved interest: the catalog entry by UUID, then by name, then `Attributes.json`.
+    static func interestOptionID(uuid: String?, name: String?) -> Int? {
+        if !interestCatalog.isEmpty {
+            if let uuid, interestCatalog.contains(where: { $0.id == uuid }) {
+                return photoID(uuid)
+            }
+            if let name, let match = interestCatalog.first(where: { normalized($0.name) == normalized(name) }) {
+                return photoID(match.id)
+            }
+            return nil
+        }
+        guard let name else { return nil }
+        return optionID(alias: Constants.QuestionOption.interests, title: name)
+    }
+
+    static func interestUUID(optionID: Int) -> String? {
+        interestCatalog.first { photoID($0.id) == optionID }?.id
     }
 
     static func genderID(_ gender: String?) -> Int? {

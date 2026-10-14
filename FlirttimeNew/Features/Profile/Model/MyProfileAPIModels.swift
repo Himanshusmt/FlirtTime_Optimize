@@ -74,6 +74,9 @@ struct MyProfileInfo: Codable {
             }
             .compactMap { $0.element.bestURL }
     }
+
+    /// The main gallery photo set in Edit Profile; `profilePhoto` can still be the verification selfie.
+    var avatarURL: String? { photoURLs.first ?? profilePhoto?.bestURL }
 }
 
 private struct MyProfileLocation: Codable {

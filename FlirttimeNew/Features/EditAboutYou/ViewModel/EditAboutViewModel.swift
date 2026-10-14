@@ -62,13 +62,12 @@ class EditAboutViewModel {
         }
 
         if let ids = filteredData["interests"] as? [Int] {
-            let names = ids.compactMap { EditProfileAPIMapper.optionTitle(alias: Constants.QuestionOption.interests, id: $0)?.lowercased() }
-            let sessionManager = self.sessionManager
-            requests.append(sessionManager.interestsCatalog().flatMap { catalog -> Single<Void> in
-                let uuids = names.compactMap { name in catalog.first { $0.name.lowercased() == name }?.id }
-                guard !uuids.isEmpty else { return .error(APIError.apiError("These interests aren't available yet")) }
-                return sessionManager.updateInterests(ids: uuids)
-            })
+            let uuids = ids.compactMap { EditProfileAPIMapper.interestUUID(optionID: $0) }
+            guard !uuids.isEmpty else {
+                errorMessage = "Couldn't load interests. Please go back and try again."
+                return
+            }
+            requests.append(sessionManager.updateInterests(ids: uuids))
         }
 
         guard !requests.isEmpty else {
