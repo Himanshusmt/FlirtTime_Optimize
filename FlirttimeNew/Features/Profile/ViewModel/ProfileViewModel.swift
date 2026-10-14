@@ -7,8 +7,10 @@
 
 import Foundation
 import UIKit
+import RxSwift
+import Swinject
 
-// TODO: replace the MockDataStore / MockQuickMomentStore calls with ApiName.getUserDataInfo and the Quick Moments endpoints.
+// TODO: replace the MockDataStore profile call with ApiName.getUserDataInfo.
 class ProfileViewModel {
 
     @Published var aUserProfileModel:UserDetailsData?
@@ -21,7 +23,8 @@ class ProfileViewModel {
 
     static let myMomentsPreviewLimit = 6
 
-    private let quickMomentStore = MockQuickMomentStore.shared
+    private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+    private let disposeBag = DisposeBag()
 
     /// Story frames for the bubbles and the viewer, in the same order as `quickMoments`.
     var quickMomentFrames: [VibeMoment] {
@@ -43,46 +46,99 @@ class ProfileViewModel {
     }
 
     func getQuickMoments() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self else { return }
-            let response = self.quickMomentStore.list(userID: MockVibeStore.shared.currentUserID)
-            self.quickMoments = response.data ?? []
-        }
+        sessionManager.myQuickMoments()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] moments in
+                self?.quickMoments = moments.sorted {
+                    (VibeDate.date(from: $0.createdAt) ?? .distantPast) > (VibeDate.date(from: $1.createdAt) ?? .distantPast)
+                }
+            }, onFailure: { [weak self] _ in
+                self?.quickMoments = []
+            })
+            .disposed(by: disposeBag)
     }
 
     func getMyMoments() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self else { return }
-            let store = MockVibeStore.shared
-            let response = store.feed(page: 1, limit: Self.myMomentsPreviewLimit, authorID: store.currentUserID)
-            self.myMomentsTotal = response.data?.count ?? 0
-            self.myMoments = response.data?.rows ?? []
-        }
+        sessionManager
+            .myMoments(page: 1, limit: Self.myMomentsPreviewLimit)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] page in
+                self?.myMomentsTotal = page.total ?? page.vibes.count
+                self?.myMoments = page.vibes
+            }, onFailure: { [weak self] _ in
+                self?.myMomentsTotal = 0
+                self?.myMoments = []
+            })
+            .disposed(by: disposeBag)
     }
 
+    /// A text Quick Moment when `image` is `nil`, otherwise a photo uploaded to S3 with `text` as its caption.
     func createQuickMoment(text: String?, background: Int?, image: UIImage?, completion: @escaping (Result<Void, VibeError>) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self else { return }
-            let response = self.quickMomentStore.create(text: text, background: background, image: image)
-            guard response.success == true, let moment = response.data else {
-                completion(.failure(VibeError(message: response.message ?? "Unable to share quick moment")))
+        let body = text?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(QuickMoment.maxTextLength)
+        let caption = body.map(String.init) ?? ""
+
+        let request: Single<QuickMoment?>
+        if let image {
+            request = Single<Data>.create { single in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    if let data = Self.jpegData(for: image) {
+                        single(.success(data))
+                    } else {
+                        single(.failure(APIError.apiError("Couldn't prepare your photo.")))
+                    }
+                }
+                return Disposables.create()
+            }
+            .flatMap { [sessionManager] data in sessionManager.uploadQuickMomentImage(data) }
+            .flatMap { [sessionManager] upload -> Single<QuickMoment?> in
+                guard let key = upload.resolvedKey else { return .error(APIError.apiError("Photo upload failed")) }
+                return sessionManager.createImageQuickMoment(imageKey: key, caption: caption)
+            }
+        } else {
+            guard !caption.isEmpty else {
+                completion(.failure(VibeError(message: "Add a photo or write something")))
                 return
             }
-            self.quickMoments.insert(moment, at: 0)
-            completion(.success(()))
+            request = sessionManager.createTextQuickMoment(text: caption,
+                                                           backgroundColor: QuickMomentColors.hex(forBackground: background ?? 0),
+                                                           textColor: QuickMomentColors.textColor)
         }
+
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] moment in
+                guard let self else { return }
+                if let moment {
+                    self.quickMoments.removeAll { $0.id == moment.id }
+                    self.quickMoments.insert(moment, at: 0)
+                } else {
+                    self.getQuickMoments()
+                }
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(VibeError(message: parseError(error) ?? "Unable to share quick moment")))
+            })
+            .disposed(by: disposeBag)
     }
 
     func deleteQuickMoment(id: String, completion: @escaping (Result<Void, VibeError>) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self else { return }
-            let response = self.quickMomentStore.delete(id: id)
-            guard response.success == true else {
-                completion(.failure(VibeError(message: response.message ?? "Unable to delete quick moment")))
-                return
-            }
-            self.quickMoments.removeAll { $0.id == id }
-            completion(.success(()))
+        sessionManager.deleteQuickMoment(momentId: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.quickMoments.removeAll { $0.id == id }
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(VibeError(message: parseError(error) ?? "Unable to delete quick moment")))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// JPEG under the backend's 10 MB Quick Moment limit.
+    private static func jpegData(for image: UIImage) -> Data? {
+        let maxBytes = 10 * 1024 * 1024
+        for quality in [0.8, 0.6, 0.4, 0.2] as [CGFloat] {
+            if let data = image.jpegData(compressionQuality: quality), data.count <= maxBytes { return data }
         }
+        return nil
     }
 }

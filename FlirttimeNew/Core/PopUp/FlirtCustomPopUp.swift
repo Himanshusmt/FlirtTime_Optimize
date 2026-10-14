@@ -62,6 +62,8 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
     var callBackAction:((String)->())?
     var dOBcallBackAction:((Date)->())?
     var genericCallBack:((PopUpType)->())?
+    /// Called when Discard is tapped while `.pictureUploading` is showing.
+    var discardAction:(()->())?
     var popUpType:PopUpType?
     var restrictPopUpShowMultipleTimes:Bool? = false
     var datePicker: UIDatePicker?
@@ -230,7 +232,7 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
             guard let action = self.callBackGenderAction else { return }
             action(selectedGender ?? "", selectedGenderID ?? 0)
         case.pictureUploading:
-            break
+            discardAction?()
         case .picUploadingFailed:
             guard let action = self.genericCallBack else { return }
             action(.picUploadingFailed)
@@ -271,6 +273,9 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
         if popUpType == .betterMatch {
             guard let action = self.callBackAction else { return }
             action("")
+        }
+        if popUpType == .pictureUploading {
+            discardAction?()
         }
         self.hide()
     }

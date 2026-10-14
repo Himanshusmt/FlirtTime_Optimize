@@ -33,6 +33,7 @@ final class VibeCommentViewController: BaseViewController {
         tableView.estimatedRowHeight = 64
         tableView.keyboardDismissMode = .interactive
         tableView.dataSource = self
+        tableView.delegate = self
         tableView.register(VibeCommentTableViewCell.self, forCellReuseIdentifier: VibeCommentTableViewCell.identifier)
         return tableView
     }()
@@ -214,13 +215,14 @@ final class VibeCommentViewController: BaseViewController {
             self.loadingIndicator.stopAnimating()
             switch result {
             case .success:
-                self.commentTextField.isEnabled = true
                 self.tableView.reloadData()
                 self.updateEmptyState()
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
             case .failure(let error):
                 self.emptyStateLabel.text = error.message
                 self.emptyStateLabel.isHidden = false
             }
+            self.commentTextField.isEnabled = true
             self.refreshSendState()
         }
     }
@@ -241,7 +243,7 @@ final class VibeCommentViewController: BaseViewController {
                 self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
                 self.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
                 self.updateEmptyState()
-                self.onCommentsCountChanged?(self.viewModel.comments.count)
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
             case .failure(let error):
                 self.commentTextField.text = text
                 self.aCustomToastView.show(message: error.message)
@@ -250,6 +252,58 @@ final class VibeCommentViewController: BaseViewController {
         }
         commentTextField.text = nil
         refreshSendState()
+    }
+
+    private func confirmDelete(commentId: String) {
+        let alert = UIAlertController(title: "Delete comment?", message: "This can't be undone.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            self?.deleteComment(id: commentId)
+        })
+        present(alert, animated: true)
+    }
+
+    private func deleteComment(id: String) {
+        viewModel.deleteComment(id: id) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let row):
+                self.tableView.deleteRows(at: [IndexPath(row: row, section: 0)], with: .fade)
+                self.updateEmptyState()
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
+            case .failure(let error):
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+    }
+}
+
+// MARK: - UITableViewDelegate
+extension VibeCommentViewController: UITableViewDelegate {
+
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard viewModel.canDelete(at: indexPath.row) else { return nil }
+        let commentId = viewModel.comments[indexPath.row].id
+        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, done in
+            self?.confirmDelete(commentId: commentId)
+            done(false)
+        }
+        delete.image = UIImage(systemName: "trash")
+        let configuration = UISwipeActionsConfiguration(actions: [delete])
+        configuration.performsFirstActionWithFullSwipe = false
+        return configuration
+    }
+
+    func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+        guard viewModel.canDelete(at: indexPath.row) else { return nil }
+        let commentId = viewModel.comments[indexPath.row].id
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            UIMenu(children: [
+                UIAction(title: "Delete comment", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+                    self?.confirmDelete(commentId: commentId)
+                }
+            ])
+        }
     }
 }
 
@@ -264,7 +318,18 @@ extension VibeCommentViewController: UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: VibeCommentTableViewCell.identifier, for: indexPath) as? VibeCommentTableViewCell else {
             return UITableViewCell()
         }
-        cell.configure(with: viewModel.comments[indexPath.row])
+        let comment = viewModel.comments[indexPath.row]
+        cell.configure(with: comment)
+        if viewModel.canDelete(at: indexPath.row) {
+            cell.accessibilityCustomActions = [
+                UIAccessibilityCustomAction(name: "Delete comment") { [weak self] _ in
+                    self?.confirmDelete(commentId: comment.id)
+                    return true
+                }
+            ]
+        } else {
+            cell.accessibilityCustomActions = nil
+        }
         return cell
     }
 }

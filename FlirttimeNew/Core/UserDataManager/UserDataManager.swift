@@ -75,6 +75,17 @@ final class UserDataManager {
         }
     }
 
+    /// The signed-in user from the auth / `auth/me` responses.
+    var appUser: AppUser? {
+        get {
+            guard let data = defaults.data(forKey: "appUser") else { return nil }
+            return try? JSONDecoder().decode(AppUser.self, from: data)
+        }
+        set {
+            defaults.set(try? JSONEncoder().encode(newValue), forKey: "appUser")
+        }
+    }
+
     var filterDataModel: FilterModel? {
         get {
             guard let data = defaults.data(forKey: "filterDataModel") else { return nil }
@@ -88,7 +99,7 @@ final class UserDataManager {
     func removeUserData() {
         ["isOTPVerificationDone", "isHomePageRedirect", "displayName", "userID", "userAvtarImage",
          "isHomeVerified", "subscribe", "ProfileStatus", "AvatarStatus", "OTPAuth",
-         "currentUserData", "filterDataModel"].forEach {
+         "currentUserData", "filterDataModel", "appUser"].forEach {
             defaults.removeObject(forKey: $0)
         }
     }

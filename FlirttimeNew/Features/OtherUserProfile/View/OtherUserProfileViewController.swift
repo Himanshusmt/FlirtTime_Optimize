@@ -405,8 +405,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private func showReportReasons(from sourceView: UIView) {
         guard let details else { return }
         let sheet = UIAlertController(title: "Report \(details.name)", message: "Why are you reporting this profile?", preferredStyle: .actionSheet)
-        VibeSafety.reportReasons.forEach { reason in
-            sheet.addAction(UIAlertAction(title: reason, style: .default) { [weak self] _ in
+        VibeReportReason.allCases.forEach { reason in
+            sheet.addAction(UIAlertAction(title: reason.title, style: .default) { [weak self] _ in
                 self?.aCustomToastView.show(message: "Thanks for letting us know. We'll review this profile.")
             })
         }

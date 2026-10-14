@@ -45,8 +45,11 @@ struct Vibe: Codable {
 
 struct VibeMedia: Codable {
     let id: String?
+    /// Full-size image, for feed cards and full screen.
     let filePath: String?
     let fileType: String?
+    /// 400x400 thumbnail, for grids.
+    var thumbnailPath: String? = nil
 }
 
 struct VibeAuthor: Codable {
@@ -108,6 +111,8 @@ struct VibeComment: Codable {
     let body: String?
     let createdAt: String?
     let author: VibeAuthor?
+    /// Written by the signed-in user, so it can be deleted.
+    var isMine: Bool? = nil
 }
 
 struct CreateVibeCommentResponse: Codable {
@@ -133,6 +138,8 @@ struct VibeGift: Codable {
     /// Remote icon URL from the API; the mock catalog uses an emoji instead.
     let icon: String?
     let amount: Int?
+    /// Backend `giftCode`, e.g. "rose"; `nil` for mock gifts.
+    var code: String? = nil
 }
 
 struct VibeSendGiftResponse: Codable {
@@ -160,6 +167,7 @@ struct VibeReceivedGift: Codable {
     let createdAt: String?
     let gift: VibeGift?
     let sender: VibeAuthor?
+    var message: String? = nil
 }
 
 // MARK: - Helpers

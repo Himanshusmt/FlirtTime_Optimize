@@ -57,6 +57,41 @@ final class AppApiClient {
 
     /// POSTs `fields` and `files` as multipart/form-data, decodes `{ success, data }` and returns `data`.
     func upload<T: Codable>(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<T> {
+        performUpload(endPoint: endPoint, fields: fields, files: files) { data, _ in
+            let response = try JSONDecoder().decode(BaseApiResponse<T>.self, from: data)
+            guard let payload = response.data else {
+                throw APIError.apiError(response.message ?? "No data found")
+            }
+            return payload
+        }
+    }
+
+    /// POSTs `fields` and `files` as multipart/form-data and returns the whole response body. Used until typed models exist.
+    func uploadJSON(endPoint: AppEndPoint, fields: [String: String], files: [AppMultipartFile]) -> Single<[String: Any]> {
+        performUpload(endPoint: endPoint, fields: fields, files: files) { data, _ in
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw APIError.apiError("Unexpected response format")
+            }
+            return json
+        }
+    }
+
+    func isInternetAvailable() -> Bool {
+        NetworkReachabilityManager()?.isReachable ?? false
+    }
+
+    // MARK: - Private
+
+    private func perform<T>(_ request: AppApiRequest, decode: @escaping (Data, Int) throws -> T) -> Single<T> {
+        perform(endPoint: request.endPoint, method: request.method, logParameters: request.parameters, makeRequest: { session, url in
+            session.request(url, method: request.method, parameters: request.parameters, encoding: request.encoding)
+        }, decode: decode)
+    }
+
+    private func performUpload<T>(endPoint: AppEndPoint,
+                                  fields: [String: String],
+                                  files: [AppMultipartFile],
+                                  decode: @escaping (Data, Int) throws -> T) -> Single<T> {
         var logParameters: [String: Any] = fields
         files.forEach { logParameters[$0.name] = "<file \($0.fileName), \($0.data.count) bytes>" }
 
@@ -69,24 +104,6 @@ final class AppApiClient {
                     form.append(file.data, withName: file.name, fileName: file.fileName, mimeType: file.mimeType)
                 }
             }, to: url, method: .post)
-        }, decode: { data, _ in
-            let response = try JSONDecoder().decode(BaseApiResponse<T>.self, from: data)
-            guard let payload = response.data else {
-                throw APIError.apiError(response.message ?? "No data found")
-            }
-            return payload
-        })
-    }
-
-    func isInternetAvailable() -> Bool {
-        NetworkReachabilityManager()?.isReachable ?? false
-    }
-
-    // MARK: - Private
-
-    private func perform<T>(_ request: AppApiRequest, decode: @escaping (Data, Int) throws -> T) -> Single<T> {
-        perform(endPoint: request.endPoint, method: request.method, logParameters: request.parameters, makeRequest: { session, url in
-            session.request(url, method: request.method, parameters: request.parameters, encoding: request.encoding)
         }, decode: decode)
     }
 

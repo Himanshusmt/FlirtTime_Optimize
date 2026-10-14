@@ -275,8 +275,9 @@ final class DiscoverViewController: BaseViewController, Instantiable {
             ])
         }
 
-        momentsView.onOpenMoment = { [weak self] profile, index in self?.openMoments(of: profile, at: index) }
+        momentsView.onOpenStories = { [weak self] item, isMine in self?.openQuickMoments(of: item, isMine: isMine) }
         interestsView.onSelectProfile = { [weak self] profile in self?.openProfile(profile) }
+        interestsView.onSelectInterest = { [weak self] item in self?.viewModel.loadPeople(for: item) }
         interestsView.onDiscoverInterest = { [weak self] interest in
             self?.show(.people)
             self?.discover(interest)
@@ -358,8 +359,8 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         interestsView.isHidden = page != .interests
         switch page {
         case .people: break
-        case .moments: momentsView.configure(with: viewModel.everyone)
-        case .interests: interestsView.configure(with: viewModel.everyone)
+        case .moments: viewModel.loadQuickMomentTray()
+        case .interests: viewModel.loadInterestCatalog()
         }
         UIAccessibility.post(notification: .layoutChanged, argument: nil)
     }
@@ -387,6 +388,22 @@ final class DiscoverViewController: BaseViewController, Instantiable {
             .sink { [weak self] filters in self?.updateFilterBadge(filters.activeCount) }
             .store(in: &cancellables)
 
+        viewModel.$quickMomentTray
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] tray in self?.momentsView.configure(tray: tray) }
+            .store(in: &cancellables)
+
+        viewModel.$interestCatalog
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] catalog in self?.interestsView.configure(catalog: catalog) }
+            .store(in: &cancellables)
+
+        viewModel.$interestPeople
+            .receive(on: DispatchQueue.main)
+            .compactMap { $0 }
+            .sink { [weak self] result in self?.interestsView.configure(people: result.profiles, for: result.interestId) }
+            .store(in: &cancellables)
+
         CoinWallet.shared.$balance
             .receive(on: DispatchQueue.main)
             .sink { [weak self] balance in self?.updateCoinBalance(balance) }
@@ -405,8 +422,6 @@ final class DiscoverViewController: BaseViewController, Instantiable {
             lastImpressionID = current.id
             VibeAnalytics.track(.discoverProfileImpression, profileID: current.id)
         }
-        if !momentsView.isHidden { momentsView.configure(with: viewModel.everyone) }
-        if !interestsView.isHidden { interestsView.configure(with: viewModel.everyone) }
         updateStateViews()
     }
 
@@ -474,7 +489,8 @@ final class DiscoverViewController: BaseViewController, Instantiable {
 
     private func send(_ action: VibeAction, for profile: VibeProfile, reasons: [ConnectReason],
                       reaction: VibeReaction? = nil, fromConnectFlow: Bool) {
-        let started = viewModel.perform(action, on: profile, reasons: reasons, reaction: reaction) { [weak self] result in
+        let started = viewModel.perform(action, on: profile, reasons: reasons, reaction: reaction,
+                                        viaConnectSheet: fromConnectFlow) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let outcome):
@@ -557,12 +573,9 @@ final class DiscoverViewController: BaseViewController, Instantiable {
                 self?.discover(interest)
             }
         }
-        profileVC.onHide = { [weak self] profile, blocked in
-            self?.popProfile {
-                guard let self else { return }
-                self.viewModel.hide(profile, block: blocked)
-                self.aCustomToastView.show(message: blocked ? "\(profile.displayName) has been blocked"
-                                                            : "Thanks for reporting. We'll review this profile.")
+        profileVC.onSafetyAction = { [weak self] profile, action in
+            self?.applySafety(action, to: profile) {
+                self?.popProfile {}
             }
         }
         navigationController?.pushViewController(profileVC, animated: true)
@@ -582,6 +595,26 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         }
     }
 
+    /// Sends a report or block; `onSuccess` runs only once the API accepts it. On failure the user stays put.
+    private func applySafety(_ action: VibeSafetyAction, to profile: VibeProfile, onSuccess: @escaping () -> Void) {
+        setLoading(true)
+        viewModel.apply(action, to: profile) { [weak self] result in
+            guard let self else { return }
+            self.setLoading(false)
+            switch result {
+            case .success:
+                onSuccess()
+                if case .block = action {
+                    self.aCustomToastView.show(message: "\(profile.displayName) has been blocked")
+                } else {
+                    self.aCustomToastView.show(message: "Thanks for reporting. We'll review this profile.")
+                }
+            case .failure(let error):
+                self.aCustomToastView.show(message: parseError(error) ?? "Something went wrong. Please try again.")
+            }
+        }
+    }
+
     private func popProfile(then completion: @escaping () -> Void) {
         navigationController?.popViewController(animated: true)
         if let coordinator = navigationController?.transitionCoordinator {
@@ -591,17 +624,95 @@ final class DiscoverViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func openMoments(of profile: VibeProfile, at index: Int) {
-        VibeAnalytics.track(.vibeMomentOpened, profileID: profile.id)
-        let momentsVC = VibeMomentsViewController(profile: profile, startIndex: index)
-        momentsVC.onReport = { [weak self] profile in
-            self?.viewModel.hide(profile, block: false)
-            self?.aCustomToastView.show(message: "Thanks for reporting. We'll review this profile.")
+    private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
+        if isMine {
+            presentQuickMoments(item.stories, of: item, isMine: true)
+            return
         }
-        momentsVC.onViewProfile = { [weak self] profile in
-            self?.dismiss(animated: true) { self?.openProfile(profile) }
+        viewModel.quickMoments(of: item) { [weak self] stories in
+            guard let self else { return }
+            guard !stories.isEmpty else {
+                self.aCustomToastView.show(message: "These moments have expired")
+                self.viewModel.loadQuickMomentTray()
+                return
+            }
+            self.presentQuickMoments(stories, of: item, isMine: false)
         }
-        present(momentsVC, animated: true)
+    }
+
+    /// `stories` arrive newest first; they play oldest first, starting at the first unseen one.
+    private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
+        let stories = Array(stories.reversed())
+        guard !stories.isEmpty else { return }
+        let user = item.user
+        let userId = user?.id ?? stories.first?.userId
+        var profile = VibeProfile(id: userId?.stableID ?? 0,
+                                  displayName: isMine ? "You" : (user?.name ?? user?.fullName ?? "Someone"),
+                                  age: nil,
+                                  isVerified: user?.isVerified ?? false,
+                                  gender: nil,
+                                  city: user?.location,
+                                  distanceKm: nil,
+                                  isOnline: nil,
+                                  datingIntent: nil,
+                                  photos: [user?.photo].compactMap { $0 },
+                                  about: "",
+                                  interests: [],
+                                  sharedInterests: [],
+                                  reasons: [],
+                                  voiceIntro: nil,
+                                  moments: stories.enumerated().map { $0.element.storyMoment(id: $0.offset) },
+                                  vibeScore: nil)
+        profile.remoteUserId = userId
+        let startIndex = isMine ? 0 : (stories.firstIndex { !$0.hasViewed } ?? 0)
+        let viewer = VibeMomentsViewController(profile: profile, startIndex: startIndex, isOwnMoments: isMine)
+        if !isMine { VibeAnalytics.track(.vibeMomentOpened, profileID: profile.id) }
+
+        if isMine {
+            viewer.onShowActivity = { index, presenter in
+                guard stories.indices.contains(index) else { return }
+                let activity = QuickMomentActivityViewController(moment: stories[index])
+                activity.modalPresentationStyle = .pageSheet
+                if let sheet = activity.sheetPresentationController {
+                    sheet.detents = [.medium(), .large()]
+                    sheet.prefersGrabberVisible = true
+                }
+                presenter.present(activity, animated: true)
+            }
+            viewer.onDelete = { [weak self] index in
+                guard stories.indices.contains(index) else { return }
+                self?.viewModel.deleteQuickMoment(id: stories[index].id) { message in
+                    self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
+                }
+            }
+        } else {
+            var seen = Set<String>()
+            viewer.onMomentShown = { [weak self] index in
+                guard stories.indices.contains(index), !stories[index].hasViewed,
+                      seen.insert(stories[index].id).inserted else { return }
+                self?.viewModel.markQuickMomentViewed(id: stories[index].id)
+            }
+            viewer.onReact = { [weak self] index, emoji in
+                guard stories.indices.contains(index) else { return }
+                self?.viewModel.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
+                    self?.aCustomToastView.show(message: message)
+                }
+            }
+            viewer.onReply = { [weak self] index, message in
+                guard stories.indices.contains(index) else { return }
+                self?.viewModel.replyToQuickMoment(id: stories[index].id, message: message) { error in
+                    self?.aCustomToastView.show(message: error)
+                }
+            }
+            viewer.onReport = { [weak self] profile, reason in
+                self?.applySafety(.report(reason), to: profile) {}
+            }
+            viewer.onViewProfile = { [weak self] profile in
+                self?.dismiss(animated: true) { self?.openProfile(profile) }
+            }
+        }
+        viewer.onDismiss = { [weak self] in self?.viewModel.loadQuickMomentTray() }
+        present(viewer, animated: true)
     }
 
     private func discover(_ interest: VibeInterest) {
