@@ -299,6 +299,68 @@ final class AppSessionManager {
                                                          parameters: params, encoding: URLEncoding.queryString))
     }
 
+    // MARK: - Discovery filters
+
+    /// Allowed genders, age and distance bounds, looking-for values and interests (UUIDs) for the Filters sheet.
+    func discoveryFilterOptions() -> Single<DiscoveryFilterOptions> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .discoveryFilterOptions))
+    }
+
+    /// Saved preferences, or the backend defaults when none are saved yet.
+    func discoveryFilters() -> Single<DiscoveryFilterPreferences> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .discoveryFilters))
+    }
+
+    func updateDiscoveryFilters(_ preferences: DiscoveryFilterPreferences) -> Single<DiscoveryFilterPreferences> {
+        backendClient.load(request: AppApiRequest(method: .put, endPoint: .discoveryFilters, parameters: preferences.body))
+    }
+
+    func resetDiscoveryFilters() -> Single<DiscoveryFilterPreferences> {
+        backendClient.load(request: AppApiRequest(method: .post, endPoint: .discoveryFiltersReset))
+    }
+
+    /// Profiles matching `filters`, excluding blocked and already swiped people. `countOnly` returns just `totalCount`.
+    func discoverySearch(filters: DiscoveryFilterPreferences, page: Int, limit: Int,
+                         countOnly: Bool = false) -> Single<DiscoverySearchData> {
+        discoverySearch(style: Self.searchBodyStyle, filters: filters.body, page: page, limit: limit, countOnly: countOnly)
+    }
+
+    /// The live server rejects the documented `{ filters, page, limit, countOnly }` body with
+    /// "Unknown fields are not allowed in search body", so on a 400 the other shapes are tried and the working one is kept.
+    private static var searchBodyStyle = 0
+
+    private static func searchBody(style: Int, filters: [String: Any], page: Int, limit: Int, countOnly: Bool) -> [String: Any]? {
+        let paging: [String: Any] = ["page": page, "limit": limit]
+        let keepFirst: (Any, Any) -> Any = { first, _ in first }
+        switch style {
+        case 0: return ["filters": filters, "countOnly": countOnly].merging(paging, uniquingKeysWith: keepFirst)
+        case 1: return filters.merging(paging, uniquingKeysWith: keepFirst).merging(["countOnly": countOnly], uniquingKeysWith: keepFirst)
+        case 2: return ["filters": filters].merging(paging, uniquingKeysWith: keepFirst)
+        case 3: return filters.merging(paging, uniquingKeysWith: keepFirst)
+        case 4: return ["filters": filters]
+        case 5: return filters
+        default: return nil
+        }
+    }
+
+    private func discoverySearch(style: Int, filters: [String: Any], page: Int, limit: Int,
+                                 countOnly: Bool) -> Single<DiscoverySearchData> {
+        guard let params = Self.searchBody(style: style, filters: filters, page: page, limit: limit, countOnly: countOnly) else {
+            return .error(APIHTTPError(statusCode: 400, message: "Couldn't search right now"))
+        }
+        let request: Single<DiscoverySearchData> = backendClient.load(
+            request: AppApiRequest(method: .post, endPoint: .discoverySearch, parameters: params))
+        return request
+            .do(onSuccess: { _ in Self.searchBodyStyle = style })
+            .catch { [weak self] error in
+                guard let self, (error as? APIHTTPError)?.statusCode == 400,
+                      Self.searchBody(style: style + 1, filters: filters, page: page, limit: limit, countOnly: countOnly) != nil else {
+                    return .error(error)
+                }
+                return self.discoverySearch(style: style + 1, filters: filters, page: page, limit: limit, countOnly: countOnly)
+            }
+    }
+
     /// Active interests, A to Z.
     func interestsCatalog() -> Single<[InterestCatalogItem]> {
         let request: Single<InterestsCatalogData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .interestsCatalog))
@@ -406,13 +468,13 @@ final class AppSessionManager {
         return request.map { $0.page(fallbackAuthor: .currentUser) }
     }
 
-    /// Another user's moments; `author` is shown on moments that come without a creator.
-    func userMoments(userId: String, page: Int, limit: Int, author: MomentsAuthor? = nil) -> Single<MomentFeedPage> {
+    /// Another user's permanent moments; the backend applies audience and block rules.
+    /// `fallbackAuthor` is used for moments that come without a creator.
+    func userMoments(userId: String, page: Int, limit: Int, fallbackAuthor: MomentsAuthor? = nil) -> Single<MomentFeedPage> {
         let params: [String: Any] = ["page": page, "limit": limit]
         let request: Single<MomentFeedData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .userMoments(userId: userId),
                                                                                         parameters: params, encoding: URLEncoding.queryString))
-        let fallback = author ?? MomentsAuthor(userId: userId, userName: nil, fullName: nil, profilePicture: nil, verified: nil, location: nil)
-        return request.map { $0.page(fallbackAuthor: fallback) }
+        return request.map { $0.page(fallbackAuthor: fallbackAuthor) }
     }
 
     /// `imageKeys` are 1 to 5 S3 keys from `media/presigned-url`, in display order. The backend

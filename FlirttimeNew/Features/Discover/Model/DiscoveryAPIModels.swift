@@ -69,6 +69,148 @@ struct DiscoveryTag: Codable {
     }
 }
 
+// MARK: - Discovery filters (GET filters/options, GET / PUT filters, POST filters/reset)
+
+/// `{ value, label }`; the live server sends `id` instead of `value`.
+struct DiscoveryFilterOption: Codable {
+    let value: String
+    let label: String?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        value = c.string("value", "id") ?? ""
+        label = c.string("label")
+    }
+}
+
+struct DiscoveryFilterInterest: Codable {
+    /// UUID sent back in `interestIds`.
+    let id: String
+    let name: String
+    let icon: String?
+    let displayOrder: Int?
+}
+
+struct DiscoveryFilterOptions: Codable {
+    struct AgeBounds: Codable {
+        let minAllowed: Int?
+        let maxAllowed: Int?
+        let defaultMin: Int?
+        let defaultMax: Int?
+    }
+
+    struct DistanceBounds: Codable {
+        let minKm: Int?
+        let maxKm: Int?
+        let defaultKm: Int?
+    }
+
+    let genders: [DiscoveryFilterOption]?
+    let age: AgeBounds?
+    let distance: DistanceBounds?
+    let lookingFor: [DiscoveryFilterOption]?
+    let interests: [DiscoveryFilterInterest]?
+
+    var sortedInterests: [DiscoveryFilterInterest] {
+        (interests ?? []).sorted { ($0.displayOrder ?? .max, $0.name) < ($1.displayOrder ?? .max, $1.name) }
+    }
+}
+
+/// Saved filters. `maxDistanceKm == nil` means Anywhere.
+struct DiscoveryFilterPreferences: Codable {
+    var genders: [String]
+    var ageMin: Int
+    var ageMax: Int
+    var maxDistanceKm: Int?
+    var lookingFor: [String]
+    var interestIds: [String]
+    var verifiedOnly: Bool
+    var onlineOnly: Bool
+
+    init(genders: [String], ageMin: Int, ageMax: Int, maxDistanceKm: Int?, lookingFor: [String],
+         interestIds: [String], verifiedOnly: Bool, onlineOnly: Bool) {
+        self.genders = genders
+        self.ageMin = ageMin
+        self.ageMax = ageMax
+        self.maxDistanceKm = maxDistanceKm
+        self.lookingFor = lookingFor
+        self.interestIds = interestIds
+        self.verifiedOnly = verifiedOnly
+        self.onlineOnly = onlineOnly
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        genders = c.first([String].self, "genders") ?? []
+        ageMin = c.int("ageMin") ?? FilterModel.ageBounds.lowerBound
+        ageMax = c.int("ageMax") ?? FilterModel.ageBounds.upperBound
+        let isAnywhere = c.bool("isAnywhere") ?? false
+        maxDistanceKm = isAnywhere ? nil : c.int("maxDistanceKm")
+        lookingFor = c.first([String].self, "lookingFor") ?? []
+        interestIds = c.first([String].self, "interestIds") ?? []
+        verifiedOnly = c.bool("verifiedOnly") ?? false
+        onlineOnly = c.bool("onlineOnly") ?? false
+    }
+
+    /// Body for PUT `discovery/filters` and the `filters` of POST `discovery/search`.
+    var body: [String: Any] {
+        ["genders": genders,
+         "ageMin": ageMin,
+         "ageMax": ageMax,
+         "maxDistanceKm": maxDistanceKm.map { $0 as Any } ?? NSNull(),
+         "lookingFor": lookingFor,
+         "interestIds": interestIds,
+         "verifiedOnly": verifiedOnly,
+         "onlineOnly": onlineOnly]
+    }
+}
+
+// MARK: - Discovery search (POST discovery/search)
+
+struct DiscoverySearchPhoto: Codable {
+    let url: String?
+    let thumbnailUrl: String?
+    let isPrimary: Bool?
+    let displayOrder: Int?
+}
+
+struct DiscoverySearchProfile: Codable {
+    let id: String?
+    let userId: String?
+    let name: String?
+    let username: String?
+    let age: Int?
+    /// "female" | "male" | ...
+    let gender: String?
+    let bio: String?
+    let isFaceVerified: Bool?
+    let isVerified: Bool?
+    let isOnline: Bool?
+    let distanceKm: Double?
+    let city: String?
+    /// "long_term" | "casual" | "not_sure"
+    let lookingFor: String?
+    let primaryPhotoUrl: String?
+    let photos: [DiscoverySearchPhoto]?
+    let interests: [DiscoveryTag]?
+    let sharedInterests: [DiscoveryTag]?
+    let vibeScore: Int?
+}
+
+struct DiscoverySearchData: Codable {
+    struct Pagination: Codable {
+        let page: Int?
+        let limit: Int?
+        let totalCount: Int?
+        let totalPages: Int?
+        let hasMore: Bool?
+    }
+
+    let profiles: [DiscoverySearchProfile]?
+    let pagination: Pagination?
+    let totalCount: Int?
+}
+
 // MARK: - Connection request
 
 /// The `data` of POST `connections/request`.

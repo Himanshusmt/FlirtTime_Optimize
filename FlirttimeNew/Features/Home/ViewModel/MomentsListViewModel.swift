@@ -7,7 +7,8 @@ import Foundation
 import RxSwift
 import Swinject
 
-/// Moments tab (`GET moments?type=feed`), "My Moments" (`GET moments/me`) and another user's moments (`GET users/:userId/moments`).
+/// Moments tab (`GET moments?type=feed`), "My Moments" (`GET moments/me`) and another
+/// user's moments (`GET users/:userId/moments`).
 final class MomentsListViewModel {
 
     private(set) var vibes: [MomentsPost] = []
@@ -21,24 +22,23 @@ final class MomentsListViewModel {
     /// Bumped on every like tap so only the latest response for a moment is applied.
     private var likeGeneration: [String: Int] = [:]
     private let onlyCurrentUser: Bool
-    /// Another user's moments; mock people (numeric ids) still come from `MockMomentsStore`.
+    /// Set for another user's moments (`GET users/:userId/moments`); mock people (numeric ids) still come from `MockMomentsStore`.
     private let authorID: String?
-    private let author: MomentsAuthor?
+    /// Shown on that user's moments when the backend sends them without a creator.
+    private let authorName: String?
     private let sessionManager: AppSessionManager
     private let disposeBag = DisposeBag()
 
-    init(onlyCurrentUser: Bool = false, authorID: String? = nil, author: MomentsAuthor? = nil,
+    init(onlyCurrentUser: Bool = false, authorID: String? = nil, authorName: String? = nil,
          sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.onlyCurrentUser = onlyCurrentUser
         self.authorID = authorID
-        self.author = author
+        self.authorName = authorName
         self.sessionManager = sessionManager
     }
 
     convenience init(authorID: String, authorName: String? = nil) {
-        let author = MomentsAuthor(userId: authorID, userName: nil, fullName: authorName,
-                                   profilePicture: nil, verified: nil, location: nil)
-        self.init(onlyCurrentUser: false, authorID: authorID, author: author)
+        self.init(onlyCurrentUser: false, authorID: authorID, authorName: authorName)
     }
 
     var currentUserID: String? { UserDataManager.shared.appUser?.id }
@@ -89,7 +89,9 @@ final class MomentsListViewModel {
         }
         let request: Single<MomentFeedPage>
         if let authorID {
-            request = sessionManager.userMoments(userId: authorID, page: page, limit: pageSize, author: author)
+            let fallbackAuthor = MomentsAuthor(userId: authorID, userName: authorName, fullName: authorName,
+                                               profilePicture: nil, verified: nil, location: nil)
+            request = sessionManager.userMoments(userId: authorID, page: page, limit: pageSize, fallbackAuthor: fallbackAuthor)
         } else if onlyCurrentUser {
             request = sessionManager.myMoments(page: page, limit: pageSize)
         } else {
@@ -110,7 +112,8 @@ final class MomentsListViewModel {
     }
 
     private func apply(rows: [MomentsPost], page: Int, hasMore: Bool, total: Int?) {
-        let rows = rows.filter { !Self.isAuthorBlocked($0) }
+        // `users/:userId/moments` already applies block rules, and a stale local block would hide every row.
+        let rows = authorID == nil ? rows.filter { !Self.isAuthorBlocked($0) } : rows
         if page == 1 {
             vibes = rows
         } else {

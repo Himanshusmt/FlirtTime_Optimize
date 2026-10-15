@@ -154,7 +154,7 @@ struct MomentsProfile: Equatable {
     let sharedInterests: [MomentsInterest]
     let reasons: [String]
     let voiceIntro: MomentsVoiceIntro?
-    let moments: [MomentsStory]
+    var moments: [MomentsStory]
     /// Overlap of real interests (plus same city); `nil` when nothing is shared, so no score is shown.
     let vibeScore: Int?
     /// Total moments posted, which can exceed the `moments` preview.

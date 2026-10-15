@@ -196,7 +196,7 @@ private final class ActivityCell: UITableViewCell {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(author: MomentsAuthor?, detail: String, trailing: String?, createdAt: String?) {
-        avatar.loadImage(path: author?.profilePicture, placeholder: UIImage(named: "ProfileBlur"))
+        avatar.loadImage(path: author?.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
         let name = author?.displayName ?? "Someone"
         nameLabel.text = name
         timeLabel.text = MomentsDate.timeAgo(from: createdAt)

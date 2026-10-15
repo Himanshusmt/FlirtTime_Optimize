@@ -23,4 +23,6 @@ struct FilterModel:Codable {
     var isOnline:String?
     var interests:[Int]?
     var intents:[String]?
+    /// Interest UUIDs from `discovery/filters/options`.
+    var interestIds:[String]?
 }
