@@ -15,8 +15,22 @@ final class OtherUserBasicInfoCell: UITableViewCell {
     @IBOutlet private weak var valueLabel: UILabel!
     @IBOutlet private weak var separatorView: UIView!
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        iconImageView.image = nil
+    }
+
+    /// Attribute icons already include their own ring, so they fill the bubble; answers without one get a symbol.
     func configure(info: OtherUserBasicInfo, isLast: Bool) {
-        iconImageView.loadImage(path: info.iconPath)
+        if let iconPath = info.iconPath, !iconPath.isEmpty {
+            iconImageView.contentMode = .scaleAspectFit
+            iconImageView.loadImage(path: iconPath)
+        } else {
+            iconImageView.contentMode = .center
+            iconImageView.tintColor = AppColor.Punch
+            iconImageView.image = UIImage(systemName: "sparkles",
+                                          withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold))
+        }
         titleLabel.text = info.title
         valueLabel.text = info.value
         separatorView.isHidden = isLast

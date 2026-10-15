@@ -8,11 +8,15 @@ import UIKit
 /// Routes between FlirtTime's profile screens and chat conversations.
 enum ChatProfileRouter {
     static func openProfile(of user: UserRes, from presenter: UIViewController) {
-        guard let userId = Int(user.userId ?? user.id ?? "") else {
-            AppLogger.debug("[ChatProfileRouter] non-numeric user id, profile not opened")
+        let rawID = user.userId ?? user.id
+        let remoteID = OtherUserProfileRouter.remoteID(for: rawID)
+        let numericID = rawID.flatMap { Int($0) }
+        guard numericID != nil || remoteID != nil else {
+            AppLogger.debug("[ChatProfileRouter] missing user id, profile not opened")
             return
         }
-        var payload: [String: Any] = ["user_id": userId, "id": userId]
+        var payload: [String: Any] = [:]
+        if let numericID { payload["user_id"] = numericID; payload["id"] = numericID }
         if let name = user.fullName ?? user.userName { payload["display_name"] = name; payload["fullname"] = name }
         if let avatar = user.profilePicture { payload["avatar"] = avatar }
         if let bio = user.bio { payload["about_me"] = bio }
@@ -23,6 +27,7 @@ enum ChatProfileRouter {
         let profileVC: OtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
         profileVC.fromChatScreen = true
         profileVC.userDetailInfo = info
+        profileVC.remoteUserID = remoteID
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }
 
