@@ -26,7 +26,7 @@ class OtherUserProfileViewModel {
     @Published var errorMomentImages:String?
 
     @Published var aSendCompliment: SentCompliment?
-    @Published var errorSendCompliment:String?
+    @Published var errorSendCompliment: (title: String, message: String)?
 
     @Published var aCheckUserSubscribe:CheckSubscriptionResponse?
     @Published var errorCheckUserSubscribe:String?
@@ -249,7 +249,12 @@ class OtherUserProfileViewModel {
             .subscribe(onSuccess: { [weak self] compliment in
                 self?.aSendCompliment = compliment
             }, onFailure: { [weak self] error in
-                self?.errorSendCompliment = parseError(error) ?? "Unable to send compliment. Please try again."
+                if (error as? APIHTTPError)?.code == "ALREADY_MATCHED" {
+                    self?.errorSendCompliment = (Constants.Compliment.alreadyMatchedTitle, Constants.Compliment.alreadyMatched)
+                } else {
+                    let message = parseError(error).flatMap { $0.isEmpty ? nil : $0 } ?? Constants.Compliment.failed
+                    self?.errorSendCompliment = (Constants.Compliment.failedTitle, message)
+                }
             })
             .disposed(by: disposeBag)
     }

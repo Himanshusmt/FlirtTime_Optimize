@@ -140,6 +140,10 @@ enum Constants{
         /// `%@` is the other user's name.
         static let placeholderFormat = "Say something nice to %@…"
         static let sent = "Compliment sent successfully"
+        static let failedTitle = "Failed"
+        static let failed = "Unable to send compliment. Please try again."
+        static let alreadyMatchedTitle = "Already Matched"
+        static let alreadyMatched = "You're already matched with this user. Head over to your chats and say hi!"
         static let suggestions = [
             "Love this photo 😍",
             "Gorgeous smile 😊",

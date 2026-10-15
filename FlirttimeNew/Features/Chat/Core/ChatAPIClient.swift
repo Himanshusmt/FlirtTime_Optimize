@@ -38,7 +38,6 @@ extension APIError: LocalizedError {
 struct APIHTTPError: Error, LocalizedError {
     let statusCode: Int
     let message: String
-    /// Backend code such as "EMAIL_ALREADY_IN_USE", when sent.
     var code: String? = nil
     var errorDescription: String? { message }
 }

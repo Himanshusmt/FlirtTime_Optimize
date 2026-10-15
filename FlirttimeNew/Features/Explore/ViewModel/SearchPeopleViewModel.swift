@@ -4,39 +4,90 @@
 //
 
 import Foundation
+import RxSwift
+import Swinject
 
-// TODO: replace the MockPeople response with the real people search API.
+/// Search People screen: `GET users/search` by name or city, paged.
 final class SearchPeopleViewModel {
 
-    @Published var people: [UserDetailInfo]?
-    @Published var errorMessage: String?
+    @Published private(set) var people: [UserSearchResult] = []
+    /// The query `people` belong to; empty until a search comes back.
+    @Published private(set) var query = ""
+    @Published private(set) var isLoading = false
+    @Published private(set) var errorMessage: String?
 
-    private let store = MockDataStore.shared
+    private let pageSize = 20
+    private let debounceInterval: TimeInterval = 0.35
+    private var nextPage = 1
+    private var hasMore = false
+    private var pendingSearch: DispatchWorkItem?
+    private var searchRequest: Disposable?
 
-    func getPeople() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
-            guard let self else { return }
-            let payload = MockPeople.all.map(MockPeople.userInfoJSON)
-            if let people = self.store.decode([UserDetailInfo].self, from: payload) {
-                self.people = people
-            } else {
-                self.errorMessage = "Unable to load people"
-            }
-        }
+    private let sessionManager: AppSessionManager
+
+    init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
     }
 
-    static func filter(_ people: [UserDetailInfo], query: String) -> [UserDetailInfo] {
-        let terms = query
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .split(separator: " ")
-            .map(String.init)
-        guard !terms.isEmpty else { return people }
+    deinit {
+        pendingSearch?.cancel()
+        searchRequest?.dispose()
+    }
 
-        return people.filter { person in
-            let searchable = [person.displayName, person.fullname, person.location]
-                .compactMap { $0 }
-                .joined(separator: " ")
-            return terms.allSatisfy { searchable.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+    /// Searches for `text` once typing pauses; an empty text clears the results.
+    func search(_ text: String) {
+        pendingSearch?.cancel()
+        searchRequest?.dispose()
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            hasMore = false
+            errorMessage = nil
+            isLoading = false
+            query = ""
+            people = []
+            return
         }
+        isLoading = true
+        let work = DispatchWorkItem { [weak self] in self?.fetch(trimmed, page: 1) }
+        pendingSearch = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + debounceInterval, execute: work)
+    }
+
+    func loadMoreIfNeeded() {
+        guard hasMore, !isLoading, !query.isEmpty else { return }
+        fetch(query, page: nextPage)
+    }
+
+    // MARK: - Private
+
+    private func fetch(_ text: String, page: Int) {
+        searchRequest?.dispose()
+        isLoading = true
+        searchRequest = sessionManager.searchUsers(query: text, page: page, limit: pageSize)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] result in
+                guard let self else { return }
+                let existing = page == 1 ? [] : self.people
+                let knownIDs = Set(existing.compactMap(\.userId))
+                let found = result.users.filter { user in
+                    guard let userId = user.userId, !userId.isEmpty else { return false }
+                    return !knownIDs.contains(userId)
+                }
+                self.nextPage = (result.page ?? page) + 1
+                self.hasMore = result.hasMore ?? (result.users.count >= self.pageSize)
+                self.errorMessage = nil
+                self.isLoading = false
+                self.query = text
+                self.people = existing + found
+            }, onFailure: { [weak self] error in
+                guard let self else { return }
+                self.hasMore = false
+                self.errorMessage = parseError(error) ?? "Couldn't search right now"
+                self.isLoading = false
+                if page == 1 {
+                    self.query = text
+                    self.people = []
+                }
+            })
     }
 }

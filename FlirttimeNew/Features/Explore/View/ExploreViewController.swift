@@ -281,29 +281,18 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         default:
             break
         }
-        openProfile(card, from: tab)
+        openProfile(card)
     }
 
-    private func openProfile(_ card: InteractionCard, from tab: ExploreTab) {
-        guard let profile = DiscoverViewModel.makeProfile(from: card), let userId = card.userId else { return }
-        let profileVC = CardDetailViewController(profile: profile)
-        profileVC.hidesBottomBarWhenPushed = true
-        profileVC.onAction = { [weak self] action, _, _ in
-            guard let self else { return }
-            self.navigationController?.popViewController(animated: true)
-            let isNope = action == .notMyVibe || action == .nope
-            guard isNope || tab == .likes else { return }
-            self.aExploreViewModel.act(action.apiAction, on: userId) { [weak self] in
-                self?.aExploreViewModel.loadCounts()
-                ExploreTab.allCases.forEach { self?.loadTab($0) }
-            }
-        }
-        profileVC.onSafetyCompleted = { [weak self] _ in
-            guard let self else { return }
-            self.aExploreViewModel.loadCounts()
-            [.likes, .matches, .compliments].forEach { self.loadTab($0) }
-        }
-        navigationController?.pushViewController(profileVC, animated: true)
+    private func openProfile(_ card: InteractionCard) {
+        let seed = OtherUserProfileRouter.Seed(userID: card.userId,
+                                               name: card.name,
+                                               avatar: card.photo,
+                                               location: card.city,
+                                               age: card.age,
+                                               isVerified: card.isVerified == true,
+                                               isOnline: card.isOnline == true)
+        OtherUserProfileRouter.open(seed, from: self)
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
