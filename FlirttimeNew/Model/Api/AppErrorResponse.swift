@@ -7,8 +7,6 @@ import Foundation
 
 /// Body of every failed FlirtTime API call, e.g. a wrong OTP:
 /// `{ "success": false, "message": "Invalid verification code" }`.
-/// Validation failures carry `error` as a list of field errors; other failures carry it as a code,
-/// e.g. `{ "success": false, "error": "ALREADY_MATCHED", "message": "You are already matched with this user" }`.
 struct AppErrorResponse: Decodable {
     let success: Bool?
     let message: String?

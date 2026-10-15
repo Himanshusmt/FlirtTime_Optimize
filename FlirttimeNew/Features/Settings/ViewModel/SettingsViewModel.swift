@@ -94,7 +94,11 @@ final class SettingsViewModel {
         case .email: request = sessionManager.requestProfileEmailOTP(email: value)
         case .phone: request = sessionManager.requestProfilePhoneOTP(countryCode: countryCode ?? "", phone: value)
         }
-        handleCode(request, completion: completion)
+        handleCode(request, completion: completion) { error in
+            guard let httpError = error as? APIHTTPError,
+                  httpError.statusCode == 409 || httpError.code?.hasSuffix("ALREADY_IN_USE") == true else { return nil }
+            return kind == .email ? "Email already in use" : "Phone number already in use"
+        }
     }
 
     func resendContactCode(kind: ContactKind, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
@@ -134,14 +138,17 @@ final class SettingsViewModel {
             .disposed(by: disposeBag)
     }
 
-    private func handleCode(_ request: Single<OTPResponse>, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+    private func handleCode(_ request: Single<OTPResponse>,
+                            completion: @escaping (Result<Int?, MomentsError>) -> Void,
+                            title: @escaping (Error) -> String? = { _ in nil }) {
         request
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] response in
                 if let id = response.verificationId, !id.isEmpty { self?.contactVerificationId = id }
                 completion(.success(response.resendAfter))
             }, onFailure: { error in
-                completion(.failure(MomentsError(message: parseError(error) ?? "Couldn't send the code. Please try again.")))
+                completion(.failure(MomentsError(message: parseError(error) ?? "Couldn't send the code. Please try again.",
+                                                 title: title(error))))
             })
             .disposed(by: disposeBag)
     }

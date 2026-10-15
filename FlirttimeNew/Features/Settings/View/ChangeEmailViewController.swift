@@ -168,7 +168,8 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
                 self.startResendCountdown(resendAfter)
                 self.updatePrimaryButton()
             case .failure(let error):
-                self.showNewAlertPopUp(Title: "Error", Msg: error.message, isSuccess: false) { _ in }
+                self.emailFieldView.layer.borderColor = AppColor.AlertBottomFailure.cgColor
+                self.showNewAlertPopUp(Title: error.title ?? "Couldn't send code", Msg: error.message, isSuccess: false) { _ in }
             }
         }
     }
