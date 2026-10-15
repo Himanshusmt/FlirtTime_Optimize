@@ -22,8 +22,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private static let momentsPerRow: CGFloat = 3
     /// Photo cards fully visible at once in the horizontal Photos carousel.
     private static let photosPerRow: CGFloat = 2
+    /// Width of the next photo card left visible at the trailing edge, hinting the carousel scrolls.
+    private static let photoPeekWidth: CGFloat = 36
     /// Height / width of a photo card (165 × 230).
     private static let photoAspectRatio: CGFloat = 230 / 165
+    /// Resting height of the cover photo; it grows past this while the profile is pulled down.
+    private static let coverHeight: CGFloat = 270
     /// Moment tiles shown before the "See all" tile takes the next slot.
     static let momentsGridLimit = 8
 
@@ -43,9 +47,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     // MARK: - Header
 
+    @IBOutlet private weak var profileScrollView: UIScrollView!
     @IBOutlet private weak var contentStackView: UIStackView!
     @IBOutlet private weak var headerView: UIView!
     @IBOutlet private weak var coverImageView: UIImageView!
+    @IBOutlet private weak var coverTopConstraint: NSLayoutConstraint!
+    @IBOutlet private weak var coverHeightConstraint: NSLayoutConstraint!
+    @IBOutlet private weak var coverTopShadeView: UIView!
     @IBOutlet private weak var avatarImageView: UIImageView!
     @IBOutlet private weak var onlineDotView: UIView!
     @IBOutlet private weak var backButton: UIButton!
@@ -99,6 +107,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private var moments: [MomentsPost] = []
     private var voiceWaveform: VoiceWaveformView?
     private var gridLayoutWidth: CGFloat = 0
+    private let refreshIndicator = ProfileRefreshIndicator()
 
     /// "💞 3 in common" on the trailing side of the Interests title row, styled like a shared-interest chip.
     private lazy var commonInterestsBadge: UIButton = {
@@ -140,24 +149,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         momentsCollectionView.register(OtherUserSeeAllMomentsCell.self,
                                        forCellWithReuseIdentifier: OtherUserSeeAllMomentsCell.identifier)
         details = makeDetails()
+        configurePullToRefresh()
         setBinding()
         hideLoadingSections()
         showProfile()
         configureActionBar()
         viewModel.loadJSON()
-        viewModel.getCheckUserSubscribedAPI()
-        if !isMyProfile {
-            viewModel.getMyInterests()
-        }
-        if isMyProfile {
-            viewModel.loadOwnProfile()
-        } else if let remoteUserID, !remoteUserID.isEmpty {
-            viewModel.loadProfile(userID: remoteUserID)
-        } else if let userID = details?.userID {
-            viewModel.getMoments(userID: userID)
-            viewModel.getQuickMoments(userID: String(userID))
-            viewModel.getVoiceIntro(userID: userID)
-        }
+        loadData()
         quickMomentsView.onSelect = { [weak self] index in self?.openQuickMoment(at: index) }
         NotificationCenter.default.addObserver(self, selector: #selector(voicePlayerChanged),
                                                name: VoiceIntroPlayer.stateDidChange, object: nil)
@@ -186,6 +184,50 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     // MARK: - Data
+
+    private func loadData() {
+        viewModel.getCheckUserSubscribedAPI()
+        if isMyProfile {
+            viewModel.loadOwnProfile()
+        } else {
+            viewModel.getMyInterests()
+            if let remoteUserID, !remoteUserID.isEmpty {
+                viewModel.loadProfile(userID: remoteUserID)
+            } else if let userID = details?.userID {
+                viewModel.getMoments(userID: userID)
+                viewModel.getQuickMoments(userID: String(userID))
+                viewModel.getVoiceIntro(userID: userID)
+            }
+        }
+    }
+
+    /// The profile only bounces at the top, where pulling down reloads it.
+    private func configurePullToRefresh() {
+        let refreshControl = UIRefreshControl()
+        // Only drives the pull gesture; the stretched cover hides its spinner, so `refreshIndicator` shows progress.
+        refreshControl.tintColor = .clear
+        refreshControl.addTarget(self, action: #selector(pullToRefresh), for: .valueChanged)
+        profileScrollView.refreshControl = refreshControl
+        profileScrollView.alwaysBounceVertical = true
+        profileScrollView.alwaysBounceHorizontal = false
+        profileScrollView.delegate = self
+        refreshIndicator.install(in: view)
+    }
+
+    @objc private func pullToRefresh() {
+        refreshIndicator.beginRefreshing()
+        if !viewModel.isFetching {
+            loadData()
+        }
+        if !viewModel.isFetching {
+            endRefreshing()
+        }
+    }
+
+    private func endRefreshing() {
+        profileScrollView.refreshControl?.endRefreshing()
+        refreshIndicator.endRefreshing()
+    }
 
     private func makeDetails() -> OtherUserProfileDetails? {
         if isMyProfile, let info = userDetails?.userInfo {
@@ -224,6 +266,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             // Seeded profiles are already readable, so only block the screen when there's nothing to show yet.
             let hasSeed = !(self.details?.name.isEmpty ?? true)
             self.setLoading(isLoading && !hasSeed)
+        }.store(in: &cancellables)
+
+        viewModel.$isFetching.receive(on: DispatchQueue.main).sink { [weak self] isFetching in
+            guard let self, !isFetching, self.refreshIndicator.isRefreshing else { return }
+            self.endRefreshing()
         }.store(in: &cancellables)
 
         viewModel.$profileError.receive(on: DispatchQueue.main).sink { [weak self] error in
@@ -570,6 +617,31 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 }
 
+// MARK: - Scrolling
+
+extension OtherUserProfileViewController {
+
+    /// Pins the bottom edge so the profile never rubber-bands past its content; pulling down at the top
+    /// stretches the cover photo up to the screen edge instead of revealing the background.
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === profileScrollView else { return }
+        let maxOffsetY = max(0, scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height)
+        if scrollView.contentOffset.y > maxOffsetY {
+            scrollView.contentOffset.y = maxOffsetY
+        }
+        let pull = max(0, -scrollView.contentOffset.y)
+        stretchCover(by: pull)
+        refreshIndicator.update(pullDistance: pull)
+    }
+
+    private func stretchCover(by stretch: CGFloat) {
+        guard coverTopConstraint.constant != -stretch else { return }
+        coverTopConstraint.constant = -stretch
+        coverHeightConstraint.constant = Self.coverHeight + stretch
+        coverTopShadeView.transform = CGAffineTransform(translationX: 0, y: -stretch)
+    }
+}
+
 // MARK: - Photos & Moments
 
 extension OtherUserProfileViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
@@ -604,6 +676,12 @@ extension OtherUserProfileViewController: UICollectionViewDataSource, UICollecti
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard let flow = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
         if collectionView === photosCollectionView {
+            let photoCount = CGFloat(details?.photos.count ?? 0)
+            if photoCount > Self.photosPerRow {
+                let spacing = flow.minimumLineSpacing * Self.photosPerRow
+                let width = floor((collectionView.bounds.width - flow.sectionInset.left - spacing - Self.photoPeekWidth) / Self.photosPerRow)
+                return CGSize(width: width, height: collectionView.bounds.height)
+            }
             let insets = flow.sectionInset.left + flow.sectionInset.right
             let spacing = flow.minimumLineSpacing * (Self.photosPerRow - 1)
             let width = floor((collectionView.bounds.width - insets - spacing) / Self.photosPerRow)

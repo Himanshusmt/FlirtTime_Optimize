@@ -16,6 +16,11 @@ final class MomentsCommentViewController: BaseViewController {
     private var wasKeyboardManagerEnabled = true
     private var wasAutoToolbarEnabled = true
 
+    /// The comment being replied to, shown in the "Replying to" banner.
+    private var replyTarget: MomentsComment?
+    /// "@name " put in the field when a reply starts, so it can be removed on cancel.
+    private var replyPrefix: String?
+
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Comments"
@@ -30,11 +35,14 @@ final class MomentsCommentViewController: BaseViewController {
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
         tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 64
+        tableView.estimatedRowHeight = 72
+        tableView.sectionHeaderHeight = 0
+        tableView.sectionFooterHeight = 0
+        tableView.sectionHeaderTopPadding = 0
         tableView.keyboardDismissMode = .interactive
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(MomentsCommentTableViewCell.self, forCellReuseIdentifier: MomentsCommentTableViewCell.identifier)
+        tableView.register(MomentsCommentThreadCell.self, forCellReuseIdentifier: MomentsCommentThreadCell.identifier)
         return tableView
     }()
 
@@ -61,6 +69,41 @@ final class MomentsCommentViewController: BaseViewController {
         view.backgroundColor = AppColor.AppWhite
         return view
     }()
+
+    // MARK: Reply banner
+
+    private let replyBannerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = AppColor.WildSand
+        view.isHidden = true
+        return view
+    }()
+
+    private let replyBannerLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.regular, size: 13)
+        label.textColor = AppColor.DoveGray
+        return label
+    }()
+
+    private lazy var replyCancelButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)), for: .normal)
+        button.tintColor = AppColor.DoveGray
+        button.accessibilityLabel = "Cancel reply"
+        button.addAction(UIAction { [weak self] _ in self?.cancelReply() }, for: .touchUpInside)
+        return button
+    }()
+
+    // MARK: Emoji bar
+
+    private lazy var emojiBar: MomentsCommentEmojiBar = {
+        let bar = MomentsCommentEmojiBar()
+        bar.onSelect = { [weak self] emoji in self?.insertEmoji(emoji) }
+        return bar
+    }()
+
+    // MARK: Input
 
     private let inputAvatarImageView: UIImageView = {
         let imageView = UIImageView()
@@ -90,7 +133,11 @@ final class MomentsCommentViewController: BaseViewController {
     private lazy var sendButton: UIButton = {
         let button = UIButton(type: .custom)
         button.setImage(UIImage(named: "Btn_Send_Message"), for: .normal)
-        button.imageView?.contentMode = .scaleAspectFit
+        button.imageView?.contentMode = .scaleAspectFill
+        button.contentHorizontalAlignment = .fill
+        button.contentVerticalAlignment = .fill
+        button.layer.cornerRadius = 20
+        button.clipsToBounds = true
         button.accessibilityLabel = "Send comment"
         button.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
         return button
@@ -136,7 +183,20 @@ final class MomentsCommentViewController: BaseViewController {
         let inputSeparator = UIView()
         inputSeparator.backgroundColor = AppColor.Iron
 
-        [inputSeparator, inputAvatarImageView, commentTextField, sendButton].forEach {
+        [replyBannerLabel, replyCancelButton].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            replyBannerView.addSubview($0)
+        }
+
+        let inputRow = UIView()
+        [inputAvatarImageView, commentTextField, sendButton].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            inputRow.addSubview($0)
+        }
+
+        let inputStack = UIStackView(arrangedSubviews: [replyBannerView, emojiBar, inputRow])
+        inputStack.axis = .vertical
+        [inputSeparator, inputStack].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             inputBarView.addSubview($0)
         }
@@ -169,25 +229,41 @@ final class MomentsCommentViewController: BaseViewController {
             inputBarView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             inputBarView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             inputBarView.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
-            inputBarView.heightAnchor.constraint(equalToConstant: 60),
 
             inputSeparator.topAnchor.constraint(equalTo: inputBarView.topAnchor),
             inputSeparator.leadingAnchor.constraint(equalTo: inputBarView.leadingAnchor),
             inputSeparator.trailingAnchor.constraint(equalTo: inputBarView.trailingAnchor),
             inputSeparator.heightAnchor.constraint(equalToConstant: 0.5),
 
-            inputAvatarImageView.leadingAnchor.constraint(equalTo: inputBarView.leadingAnchor, constant: 16),
-            inputAvatarImageView.centerYAnchor.constraint(equalTo: inputBarView.centerYAnchor),
+            inputStack.topAnchor.constraint(equalTo: inputSeparator.bottomAnchor),
+            inputStack.leadingAnchor.constraint(equalTo: inputBarView.leadingAnchor),
+            inputStack.trailingAnchor.constraint(equalTo: inputBarView.trailingAnchor),
+            inputStack.bottomAnchor.constraint(equalTo: inputBarView.bottomAnchor),
+
+            replyBannerView.heightAnchor.constraint(equalToConstant: 34),
+            replyBannerLabel.leadingAnchor.constraint(equalTo: replyBannerView.leadingAnchor, constant: 16),
+            replyBannerLabel.centerYAnchor.constraint(equalTo: replyBannerView.centerYAnchor),
+            replyBannerLabel.trailingAnchor.constraint(lessThanOrEqualTo: replyCancelButton.leadingAnchor, constant: -8),
+            replyCancelButton.trailingAnchor.constraint(equalTo: replyBannerView.trailingAnchor, constant: -8),
+            replyCancelButton.centerYAnchor.constraint(equalTo: replyBannerView.centerYAnchor),
+            replyCancelButton.widthAnchor.constraint(equalToConstant: 32),
+            replyCancelButton.heightAnchor.constraint(equalToConstant: 32),
+
+            emojiBar.heightAnchor.constraint(equalToConstant: 44),
+
+            inputRow.heightAnchor.constraint(equalToConstant: 56),
+            inputAvatarImageView.leadingAnchor.constraint(equalTo: inputRow.leadingAnchor, constant: 16),
+            inputAvatarImageView.centerYAnchor.constraint(equalTo: inputRow.centerYAnchor),
             inputAvatarImageView.widthAnchor.constraint(equalToConstant: 32),
             inputAvatarImageView.heightAnchor.constraint(equalToConstant: 32),
 
             commentTextField.leadingAnchor.constraint(equalTo: inputAvatarImageView.trailingAnchor, constant: 10),
-            commentTextField.centerYAnchor.constraint(equalTo: inputBarView.centerYAnchor),
+            commentTextField.centerYAnchor.constraint(equalTo: inputRow.centerYAnchor),
             commentTextField.heightAnchor.constraint(equalToConstant: 40),
 
             sendButton.leadingAnchor.constraint(equalTo: commentTextField.trailingAnchor, constant: 8),
-            sendButton.trailingAnchor.constraint(equalTo: inputBarView.trailingAnchor, constant: -12),
-            sendButton.centerYAnchor.constraint(equalTo: inputBarView.centerYAnchor),
+            sendButton.trailingAnchor.constraint(equalTo: inputRow.trailingAnchor, constant: -12),
+            sendButton.centerYAnchor.constraint(equalTo: inputRow.centerYAnchor),
             sendButton.widthAnchor.constraint(equalToConstant: 40),
             sendButton.heightAnchor.constraint(equalToConstant: 40)
         ])
@@ -200,10 +276,12 @@ final class MomentsCommentViewController: BaseViewController {
         let hasText = !(commentTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         sendButton.isEnabled = hasText && commentTextField.isEnabled && !viewModel.isSending
         sendButton.alpha = sendButton.isEnabled ? 1 : 0.5
+        emojiBar.isEnabled = commentTextField.isEnabled
     }
 
     private func updateEmptyState() {
-        emptyStateLabel.isHidden = !viewModel.comments.isEmpty
+        emptyStateLabel.text = "No comments yet.\nStart the conversation."
+        emptyStateLabel.isHidden = !viewModel.isEmpty
     }
 
     // MARK: - Data
@@ -227,6 +305,19 @@ final class MomentsCommentViewController: BaseViewController {
         }
     }
 
+    private func loadMoreComments() {
+        viewModel.loadMoreIfNeeded { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.tableView.reloadData()
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
+            case .failure(let error):
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+    }
+
     @objc private func textChanged() {
         if let text = commentTextField.text, text.count > viewModel.maxCommentLength {
             commentTextField.text = String(text.prefix(viewModel.maxCommentLength))
@@ -236,22 +327,171 @@ final class MomentsCommentViewController: BaseViewController {
 
     @objc private func sendTapped() {
         guard sendButton.isEnabled, let text = commentTextField.text else { return }
-        viewModel.addComment(text) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success:
-                self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
-                self.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
-                self.updateEmptyState()
-                self.onCommentsCountChanged?(self.viewModel.totalCount)
-            case .failure(let error):
-                self.commentTextField.text = text
-                self.aCustomToastView.show(message: error.message)
-            }
+        let target = replyTarget
+        let prefix = replyPrefix
+        send(text, replyTo: target) { [weak self] succeeded in
+            guard let self, !succeeded else { return }
+            self.commentTextField.text = text
+            if let target, self.replyTarget == nil { self.startReply(to: target, prefix: prefix) }
             self.refreshSendState()
         }
         commentTextField.text = nil
+        endReply()
         refreshSendState()
+    }
+
+    /// Inserts the tapped emoji at the cursor, or at the end when the field isn't being edited.
+    private func insertEmoji(_ emoji: String) {
+        guard commentTextField.isEnabled else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        let text = commentTextField.text ?? ""
+        guard text.count + emoji.count <= viewModel.maxCommentLength else { return }
+        if commentTextField.isFirstResponder, let range = commentTextField.selectedTextRange {
+            commentTextField.replace(range, withText: emoji)
+        } else {
+            commentTextField.text = text + emoji
+        }
+        refreshSendState()
+    }
+
+    private func send(_ text: String, replyTo target: MomentsComment?, completion: @escaping (Bool) -> Void) {
+        viewModel.addComment(text, replyTo: target) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let added):
+                self.emptyStateLabel.isHidden = true
+                self.apply(added.isNewThread ? .insert(added.indexPath.section) : .reload(added.indexPath.section))
+                self.scrollToRowIfValid(added.indexPath)
+                self.onCommentsCountChanged?(self.viewModel.totalCount)
+                completion(true)
+            case .failure(let error):
+                self.aCustomToastView.show(message: error.message)
+                completion(false)
+            }
+            self.refreshSendState()
+        }
+    }
+
+    // MARK: - Reply
+
+    private func startReply(to comment: MomentsComment, prefix: String? = nil) {
+        let name = comment.author?.displayName ?? ""
+        replyTarget = comment
+        replyBannerLabel.text = name.isEmpty ? "Replying to comment" : "Replying to @\(name)"
+        let mention = prefix ?? (name.isEmpty ? nil : "@\(name.replacingOccurrences(of: " ", with: "")) ")
+        if let mention, !(commentTextField.text ?? "").hasPrefix(mention) {
+            commentTextField.text = mention + (commentTextField.text ?? "")
+        }
+        replyPrefix = mention
+        UIView.animate(withDuration: 0.2) { self.replyBannerView.isHidden = false }
+        commentTextField.becomeFirstResponder()
+        refreshSendState()
+    }
+
+    /// Clears the reply state but leaves the text as is.
+    private func endReply() {
+        replyTarget = nil
+        replyPrefix = nil
+        guard !replyBannerView.isHidden else { return }
+        UIView.animate(withDuration: 0.2) { self.replyBannerView.isHidden = true }
+    }
+
+    private func cancelReply() {
+        if let prefix = replyPrefix, let text = commentTextField.text, text.hasPrefix(prefix) {
+            commentTextField.text = String(text.dropFirst(prefix.count))
+        }
+        endReply()
+        refreshSendState()
+    }
+
+    // MARK: - Like / Delete / Replies
+
+    private func toggleLike(commentId: String) {
+        viewModel.toggleLike(commentId: commentId) { [weak self] result in
+            guard let self else { return }
+            self.reconfigureRow(forCommentId: commentId)
+            if case .failure(let error) = result {
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+        reconfigureRow(forCommentId: commentId)
+    }
+
+    private func reconfigureRow(forCommentId id: String) {
+        guard let indexPath = viewModel.indexPath(forCommentId: id),
+              let comment = viewModel.comment(at: indexPath),
+              let cell = tableView.cellForRow(at: indexPath) as? MomentsCommentThreadCell else { return }
+        cell.updateLike(isLiked: comment.isLiked ?? false, count: comment.likesCount ?? 0)
+    }
+
+    private func toggleReplies(section: Int) {
+        guard viewModel.threads.indices.contains(section) else { return }
+        let commentId = viewModel.threads[section].comment.id
+        viewModel.toggleReplies(section: section) { [weak self] result in
+            guard let self else { return }
+            // The section may have moved if comments changed while replies were loading.
+            if let section = self.viewModel.threads.firstIndex(where: { $0.comment.id == commentId }) {
+                self.apply(.reload(section))
+            } else {
+                self.tableView.reloadData()
+            }
+            if case .failure(let error) = result {
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+        if viewModel.isLoadingReplies(section: section) {
+            UIView.performWithoutAnimation {
+                apply(.reload(section), animation: .none)
+            }
+        }
+    }
+
+    // MARK: - Table updates
+
+    private enum SectionChange {
+        case reload(Int)
+        case insert(Int)
+        case delete(Int)
+    }
+
+    /// Animates a one-section change only when every other section already matches the view model.
+    /// Otherwise it reloads the whole table, so a mismatch can never raise an "invalid update" exception.
+    private func apply(_ change: SectionChange, animation: UITableView.RowAnimation = .automatic) {
+        let tableSections = tableView.numberOfSections
+        let modelSections = viewModel.threads.count
+        let rowsMatch: (Int, Int) -> Bool = { tableSection, modelSection in
+            self.tableView.numberOfRows(inSection: tableSection) == self.viewModel.numberOfRows(in: modelSection)
+        }
+        let isConsistent: Bool
+        switch change {
+        case .reload(let section):
+            isConsistent = tableSections == modelSections && section < modelSections
+                && (0..<modelSections).allSatisfy { $0 == section || rowsMatch($0, $0) }
+        case .insert(let section):
+            isConsistent = tableSections + 1 == modelSections && section < modelSections
+                && (0..<tableSections).allSatisfy { rowsMatch($0, $0 < section ? $0 : $0 + 1) }
+        case .delete(let section):
+            isConsistent = tableSections == modelSections + 1 && section < tableSections
+                && (0..<modelSections).allSatisfy { rowsMatch($0 < section ? $0 : $0 + 1, $0) }
+        }
+        guard isConsistent, view.window != nil else {
+            tableView.reloadData()
+            return
+        }
+        switch change {
+        case .reload(let section):
+            tableView.reloadSections(IndexSet(integer: section), with: animation)
+        case .insert(let section):
+            tableView.insertSections(IndexSet(integer: section), with: animation)
+        case .delete(let section):
+            tableView.deleteSections(IndexSet(integer: section), with: animation)
+        }
+    }
+
+    private func scrollToRowIfValid(_ indexPath: IndexPath) {
+        guard indexPath.section < tableView.numberOfSections,
+              indexPath.row < tableView.numberOfRows(inSection: indexPath.section) else { return }
+        tableView.scrollToRow(at: indexPath, at: .middle, animated: true)
     }
 
     private func confirmDelete(commentId: String) {
@@ -267,8 +507,9 @@ final class MomentsCommentViewController: BaseViewController {
         viewModel.deleteComment(id: id) { [weak self] result in
             guard let self else { return }
             switch result {
-            case .success(let row):
-                self.tableView.deleteRows(at: [IndexPath(row: row, section: 0)], with: .fade)
+            case .success(let removed):
+                if self.replyTarget?.id == id { self.cancelReply() }
+                self.apply(removed.removedThread ? .delete(removed.section) : .reload(removed.section), animation: .fade)
                 self.updateEmptyState()
                 self.onCommentsCountChanged?(self.viewModel.totalCount)
             case .failure(let error):
@@ -281,28 +522,62 @@ final class MomentsCommentViewController: BaseViewController {
 // MARK: - UITableViewDelegate
 extension MomentsCommentViewController: UITableViewDelegate {
 
-    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        guard viewModel.canDelete(at: indexPath.row) else { return nil }
-        let commentId = viewModel.comments[indexPath.row].id
-        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, done in
-            self?.confirmDelete(commentId: commentId)
-            done(false)
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if indexPath.section >= viewModel.threads.count - 3 {
+            loadMoreComments()
         }
-        delete.image = UIImage(systemName: "trash")
-        let configuration = UISwipeActionsConfiguration(actions: [delete])
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? { nil }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { .leastNonzeroMagnitude }
+
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat { .leastNonzeroMagnitude }
+
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        guard let comment = viewModel.comment(at: indexPath) else { return nil }
+        let reply = UIContextualAction(style: .normal, title: "Reply") { [weak self] _, _, done in
+            self?.startReply(to: comment)
+            done(true)
+        }
+        reply.image = UIImage(systemName: "arrowshape.turn.up.left")
+        reply.backgroundColor = AppColor.DoveGray
+        var actions = [reply]
+        if viewModel.canDelete(comment) {
+            let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, done in
+                self?.confirmDelete(commentId: comment.id)
+                done(false)
+            }
+            delete.image = UIImage(systemName: "trash")
+            actions.insert(delete, at: 0)
+        }
+        let configuration = UISwipeActionsConfiguration(actions: actions)
         configuration.performsFirstActionWithFullSwipe = false
         return configuration
     }
 
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
-        guard viewModel.canDelete(at: indexPath.row) else { return nil }
-        let commentId = viewModel.comments[indexPath.row].id
-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-            UIMenu(children: [
-                UIAction(title: "Delete comment", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
-                    self?.confirmDelete(commentId: commentId)
+        guard let comment = viewModel.comment(at: indexPath) else { return nil }
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            guard let self else { return nil }
+            var actions: [UIMenuElement] = [
+                UIAction(title: comment.isLiked == true ? "Unlike" : "Like",
+                         image: UIImage(systemName: comment.isLiked == true ? "heart.slash" : "heart")) { [weak self] _ in
+                    self?.toggleLike(commentId: comment.id)
+                },
+                UIAction(title: "Reply", image: UIImage(systemName: "arrowshape.turn.up.left")) { [weak self] _ in
+                    self?.startReply(to: comment)
+                },
+                UIAction(title: "Copy", image: UIImage(systemName: "doc.on.doc")) { _ in
+                    UIPasteboard.general.string = comment.body
                 }
-            ])
+            ]
+            if self.viewModel.canDelete(comment) {
+                actions.append(UIAction(title: "Delete comment", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+                    self?.confirmDelete(commentId: comment.id)
+                })
+            }
+            return UIMenu(children: actions)
         }
     }
 }
@@ -310,28 +585,32 @@ extension MomentsCommentViewController: UITableViewDelegate {
 // MARK: - UITableViewDataSource
 extension MomentsCommentViewController: UITableViewDataSource {
 
+    func numberOfSections(in tableView: UITableView) -> Int {
+        viewModel.threads.count
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        viewModel.comments.count
+        viewModel.numberOfRows(in: section)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: MomentsCommentTableViewCell.identifier, for: indexPath) as? MomentsCommentTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: MomentsCommentThreadCell.identifier, for: indexPath) as? MomentsCommentThreadCell,
+              let comment = viewModel.comment(at: indexPath) else {
             return UITableViewCell()
         }
-        let comment = viewModel.comments[indexPath.row]
-        let canDelete = viewModel.canDelete(at: indexPath.row)
-        cell.configure(with: comment, onDelete: canDelete ? { [weak self] in
-            self?.confirmDelete(commentId: comment.id)
-        } : nil)
-        if canDelete {
-            cell.accessibilityCustomActions = [
-                UIAccessibilityCustomAction(name: "Delete comment") { [weak self] _ in
-                    self?.confirmDelete(commentId: comment.id)
-                    return true
-                }
-            ]
-        } else {
-            cell.accessibilityCustomActions = nil
+        let isReply = indexPath.row > 0
+        let section = indexPath.section
+        cell.configure(with: comment,
+                       isReply: isReply,
+                       thread: isReply ? nil : viewModel.threads[section],
+                       isLoadingReplies: !isReply && viewModel.isLoadingReplies(section: section),
+                       canDelete: viewModel.canDelete(comment))
+        cell.onLike = { [weak self] in self?.toggleLike(commentId: comment.id) }
+        cell.onReply = { [weak self] in self?.startReply(to: comment) }
+        cell.onDelete = { [weak self] in self?.confirmDelete(commentId: comment.id) }
+        cell.onToggleReplies = { [weak self, weak cell] in
+            guard let self, let cell, let current = self.tableView.indexPath(for: cell) else { return }
+            self.toggleReplies(section: current.section)
         }
         return cell
     }
@@ -350,5 +629,59 @@ extension MomentsCommentViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         sendTapped()
         return false
+    }
+}
+
+// MARK: - Emoji bar
+
+/// Quick emojis from the old FlirtTime comment sheet; a tap adds the emoji to the comment field.
+final class MomentsCommentEmojiBar: UIView {
+
+    static let emojis = ["❤️", "🔥", "😍", "❤️‍🔥", "😎", "🙌", "😮"]
+
+    var onSelect: ((String) -> Void)?
+
+    var isEnabled = true {
+        didSet {
+            buttons.forEach { $0.isEnabled = isEnabled }
+            alpha = isEnabled ? 1 : 0.5
+        }
+    }
+
+    private var buttons: [UIButton] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        buttons = Self.emojis.map { emoji in
+            let button = UIButton(type: .system)
+            button.setTitle(emoji, for: .normal)
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 26)
+            button.accessibilityLabel = "Add \(emoji)"
+            button.addAction(UIAction { [weak self, weak button] _ in
+                guard let self, let button else { return }
+                UIView.animate(withDuration: 0.1, animations: {
+                    button.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
+                }, completion: { _ in
+                    UIView.animate(withDuration: 0.1) { button.transform = .identity }
+                })
+                self.onSelect?(emoji)
+            }, for: .touchUpInside)
+            return button
+        }
+        let stack = UIStackView(arrangedSubviews: buttons)
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }

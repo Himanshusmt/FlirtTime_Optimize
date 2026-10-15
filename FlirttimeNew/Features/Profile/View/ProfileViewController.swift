@@ -26,8 +26,13 @@ class ProfileViewController: BaseViewController {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
 
+    private let refreshIndicator = ProfileRefreshIndicator()
+
     // Header
     private let coverImageView = UIImageView()
+    private var coverTopConstraint: NSLayoutConstraint?
+    private var coverHeightConstraint: NSLayoutConstraint?
+    private var coverTopShade: UIView?
     private let topButtonsTopConstraintOffset: CGFloat = 6
     private var topButtonsTopConstraint: NSLayoutConstraint?
     private let progressRing = CircularProgressView(frame: CGRect(x: 0, y: 0, width: ProfileViewController.ringSize, height: ProfileViewController.ringSize))
@@ -99,6 +104,21 @@ class ProfileViewController: BaseViewController {
         aProfileViewModel.getMyMoments()
     }
 
+    @objc private func pullToRefresh() {
+        refreshIndicator.beginRefreshing()
+        if !aProfileViewModel.isFetching {
+            loadData()
+        }
+        if !aProfileViewModel.isFetching {
+            endRefreshing()
+        }
+    }
+
+    private func endRefreshing() {
+        scrollView.refreshControl?.endRefreshing()
+        refreshIndicator.endRefreshing()
+    }
+
     // MARK: - Binding
 
     private func setBinding() {
@@ -136,6 +156,11 @@ class ProfileViewController: BaseViewController {
         uploadViewModel.uploadFinished.receive(on: DispatchQueue.main).sink { [weak self] result in
             guard case .success = result else { return }
             self?.aProfileViewModel.getMyMoments()
+        }.store(in: &desposeBag)
+
+        aProfileViewModel.$isFetching.receive(on: DispatchQueue.main).sink { [weak self] isFetching in
+            guard let self, !isFetching, self.refreshIndicator.isRefreshing else { return }
+            self.endRefreshing()
         }.store(in: &desposeBag)
 
         aProfileViewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
@@ -218,6 +243,13 @@ class ProfileViewController: BaseViewController {
         scrollView.contentInset.bottom = 120
         view.addSubview(scrollView)
         scrollView.pinEdges(to: view)
+
+        let refreshControl = UIRefreshControl()
+        // Only drives the pull gesture; the stretched cover hides its spinner, so `refreshIndicator` shows progress.
+        refreshControl.tintColor = .clear
+        refreshControl.addTarget(self, action: #selector(pullToRefresh), for: .valueChanged)
+        scrollView.refreshControl = refreshControl
+        refreshIndicator.install(in: view)
 
         contentStack.axis = .vertical
         contentStack.translatesAutoresizingMaskIntoConstraints = false
@@ -312,12 +344,17 @@ class ProfileViewController: BaseViewController {
 
         let topConstraint = topButtons.topAnchor.constraint(equalTo: header.topAnchor, constant: 50)
         topButtonsTopConstraint = topConstraint
+        let coverTop = coverImageView.topAnchor.constraint(equalTo: header.topAnchor)
+        let coverHeight = coverImageView.heightAnchor.constraint(equalToConstant: Self.coverHeight)
+        coverTopConstraint = coverTop
+        coverHeightConstraint = coverHeight
+        coverTopShade = topShade
 
         NSLayoutConstraint.activate([
-            coverImageView.topAnchor.constraint(equalTo: header.topAnchor),
+            coverTop,
             coverImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             coverImageView.trailingAnchor.constraint(equalTo: header.trailingAnchor),
-            coverImageView.heightAnchor.constraint(equalToConstant: Self.coverHeight),
+            coverHeight,
 
             topShade.topAnchor.constraint(equalTo: header.topAnchor),
             topShade.leadingAnchor.constraint(equalTo: header.leadingAnchor),
@@ -753,10 +790,27 @@ class ProfileViewController: BaseViewController {
 // MARK: - UIScrollViewDelegate
 
 extension ProfileViewController: UIScrollViewDelegate {
+    /// Pins the bottom edge so the profile never rubber-bands past its content; pulling down at the top
+    /// stretches the cover photo up to the screen edge instead of revealing the background.
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === self.scrollView else { return }
         let translation = scrollView.panGestureRecognizer.translation(in: scrollView).y
         hideShowTabBar(isHide: translation < 0)
+
+        let maxOffsetY = max(0, scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height)
+        if scrollView.contentOffset.y > maxOffsetY {
+            scrollView.contentOffset.y = maxOffsetY
+        }
+        let pull = max(0, -scrollView.contentOffset.y)
+        stretchCover(by: pull)
+        refreshIndicator.update(pullDistance: pull)
+    }
+
+    private func stretchCover(by stretch: CGFloat) {
+        guard let coverTopConstraint, coverTopConstraint.constant != -stretch else { return }
+        coverTopConstraint.constant = -stretch
+        coverHeightConstraint?.constant = Self.coverHeight + stretch
+        coverTopShade?.transform = CGAffineTransform(translationX: 0, y: -stretch)
     }
 }
 

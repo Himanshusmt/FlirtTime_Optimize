@@ -1022,6 +1022,10 @@
                         <outlet property="momentsCountLabel" destination="oup-mn-001" id="oup-ox-033"/>
                         <outlet property="contentStackView" destination="oup-cs-001" id="oup-ox-034"/>
                         <outlet property="headerView" destination="oup-hv-001" id="oup-ox-035"/>
+                        <outlet property="profileScrollView" destination="oup-sv-001" id="oup-ox-051"/>
+                        <outlet property="coverTopConstraint" destination="oup-hc-001" id="oup-ox-052"/>
+                        <outlet property="coverHeightConstraint" destination="oup-ci-002" id="oup-ox-053"/>
+                        <outlet property="coverTopShadeView" destination="oup-ts-001" id="oup-ox-054"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="oup-fr-001" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

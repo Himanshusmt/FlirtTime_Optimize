@@ -113,6 +113,8 @@ enum AppEndPoint: CustomStringConvertible {
     case momentLikes(momentId: String)
     case moment(momentId: String)
     case momentComment(momentId: String, commentId: String)
+    case momentCommentLike(momentId: String, commentId: String)
+    case momentCommentReplies(momentId: String, commentId: String)
     case momentGifts(momentId: String)
     case momentGiftsReceived(momentId: String)
     case momentReport(momentId: String)
@@ -200,6 +202,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
         case .moment(let momentId): return "api/v1/moments/\(momentId)"
         case .momentComment(let momentId, let commentId): return "api/v1/moments/\(momentId)/comments/\(commentId)"
+        case .momentCommentLike(let momentId, let commentId): return "api/v1/moments/\(momentId)/comments/\(commentId)/like"
+        case .momentCommentReplies(let momentId, let commentId): return "api/v1/moments/\(momentId)/comments/\(commentId)/replies"
         case .momentGifts(let momentId): return "api/v1/moments/\(momentId)/gifts"
         case .momentGiftsReceived(let momentId): return "api/v1/moments/\(momentId)/gifts/received"
         case .momentReport(let momentId): return "api/v1/moments/\(momentId)/report"
@@ -244,7 +248,7 @@ enum AppEndPoint: CustomStringConvertible {
              .userProfile, .blockUser, .reportUser, .userCompliment, .searchUsers, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
-             .momentGifts, .momentGiftsReceived, .moment, .momentComment,
+             .momentGifts, .momentGiftsReceived, .moment, .momentComment, .momentCommentLike, .momentCommentReplies,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers,

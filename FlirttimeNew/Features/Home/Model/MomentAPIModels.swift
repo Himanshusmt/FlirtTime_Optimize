@@ -241,6 +241,59 @@ struct MomentComment: Codable {
     let createdAt: String?
     let isMyComment: Bool?
     let user: MomentPerson?
+    let parentId: String?
+    let likesCount: Int?
+    let isLiked: Bool?
+    let repliesCount: Int?
+    /// Replies nested under a top-level comment, when the backend sends them that way.
+    let replies: [MomentComment]?
+
+    // Reply and like keys are decoded leniently so an unexpected shape can't fail the whole list.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        let replyText = c.string("reply")
+        let replyId = c.string("replyId")
+        let isReply = replyText != nil || replyId != nil
+        if isReply {
+            // On a reply `commentId` is the top-level comment it belongs to, not the reply itself.
+            id = replyId ?? c.string("id")
+            commentId = nil
+            parentId = c.string("commentId", "parentCommentId", "parentId", "parentReplyId")
+        } else {
+            id = c.string("id")
+            commentId = c.string("commentId")
+            parentId = c.string("parentId", "parentCommentId", "replyToCommentId")
+        }
+        comment = replyText ?? c.string("comment", "body", "text")
+        message = c.string("message")
+        createdAt = c.string("createdAt")
+        isMyComment = c.bool("isMyComment", "isMine", "isOwner")
+        user = c.first(MomentPerson.self, "user", "author", "commenter")
+        likesCount = c.int("likesCount", "likeCount", "totalLikes")
+        isLiked = c.bool("isLiked", "hasLiked", "isLikedByMe", "likedByMe")
+        replies = c.first([MomentComment].self, "replies", "subComments", "children")
+        repliesCount = c.int("repliesCount", "replyCount", "totalReplies", "subCommentsCount")
+    }
+
+    /// This comment followed by its nested replies, each tagged with its parent.
+    func flattened(momentId: String) -> [MomentsComment] {
+        guard let root = vibeComment(momentId: momentId) else { return [] }
+        return [root] + (replies ?? []).flatMap { $0.replies(inThread: root.id, momentId: momentId) }
+    }
+
+    /// This reply and its nested replies, all placed in thread `rootId`. The thread's own id is never
+    /// taken as a reply's id, so a reply can't overwrite the comment it belongs to.
+    func replies(inThread rootId: String, momentId: String) -> [MomentsComment] {
+        let nested = (replies ?? []).flatMap { $0.replies(inThread: rootId, momentId: momentId) }
+        guard let base = vibeComment(momentId: momentId),
+              let ownId = [id, commentId].compactMap({ $0 }).first(where: { !$0.isEmpty && $0 != rootId }) else {
+            return nested
+        }
+        let reply = MomentsComment(id: ownId, vibeId: momentId, body: base.body, createdAt: base.createdAt,
+                                   author: base.author, isMine: base.isMine, parentId: rootId,
+                                   likesCount: base.likesCount, isLiked: base.isLiked, repliesCount: nil)
+        return [reply] + nested
+    }
 
     func vibeComment(momentId: String) -> MomentsComment? {
         guard let id = commentId ?? id else { return nil }
@@ -254,7 +307,23 @@ struct MomentComment: Codable {
                                 verified: current.verified, location: current.location)
         }
         return MomentsComment(id: id, vibeId: momentId, body: comment ?? message, createdAt: createdAt,
-                           author: author, isMine: isMine)
+                           author: author, isMine: isMine,
+                           parentId: parentId, likesCount: likesCount, isLiked: isLiked,
+                           repliesCount: repliesCount ?? replies?.count)
+    }
+}
+
+/// The `data` of GET `moments/:id/comments/:commentId/replies`, sent as a list or under `replies` / `comments`.
+struct MomentCommentRepliesData: Codable {
+    let replies: [MomentComment]
+
+    init(from decoder: Decoder) throws {
+        if let array = try? [MomentComment](from: decoder) {
+            replies = array
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        replies = c.first([MomentComment].self, "replies", "comments", "items", "rows") ?? []
     }
 }
 

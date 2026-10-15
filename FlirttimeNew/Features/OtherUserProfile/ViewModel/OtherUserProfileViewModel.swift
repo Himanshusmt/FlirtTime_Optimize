@@ -40,6 +40,9 @@ class OtherUserProfileViewModel {
     @Published private(set) var profile: OtherUserProfile?
     @Published private(set) var profileError: String?
     @Published private(set) var isLoadingProfile = false
+    /// True while any profile, moments, quick moments or voice intro request is in flight (drives pull to refresh).
+    @Published private(set) var isFetching = false
+    private var pendingRequests = 0
     /// The signed-in user's interests, to find the ones in common when the profile response doesn't list them.
     @Published private(set) var myInterests: [MomentsInterest]?
 
@@ -65,12 +68,24 @@ class OtherUserProfileViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
     }
 
+    private func beginRequest() {
+        pendingRequests += 1
+        isFetching = true
+    }
+
+    private func endRequest() {
+        pendingRequests = max(0, pendingRequests - 1)
+        if pendingRequests == 0 { isFetching = false }
+    }
+
     // TODO: GET vibes/?userId=, quick-moments/?userId= and the user's voice intro once the APIs are live.
     func getMoments(userID: Int) {
+        beginRequest()
         respond { [weak self] in
             let response = MockMomentsStore.shared.feed(page: 1, limit: Self.momentsPageSize, authorID: String(userID))
             self?.momentsTotal = response.data?.count ?? 0
             self?.moments = response.data?.rows ?? []
+            self?.endRequest()
         }
     }
 
@@ -78,11 +93,13 @@ class OtherUserProfileViewModel {
     func loadProfile(userID: String) {
         isLoadingProfile = true
         profileError = nil
+        beginRequest()
         sessionManager.otherUserProfile(userId: userID)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] profile in
                 guard let self else { return }
                 self.isLoadingProfile = false
+                defer { self.endRequest() }
                 self.profile = profile
                 self.voiceIntro = profile.voiceIntro?.momentsIntro
                 let author = MomentsAuthor(userId: profile.userId ?? userID,
@@ -98,8 +115,9 @@ class OtherUserProfileViewModel {
             }, onFailure: { [weak self] error in
                 guard let self else { return }
                 self.isLoadingProfile = false
-                if !self.hasLoadedUserMoments { self.moments = [] }
+                if self.moments == nil { self.moments = [] }
                 self.profileError = error.localizedDescription
+                self.endRequest()
             })
             .disposed(by: disposeBag)
         getUserMoments(userID: userID)
@@ -108,6 +126,7 @@ class OtherUserProfileViewModel {
 
     /// GET `users/:userId/moments`; on failure the grid keeps the moments from the profile response.
     func getUserMoments(userID: String) {
+        beginRequest()
         sessionManager.userMoments(userId: userID, page: 1, limit: Self.momentsPageSize)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] page in
@@ -115,6 +134,9 @@ class OtherUserProfileViewModel {
                 self.hasLoadedUserMoments = true
                 self.momentsTotal = page.total ?? page.vibes.count
                 self.moments = page.vibes
+                self.endRequest()
+            }, onFailure: { [weak self] _ in
+                self?.endRequest()
             })
             .disposed(by: disposeBag)
     }
@@ -129,48 +151,68 @@ class OtherUserProfileViewModel {
     }
 
     func getQuickMoments(userID: String) {
+        beginRequest()
         sessionManager.userQuickMoments(userId: userID)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] moments in
                 self?.quickMoments = moments.sorted {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
+                self?.endRequest()
+            }, onFailure: { [weak self] _ in
+                self?.endRequest()
             })
             .disposed(by: disposeBag)
     }
 
     /// The signed-in user's own moments, quick moments and voice intro (Edit Profile preview).
     func loadOwnProfile() {
+        beginRequest()
         sessionManager.myMoments(page: 1, limit: Self.momentsPageSize)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] page in
                 self?.momentsTotal = page.total ?? page.vibes.count
                 self?.moments = page.vibes
+                self?.endRequest()
             }, onFailure: { [weak self] _ in
-                self?.momentsTotal = 0
-                self?.moments = []
+                guard let self else { return }
+                if self.moments == nil {
+                    self.momentsTotal = 0
+                    self.moments = []
+                }
+                self.endRequest()
             })
             .disposed(by: disposeBag)
 
+        beginRequest()
         sessionManager.myQuickMoments()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] moments in
                 self?.quickMoments = moments.sorted {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
+                self?.endRequest()
+            }, onFailure: { [weak self] _ in
+                self?.endRequest()
             })
             .disposed(by: disposeBag)
 
+        beginRequest()
         VoiceIntroService.fetch { [weak self] result in
-            if case .success(let intro) = result {
-                self?.voiceIntro = intro?.playerIntro
+            DispatchQueue.main.async {
+                if case .success(let intro) = result {
+                    self?.voiceIntro = intro?.playerIntro
+                }
+                self?.endRequest()
             }
         }
     }
 
     func getVoiceIntro(userID: Int) {
+        beginRequest()
         respond { [weak self] in
             self?.voiceIntro = MockDiscover.shared.voiceIntro(userID: userID)
+            self?.endRequest()
         }
     }
 

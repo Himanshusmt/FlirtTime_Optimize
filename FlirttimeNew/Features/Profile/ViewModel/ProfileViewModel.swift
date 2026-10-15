@@ -22,11 +22,24 @@ class ProfileViewModel {
     /// The latest few of the signed-in user's moments (Moments), newest first; `nil` until loaded.
     @Published private(set) var myMoments: [MomentsPost]?
     private(set) var myMomentsTotal = 0
+    /// True while any profile, quick moments or moments request is in flight (drives pull to refresh).
+    @Published private(set) var isFetching = false
+    private var pendingRequests = 0
 
     static let myMomentsPreviewLimit = 4
 
     private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()
+
+    private func beginRequest() {
+        pendingRequests += 1
+        isFetching = true
+    }
+
+    private func endRequest() {
+        pendingRequests = max(0, pendingRequests - 1)
+        if pendingRequests == 0 { isFetching = false }
+    }
 
     /// Story frames for the bubbles and the viewer, in the same order as `quickMoments`.
     var quickMomentFrames: [MomentsStory] {
@@ -34,8 +47,10 @@ class ProfileViewModel {
     }
 
     func getProfileDataAPI() {
+        beginRequest()
         DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay) { [weak self] in
             guard let self = self else { return }
+            defer { self.endRequest() }
             guard let data = MockDataStore.shared.currentUserResponse() else {
                 self.errorMessage = "Unable to load profile"
                 return
@@ -48,39 +63,50 @@ class ProfileViewModel {
     }
 
     func getMyProfile() {
+        beginRequest()
         sessionManager.myProfile()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] profile in
                 self?.myProfile = profile
+                self?.endRequest()
             }, onFailure: { [weak self] error in
                 self?.errorMessage = parseError(error) ?? "Unable to load profile"
+                self?.endRequest()
             })
             .disposed(by: disposeBag)
     }
 
     func getQuickMoments() {
+        beginRequest()
         sessionManager.myQuickMoments()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] moments in
                 self?.quickMoments = moments.sorted {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
+                self?.endRequest()
             }, onFailure: { [weak self] _ in
-                self?.quickMoments = []
+                self?.endRequest()
             })
             .disposed(by: disposeBag)
     }
 
     func getMyMoments() {
+        beginRequest()
         sessionManager
             .myMoments(page: 1, limit: Self.myMomentsPreviewLimit)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] page in
                 self?.myMomentsTotal = page.total ?? page.vibes.count
                 self?.myMoments = Array(page.vibes.prefix(Self.myMomentsPreviewLimit))
+                self?.endRequest()
             }, onFailure: { [weak self] _ in
-                self?.myMomentsTotal = 0
-                self?.myMoments = []
+                guard let self else { return }
+                if self.myMoments == nil {
+                    self.myMomentsTotal = 0
+                    self.myMoments = []
+                }
+                self.endRequest()
             })
             .disposed(by: disposeBag)
     }

@@ -178,3 +178,275 @@ final class MomentsCommentTableViewCell: UITableViewCell {
         trailingLabel.text = icon?.hasPrefix("http") == true ? "🎁" : icon
     }
 }
+
+/// A comment or reply in the comment sheet: like, reply, delete and the "View replies" toggle.
+final class MomentsCommentThreadCell: UITableViewCell {
+
+    static let identifier = "MomentsCommentThreadCell"
+
+    var onLike: (() -> Void)?
+    var onReply: (() -> Void)?
+    var onDelete: (() -> Void)?
+    var onToggleReplies: (() -> Void)?
+
+    private static let rootAvatarSize: CGFloat = 36
+    private static let replyAvatarSize: CGFloat = 28
+    private static let replyIndent: CGFloat = 46
+
+    private var avatarLeading: NSLayoutConstraint?
+    private var avatarWidth: NSLayoutConstraint?
+    private var avatarHeight: NSLayoutConstraint?
+
+    private let avatarImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.backgroundColor = AppColor.AthensGray
+        return imageView
+    }()
+
+    private let nameLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.medium, size: 14)
+        label.textColor = AppColor.MineShaft
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return label
+    }()
+
+    private let timeLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.regular, size: 12)
+        label.textColor = AppColor.SilverChalice
+        label.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        return label
+    }()
+
+    private let bodyLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.regular, size: 14)
+        label.textColor = AppColor.MineShaft
+        label.numberOfLines = 0
+        return label
+    }()
+
+    private lazy var replyButton: UIButton = makeTextButton(title: "Reply") { [weak self] in self?.onReply?() }
+    private lazy var deleteButton: UIButton = makeTextButton(title: "Delete") { [weak self] in self?.onDelete?() }
+
+    private lazy var repliesToggleButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.titleLabel?.font = UIFont.fredoka(.medium, size: 12)
+        button.setTitleColor(AppColor.DoveGray, for: .normal)
+        button.contentHorizontalAlignment = .leading
+        button.addAction(UIAction { [weak self] _ in self?.onToggleReplies?() }, for: .touchUpInside)
+        return button
+    }()
+
+    private let repliesToggleLine: UIView = {
+        let view = UIView()
+        view.backgroundColor = AppColor.SilverChalice
+        return view
+    }()
+
+    private lazy var repliesToggleRow: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [repliesToggleLine, repliesToggleButton, repliesSpinner, UIView()])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 8
+        return stack
+    }()
+
+    private let repliesSpinner: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = AppColor.SilverChalice
+        spinner.hidesWhenStopped = true
+        spinner.transform = CGAffineTransform(scaleX: 0.7, y: 0.7)
+        return spinner
+    }()
+
+    private lazy var likeButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.tintColor = AppColor.SilverChalice
+        button.addAction(UIAction { [weak self] _ in self?.likeTapped() }, for: .touchUpInside)
+        return button
+    }()
+
+    private let likesCountLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.fredoka(.regular, size: 11)
+        label.textColor = AppColor.SilverChalice
+        label.textAlignment = .center
+        return label
+    }()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        setUI()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        avatarImageView.image = nil
+        onLike = nil
+        onReply = nil
+        onDelete = nil
+        onToggleReplies = nil
+        repliesSpinner.stopAnimating()
+    }
+
+    private func makeTextButton(title: String, action: @escaping () -> Void) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = UIFont.fredoka(.medium, size: 12)
+        button.setTitleColor(AppColor.DoveGray, for: .normal)
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return button
+    }
+
+    private func setUI() {
+        let headerStack = UIStackView(arrangedSubviews: [nameLabel, timeLabel, UIView()])
+        headerStack.axis = .horizontal
+        headerStack.alignment = .firstBaseline
+        headerStack.spacing = 6
+
+        let actionsStack = UIStackView(arrangedSubviews: [replyButton, deleteButton, UIView()])
+        actionsStack.axis = .horizontal
+        actionsStack.alignment = .center
+        actionsStack.spacing = 16
+
+        let textStack = UIStackView(arrangedSubviews: [headerStack, bodyLabel, actionsStack, repliesToggleRow])
+        textStack.axis = .vertical
+        textStack.spacing = 2
+        textStack.setCustomSpacing(0, after: actionsStack)
+
+        let likeStack = UIStackView(arrangedSubviews: [likeButton, likesCountLabel])
+        likeStack.axis = .vertical
+        likeStack.alignment = .center
+        likeStack.spacing = 0
+
+        [avatarImageView, textStack, likeStack].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            contentView.addSubview($0)
+        }
+
+        let avatarLeading = avatarImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
+        let avatarWidth = avatarImageView.widthAnchor.constraint(equalToConstant: Self.rootAvatarSize)
+        let avatarHeight = avatarImageView.heightAnchor.constraint(equalToConstant: Self.rootAvatarSize)
+        self.avatarLeading = avatarLeading
+        self.avatarWidth = avatarWidth
+        self.avatarHeight = avatarHeight
+
+        let avatarBottom = avatarImageView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8)
+
+        NSLayoutConstraint.activate([
+            avatarLeading, avatarWidth, avatarHeight, avatarBottom,
+            avatarImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+
+            textStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            textStack.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 10),
+            textStack.trailingAnchor.constraint(equalTo: likeStack.leadingAnchor, constant: -8),
+            textStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+
+            likeStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            likeStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            likeStack.widthAnchor.constraint(equalToConstant: 36),
+            likeButton.widthAnchor.constraint(equalToConstant: 32),
+            likeButton.heightAnchor.constraint(equalToConstant: 28),
+
+            replyButton.heightAnchor.constraint(equalToConstant: 28),
+            repliesToggleLine.widthAnchor.constraint(equalToConstant: 24),
+            repliesToggleLine.heightAnchor.constraint(equalToConstant: 1),
+            repliesToggleButton.heightAnchor.constraint(equalToConstant: 28)
+        ])
+    }
+
+    /// `thread` is set for top-level comments to show the "View replies" toggle.
+    func configure(with comment: MomentsComment,
+                   isReply: Bool,
+                   thread: MomentsCommentThread? = nil,
+                   isLoadingReplies: Bool = false,
+                   canDelete: Bool) {
+        let avatarSize = isReply ? Self.replyAvatarSize : Self.rootAvatarSize
+        avatarLeading?.constant = isReply ? 16 + Self.replyIndent : 16
+        avatarWidth?.constant = avatarSize
+        avatarHeight?.constant = avatarSize
+        avatarImageView.layer.cornerRadius = avatarSize / 2
+        avatarImageView.loadImage(path: comment.author?.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
+
+        nameLabel.text = comment.author?.displayName
+        timeLabel.text = MomentsDate.timeAgo(from: comment.createdAt)
+        bodyLabel.attributedText = Self.highlightingMentions(in: comment.body ?? "")
+        deleteButton.isHidden = !canDelete
+
+        updateLike(isLiked: comment.isLiked ?? false, count: comment.likesCount ?? 0)
+
+        let replyCount = thread?.replyCount ?? 0
+        repliesToggleRow.isHidden = isReply || replyCount == 0
+        if let thread, replyCount > 0 {
+            let title = thread.isExpanded
+                ? "Hide replies"
+                : "View \(replyCount) \(replyCount == 1 ? "reply" : "replies")"
+            UIView.performWithoutAnimation {
+                repliesToggleButton.setTitle(title, for: .normal)
+                repliesToggleButton.layoutIfNeeded()
+            }
+            isLoadingReplies ? repliesSpinner.startAnimating() : repliesSpinner.stopAnimating()
+        }
+
+        accessibilityCustomActions = [
+            UIAccessibilityCustomAction(name: comment.isLiked == true ? "Unlike comment" : "Like comment") { [weak self] _ in
+                self?.onLike?()
+                return true
+            },
+            UIAccessibilityCustomAction(name: "Reply") { [weak self] _ in
+                self?.onReply?()
+                return true
+            }
+        ] + (canDelete ? [UIAccessibilityCustomAction(name: "Delete comment") { [weak self] _ in
+            self?.onDelete?()
+            return true
+        }] : [])
+    }
+
+    func updateLike(isLiked: Bool, count: Int) {
+        let symbol = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        likeButton.setImage(UIImage(systemName: isLiked ? "heart.fill" : "heart", withConfiguration: symbol), for: .normal)
+        likeButton.tintColor = isLiked ? AppColor.Punch : AppColor.SilverChalice
+        likeButton.accessibilityLabel = isLiked ? "Unlike comment" : "Like comment"
+        likesCountLabel.text = count > 0 ? count.vibeCountText : nil
+        likesCountLabel.isHidden = count == 0
+    }
+
+    private func likeTapped() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        UIView.animate(withDuration: 0.12, animations: {
+            self.likeButton.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.12) { self.likeButton.transform = .identity }
+        })
+        onLike?()
+    }
+
+    /// Colours "@username" mentions like the OneVibe comment list.
+    private static func highlightingMentions(in text: String) -> NSAttributedString {
+        let attributed = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.fredoka(.regular, size: 14),
+            .foregroundColor: AppColor.MineShaft
+        ])
+        guard let regex = try? NSRegularExpression(pattern: "@\\S+") else { return attributed }
+        let range = NSRange(text.startIndex..., in: text)
+        for match in regex.matches(in: text, range: range) {
+            attributed.addAttributes([
+                .font: UIFont.fredoka(.medium, size: 14),
+                .foregroundColor: AppColor.Punch
+            ], range: match.range)
+        }
+        return attributed
+    }
+}

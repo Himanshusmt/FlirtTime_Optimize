@@ -524,6 +524,30 @@ final class AppSessionManager {
                                                       parameters: ["comment": comment]))
     }
 
+    /// Replies in the thread of top-level comment `commentId`; pass `parentReplyId` when answering a reply in that thread.
+    func replyToMomentComment(momentId: String, commentId: String, reply: String, parentReplyId: String? = nil) -> Single<[String: Any]> {
+        var params: [String: Any] = ["reply": reply]
+        if let parentReplyId, !parentReplyId.isEmpty { params["parentReplyId"] = parentReplyId }
+        return backendClient.loadJSON(request: AppApiRequest(method: .post,
+                                                             endPoint: .momentCommentReplies(momentId: momentId, commentId: commentId),
+                                                             parameters: params))
+    }
+
+    /// Sends "like" / "unlike" rather than "toggle" so quick double taps can't flip it the wrong way.
+    /// `data` carries the server's `isLiked` and `likesCount`.
+    func likeMomentComment(momentId: String, commentId: String, isLiked: Bool) -> Single<[String: Any]> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post,
+                                                      endPoint: .momentCommentLike(momentId: momentId, commentId: commentId),
+                                                      parameters: ["action": isLiked ? "like" : "unlike"]))
+    }
+
+    /// Replies to a top-level comment; `limit` max 100.
+    func momentCommentReplies(momentId: String, commentId: String, page: Int, limit: Int) -> Single<MomentCommentRepliesData> {
+        backendClient.load(request: AppApiRequest(method: .get,
+                                                  endPoint: .momentCommentReplies(momentId: momentId, commentId: commentId),
+                                                  parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
+    }
+
     /// People who liked the moment; `limit` max 100.
     func momentLikes(momentId: String, page: Int, limit: Int) -> Single<MomentLikesData> {
         backendClient.load(request: AppApiRequest(method: .get, endPoint: .momentLikes(momentId: momentId),

@@ -115,6 +115,12 @@ struct MomentsComment: Codable {
     let author: MomentsAuthor?
     /// Written by the signed-in user, so it can be deleted.
     var isMine: Bool? = nil
+    /// Top-level comment this one replies to; `nil` for top-level comments.
+    var parentId: String? = nil
+    var likesCount: Int? = nil
+    var isLiked: Bool? = nil
+    /// Replies the server reports, which can be more than the ones loaded.
+    var repliesCount: Int? = nil
 }
 
 struct CreateMomentsCommentResponse: Codable {

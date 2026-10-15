@@ -16,6 +16,7 @@
 		17AF216B893BFBA2A94F82E0 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */; };
 		1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E53028C5E78F88C9B336F8 /* NotificationTableViewCell.swift */; };
 		232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ProfileRefreshIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6F7E8D9C0B1A2 /* ProfileRefreshIndicator.swift */; };
 		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
 		27E7C7E330200024DCCFFDB3 /* MomentsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C089D324A35A65DB2E3AC0 /* MomentsCardView.swift */; };
 		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
@@ -736,6 +737,7 @@
 		37BBE7F29068F804D4B71EEC /* AppRequestInterceptor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRequestInterceptor.swift; sourceTree = "<group>"; };
 		3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserMomentCell.swift; sourceTree = "<group>"; };
 		3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileQuickMomentsView.swift; sourceTree = "<group>"; };
+		F1E2D3C4B5A6F7E8D9C0B1A2 /* ProfileRefreshIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRefreshIndicator.swift; sourceTree = "<group>"; };
 		40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentsListViewController.swift; sourceTree = "<group>"; };
 		49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverPeopleListViewController.swift; sourceTree = "<group>"; };
@@ -2249,6 +2251,7 @@
 			children = (
 				E3A2D77B30776627008D1551 /* ProfileViewController.swift */,
 				3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */,
+				F1E2D3C4B5A6F7E8D9C0B1A2 /* ProfileRefreshIndicator.swift */,
 				07585876749D9F369C8C09C0 /* ProfileVoiceIntroView.swift */,
 				09F087DB053D107E69944A9D /* VoiceIntroRecorderViewController.swift */,
 				F053753F77E8402651DB06C0 /* ProfileMomentsGridView.swift */,
@@ -3965,6 +3968,7 @@
 				E3A2DA4630776627008D1551 /* ProfileModel.swift in Sources */,
 				E3A2DA4730776627008D1551 /* ProfileViewController.swift in Sources */,
 				232BBC777972271F32C3715D /* ProfileQuickMomentsView.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* ProfileRefreshIndicator.swift in Sources */,
 				163815D8D834768C1A060099 /* ProfileVoiceIntroView.swift in Sources */,
 				CD64905F3A500451C1AA29EC /* VoiceIntroRecorderViewController.swift in Sources */,
 				E2E5F9978ED70C925E98F780 /* VoiceIntroModel.swift in Sources */,
