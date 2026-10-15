@@ -74,6 +74,11 @@ enum AppEndPoint: CustomStringConvertible {
     // Discover — DiscoverViewModel
     case discoveryPeople
     case discoveryAction
+    case discoveryFilterOptions
+    /// GET saved preferences, PUT to save them.
+    case discoveryFilters
+    case discoveryFiltersReset
+    case discoverySearch
     case interestsCatalog
     case connectionRequest
 
@@ -165,6 +170,10 @@ enum AppEndPoint: CustomStringConvertible {
         case .profilePhotoUpload: return "api/v1/onboarding/profile-photo"
         case .discoveryPeople: return "api/v1/discovery/people"
         case .discoveryAction: return "api/v1/discovery/actions"
+        case .discoveryFilterOptions: return "api/v1/discovery/filters/options"
+        case .discoveryFilters: return "api/v1/discovery/filters"
+        case .discoveryFiltersReset: return "api/v1/discovery/filters/reset"
+        case .discoverySearch: return "api/v1/discovery/search"
         case .interestsCatalog: return "api/v1/interests"
         case .connectionRequest: return "api/v1/connections/request"
         case .interactions: return "api/v1/interactions"
@@ -223,7 +232,8 @@ enum AppEndPoint: CustomStringConvertible {
              .profileEmailRequestOTP, .profileEmailVerifyOTP, .profileEmailResendOTP,
              .profilePhoneRequestOTP, .profilePhoneVerifyOTP, .profilePhoneResendOTP, .gestureUpload, .profilePhotoUpload,
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
-             .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
+             .discoveryPeople, .discoveryAction, .interestsCatalog,
+             .discoveryFilterOptions, .discoveryFilters, .discoveryFiltersReset, .discoverySearch, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
              .userProfile, .blockUser, .reportUser, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,

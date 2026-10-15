@@ -754,9 +754,33 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openFilters() {
-        MomentsFiltersViewController.present(from: tabBarController ?? self, filters: viewModel.preferences,
-                                          matchCount: { [weak self] in self?.viewModel.matchCount(for: $0) ?? 0 },
-                                          onApply: { [weak self] in self?.viewModel.apply($0) })
+        viewModel.loadFilterOptions()
+        MomentsFiltersViewController.present(
+            from: tabBarController ?? self,
+            filters: viewModel.preferences,
+            options: viewModel.filterOptions,
+            matchCount: { [weak self] filters, completion in
+                guard let self else { return completion(nil) }
+                self.viewModel.matchCount(for: filters, completion: completion)
+            },
+            onReset: { [weak self] completion in
+                guard let self else { return completion(nil) }
+                self.viewModel.resetFilters { defaults in
+                    if defaults == nil {
+                        self.aCustomToastView.show(message: "Couldn't reset your filters. Please try again.")
+                    }
+                    completion(defaults)
+                }
+            },
+            onApply: { [weak self] filters in
+                guard let self else { return }
+                self.aActivityIndicator.show()
+                self.viewModel.apply(filters) { [weak self] error in
+                    guard let self else { return }
+                    self.aActivityIndicator.hide()
+                    if let error { self.aCustomToastView.show(message: error) }
+                }
+            })
     }
 
     private func updateFilterBadge(_ count: Int) {

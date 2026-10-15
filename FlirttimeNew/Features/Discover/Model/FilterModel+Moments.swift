@@ -15,6 +15,16 @@ extension FilterModel {
         case nonBinary = "3"
         case everyone = "0"
 
+        /// Value used by `discovery/filters`.
+        var apiValue: String {
+            switch self {
+            case .women: return "women"
+            case .men: return "men"
+            case .nonBinary: return "non_binary"
+            case .everyone: return "everyone"
+            }
+        }
+
         var title: String {
             switch self {
             case .women: return "Women"
@@ -35,17 +45,47 @@ extension FilterModel {
     }
 
     static let ageBounds = 18...70
-    /// The top of the distance slider means "Anywhere".
-    static let distanceBounds = 1...150
-    static let datingIntents: [(title: String, emoji: String)] = [
-        ("Long-term", "💍"), ("Something casual", "🥂"), ("Not sure yet", "🤔")
+    /// The top of the distance slider means "Anywhere"; the API allows 1-100 km.
+    static let distanceBounds = 1...100
+    static let datingIntents: [(title: String, emoji: String, apiValue: String)] = [
+        ("Long-term", "💍", "long_term"), ("Something casual", "🥂", "casual"), ("Not sure yet", "🤔", "not_sure")
     ]
 
     static var standard: FilterModel {
         FilterModel(gender: ShowMe.everyone.rawValue,
                     minAge: "\(ageBounds.lowerBound)", maxAge: "\(ageBounds.upperBound)",
                     distance: "\(distanceBounds.upperBound)",
-                    isVerified: "0", isOnline: "0", interests: [], intents: [])
+                    isVerified: "0", isOnline: "0", interests: [], intents: [], interestIds: [])
+    }
+
+    init(preferences: DiscoveryFilterPreferences) {
+        self = .standard
+        let gender = preferences.genders.count == 1 ? preferences.genders[0] : "everyone"
+        showMe = ShowMe.allCases.first { $0.apiValue == gender } ?? .everyone
+        ageRange = min(preferences.ageMin, preferences.ageMax)...max(preferences.ageMin, preferences.ageMax)
+        maxDistanceKm = preferences.maxDistanceKm.flatMap { $0 >= Self.distanceBounds.upperBound ? nil : $0 }
+        let lookingFor = Set(preferences.lookingFor)
+        let titles = Self.datingIntents.filter { lookingFor.contains($0.apiValue) }.map(\.title)
+        intents = titles.count == Self.datingIntents.count ? [] : titles
+        interestIds = preferences.interestIds
+        verifiedOnly = preferences.verifiedOnly
+        onlineOnly = preferences.onlineOnly
+    }
+
+    /// For PUT `discovery/filters` and POST `discovery/search`. No "Looking for" chip selected sends `[]` (no filter),
+    /// so people who haven't set what they're looking for still show up.
+    var preferences: DiscoveryFilterPreferences {
+        let selected = Set(intents ?? [])
+        let lookingFor = Self.datingIntents.filter { selected.contains($0.title) }.map(\.apiValue)
+        let range = ageRange
+        return DiscoveryFilterPreferences(genders: [showMe.apiValue],
+                                          ageMin: range.lowerBound,
+                                          ageMax: range.upperBound,
+                                          maxDistanceKm: maxDistanceKm,
+                                          lookingFor: lookingFor,
+                                          interestIds: interestIds ?? [],
+                                          verifiedOnly: verifiedOnly,
+                                          onlineOnly: onlineOnly)
     }
 
     static var saved: FilterModel { UserDataManager.shared.filterDataModel ?? .standard }
@@ -102,7 +142,7 @@ extension FilterModel {
          ageRange != Self.ageBounds,
          maxDistanceKm != nil,
          !(intents ?? []).isEmpty,
-         !(interests ?? []).isEmpty,
+         !(interests ?? []).isEmpty || !(interestIds ?? []).isEmpty,
          verifiedOnly,
          onlineOnly].filter { $0 }.count
     }

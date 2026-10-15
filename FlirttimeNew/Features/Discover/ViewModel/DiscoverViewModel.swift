@@ -23,8 +23,10 @@ final class DiscoverViewModel {
     /// Remaining profiles after the interest filter; `deck[0]` is the active card.
     @Published private(set) var deck: [MomentsProfile] = []
     @Published private(set) var interestFilter: MomentsInterest?
-    /// Saved filter-sheet preferences, applied before the interest filter.
+    /// Saved filter-sheet preferences; the deck comes from `discovery/search` with these.
     @Published private(set) var preferences: FilterModel = .saved
+    /// Choices for the filter sheet from GET `discovery/filters/options`; `nil` until loaded.
+    @Published private(set) var filterOptions: DiscoveryFilterOptions?
     /// Quick Moments story tray for the Moments tab; `nil` until loaded.
     @Published private(set) var quickMomentTray: QuickMomentTray?
     /// Interests tab tiles from GET `interests`.
@@ -55,6 +57,10 @@ final class DiscoverViewModel {
     /// Everyone already shown or acted on, so a later page never repeats a card.
     private var seenUserIDs = Set<String>()
     private var isLoadingInterestCatalog = false
+    /// Bumped when filters change, so pages requested with the old filters are dropped.
+    private var deckGeneration = 0
+    private var didLoadSavedFilters = false
+    private var isLoadingFilterOptions = false
 
     init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
@@ -62,12 +68,44 @@ final class DiscoverViewModel {
 
     // MARK: - Loading
 
+    /// The first call loads the saved filters from GET `discovery/filters` before the deck.
     func loadRecommendations() {
         guard loadState != .loading else { return }
         loadState = .loading
         nextPage = 1
         hasMorePages = true
+        loadFilterOptions()
+        guard didLoadSavedFilters else {
+            sessionManager.discoveryFilters()
+                .observe(on: MainScheduler.instance)
+                .subscribe(onSuccess: { [weak self] saved in
+                    guard let self else { return }
+                    self.didLoadSavedFilters = true
+                    self.storePreferences(FilterModel(preferences: saved))
+                    self.fetchNextPage(replacing: true)
+                }, onFailure: { [weak self] _ in
+                    guard let self else { return }
+                    self.didLoadSavedFilters = true
+                    self.fetchNextPage(replacing: true)
+                })
+                .disposed(by: disposeBag)
+            return
+        }
         fetchNextPage(replacing: true)
+    }
+
+    func loadFilterOptions() {
+        guard filterOptions == nil, !isLoadingFilterOptions else { return }
+        isLoadingFilterOptions = true
+        sessionManager.discoveryFilterOptions()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] options in
+                self?.isLoadingFilterOptions = false
+                self?.filterOptions = options
+            }, onFailure: { [weak self] _ in
+                self?.isLoadingFilterOptions = false
+            })
+            .disposed(by: disposeBag)
     }
 
     func exploreAgain() {
@@ -80,14 +118,15 @@ final class DiscoverViewModel {
         guard !isFetchingPage, hasMorePages else { return }
         isFetchingPage = true
         let page = nextPage
+        let generation = deckGeneration
 
-        sessionManager.discoveryPeople(page: page, limit: Self.pageSize)
+        sessionManager.discoverySearch(filters: preferences.preferences, page: page, limit: Self.pageSize)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] response in
-                guard let self else { return }
+                guard let self, generation == self.deckGeneration else { return }
                 self.isFetchingPage = false
                 self.nextPage = page + 1
-                let users = response.users ?? []
+                let users = response.profiles ?? []
                 self.hasMorePages = response.pagination?.hasMore ?? (users.count >= Self.pageSize)
 
                 let existing = replacing ? Set<String>() : Set(self.queue.compactMap(\.remoteUserId))
@@ -108,7 +147,7 @@ final class DiscoverViewModel {
                 if self.loadState != .loaded { self.loadState = .loaded }
                 self.prefetchIfNeeded()
             }, onFailure: { [weak self] error in
-                guard let self else { return }
+                guard let self, generation == self.deckGeneration else { return }
                 self.isFetchingPage = false
                 if replacing || self.queue.isEmpty {
                     self.loadState = .failed(parseError(error) ?? "Couldn't load new people right now")
@@ -127,7 +166,7 @@ final class DiscoverViewModel {
     /// Narrows the deck to people who share `interest`. Returns `false` when nobody else matches.
     @discardableResult
     func filter(by interest: MomentsInterest) -> Bool {
-        guard queue.contains(where: { preferences.matches($0) && $0.interests.contains(interest) }) else { return false }
+        guard queue.contains(where: { $0.interests.contains(interest) }) else { return false }
         interestFilter = interest
         rebuildDeck()
         return true
@@ -140,21 +179,71 @@ final class DiscoverViewModel {
 
     // MARK: - Filters
 
-    /// People left in the deck if `filters` were applied (ignores the interest filter).
-    func matchCount(for filters: FilterModel) -> Int {
-        queue.filter(filters.matches).count
+    /// How many people match `filters`, from `discovery/search` with `countOnly`; `nil` when the request fails.
+    func matchCount(for filters: FilterModel, completion: @escaping (Int?) -> Void) {
+        sessionManager.discoverySearch(filters: filters.preferences, page: 1, limit: 1, countOnly: true)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { data in
+                completion(data.totalCount ?? data.pagination?.totalCount)
+            }, onFailure: { _ in
+                completion(nil)
+            })
+            .disposed(by: disposeBag)
     }
 
-    /// Whether the deck is empty only because of the saved filters.
+    /// Whether the deck is empty while filters are narrowing the search.
     var isEmptyBecauseOfFilters: Bool {
-        deck.isEmpty && !queue.isEmpty && preferences.activeCount > 0
+        deck.isEmpty && loadState == .loaded && preferences.activeCount > 0
     }
 
-    func apply(_ filters: FilterModel) {
+    /// Saves `filters` with PUT `discovery/filters`, then reloads the deck. Completes with an error message on failure.
+    func apply(_ filters: FilterModel, completion: @escaping (String?) -> Void) {
+        sessionManager.updateDiscoveryFilters(filters.preferences)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] saved in
+                guard let self else { return }
+                let applied = FilterModel(preferences: saved)
+                self.storePreferences(applied)
+                MomentsAnalytics.track(.discoverFiltersApplied, properties: ["active_count": applied.activeCount])
+                self.reloadDeck()
+                completion(nil)
+            }, onFailure: { error in
+                completion(parseError(error) ?? "Couldn't save your filters")
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Server defaults from POST `discovery/filters/reset`; `nil` when the request fails.
+    func resetFilters(completion: @escaping (FilterModel?) -> Void) {
+        sessionManager.resetDiscoveryFilters()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] saved in
+                guard let self else { return }
+                let defaults = FilterModel(preferences: saved)
+                self.storePreferences(defaults)
+                self.reloadDeck()
+                completion(defaults)
+            }, onFailure: { _ in
+                completion(nil)
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func storePreferences(_ filters: FilterModel) {
         UserDataManager.shared.filterDataModel = filters
         preferences = filters
-        MomentsAnalytics.track(.discoverFiltersApplied, properties: ["active_count": filters.activeCount])
-        rebuildDeck()
+    }
+
+    /// Starts the deck over from page 1 with the current preferences.
+    private func reloadDeck() {
+        deckGeneration += 1
+        seenUserIDs.removeAll()
+        interestFilter = nil
+        queue = []
+        hasMorePages = true
+        isFetchingPage = false
+        loadState = .idle
+        loadRecommendations()
     }
 
     // MARK: - Actions
@@ -374,7 +463,7 @@ final class DiscoverViewModel {
     }
 
     private func rebuildDeck() {
-        let matching = queue.filter(preferences.matches)
+        let matching = queue
         if let interestFilter {
             let filtered = matching.filter { $0.interests.contains(interestFilter) }
             if filtered.isEmpty {
@@ -426,6 +515,48 @@ final class DiscoverViewModel {
                                   datingIntent: nil,
                                   photos: photos,
                                   about: "",
+                                  interests: interests,
+                                  sharedInterests: shared,
+                                  reasons: reasons(shared: shared, sameCity: nil),
+                                  voiceIntro: nil,
+                                  moments: [],
+                                  vibeScore: person.vibeScore)
+        profile.remoteUserId = userID
+        return profile
+    }
+
+    static func makeProfile(from person: DiscoverySearchProfile) -> MomentsProfile? {
+        guard let userID = person.userId ?? person.id, !userID.isEmpty else { return nil }
+
+        let interests = uniqueInterests(person.interests ?? [])
+        let shared = uniqueInterests(person.sharedInterests ?? [])
+        let gallery = (person.photos ?? [])
+            .sorted { ($0.isPrimary == true ? 0 : 1, $0.displayOrder ?? .max) < ($1.isPrimary == true ? 0 : 1, $1.displayOrder ?? .max) }
+            .compactMap { $0.url ?? $0.thumbnailUrl }
+        var photos: [String] = []
+        for path in [person.primaryPhotoUrl].compactMap({ $0 }) + gallery where !path.isEmpty && !photos.contains(path) {
+            photos.append(path)
+        }
+        let gender: Int?
+        switch person.gender?.lowercased() {
+        case "female": gender = 2
+        case "male": gender = 1
+        case "non_binary", "non-binary", "nonbinary": gender = 3
+        default: gender = nil
+        }
+        let intent = FilterModel.datingIntents.first { $0.apiValue == person.lookingFor }?.title
+
+        var profile = MomentsProfile(id: userID.stableID,
+                                  displayName: displayName(username: person.username, name: person.name),
+                                  age: person.age,
+                                  isVerified: (person.isFaceVerified ?? person.isVerified) == true,
+                                  gender: gender,
+                                  city: cityName(from: person.city),
+                                  distanceKm: person.distanceKm,
+                                  isOnline: person.isOnline,
+                                  datingIntent: intent,
+                                  photos: photos,
+                                  about: person.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                                   interests: interests,
                                   sharedInterests: shared,
                                   reasons: reasons(shared: shared, sameCity: nil),

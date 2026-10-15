@@ -11,10 +11,17 @@ final class MomentsFiltersViewController: UIViewController {
 
     var onApply: ((FilterModel) -> Void)?
     /// When set, the apply button shows how many people match the current selection.
-    var matchCount: ((FilterModel) -> Int)?
+    /// The completion receives `nil` when the count couldn't be loaded.
+    var matchCount: ((FilterModel, @escaping (Int?) -> Void) -> Void)?
+    /// When set, Reset asks for the defaults (e.g. from the server) instead of using `FilterModel.standard`.
+    var onReset: ((@escaping (FilterModel?) -> Void) -> Void)?
 
     private var filters: FilterModel
     private let haptics = UISelectionFeedbackGenerator()
+    private var countWorkItem: DispatchWorkItem?
+    private var countGeneration = 0
+    private var isCounting = false
+    private var latestCount: Int?
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -34,10 +41,18 @@ final class MomentsFiltersViewController: UIViewController {
     private static let intentInterests: [MomentsInterest] = FilterModel.datingIntents.enumerated().map {
         MomentsInterest(id: $0.offset, title: $0.element.title, emoji: $0.element.emoji)
     }
-    private static let allInterests = MomentsInterestCatalog.all.values.sorted { $0.title < $1.title }
+    private static let localInterests = MomentsInterestCatalog.all.values.sorted { $0.title < $1.title }
 
-    init(filters: FilterModel) {
+    /// Chips from `options.interests`, keyed back to their UUIDs; empty when the options aren't loaded.
+    private let apiInterests: [(chip: MomentsInterest, uuid: String)]
+    private var usesAPIInterests: Bool { !apiInterests.isEmpty }
+    private var interestChoices: [MomentsInterest] { usesAPIInterests ? apiInterests.map(\.chip) : Self.localInterests }
+
+    init(filters: FilterModel, options: DiscoveryFilterOptions? = nil) {
         self.filters = filters
+        apiInterests = (options?.sortedInterests ?? []).map {
+            (MomentsInterest(id: $0.id.stableID, title: $0.name, emoji: $0.icon ?? ""), $0.id)
+        }
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -45,10 +60,13 @@ final class MomentsFiltersViewController: UIViewController {
 
     /// Presents the sheet with the large detent and a grabber.
     static func present(from presenter: UIViewController, filters: FilterModel,
-                        matchCount: ((FilterModel) -> Int)? = nil,
+                        options: DiscoveryFilterOptions? = nil,
+                        matchCount: ((FilterModel, @escaping (Int?) -> Void) -> Void)? = nil,
+                        onReset: ((@escaping (FilterModel?) -> Void) -> Void)? = nil,
                         onApply: @escaping (FilterModel) -> Void) {
-        let sheet = MomentsFiltersViewController(filters: filters)
+        let sheet = MomentsFiltersViewController(filters: filters, options: options)
         sheet.matchCount = matchCount
+        sheet.onReset = onReset
         sheet.onApply = onApply
         sheet.modalPresentationStyle = .pageSheet
         if let controller = sheet.sheetPresentationController {
@@ -104,6 +122,7 @@ final class MomentsFiltersViewController: UIViewController {
             bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         refresh(animated: false)
+        requestCount(after: 0)
     }
 
     // MARK: - Sections
@@ -215,9 +234,16 @@ final class MomentsFiltersViewController: UIViewController {
         interestChips.isSelectable = true
         interestChips.onTap = { [weak self] interest in
             guard let self else { return }
-            var ids = self.filters.interests ?? []
-            if let index = ids.firstIndex(of: interest.id) { ids.remove(at: index) } else { ids.append(interest.id) }
-            self.filters.interests = ids
+            if self.usesAPIInterests {
+                guard let uuid = self.apiInterests.first(where: { $0.chip.id == interest.id })?.uuid else { return }
+                var ids = self.filters.interestIds ?? []
+                if let index = ids.firstIndex(of: uuid) { ids.remove(at: index) } else { ids.append(uuid) }
+                self.filters.interestIds = ids
+            } else {
+                var ids = self.filters.interests ?? []
+                if let index = ids.firstIndex(of: interest.id) { ids.remove(at: index) } else { ids.append(interest.id) }
+                self.filters.interests = ids
+            }
             self.changed()
         }
         let hint = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray, lines: 0)
@@ -400,6 +426,36 @@ final class MomentsFiltersViewController: UIViewController {
     private func changed(refreshControls: Bool = true) {
         haptics.selectionChanged()
         refresh(animated: true, controls: refreshControls)
+        requestCount()
+    }
+
+    private var selectedInterestChipIDs: Set<Int> {
+        guard usesAPIInterests else { return Set(filters.interests ?? []) }
+        let selected = Set(filters.interestIds ?? [])
+        return Set(apiInterests.filter { selected.contains($0.uuid) }.map(\.chip.id))
+    }
+
+    /// Asks for the match count once the user stops changing filters; older answers are ignored.
+    private func requestCount(after delay: TimeInterval = 0.35) {
+        guard let matchCount else { return }
+        countWorkItem?.cancel()
+        countGeneration += 1
+        let generation = countGeneration
+        isCounting = true
+        updateBottomBar()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            matchCount(self.filters) { [weak self] count in
+                DispatchQueue.main.async {
+                    guard let self, generation == self.countGeneration else { return }
+                    self.isCounting = false
+                    self.latestCount = count
+                    self.updateBottomBar()
+                }
+            }
+        }
+        countWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     private func refresh(animated: Bool, controls: Bool = true) {
@@ -414,12 +470,12 @@ final class MomentsFiltersViewController: UIViewController {
             let intents = Set(filters.intents ?? [])
             intentChips.configure(Self.intentInterests,
                                   highlighted: Set(Self.intentInterests.filter { intents.contains($0.title) }.map(\.id)))
-            interestChips.configure(Self.allInterests, highlighted: Set(filters.interests ?? []))
+            interestChips.configure(interestChoices, highlighted: selectedInterestChipIDs)
         }
         ageValueLabel.text = filters.ageText
         distanceValueLabel.text = filters.distanceText
         distanceSlider.accessibilityValue = filters.distanceText
-        let interestCount = filters.interests?.count ?? 0
+        let interestCount = selectedInterestChipIDs.count
         interestsCountLabel.text = interestCount == 0 ? "Any" : "\(interestCount) selected"
         updateBottomBar()
     }
@@ -449,8 +505,9 @@ final class MomentsFiltersViewController: UIViewController {
 
         let title: String
         var enabled = true
-        if let matchCount {
-            let count = matchCount(filters)
+        if matchCount != nil, isCounting {
+            title = "Checking..."
+        } else if matchCount != nil, let count = latestCount {
             switch count {
             case 0:
                 title = "No matches – widen filters"
@@ -470,9 +527,28 @@ final class MomentsFiltersViewController: UIViewController {
     }
 
     private func reset() {
-        filters = .standard
+        guard let onReset else {
+            applyReset(.standard)
+            return
+        }
+        resetButton.isEnabled = false
+        onReset { [weak self] defaults in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard let defaults else {
+                    self.updateBottomBar()
+                    return
+                }
+                self.applyReset(defaults)
+            }
+        }
+    }
+
+    private func applyReset(_ defaults: FilterModel) {
+        filters = defaults
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         refresh(animated: true)
+        requestCount(after: 0)
         UIAccessibility.post(notification: .announcement, argument: "Filters reset")
     }
 
