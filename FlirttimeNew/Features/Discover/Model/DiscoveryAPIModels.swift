@@ -37,14 +37,15 @@ struct DiscoveryPerson: Codable {
     let vibeScore: Int?
 }
 
-/// An interest as a plain string or an object such as `{ "id": "...", "name": "Cooking", "emoji": "🍳" }`.
+/// An interest as a plain string or an object such as `{ "id": "...", "name": "Cooking", "emoji": "🍳" }`
+/// (`id` may be a number and the emoji may come as `icon`).
 struct DiscoveryTag: Codable {
     let id: String?
     let name: String
     let emoji: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, title, emoji
+        case id, name, emoji
     }
 
     init(from decoder: Decoder) throws {
@@ -54,11 +55,10 @@ struct DiscoveryTag: Codable {
             emoji = nil
             return
         }
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try? container.decodeIfPresent(String.self, forKey: .id)
-        name = (try? container.decodeIfPresent(String.self, forKey: .name))
-            ?? (try? container.decodeIfPresent(String.self, forKey: .title)) ?? ""
-        emoji = try? container.decodeIfPresent(String.self, forKey: .emoji)
+        let container = try decoder.container(keyedBy: QMKey.self)
+        id = container.string("id")
+        name = container.string("name", "title") ?? ""
+        emoji = container.string("emoji", "icon")
     }
 
     func encode(to encoder: Encoder) throws {
@@ -121,17 +121,28 @@ struct DiscoveryActionResult: Codable {
 
 // MARK: - Profile detail
 
-/// The `data` of GET `users/:userId/profile`.
+/// The `data` of GET `users/:userId/profile`. The payload differs between users (e.g. `moments`,
+/// `voiceIntro` or `moreAboutMe` can be missing or null), so every field is optional and an
+/// unexpected shape is skipped rather than failing the whole profile.
 struct OtherUserProfile: Codable {
     let userId: String?
     let username: String?
+    /// Nickname; `fullName` is the registered full name.
     let name: String?
+    let fullName: String?
     let age: Int?
+    let gender: String?
     let city: String?
     let distanceKm: Double?
+    /// Ready-made label such as "5.2 km away".
+    let distance: String?
     let isVerified: Bool?
-    /// Relative S3 key, e.g. "photos/<userId>/<file>.jpg".
+    let isOnline: Bool?
+    /// ISO 8601
+    let lastSeen: String?
+    /// Full URL or relative S3 key.
     let profilePhoto: String?
+    let coverPhoto: String?
     let bio: String?
     let vibeScore: Int?
     let vibeExplanation: String?
@@ -139,41 +150,92 @@ struct OtherUserProfile: Codable {
     let moments: [OtherUserMoment]?
     let interests: [DiscoveryTag]?
     let sharedInterests: [DiscoveryTag]?
+    let moreAboutMe: [OtherUserAboutItem]?
     /// "like" | "nope" | "super_like" once the signed-in user has acted on this profile.
     let myAction: String?
+    /// "none" | "pending" | "matched" ...
+    let matchStatus: String?
+    let hasLiked: Bool?
     let isMatched: Bool?
     let canConnect: Bool?
 
     private enum CodingKeys: String, CodingKey {
-        case userId, username, name, age, city, distanceKm, isVerified, profilePhoto, bio, vibeScore, vibeExplanation,
-             voiceIntro, moments, interests, sharedInterests, myAction, isMatched, canConnect
+        case userId, username, name, fullName, age, gender, city, distanceKm, distance, isVerified, isOnline, lastSeen,
+             profilePhoto, coverPhoto, bio, vibeScore, vibeExplanation, voiceIntro, moments, interests, sharedInterests,
+             moreAboutMe, myAction, matchStatus, hasLiked, isMatched, canConnect
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        userId = try container.decodeIfPresent(String.self, forKey: .userId)
-        username = try? container.decodeIfPresent(String.self, forKey: .username)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-        age = try container.decodeIfPresent(Int.self, forKey: .age)
-        city = try container.decodeIfPresent(String.self, forKey: .city)
-        distanceKm = try container.decodeIfPresent(Double.self, forKey: .distanceKm)
-        isVerified = try container.decodeIfPresent(Bool.self, forKey: .isVerified)
-        profilePhoto = try container.decodeIfPresent(String.self, forKey: .profilePhoto)
-        bio = try container.decodeIfPresent(String.self, forKey: .bio)
-        vibeScore = try container.decodeIfPresent(Int.self, forKey: .vibeScore)
-        moments = try container.decodeIfPresent([OtherUserMoment].self, forKey: .moments)
-        interests = try container.decodeIfPresent([DiscoveryTag].self, forKey: .interests)
-        sharedInterests = try container.decodeIfPresent([DiscoveryTag].self, forKey: .sharedInterests)
-        myAction = try container.decodeIfPresent(String.self, forKey: .myAction)
-        isMatched = try container.decodeIfPresent(Bool.self, forKey: .isMatched)
-        canConnect = try container.decodeIfPresent(Bool.self, forKey: .canConnect)
-        // Only seen as null so far; an unexpected shape is skipped rather than failing the whole profile.
-        vibeExplanation = try? container.decodeIfPresent(String.self, forKey: .vibeExplanation)
-        voiceIntro = try? container.decodeIfPresent(OtherUserVoiceIntro.self, forKey: .voiceIntro)
+        let c = try decoder.container(keyedBy: QMKey.self)
+        userId = c.string("userId", "id")
+        username = c.string("username", "userName")
+        name = c.string("name", "nickName")
+        fullName = c.string("fullName")
+        age = c.int("age")
+        gender = c.string("gender")
+        city = c.string("city")
+        distanceKm = c.first(Double.self, "distanceKm")
+        distance = c.string("distance")
+        isVerified = c.bool("isVerified", "isFaceVerified")
+        isOnline = c.bool("isOnline")
+        lastSeen = c.string("lastSeen")
+        profilePhoto = c.string("profilePhoto", "profilePicture")
+        coverPhoto = c.string("coverPhotoUrl", "coverPhoto", "banner")
+        bio = c.string("bio", "about")
+        vibeScore = c.int("vibeScore")
+        voiceIntro = c.first(OtherUserVoiceIntro.self, "voiceIntro")
+        moments = c.first([OtherUserMoment].self, "moments")
+        interests = c.first([DiscoveryTag].self, "interests")
+        myAction = c.string("myAction")
+        matchStatus = c.string("matchStatus")
+        hasLiked = c.bool("hasLiked")
+        isMatched = c.bool("isMatched", "isMutualMatch")
+        canConnect = c.bool("canConnect")
+        moreAboutMe = OtherUserAboutItem.decodeList(from: c, key: "moreAboutMe")
+
+        // `vibeExplanation` is either a sentence or `{ "text": "...", "sharedInterests": [...] }`.
+        let explanation = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("vibeExplanation"))
+        vibeExplanation = c.string("vibeExplanation") ?? explanation?.string("text", "explanation")
+        sharedInterests = c.first([DiscoveryTag].self, "sharedInterests")
+            ?? explanation?.first([DiscoveryTag].self, "sharedInterests")
     }
 }
 
-/// `voiceIntro` as an audio URL string or an object such as `{ "url": "...", "duration": 12 }`.
+/// One "More about me" answer, e.g. `drinking` → "Socially".
+struct OtherUserAboutItem: Codable {
+    /// Attribute alias such as `height` or `smoking`.
+    let key: String
+    let value: String
+
+    /// Accepts `{ "height": "5'7\"", ... }` or `[{ "key": "height", "value": "5'7\"" }, ...]`; empty answers are dropped.
+    static func decodeList(from container: KeyedDecodingContainer<QMKey>, key: String) -> [OtherUserAboutItem]? {
+        if let list = container.first([OtherUserAboutItem].self, key) {
+            return list.filter { !$0.value.isEmpty }
+        }
+        guard let object = try? container.nestedContainer(keyedBy: QMKey.self, forKey: QMKey(key)) else { return nil }
+        return object.allKeys.compactMap { field in
+            guard let value = object.string(field.stringValue)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else { return nil }
+            return OtherUserAboutItem(key: field.stringValue, value: value)
+        }
+    }
+
+    init(key: String, value: String) {
+        self.key = key
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        guard let key = c.string("key", "alias", "title", "label") else {
+            throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath, debugDescription: "About item without key"))
+        }
+        self.key = key
+        value = c.string("value", "answer", "option")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+}
+
+/// `voiceIntro` as an audio URL string or an object such as `{ "url": "...", "durationSeconds": 12 }`.
 struct OtherUserVoiceIntro: Codable {
     let url: String?
     /// Seconds
@@ -181,7 +243,7 @@ struct OtherUserVoiceIntro: Codable {
     let transcript: String?
 
     private enum CodingKeys: String, CodingKey {
-        case url, audioUrl, duration, transcript
+        case url, duration, transcript
     }
 
     init(from decoder: Decoder) throws {
@@ -191,27 +253,29 @@ struct OtherUserVoiceIntro: Codable {
             transcript = nil
             return
         }
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        url = (try? container.decodeIfPresent(String.self, forKey: .url))
-            ?? (try? container.decodeIfPresent(String.self, forKey: .audioUrl))
-        duration = try? container.decodeIfPresent(Double.self, forKey: .duration)
-        transcript = try? container.decodeIfPresent(String.self, forKey: .transcript)
+        let container = try decoder.container(keyedBy: QMKey.self)
+        url = container.string("url", "audioUrl")
+        duration = container.first(Double.self, "durationSeconds", "duration")
+        transcript = container.string("transcript")
     }
 
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(url, forKey: .url)
-        try container.encodeIfPresent(duration, forKey: .duration)
-        try container.encodeIfPresent(transcript, forKey: .transcript)
+    /// `nil` when there's neither audio nor a transcript to show.
+    var momentsIntro: MomentsVoiceIntro? {
+        let audioURL = url.flatMap { URL(string: $0.hasPrefix("http") ? $0 : ApiName.imgBaseURL + $0) }
+        let text = transcript ?? ""
+        guard audioURL != nil || !text.isEmpty else { return nil }
+        return MomentsVoiceIntro(transcript: text, duration: duration ?? 0, audioURL: audioURL)
     }
 }
 
 struct OtherUserMoment: Codable {
     let id: String?
     let momentId: String?
-    /// Relative S3 key of the full media.
+    /// Full media URL or relative S3 key.
     let mediaUrl: String?
     let thumbnailUrl: String?
+    /// Every photo, when the backend sends them.
+    let media: [MomentMedia]?
     /// "image" | "video"
     let mediaType: String?
     let mediaCount: Int?
@@ -223,6 +287,56 @@ struct OtherUserMoment: Codable {
     let sharesCount: Int?
     let giftsCount: Int?
     let isLiked: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, momentId, mediaUrl, thumbnailUrl, media, mediaType, mediaCount, hasMultipleMedia, caption, createdAt,
+             likesCount, commentsCount, sharesCount, giftsCount, isLiked
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        id = c.string("id")
+        momentId = c.string("momentId")
+        mediaUrl = c.string("mediaUrl", "imageUrl", "photo", "url")
+        thumbnailUrl = c.string("thumbnailUrl")
+        media = c.first([MomentMedia].self, "media")
+        mediaType = c.string("mediaType", "type")
+        mediaCount = c.int("mediaCount")
+        hasMultipleMedia = c.bool("hasMultipleMedia")
+        caption = c.string("caption", "text")
+        createdAt = c.string("createdAt", "publishedAt")
+        likesCount = c.int("likesCount")
+        commentsCount = c.int("commentsCount")
+        sharesCount = c.int("sharesCount")
+        giftsCount = c.int("giftsCount")
+        isLiked = c.bool("isLiked", "hasLiked")
+    }
+
+    /// The moment as shown in the profile's Moments grid and feed.
+    func vibe(author: MomentsAuthor) -> MomentsPost? {
+        let photos = (media ?? []).enumerated().compactMap { index, item -> MomentsMedia? in
+            guard let url = item.imageUrl ?? item.mediaUrl ?? item.publicUrl ?? item.url ?? item.thumbnailUrl,
+                  !url.isEmpty else { return nil }
+            return MomentsMedia(id: item.mediaId ?? item.id ?? "\(index)", filePath: url,
+                                fileType: item.mediaType ?? "image", thumbnailPath: item.thumbnailUrl)
+        }
+        let cover = (mediaUrl ?? thumbnailUrl).map {
+            [MomentsMedia(id: "0", filePath: $0, fileType: mediaType ?? "image", thumbnailPath: thumbnailUrl)]
+        } ?? []
+        let allMedia = photos.isEmpty ? cover : photos
+        let text = caption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard let id = momentId ?? id ?? allMedia.first?.filePath, !allMedia.isEmpty || !text.isEmpty else { return nil }
+        return MomentsPost(id: id,
+                           userId: author.userId,
+                           caption: caption,
+                           media: allMedia,
+                           likesCount: likesCount,
+                           commentsCount: commentsCount,
+                           giftCount: giftsCount,
+                           hasLiked: isLiked,
+                           createdAt: createdAt,
+                           author: author)
+    }
 }
 
 // MARK: - Safety

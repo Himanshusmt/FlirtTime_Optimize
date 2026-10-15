@@ -32,6 +32,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     var userDetails: UserDetailsData?
     var userMatchesData: MatchedUser?
     var userDetailInfo: UserDetailInfo?
+    /// Backend UUID; when set, the profile is loaded from `users/:userId/profile`.
+    var remoteUserID: String?
 
     // MARK: - Header
 
@@ -92,7 +94,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private var momentsLayoutWidth: CGFloat = 0
 
     private var isOwnProfile: Bool {
-        isMyProfile || (details != nil && details?.userID == UserDataManager.shared.userID)
+        if isMyProfile { return true }
+        if let remoteID = details?.remoteUserID ?? remoteUserID, let myID = UserDataManager.shared.appUser?.id {
+            return remoteID == myID
+        }
+        return details != nil && details?.userID == UserDataManager.shared.userID
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
@@ -102,15 +108,18 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         contentStackView.setCustomSpacing(Self.headerToNameSpacing, after: headerView)
         details = makeDetails()
         setBinding()
+        hideLoadingSections()
         showProfile()
         configureActionBar()
         viewModel.loadJSON()
         viewModel.getCheckUserSubscribedAPI()
         if isMyProfile {
             viewModel.loadOwnProfile()
+        } else if let remoteUserID, !remoteUserID.isEmpty {
+            viewModel.loadProfile(userID: remoteUserID)
         } else if let userID = details?.userID {
             viewModel.getMoments(userID: userID)
-            viewModel.getQuickMoments(userID: userID)
+            viewModel.getQuickMoments(userID: String(userID))
             viewModel.getVoiceIntro(userID: userID)
         }
         quickMomentsView.onSelect = { [weak self] index in self?.openQuickMoment(at: index) }
@@ -151,12 +160,38 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         return userDetailInfo.map(OtherUserProfileDetails.init(info:))
     }
 
+    private func refreshBasicInfo() {
+        guard let details else { return }
+        basicInfo = details.basicInfo(from: viewModel.aAttributesModel?.data ?? [])
+        aboutMeSectionView.isHidden = basicInfo.isEmpty
+        basicInfoTableView.reloadData()
+    }
+
     private func setBinding() {
         viewModel.$aAttributesModel.receive(on: DispatchQueue.main).sink { [weak self] model in
-            guard let self, let model, let details = self.details else { return }
-            self.basicInfo = details.basicInfo(from: model.data ?? [])
-            self.aboutMeSectionView.isHidden = self.basicInfo.isEmpty
-            self.basicInfoTableView.reloadData()
+            guard model != nil else { return }
+            self?.refreshBasicInfo()
+        }.store(in: &cancellables)
+
+        viewModel.$profile.receive(on: DispatchQueue.main).sink { [weak self] profile in
+            guard let self, let profile, let remoteUserID = self.remoteUserID else { return }
+            self.details = OtherUserProfileDetails(profile: profile, remoteUserID: remoteUserID, fallback: self.details)
+            self.showProfile()
+            self.refreshBasicInfo()
+            self.configureActionBar()
+            self.quickMomentsView.configure(moments: self.viewModel.quickMomentFrames, avatarPath: self.details?.avatar)
+        }.store(in: &cancellables)
+
+        viewModel.$isLoadingProfile.receive(on: DispatchQueue.main).sink { [weak self] isLoading in
+            guard let self else { return }
+            // Seeded profiles are already readable, so only block the screen when there's nothing to show yet.
+            let hasSeed = !(self.details?.name.isEmpty ?? true)
+            self.setLoading(isLoading && !hasSeed)
+        }.store(in: &cancellables)
+
+        viewModel.$profileError.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.aCustomToastView.show(message: error)
         }.store(in: &cancellables)
 
         viewModel.$moments.receive(on: DispatchQueue.main).sink { [weak self] vibes in
@@ -230,15 +265,24 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         photosSectionView.isHidden = details.photos.isEmpty
         photosCollectionView.reloadData()
 
-        let interests = isMyProfile
-            ? EditProfileAPIMapper.momentsInterests(for: details.interestIDs)
-            : MomentsInterestCatalog.interests(for: details.interestIDs)
+        let interests: [MomentsInterest]
+        if !details.interests.isEmpty {
+            interests = details.interests
+        } else if isMyProfile {
+            interests = EditProfileAPIMapper.momentsInterests(for: details.interestIDs)
+        } else {
+            interests = MomentsInterestCatalog.interests(for: details.interestIDs)
+        }
         interestsChipsView.configure(interests, highlighted: [])
         interestsSectionView.isHidden = interests.isEmpty
+    }
 
+    /// Sections filled by separate requests stay hidden until their data arrives.
+    private func hideLoadingSections() {
         aboutMeSectionView.isHidden = true
         noMomentsLabel.isHidden = true
         seeAllMomentsButton.isHidden = true
+        momentsCountLabel.isHidden = true
         voiceIntroSectionView.isHidden = true
         quickMomentsSectionView.isHidden = true
     }
@@ -373,7 +417,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         guard let details else { return }
         let scope: MomentsListViewController.Scope = isMyProfile
             ? .currentUser
-            : .user(id: String(details.userID), name: details.name)
+            : .user(id: details.remoteUserID ?? String(details.userID), name: details.name)
         let feed = MomentsListViewController.make(scope: scope, focusVibeID: vibeID)
         navigationController?.pushViewController(feed, animated: true)
     }

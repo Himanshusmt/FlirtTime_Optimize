@@ -22,6 +22,12 @@ struct OtherUserProfileDetails {
     let isOnline: Bool
     /// Attribute alias (`height`, `smoking`, ...) → selected option id.
     let attributeValues: [String: Int]
+    /// Backend UUID, for profiles loaded from `users/:userId/profile`.
+    var remoteUserID: String? = nil
+    /// Interests by name from the API; when empty, `interestIDs` are used.
+    var interests: [MomentsInterest] = []
+    /// "More about me" answers from the API as display text, keyed by attribute alias.
+    var aboutAnswers: [OtherUserAboutItem] = []
 
     var nameAndAge: String {
         age.map { "\(name), \($0)" } ?? name
@@ -29,7 +35,10 @@ struct OtherUserProfileDetails {
 
     /// "More about me" rows, in the order of `Attributes.json`; unanswered ones are skipped.
     func basicInfo(from attributes: [AttributesData]) -> [OtherUserBasicInfo] {
-        attributes.compactMap { attribute in
+        if !aboutAnswers.isEmpty {
+            return Self.basicInfo(answers: aboutAnswers, attributes: attributes)
+        }
+        return attributes.compactMap { attribute in
             guard let alias = attribute.alias,
                   let optionID = attributeValues[alias],
                   let option = attribute.aOptions?.first(where: { $0.id == optionID }),
@@ -48,6 +57,27 @@ struct OtherUserProfileDetails {
             return [Images(image: avatar, type: "gallery", is_primary: true)]
         }
         return photos
+    }
+
+    /// Known aliases take their title and icon from `Attributes.json` and keep its order; unknown keys follow, A to Z.
+    private static func basicInfo(answers: [OtherUserAboutItem], attributes: [AttributesData]) -> [OtherUserBasicInfo] {
+        let rows = answers.map { answer -> (rank: Int, info: OtherUserBasicInfo) in
+            let key = answer.key.lowercased()
+            let index = attributes.firstIndex { $0.alias?.lowercased() == key || $0.title?.lowercased() == key }
+            let attribute = index.map { attributes[$0] }
+            let info = OtherUserBasicInfo(title: attribute?.title ?? readableTitle(answer.key),
+                                          value: answer.value,
+                                          iconPath: attribute?.photo)
+            return (index ?? Int.max, info)
+        }
+        return rows.sorted { ($0.rank, $0.info.title) < ($1.rank, $1.info.title) }.map(\.info)
+    }
+
+    /// "lookingFor" / "looking_for" → "Looking for"
+    private static func readableTitle(_ key: String) -> String {
+        let spaced = key.replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
+        return spaced.lowercased().firstLetterCapitalized
     }
 }
 
@@ -99,5 +129,36 @@ extension OtherUserProfileDetails {
                   isVerified: match.isActive == true,
                   isOnline: match.isOnline == true && match.onlineShow != false,
                   attributeValues: attributes.reduce(into: [:]) { $0[$1.0] = $1.1 })
+    }
+
+    /// Full profile from `users/:userId/profile`; anything the API leaves empty keeps `fallback`'s value.
+    init(profile: OtherUserProfile, remoteUserID: String, fallback: OtherUserProfileDetails?) {
+        let id = profile.userId ?? remoteUserID
+        let apiName = DiscoverViewModel.displayName(username: profile.username, name: profile.name ?? profile.fullName)
+        let avatar = profile.profilePhoto ?? fallback?.avatar
+        let city = profile.city?.trimmingCharacters(in: .whitespaces) ?? ""
+        let distance = profile.distance ?? profile.distanceKm.map { String(format: "%.1f km away", $0) }
+        let location = [city.isEmpty ? fallback?.location : city, distance]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+        let interests = (profile.interests ?? []).compactMap { MomentsInterestCatalog.interest(named: $0.name, emoji: $0.emoji) }
+        let photos = profile.profilePhoto == nil ? (fallback?.photos ?? []) : Self.orderedPhotos([], avatar: avatar)
+
+        self.init(userID: id.stableID,
+                  name: apiName.isEmpty ? (fallback?.name ?? "") : apiName,
+                  age: profile.age ?? fallback?.age,
+                  location: location.isEmpty ? nil : location,
+                  about: profile.bio ?? fallback?.about,
+                  avatar: avatar,
+                  banner: profile.coverPhoto ?? fallback?.banner,
+                  photos: photos,
+                  interestIDs: interests.isEmpty ? (fallback?.interestIDs ?? []) : [],
+                  isVerified: profile.isVerified ?? fallback?.isVerified ?? false,
+                  isOnline: profile.isOnline ?? fallback?.isOnline ?? false,
+                  attributeValues: fallback?.attributeValues ?? [:],
+                  remoteUserID: id,
+                  interests: interests.isEmpty ? (fallback?.interests ?? []) : interests,
+                  aboutAnswers: profile.moreAboutMe ?? fallback?.aboutAnswers ?? [])
     }
 }

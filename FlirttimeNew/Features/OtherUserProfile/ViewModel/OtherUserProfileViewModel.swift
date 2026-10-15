@@ -36,6 +36,10 @@ class OtherUserProfileViewModel {
     private(set) var momentsTotal = 0
     @Published private(set) var quickMoments: [QuickMoment] = []
     @Published private(set) var voiceIntro: MomentsVoiceIntro?
+    /// GET `users/:userId/profile`; `nil` until loaded.
+    @Published private(set) var profile: OtherUserProfile?
+    @Published private(set) var profileError: String?
+    @Published private(set) var isLoadingProfile = false
 
     static let momentsPreviewLimit = 5
 
@@ -65,8 +69,37 @@ class OtherUserProfileViewModel {
         }
     }
 
-    func getQuickMoments(userID: Int) {
-        sessionManager.userQuickMoments(userId: String(userID))
+    /// Profile details, moments and voice intro come in one response; any of them may be missing for a user.
+    func loadProfile(userID: String) {
+        isLoadingProfile = true
+        profileError = nil
+        sessionManager.otherUserProfile(userId: userID)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] profile in
+                guard let self else { return }
+                self.isLoadingProfile = false
+                self.profile = profile
+                self.voiceIntro = profile.voiceIntro?.momentsIntro
+                let author = MomentsAuthor(userId: profile.userId ?? userID,
+                                           userName: profile.username ?? profile.name,
+                                           fullName: profile.fullName ?? profile.name,
+                                           profilePicture: profile.profilePhoto,
+                                           verified: profile.isVerified,
+                                           location: profile.city)
+                let moments = (profile.moments ?? []).compactMap { $0.vibe(author: author) }
+                self.momentsTotal = moments.count
+                self.moments = moments
+            }, onFailure: { [weak self] error in
+                self?.isLoadingProfile = false
+                self?.moments = []
+                self?.profileError = error.localizedDescription
+            })
+            .disposed(by: disposeBag)
+        getQuickMoments(userID: userID)
+    }
+
+    func getQuickMoments(userID: String) {
+        sessionManager.userQuickMoments(userId: userID)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] moments in
                 self?.quickMoments = moments.sorted {

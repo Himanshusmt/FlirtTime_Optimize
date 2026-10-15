@@ -21,14 +21,21 @@ enum OtherUserProfileRouter {
         var isOnline = false
     }
 
+    /// The seed is shown straight away; backend (UUID) users then load the full profile from `users/:userId/profile`.
     static func open(_ seed: Seed, from presenter: UIViewController) {
         guard let info = userInfo(for: seed) else { return }
         let profileVC: OtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
         profileVC.userDetailInfo = info
+        profileVC.remoteUserID = remoteID(for: seed.userID)
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }
 
-    // TODO: fetch the full profile (GET user details) once the API is live.
+    /// Mock people have numeric ids; real users have UUIDs.
+    static func remoteID(for userID: String?) -> String? {
+        guard let id = userID?.trimmingCharacters(in: .whitespaces), !id.isEmpty, Int(id) == nil else { return nil }
+        return id
+    }
+
     private static func userInfo(for seed: Seed) -> UserDetailInfo? {
         let numericID = seed.userID.flatMap { Int($0) }
         let payload: [String: Any]

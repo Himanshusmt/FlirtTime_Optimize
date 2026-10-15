@@ -475,55 +475,55 @@
                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mc-001" userLabel="More About Me Card">
                                                         <rect key="frame" x="20" y="38" width="353" height="216"/>
                                                         <subviews>
-                                                            <tableView clipsSubviews="YES" contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="208" scrollEnabled="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="52" estimatedRowHeight="52" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mv-001" userLabel="Basic Info Table View" customClass="AutoHeightTableView" customModule="FlirttimeNew" customModuleProvider="target">
+                                                            <tableView clipsSubviews="YES" contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="208" scrollEnabled="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="64" estimatedRowHeight="64" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mv-001" userLabel="Basic Info Table View" customClass="AutoHeightTableView" customModule="FlirttimeNew" customModuleProvider="target">
                                                                 <rect key="frame" x="0.0" y="4" width="353" height="208"/>
                                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <prototypes>
-                                                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="OtherUserBasicInfoCell" rowHeight="52" id="oup-mz-001" userLabel="Basic Info Cell" customClass="OtherUserBasicInfoCell" customModule="FlirttimeNew" customModuleProvider="target">
-                                                                        <rect key="frame" x="0.0" y="50" width="353" height="52"/>
+                                                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="OtherUserBasicInfoCell" rowHeight="64" id="oup-mz-001" userLabel="Basic Info Cell" customClass="OtherUserBasicInfoCell" customModule="FlirttimeNew" customModuleProvider="target">
+                                                                        <rect key="frame" x="0.0" y="50" width="353" height="64"/>
                                                                         <autoresizingMask key="autoresizingMask"/>
                                                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="oup-mz-001" id="oup-mz-002">
-                                                                            <rect key="frame" x="0.0" y="0.0" width="353" height="52"/>
+                                                                            <rect key="frame" x="0.0" y="0.0" width="353" height="64"/>
                                                                             <autoresizingMask key="autoresizingMask"/>
                                                                             <subviews>
-                                                                                <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-003" userLabel="Icon Bubble">
-                                                                                    <rect key="frame" x="14" y="8" width="36" height="36"/>
+                                                                                <view clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-003" userLabel="Icon Bubble">
+                                                                                    <rect key="frame" x="14" y="10" width="44" height="44"/>
                                                                                     <subviews>
                                                                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-004" userLabel="Icon Image">
-                                                                                            <rect key="frame" x="8" y="8" width="20" height="20"/>
+                                                                                            <rect key="frame" x="0.0" y="0.0" width="44" height="44"/>
                                                                                             <constraints>
-                                                                                                <constraint firstAttribute="width" constant="20" id="oup-mz-010"/>
-                                                                                                <constraint firstAttribute="height" constant="20" id="oup-mz-011"/>
+                                                                                                <constraint firstAttribute="width" constant="44" id="oup-mz-010"/>
+                                                                                                <constraint firstAttribute="height" constant="44" id="oup-mz-011"/>
                                                                                             </constraints>
                                                                                         </imageView>
                                                                                     </subviews>
-                                                                                    <color key="backgroundColor" red="1" green="0.92549019607843142" blue="0.93725490196078431" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                     <constraints>
-                                                                                        <constraint firstAttribute="width" constant="36" id="oup-mz-012"/>
-                                                                                        <constraint firstAttribute="height" constant="36" id="oup-mz-013"/>
+                                                                                        <constraint firstAttribute="width" constant="44" id="oup-mz-012"/>
+                                                                                        <constraint firstAttribute="height" constant="44" id="oup-mz-013"/>
                                                                                         <constraint firstItem="oup-mz-004" firstAttribute="centerX" secondItem="oup-mz-003" secondAttribute="centerX" id="oup-mz-014"/>
                                                                                         <constraint firstItem="oup-mz-004" firstAttribute="centerY" secondItem="oup-mz-003" secondAttribute="centerY" id="oup-mz-015"/>
                                                                                     </constraints>
                                                                                     <userDefinedRuntimeAttributes>
                                                                                         <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                                                                            <real key="value" value="18"/>
+                                                                                            <real key="value" value="22"/>
                                                                                         </userDefinedRuntimeAttribute>
                                                                                     </userDefinedRuntimeAttributes>
                                                                                 </view>
                                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Height" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-005" userLabel="Title Label">
-                                                                                    <rect key="frame" x="62" y="16" width="50" height="20"/>
-                                                                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="15"/>
+                                                                                    <rect key="frame" x="70" y="22" width="52" height="20"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
                                                                                     <color key="textColor" red="0.14509803921568629" green="0.14509803921568629" blue="0.14509803921568629" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                                     <nil key="highlightedColor"/>
                                                                                 </label>
                                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="249" verticalHuggingPriority="251" horizontalCompressionResistancePriority="749" text="5.1 Feet" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-006" userLabel="Value Label">
-                                                                                    <rect key="frame" x="124" y="16" width="213" height="20"/>
-                                                                                    <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
+                                                                                    <rect key="frame" x="134" y="22" width="203" height="20"/>
+                                                                                    <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="16"/>
                                                                                     <color key="textColor" red="0.39215686274509803" green="0.39215686274509803" blue="0.39215686274509803" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                                     <nil key="highlightedColor"/>
                                                                                 </label>
                                                                                 <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oup-mz-007" userLabel="Separator">
-                                                                                    <rect key="frame" x="62" y="51" width="291" height="1"/>
+                                                                                    <rect key="frame" x="70" y="63" width="283" height="1"/>
                                                                                     <color key="backgroundColor" red="0.94901960784313721" green="0.95294117647058818" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                                                     <constraints>
                                                                                         <constraint firstAttribute="height" constant="1" id="oup-mz-016"/>

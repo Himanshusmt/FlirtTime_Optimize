@@ -466,12 +466,7 @@ final class DiscoverViewModel {
         let name = displayName(username: detail.username, name: detail.name)
         let about = detail.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        let voice: MomentsVoiceIntro? = detail.voiceIntro.flatMap { intro in
-            let audioURL = intro.url.flatMap { URL(string: $0.hasPrefix("http") ? $0 : ApiName.imgBaseURL + $0) }
-            let transcript = intro.transcript ?? ""
-            guard audioURL != nil || !transcript.isEmpty else { return nil }
-            return MomentsVoiceIntro(transcript: transcript, duration: intro.duration ?? 0, audioURL: audioURL)
-        }
+        let voice = detail.voiceIntro?.momentsIntro
 
         let moments = (detail.moments ?? []).compactMap { moment -> MomentsStory? in
             let path = moment.thumbnailUrl ?? moment.mediaUrl ?? ""
@@ -491,7 +486,7 @@ final class DiscoverViewModel {
                                   gender: base.gender,
                                   city: cityName(from: detail.city) ?? base.city,
                                   distanceKm: detail.distanceKm ?? base.distanceKm,
-                                  isOnline: base.isOnline,
+                                  isOnline: detail.isOnline ?? base.isOnline,
                                   datingIntent: base.datingIntent,
                                   photos: photos,
                                   about: about.isEmpty ? base.about : about,
