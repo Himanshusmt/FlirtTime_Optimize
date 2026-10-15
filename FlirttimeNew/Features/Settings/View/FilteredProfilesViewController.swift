@@ -54,7 +54,7 @@ final class FilteredProfilesViewController: BaseViewController, Instantiable {
     }
 
     private func setBinding() {
-        Publishers.CombineLatest4(viewModel.$blocked, viewModel.$reported, viewModel.$loadedKinds, viewModel.$blockedTotal)
+        Publishers.CombineLatest3(viewModel.$blocked, viewModel.$reported, viewModel.$loadedKinds)
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

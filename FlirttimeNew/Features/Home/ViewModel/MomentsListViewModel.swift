@@ -129,18 +129,21 @@ final class MomentsListViewModel {
 
     // MARK: - Report
 
-    static let reportReasons = ["Spam", "Nudity or sexual content", "Harassment or bullying",
-                                "Hate speech", "Fake profile", "Something else"]
+    /// Moment reasons accepted by POST `moments/:id/report` (title, API code). They differ from the user report reasons.
+    private static let reportReasonCodes: [(title: String, code: String)] = [
+        ("Nudity or sexual content", "nudity"),
+        ("Violence or graphic content", "violence"),
+        ("Harassment or bullying", "harassment"),
+        ("Inappropriate content", "inappropriate_content"),
+        ("Spam or advertising", "spam"),
+        ("Fake or misleading content", "fake_content"),
+        ("Something else", "other")
+    ]
+
+    static let reportReasons = reportReasonCodes.map(\.title)
 
     private static func reportCode(for reason: String) -> String {
-        switch reason {
-        case "Spam": return "spam"
-        case "Nudity or sexual content": return "inappropriate_content"
-        case "Harassment or bullying": return "harassment"
-        case "Hate speech": return "hate_speech"
-        case "Fake profile": return "fake_profile"
-        default: return "other"
-        }
+        reportReasonCodes.first { $0.title == reason }?.code ?? "other"
     }
 
     /// Reported vibes are hidden from the reporter's feed; `completion` receives the removed row.

@@ -12,8 +12,6 @@ final class FilteredProfilesViewModel {
 
     @Published private(set) var blocked: [FilteredProfile] = []
     @Published private(set) var reported: [FilteredProfile] = []
-    @Published private(set) var blockedTotal: Int?
-    @Published private(set) var reportedTotal: Int?
     @Published private(set) var errorMessage: String?
     /// Lists whose first page has come back (or failed).
     @Published private(set) var loadedKinds: Set<FilteredProfileKind> = []
@@ -46,16 +44,14 @@ final class FilteredProfilesViewModel {
         kind == .blocked ? blocked : reported
     }
 
+    /// Counts the loaded rows; the API's `pagination.total` doesn't match the list it returns.
     func count(for kind: FilteredProfileKind) -> Int {
-        let total = kind == .blocked ? blockedTotal : reportedTotal
-        return total ?? profiles(for: kind).count
+        profiles(for: kind).count
     }
 
     /// Removes the row locally first, and puts it back if the request fails.
     func unblock(_ profile: FilteredProfile, completion: @escaping (Bool) -> Void) {
         guard let userId = profile.userId, let index = blocked.firstIndex(where: { $0.id == profile.id }) else { return }
-        let previousTotal = blockedTotal
-        blockedTotal = previousTotal.map { max(0, $0 - 1) }
         blocked.remove(at: index)
         sessionManager.unblockUser(userId: userId)
             .observe(on: MainScheduler.instance)
@@ -64,7 +60,6 @@ final class FilteredProfilesViewModel {
                 completion(true)
             }, onFailure: { [weak self] error in
                 guard let self else { return }
-                self.blockedTotal = previousTotal
                 self.blocked.insert(profile, at: min(index, self.blocked.count))
                 self.errorMessage = parseError(error) ?? "Unable to unblock \(profile.name)"
                 completion(false)
@@ -103,10 +98,8 @@ final class FilteredProfilesViewModel {
                 let merged = existing + items.filter { !knownIds.contains($0.id) }
                 switch kind {
                 case .blocked:
-                    self.blockedTotal = pagination?.total
                     self.blocked = merged
                 case .reported:
-                    self.reportedTotal = pagination?.total
                     self.reported = merged
                 }
                 self.loadedKinds.insert(kind)

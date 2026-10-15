@@ -470,7 +470,7 @@ final class AppSessionManager {
                                                   parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
     }
 
-    /// `reason` is one of the API codes: spam, inappropriate_content, harassment, hate_speech, fake_profile, other.
+    /// `reason` is one of the API codes: inappropriate_content, nudity, harassment, violence, spam, fake_content, other.
     func reportMoment(momentId: String, reason: String, description: String? = nil) -> Single<Void> {
         var params: [String: Any] = ["reason": reason]
         if let description, !description.isEmpty { params["description"] = description }

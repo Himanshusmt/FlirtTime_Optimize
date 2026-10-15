@@ -170,15 +170,19 @@ final class NotificationTableViewCell: UITableViewCell {
         }
 
         let style = Self.typeStyle(for: data.notificationType)
-        typeBadgeView.backgroundColor = style.color
-        typeIconImageView.image = UIImage(systemName: style.symbol,
-                                          withConfiguration: UIImage.SymbolConfiguration(weight: .bold))
+        typeBadgeView.isHidden = style == nil
+        if let style {
+            typeBadgeView.backgroundColor = style.color
+            typeIconImageView.image = UIImage(systemName: style.symbol,
+                                              withConfiguration: UIImage.SymbolConfiguration(weight: .bold))
+        }
         accessibilityLabel = [data.title, data.body, timeLabel.text, isUnread ? "Unread" : nil]
             .compactMap { $0 }
             .joined(separator: ", ")
     }
 
-    private static func typeStyle(for type: NotificationType) -> (symbol: String, color: UIColor) {
+    /// `nil` for types without a dedicated icon, so no badge is shown over the photo.
+    private static func typeStyle(for type: NotificationType) -> (symbol: String, color: UIColor)? {
         switch type {
         case .like:
             return ("heart.fill", AppColor.Punch)
@@ -199,7 +203,7 @@ final class NotificationTableViewCell: UITableViewCell {
         case .membershipUpgrade:
             return ("crown.fill", .systemOrange)
         default:
-            return ("bell.fill", AppColor.Punch)
+            return nil
         }
     }
 

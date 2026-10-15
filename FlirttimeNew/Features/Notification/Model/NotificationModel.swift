@@ -35,11 +35,17 @@ struct AppNotification {
         isRead = JSONValue.bool(json["isRead"]) ?? JSONValue.bool(json["is_read"])
             ?? ((json["readAt"] ?? json["read_at"]).map { !($0 is NSNull) } ?? false)
         createdAt = JSONValue.date(json["createdAt"] ?? json["created_at"])
-        image = JSONValue.string(json["image"]) ?? JSONValue.string(json["imageUrl"])
-            ?? JSONValue.string(actor?["profilePicture"]) ?? JSONValue.string(actor?["avatar"]) ?? JSONValue.string(actor?["image"])
-            ?? JSONValue.string(data["image"]) ?? JSONValue.string(data["imageUrl"])
+        let imageCandidates: [Any?] = [
+            json["image"], json["imageUrl"],
+            actor?["profilePhotoUrl"], actor?["profilePhoto"], actor?["profilePicture"], actor?["avatar"], actor?["image"],
+            data["image"], data["imageUrl"]
+        ]
+        image = imageCandidates.lazy.compactMap(JSONValue.string).first
 
         var payload: [AnyHashable: Any] = data
+        if let navigation = json["navigation"] as? [String: Any] {
+            payload["target_id"] = JSONValue.string(navigation["targetId"])
+        }
         if let type, payload["notify_type"] == nil { payload["notify_type"] = type }
         if payload["user_id"] == nil, let actorId = JSONValue.string(actor?["id"]) ?? JSONValue.string(actor?["_id"]) {
             payload["user_id"] = actorId
