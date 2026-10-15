@@ -156,7 +156,8 @@ final class AppApiClient {
         let success = json?["success"] as? Bool ?? (200..<300).contains(statusCode)
         guard !success else { return }
         let errorResponse = try? JSONDecoder().decode(AppErrorResponse.self, from: data)
-        throw APIHTTPError(statusCode: statusCode, message: errorResponse?.displayMessage ?? "Something went wrong")
+        throw APIHTTPError(statusCode: statusCode, message: errorResponse?.displayMessage ?? "Something went wrong",
+                           code: errorResponse?.code)
     }
 
 }

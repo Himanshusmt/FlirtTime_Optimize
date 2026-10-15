@@ -420,6 +420,13 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    /// People whose name, username or city matches `query`.
+    func searchUsers(query: String, page: Int, limit: Int = 20) -> Single<UserSearchPage> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .searchUsers,
+                                                  parameters: ["query": query, "page": page, "limit": limit],
+                                                  encoding: URLEncoding.queryString))
+    }
+
     /// Users the signed-in user has blocked, newest first.
     func blockedUsers(page: Int, limit: Int = 20) -> Single<BlockedUsersPage> {
         backendClient.load(request: AppApiRequest(method: .get, endPoint: .blockedUsers,

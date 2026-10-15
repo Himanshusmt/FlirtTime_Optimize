@@ -38,6 +38,8 @@ extension APIError: LocalizedError {
 struct APIHTTPError: Error, LocalizedError {
     let statusCode: Int
     let message: String
+    /// Backend error code such as "ALREADY_MATCHED", when the response has one.
+    var code: String? = nil
     var errorDescription: String? { message }
 }
 

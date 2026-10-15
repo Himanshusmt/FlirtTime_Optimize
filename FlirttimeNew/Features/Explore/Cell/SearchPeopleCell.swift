@@ -38,20 +38,20 @@ final class SearchPeopleCell: UICollectionViewCell {
         photoImageView.image = nil
     }
 
-    func configure(with person: UserDetailInfo, age: Int?) {
-        photoImageView.loadImage(path: person.avatar)
-        let name = person.displayName ?? person.fullname ?? ""
-        if let age, age > 0 {
+    func configure(with person: UserSearchResult) {
+        photoImageView.loadImage(path: person.profilePhoto)
+        let name = person.displayName
+        if let age = person.age, age > 0 {
             nameLabel.text = "\(name), \(age)"
         } else {
             nameLabel.text = name
         }
-        verifiedImageView.isHidden = person.isActive != true
-        locationLabel.text = person.location
-        locationStackView.isHidden = person.location?.isEmpty ?? true
+        verifiedImageView.isHidden = person.isVerified != true
+        locationLabel.text = person.city
+        locationStackView.isHidden = person.city?.isEmpty ?? true
         onlineBadgeView.isHidden = person.isOnline != true
 
-        let distanceText = person.distanceShow == false ? nil : person.distance?.kmAwayText
+        let distanceText = person.distanceKm?.kmAwayText
         distanceLabel.text = distanceText
         distanceStackView.isHidden = distanceText == nil
     }

@@ -93,6 +93,9 @@ enum AppEndPoint: CustomStringConvertible {
     case reportUser(userId: String)
     case userCompliment(userId: String)
 
+    // Search People — SearchPeopleViewModel
+    case searchUsers
+
     // Blocked & reported — FilteredProfilesViewModel
     case blockedUsers
     case myReports
@@ -184,6 +187,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
         case .userCompliment(let userId): return "api/v1/users/\(userId)/compliment"
+        case .searchUsers: return "api/v1/users/search"
         case .blockedUsers: return "api/v1/users/blocked"
         case .myReports: return "api/v1/users/reports"
         case .mediaPresignedURL: return "api/v1/media/presigned-url"
@@ -237,7 +241,7 @@ enum AppEndPoint: CustomStringConvertible {
              .discoveryPeople, .discoveryAction, .interestsCatalog,
              .discoveryFilterOptions, .discoveryFilters, .discoveryFiltersReset, .discoverySearch, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
-             .userProfile, .blockUser, .reportUser, .userCompliment, .blockedUsers, .myReports,
+             .userProfile, .blockUser, .reportUser, .userCompliment, .searchUsers, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment,

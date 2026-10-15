@@ -336,7 +336,7 @@ final class ShowOtherUserImageVC: BaseViewController {
         viewModel.$errorSendCompliment.compactMap { $0 }.receive(on: DispatchQueue.main).sink { [weak self] error in
             guard let self else { return }
             self.isSending = false
-            self.showNewAlertPopUp(Title: "Failed", Msg: error, isSuccess: false, CompletionHandler: { _ in })
+            self.showNewAlertPopUp(Title: error.title, Msg: error.message, isSuccess: false, CompletionHandler: { _ in })
         }.store(in: &cancellables)
 
         viewModel.$errorState.compactMap { $0 }.receive(on: DispatchQueue.main).sink { [weak self] state in

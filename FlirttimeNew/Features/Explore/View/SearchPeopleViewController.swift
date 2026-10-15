@@ -27,18 +27,9 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
 
     private let viewModel = SearchPeopleViewModel()
     private var cancellables: Set<AnyCancellable> = []
-    private var allPeople: [UserDetailInfo] = []
-    private var filteredPeople: [UserDetailInfo] = []
-    private var hasLoaded = false
+    private var people: [UserSearchResult] = []
 
-    private static let dobFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
-    private var query: String {
+    private var typedText: String {
         searchTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
@@ -47,46 +38,57 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         setBinding()
         setupSearchBar()
         updateSearchBarFocus(false)
-        loadingIndicator.startAnimating()
-        viewModel.getPeople()
+        render()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if people.isEmpty && typedText.isEmpty {
+            searchTextField.becomeFirstResponder()
+        }
     }
 
     private func setBinding() {
-        viewModel.$people.receive(on: DispatchQueue.main).sink { [weak self] people in
-            guard let self, let people else { return }
-            self.hasLoaded = true
-            self.allPeople = people
-            self.applySearch()
-        }.store(in: &cancellables)
-
-        viewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
-            guard let self, error != nil else { return }
-            self.hasLoaded = true
-            self.allPeople = []
-            self.applySearch()
-        }.store(in: &cancellables)
+        Publishers.Merge3(viewModel.$people.map { _ in () },
+                          viewModel.$isLoading.map { _ in () },
+                          viewModel.$errorMessage.map { _ in () })
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.render() }
+            .store(in: &cancellables)
     }
 
-    private func applySearch() {
-        filteredPeople = SearchPeopleViewModel.filter(allPeople, query: query)
-        loadingIndicator.stopAnimating()
-        peopleCollectionView.reloadData()
-
-        let count = filteredPeople.count
-        if query.isEmpty {
-            resultsLabel.text = count == 1 ? "1 person to discover" : "\(count) people to discover"
-        } else {
-            resultsLabel.text = count == 1 ? "1 result for \u{201C}\(query)\u{201D}" : "\(count) results for \u{201C}\(query)\u{201D}"
+    private func render() {
+        let isSearching = !typedText.isEmpty
+        let isLoading = viewModel.isLoading
+        if people.count != viewModel.people.count || people.map(\.userId) != viewModel.people.map(\.userId) {
+            people = viewModel.people
+            peopleCollectionView.reloadData()
         }
-        resultsLabel.isHidden = !hasLoaded
 
-        let isEmpty = hasLoaded && count == 0
-        emptyStateView.isHidden = !isEmpty
-        if isEmpty {
-            emptyTitleLabel.text = query.isEmpty ? "No one here yet" : "No people found"
-            emptyMessageLabel.text = query.isEmpty
-                ? "Check back soon, new people join every day."
-                : "Try a different name or city to find someone special."
+        if isLoading && people.isEmpty {
+            loadingIndicator.startAnimating()
+        } else {
+            loadingIndicator.stopAnimating()
+        }
+
+        let query = viewModel.query
+        let count = people.count
+        resultsLabel.text = count == 1 ? "1 result for \u{201C}\(query)\u{201D}" : "\(count) results for \u{201C}\(query)\u{201D}"
+        resultsLabel.isHidden = !isSearching || query.isEmpty || (isLoading && count == 0)
+
+        let showsEmptyState = !isLoading && count == 0
+        emptyStateView.isHidden = !showsEmptyState
+        if showsEmptyState {
+            if !isSearching {
+                emptyTitleLabel.text = "Find someone special"
+                emptyMessageLabel.text = "Search by name or city to find people."
+            } else if let error = viewModel.errorMessage {
+                emptyTitleLabel.text = "Something went wrong"
+                emptyMessageLabel.text = error
+            } else {
+                emptyTitleLabel.text = "No people found"
+                emptyMessageLabel.text = "Try a different name or city to find someone special."
+            }
         }
         clearButton.isHidden = searchTextField.text?.isEmpty ?? true
     }
@@ -110,9 +112,15 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func age(from dob: String?) -> Int? {
-        guard let dob, let birthDate = Self.dobFormatter.date(from: dob) else { return nil }
-        return Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year
+    private func openProfile(_ person: UserSearchResult) {
+        let seed = OtherUserProfileRouter.Seed(userID: person.userId,
+                                               name: person.displayName,
+                                               avatar: person.profilePhoto,
+                                               location: person.city,
+                                               age: person.age,
+                                               isVerified: person.isVerified == true,
+                                               isOnline: person.isOnline == true)
+        OtherUserProfileRouter.open(seed, from: self)
     }
 
     // MARK: - Actions
@@ -122,12 +130,14 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
     }
 
     @IBAction private func searchTextChanged(_ sender: UITextField) {
-        applySearch()
+        viewModel.search(sender.text ?? "")
+        render()
     }
 
     @IBAction private func clearButtonTapped(_ sender: UIButton) {
         searchTextField.text = nil
-        applySearch()
+        viewModel.search("")
+        render()
         searchTextField.becomeFirstResponder()
     }
 }
@@ -151,23 +161,26 @@ extension SearchPeopleViewController: UITextFieldDelegate {
 extension SearchPeopleViewController: UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        filteredPeople.count
+        people.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: SearchPeopleCell.identifier, for: indexPath) as? SearchPeopleCell else {
             return UICollectionViewCell()
         }
-        let person = filteredPeople[indexPath.item]
-        cell.configure(with: person, age: age(from: person.dob))
+        cell.configure(with: people[indexPath.item])
         return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if indexPath.item >= people.count - 4 {
+            viewModel.loadMoreIfNeeded()
+        }
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         searchTextField.resignFirstResponder()
-        let profileViewController: OtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
-        profileViewController.userDetailInfo = filteredPeople[indexPath.item]
-        navigationController?.pushViewController(profileViewController, animated: true)
+        openProfile(people[indexPath.item])
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
