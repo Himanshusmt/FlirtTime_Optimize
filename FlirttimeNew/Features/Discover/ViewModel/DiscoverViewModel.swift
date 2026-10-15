@@ -534,7 +534,7 @@ final class DiscoverViewModel {
             .sorted { ($0.isPrimary == true ? 0 : 1, $0.displayOrder ?? .max) < ($1.isPrimary == true ? 0 : 1, $1.displayOrder ?? .max) }
             .compactMap { $0.url ?? $0.thumbnailUrl }
         var photos: [String] = []
-        for path in [person.primaryPhotoUrl].compactMap({ $0 }) + gallery where !path.isEmpty && !photos.contains(path) {
+        for path in [person.primaryPhotoUrl ?? person.profilePhotoUrl].compactMap({ $0 }) + gallery where !path.isEmpty && !photos.contains(path) {
             photos.append(path)
         }
         let gender: Int?
@@ -556,7 +556,7 @@ final class DiscoverViewModel {
                                   isOnline: person.isOnline,
                                   datingIntent: intent,
                                   photos: photos,
-                                  about: person.bio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+                                  about: (person.bio ?? person.about)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                                   interests: interests,
                                   sharedInterests: shared,
                                   reasons: reasons(shared: shared, sameCity: nil),

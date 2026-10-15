@@ -191,6 +191,9 @@ struct DiscoverySearchProfile: Codable {
     /// "long_term" | "casual" | "not_sure"
     let lookingFor: String?
     let primaryPhotoUrl: String?
+    /// The live server sends the photo here instead of `primaryPhotoUrl`.
+    let profilePhotoUrl: String?
+    let about: String?
     let photos: [DiscoverySearchPhoto]?
     let interests: [DiscoveryTag]?
     let sharedInterests: [DiscoveryTag]?
