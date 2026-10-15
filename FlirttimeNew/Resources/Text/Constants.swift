@@ -137,7 +137,16 @@ enum Constants{
     }
     
     enum Compliment {
-        static let placeholder = "Send compliment"
+        /// `%@` is the other user's name.
+        static let placeholderFormat = "Say something nice to %@…"
+        static let sent = "Compliment sent successfully"
+        static let suggestions = [
+            "Love this photo 😍",
+            "Gorgeous smile 😊",
+            "You look amazing ✨",
+            "Great vibe 🔥",
+            "Stunning! 💖"
+        ]
     }
     
     enum EditProfile {

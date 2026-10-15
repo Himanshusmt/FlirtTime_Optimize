@@ -383,6 +383,12 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    func sendCompliment(userId: String, message: String) -> Single<SentCompliment> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .userCompliment(userId: userId),
+                                                      parameters: ["message": message]))
+            .map(SentCompliment.init(json:))
+    }
+
     // MARK: - Moments
 
     func momentsFeed(page: Int, limit: Int) -> Single<MomentFeedPage> {
@@ -398,6 +404,15 @@ final class AppSessionManager {
         let request: Single<MomentFeedData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .myMoments,
                                                                                         parameters: params, encoding: URLEncoding.queryString))
         return request.map { $0.page(fallbackAuthor: .currentUser) }
+    }
+
+    /// Another user's moments; `author` is shown on moments that come without a creator.
+    func userMoments(userId: String, page: Int, limit: Int, author: MomentsAuthor? = nil) -> Single<MomentFeedPage> {
+        let params: [String: Any] = ["page": page, "limit": limit]
+        let request: Single<MomentFeedData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .userMoments(userId: userId),
+                                                                                        parameters: params, encoding: URLEncoding.queryString))
+        let fallback = author ?? MomentsAuthor(userId: userId, userName: nil, fullName: nil, profilePicture: nil, verified: nil, location: nil)
+        return request.map { $0.page(fallbackAuthor: fallback) }
     }
 
     /// `imageKeys` are 1 to 5 S3 keys from `media/presigned-url`, in display order. The backend

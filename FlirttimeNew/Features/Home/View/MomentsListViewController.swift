@@ -55,7 +55,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         switch scope {
         case .everyone: return MomentsListViewModel()
         case .currentUser: return MomentsListViewModel(onlyCurrentUser: true)
-        case .user(let id, _): return MomentsListViewModel(authorID: id)
+        case .user(let id, let name): return MomentsListViewModel(authorID: id, authorName: name)
         }
     }()
     /// Moments whose long caption the user expanded with "more".
@@ -203,10 +203,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     private func updateEmptyState() {
         emptyStateLabel.isHidden = !viewModel.vibes.isEmpty
-        if case .user(_, let name) = scope {
-            let total = viewModel.vibes.isEmpty ? 0 : viewModel.totalCount
-            titleLabel.text = total > 0 ? "\(name)'s Moments (\(total))" : "\(name)'s Moments"
-        }
     }
 
     // MARK: - Header, tab bar & scroll-to-top

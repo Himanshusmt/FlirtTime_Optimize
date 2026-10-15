@@ -86,6 +86,7 @@ enum AppEndPoint: CustomStringConvertible {
     case userProfile(userId: String)
     case blockUser(userId: String)
     case reportUser(userId: String)
+    case userCompliment(userId: String)
 
     // Blocked & reported — FilteredProfilesViewModel
     case blockedUsers
@@ -98,6 +99,7 @@ enum AppEndPoint: CustomStringConvertible {
     // Moments — VibeFeedViewModel / VibeUploadViewModel / VibeCommentViewModel
     case moments
     case myMoments
+    case userMoments(userId: String)
     case momentLike(momentId: String)
     case momentComments(momentId: String)
     case momentLikes(momentId: String)
@@ -172,12 +174,14 @@ enum AppEndPoint: CustomStringConvertible {
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
+        case .userCompliment(let userId): return "api/v1/users/\(userId)/compliment"
         case .blockedUsers: return "api/v1/users/blocked"
         case .myReports: return "api/v1/users/reports"
         case .mediaPresignedURL: return "api/v1/media/presigned-url"
         case .onboardingPhotos: return "api/v1/onboarding/photos"
         case .moments: return "api/v1/moments"
         case .myMoments: return "api/v1/moments/me"
+        case .userMoments(let userId): return "api/v1/users/\(userId)/moments"
         case .momentLike(let momentId): return "api/v1/moments/\(momentId)/like"
         case .momentComments(let momentId): return "api/v1/moments/\(momentId)/comments"
         case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
@@ -223,9 +227,9 @@ enum AppEndPoint: CustomStringConvertible {
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
              .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
-             .userProfile, .blockUser, .reportUser, .blockedUsers, .myReports,
+             .userProfile, .blockUser, .reportUser, .userCompliment, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
-             .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
+             .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,

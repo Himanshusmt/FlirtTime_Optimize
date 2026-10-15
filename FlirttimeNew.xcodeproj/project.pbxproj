@@ -127,7 +127,6 @@
 		E3A2D8D530776627008D1551 /* PreferencesTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D73230776627008D1551 /* PreferencesTableViewCell.xib */; };
 		E3A2D8D730776627008D1551 /* MomentCollectionViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D76130776627008D1551 /* MomentCollectionViewCell.xib */; };
 		E3A2D8D830776627008D1551 /* MoreAboutMeTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D76330776627008D1551 /* MoreAboutMeTableViewCell.xib */; };
-		E3A2D8D930776627008D1551 /* ShowOtherUserImageCVC.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D76530776627008D1551 /* ShowOtherUserImageCVC.xib */; };
 		E3A2D8DA30776627008D1551 /* UserInterestCollectionViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D76730776627008D1551 /* UserInterestCollectionViewCell.xib */; };
 		E3A2D8DB30776627008D1551 /* RewardCollectionViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D77430776627008D1551 /* RewardCollectionViewCell.xib */; };
 		E3A2D8DC30776627008D1551 /* CustomImagePopUpVC.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3A2D77730776627008D1551 /* CustomImagePopUpVC.xib */; };
@@ -482,7 +481,6 @@
 		E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D75D30776627008D1551 /* MomentsUploadViewModel.swift */; };
 		E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76030776627008D1551 /* MomentCollectionViewCell.swift */; };
 		E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */; };
-		E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76430776627008D1551 /* ShowOtherUserImageCVC.swift */; };
 		E3A2DA3D30776627008D1551 /* UserInterestCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76630776627008D1551 /* UserInterestCollectionViewCell.swift */; };
 		E3A2DA3E30776627008D1551 /* OtherUserMomentsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76930776627008D1551 /* OtherUserMomentsModel.swift */; };
 		E3A2DA3F30776627008D1551 /* OtherUserProfileModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D76A30776627008D1551 /* OtherUserProfileModel.swift */; };
@@ -904,8 +902,6 @@
 		E3A2D76130776627008D1551 /* MomentCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MomentCollectionViewCell.xib; sourceTree = "<group>"; };
 		E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreAboutMeTableViewCell.swift; sourceTree = "<group>"; };
 		E3A2D76330776627008D1551 /* MoreAboutMeTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MoreAboutMeTableViewCell.xib; sourceTree = "<group>"; };
-		E3A2D76430776627008D1551 /* ShowOtherUserImageCVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowOtherUserImageCVC.swift; sourceTree = "<group>"; };
-		E3A2D76530776627008D1551 /* ShowOtherUserImageCVC.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ShowOtherUserImageCVC.xib; sourceTree = "<group>"; };
 		E3A2D76630776627008D1551 /* UserInterestCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserInterestCollectionViewCell.swift; sourceTree = "<group>"; };
 		E3A2D76730776627008D1551 /* UserInterestCollectionViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = UserInterestCollectionViewCell.xib; sourceTree = "<group>"; };
 		E3A2D76930776627008D1551 /* OtherUserMomentsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserMomentsModel.swift; sourceTree = "<group>"; };
@@ -2171,8 +2167,6 @@
 				E3A2D76130776627008D1551 /* MomentCollectionViewCell.xib */,
 				E3A2D76230776627008D1551 /* MoreAboutMeTableViewCell.swift */,
 				E3A2D76330776627008D1551 /* MoreAboutMeTableViewCell.xib */,
-				E3A2D76430776627008D1551 /* ShowOtherUserImageCVC.swift */,
-				E3A2D76530776627008D1551 /* ShowOtherUserImageCVC.xib */,
 				E3A2D76630776627008D1551 /* UserInterestCollectionViewCell.swift */,
 				E3A2D76730776627008D1551 /* UserInterestCollectionViewCell.xib */,
 			);
@@ -3393,7 +3387,6 @@
 				E3A2D8D530776627008D1551 /* PreferencesTableViewCell.xib in Resources */,
 				E3A2D8D730776627008D1551 /* MomentCollectionViewCell.xib in Resources */,
 				E3A2D8D830776627008D1551 /* MoreAboutMeTableViewCell.xib in Resources */,
-				E3A2D8D930776627008D1551 /* ShowOtherUserImageCVC.xib in Resources */,
 				E3A2D8DA30776627008D1551 /* UserInterestCollectionViewCell.xib in Resources */,
 				E3A2D8DB30776627008D1551 /* RewardCollectionViewCell.xib in Resources */,
 				E3A2D8DC30776627008D1551 /* CustomImagePopUpVC.xib in Resources */,
@@ -3959,7 +3952,6 @@
 				C3D4E5F60718293A4B5C6D7E /* MomentLikesViewController.swift in Sources */,
 				E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */,
 				E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */,
-				E3A2DA3C30776627008D1551 /* ShowOtherUserImageCVC.swift in Sources */,
 				E3A2DA3D30776627008D1551 /* UserInterestCollectionViewCell.swift in Sources */,
 				E3A2DA3E30776627008D1551 /* OtherUserMomentsModel.swift in Sources */,
 				E3A2DA3F30776627008D1551 /* OtherUserProfileModel.swift in Sources */,

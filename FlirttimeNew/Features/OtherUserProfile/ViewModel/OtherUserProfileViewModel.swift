@@ -10,7 +10,7 @@ import RxSwift
 import Swinject
 
 // TODO: replace the mock responses with ApiName.getAction / getMomentUserImages /
-// sendCompliments / checkSubscription requests.
+// checkSubscription requests.
 class OtherUserProfileViewModel {
 
     @Published var statusFalse:String?
@@ -25,7 +25,7 @@ class OtherUserProfileViewModel {
     @Published var agetMomentImages:MomentUser?
     @Published var errorMomentImages:String?
 
-    @Published var aSendCompliment:Complement?
+    @Published var aSendCompliment: SentCompliment?
     @Published var errorSendCompliment:String?
 
     @Published var aCheckUserSubscribe:CheckSubscriptionResponse?
@@ -40,8 +40,13 @@ class OtherUserProfileViewModel {
     @Published private(set) var profile: OtherUserProfile?
     @Published private(set) var profileError: String?
     @Published private(set) var isLoadingProfile = false
+    /// The signed-in user's interests, to find the ones in common when the profile response doesn't list them.
+    @Published private(set) var myInterests: [MomentsInterest]?
 
-    static let momentsPreviewLimit = 5
+    /// Moments fetched for the profile grid; the grid itself shows `OtherUserProfileViewController.momentsGridLimit`.
+    static let momentsPageSize = 20
+    /// Set once `users/:userId/moments` answers, so the moments embedded in the profile response don't overwrite it.
+    private var hasLoadedUserMoments = false
 
     private lazy var sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()
@@ -63,7 +68,7 @@ class OtherUserProfileViewModel {
     // TODO: GET vibes/?userId=, quick-moments/?userId= and the user's voice intro once the APIs are live.
     func getMoments(userID: Int) {
         respond { [weak self] in
-            let response = MockMomentsStore.shared.feed(page: 1, limit: Self.momentsPreviewLimit, authorID: String(userID))
+            let response = MockMomentsStore.shared.feed(page: 1, limit: Self.momentsPageSize, authorID: String(userID))
             self?.momentsTotal = response.data?.count ?? 0
             self?.moments = response.data?.rows ?? []
         }
@@ -86,16 +91,41 @@ class OtherUserProfileViewModel {
                                            profilePicture: profile.profilePhoto,
                                            verified: profile.isVerified,
                                            location: profile.city)
+                guard !self.hasLoadedUserMoments else { return }
                 let moments = (profile.moments ?? []).compactMap { $0.vibe(author: author) }
                 self.momentsTotal = moments.count
                 self.moments = moments
             }, onFailure: { [weak self] error in
-                self?.isLoadingProfile = false
-                self?.moments = []
-                self?.profileError = error.localizedDescription
+                guard let self else { return }
+                self.isLoadingProfile = false
+                if !self.hasLoadedUserMoments { self.moments = [] }
+                self.profileError = error.localizedDescription
             })
             .disposed(by: disposeBag)
+        getUserMoments(userID: userID)
         getQuickMoments(userID: userID)
+    }
+
+    /// GET `users/:userId/moments`; on failure the grid keeps the moments from the profile response.
+    func getUserMoments(userID: String) {
+        sessionManager.userMoments(userId: userID, page: 1, limit: Self.momentsPageSize)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] page in
+                guard let self else { return }
+                self.hasLoadedUserMoments = true
+                self.momentsTotal = page.total ?? page.vibes.count
+                self.moments = page.vibes
+            })
+            .disposed(by: disposeBag)
+    }
+
+    func getMyInterests() {
+        sessionManager.myProfile()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] data in
+                self?.myInterests = data.vibeInterests
+            })
+            .disposed(by: disposeBag)
     }
 
     func getQuickMoments(userID: String) {
@@ -111,11 +141,11 @@ class OtherUserProfileViewModel {
 
     /// The signed-in user's own moments, quick moments and voice intro (Edit Profile preview).
     func loadOwnProfile() {
-        sessionManager.myMoments(page: 1, limit: Self.momentsPreviewLimit)
+        sessionManager.myMoments(page: 1, limit: Self.momentsPageSize)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] page in
                 self?.momentsTotal = page.total ?? page.vibes.count
-                self?.moments = Array(page.vibes.prefix(Self.momentsPreviewLimit))
+                self?.moments = page.vibes
             }, onFailure: { [weak self] _ in
                 self?.momentsTotal = 0
                 self?.moments = []
@@ -212,10 +242,16 @@ class OtherUserProfileViewModel {
         }
     }
 
-    func sendCompliments(userID:Int, msg:String) {
-        respond { [weak self] in
-            self?.aSendCompliment = Complement(status: true, message: "Compliment sent successfully")
-        }
+    /// `userID` is the backend UUID of the user receiving the compliment.
+    func sendCompliment(userID: String, message: String) {
+        sessionManager.sendCompliment(userId: userID, message: message)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] compliment in
+                self?.aSendCompliment = compliment
+            }, onFailure: { [weak self] error in
+                self?.errorSendCompliment = parseError(error) ?? "Unable to send compliment. Please try again."
+            })
+            .disposed(by: disposeBag)
     }
 
     func getCheckUserSubscribedAPI() {

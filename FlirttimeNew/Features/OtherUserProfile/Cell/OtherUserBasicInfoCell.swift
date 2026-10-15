@@ -29,7 +29,7 @@ final class OtherUserBasicInfoCell: UITableViewCell {
             iconImageView.contentMode = .center
             iconImageView.tintColor = AppColor.Punch
             iconImageView.image = UIImage(systemName: "sparkles",
-                                          withConfiguration: UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold))
+                                          withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
         }
         titleLabel.text = info.title
         valueLabel.text = info.value

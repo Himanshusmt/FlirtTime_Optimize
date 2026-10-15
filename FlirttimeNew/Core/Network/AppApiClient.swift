@@ -22,7 +22,7 @@ final class AppApiClient {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 60
         configuration.timeoutIntervalForResource = 300
-        session = Session(configuration: configuration, interceptor: AppRequestInterceptor())
+        session = Session(configuration: configuration, interceptor: AppRequestInterceptor(), eventMonitors: [APILogger.shared])
     }
 
     /// Returns the whole response body as a dictionary. Used until typed models exist.
@@ -83,7 +83,7 @@ final class AppApiClient {
     // MARK: - Private
 
     private func perform<T>(_ request: AppApiRequest, decode: @escaping (Data, Int) throws -> T) -> Single<T> {
-        perform(endPoint: request.endPoint, method: request.method, logParameters: request.parameters, makeRequest: { session, url in
+        perform(endPoint: request.endPoint, makeRequest: { session, url in
             session.request(url, method: request.method, parameters: request.parameters, encoding: request.encoding)
         }, decode: decode)
     }
@@ -92,10 +92,7 @@ final class AppApiClient {
                                   fields: [String: String],
                                   files: [AppMultipartFile],
                                   decode: @escaping (Data, Int) throws -> T) -> Single<T> {
-        var logParameters: [String: Any] = fields
-        files.forEach { logParameters[$0.name] = "<file \($0.fileName), \($0.data.count) bytes>" }
-
-        return perform(endPoint: endPoint, method: .post, logParameters: logParameters, makeRequest: { session, url in
+        perform(endPoint: endPoint, makeRequest: { session, url in
             session.upload(multipartFormData: { form in
                 fields.forEach { key, value in
                     form.append(Data(value.utf8), withName: key)
@@ -108,8 +105,6 @@ final class AppApiClient {
     }
 
     private func perform<T>(endPoint: AppEndPoint,
-                            method: HTTPMethod,
-                            logParameters: [String: Any]?,
                             makeRequest: @escaping (Session, URL) -> DataRequest,
                             decode: @escaping (Data, Int) throws -> T) -> Single<T> {
         guard isInternetAvailable() else {
@@ -118,8 +113,6 @@ final class AppApiClient {
         guard let url = url(for: endPoint) else {
             return .error(APIError.apiError("App base URL is not configured"))
         }
-        let startTime = Self.logRequest(method: method, url: url, parameters: logParameters)
-
         return Single.create { [session] single in
             let dataRequest = makeRequest(session, url)
             dataRequest
@@ -130,7 +123,6 @@ final class AppApiClient {
                 }
                 .responseData(emptyResponseCodes: [200, 204, 205]) { response in
                     let statusCode = response.response?.statusCode ?? -1
-                    Self.logResponse(url: url, statusCode: statusCode, data: response.data, startTime: startTime)
 
                     switch response.result {
                     case .success(let data):
@@ -167,54 +159,138 @@ final class AppApiClient {
         throw APIHTTPError(statusCode: statusCode, message: errorResponse?.displayMessage ?? "Something went wrong")
     }
 
-    // MARK: - Logging
+}
 
-    @discardableResult
-    private static func logRequest(method: HTTPMethod, url: URL, parameters: [String: Any]?) -> Date {
+// MARK: - Logging
+
+/// Prints every request (token, URL, headers, body) and its response (status, time, body) in DEBUG builds.
+/// Attached to each Alamofire `Session`, so it sees the final request after the interceptor adds the token.
+final class APILogger: EventMonitor {
+
+    static let shared = APILogger()
+
+    /// For one-off calls that would otherwise use `AF` (which can't take an event monitor).
+    static let session = Session(eventMonitors: [APILogger.shared])
+
+    let queue = DispatchQueue(label: "com.flirttime.api-logger", qos: .utility)
+
+    private init() {}
+
+    func request(_ request: Request, didCreateURLRequest urlRequest: URLRequest) {
         #if DEBUG
+        let headers = urlRequest.allHTTPHeaderFields ?? [:]
+        let authorization = headers.first { $0.key.caseInsensitiveCompare("Authorization") == .orderedSame }?.value
+        let token = authorization.map { $0.replacingOccurrences(of: "Bearer ", with: "") } ?? "None"
         print("""
 
-        ===== API REQUEST =====
-        Method: \(method.rawValue)
-        URL: \(url.absoluteString)
-        Parameters:
-        \(prettyString(from: parameters ?? [:]))
-        =======================
+        ┌───── API REQUEST [\(Self.shortID(request))] ─────
+        │ Method: \(urlRequest.httpMethod ?? "-")
+        │ URL: \(urlRequest.url?.absoluteString ?? "-")
+        │ Token: \(token.isEmpty ? "None" : token)
+        │ Headers:
+        \(Self.indent(Self.prettyString(from: headers)))
+        │ Body:
+        \(Self.indent(Self.requestBody(request, urlRequest: urlRequest)))
+        └──────────────────────────────
         """)
         #endif
-        return Date()
     }
 
-    private static func logResponse(url: URL, statusCode: Int, data: Data?, startTime: Date) {
+    func request(_ request: Request, didCompleteTask task: URLSessionTask, with error: AFError?) {
         #if DEBUG
-        let elapsed = Date().timeIntervalSince(startTime)
+        let response = task.response as? HTTPURLResponse
+        let status = response.map { "\($0.statusCode) \(HTTPURLResponse.localizedString(forStatusCode: $0.statusCode))" } ?? "No response"
+        let duration = request.metrics.map { String(format: "%.3fs", $0.taskInterval.duration) } ?? "-"
+        let data = (request as? DataRequest)?.data
+        let failure = (error?.underlyingError ?? error).map { "\n│ Error: \($0.localizedDescription)" } ?? ""
         print("""
 
-        ===== API RESPONSE =====
-        URL: \(url.absoluteString)
-        Status Code: \(statusCode)
-        Time: \(String(format: "%.3f", elapsed))s
-        Body:
-        \(responseBodyString(from: data))
-        ========================
+        ┌───── API RESPONSE [\(Self.shortID(request))] ─────
+        │ URL: \(task.originalRequest?.url?.absoluteString ?? "-")
+        │ Status: \(status)
+        │ Time: \(duration)\(failure)
+        │ Response:
+        \(Self.indent(Self.bodyString(from: data)))
+        └──────────────────────────────
         """)
         #endif
+    }
+
+    // MARK: Formatting
+
+    /// Pairs a request with its response in the console.
+    private static func shortID(_ request: Request) -> String {
+        String(request.id.uuidString.prefix(8))
+    }
+
+    private static func indent(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false).map { "│   \($0)" }.joined(separator: "\n")
+    }
+
+    private static func requestBody(_ request: Request, urlRequest: URLRequest) -> String {
+        if let body = urlRequest.httpBody, !body.isEmpty {
+            return bodyString(from: body)
+        }
+        if let upload = request as? UploadRequest, case .data(let data)? = upload.uploadable {
+            let contentType = urlRequest.value(forHTTPHeaderField: "Content-Type") ?? ""
+            return multipartSummary(data, contentType: contentType) ?? "<\(data.count) bytes>"
+        }
+        if request is UploadRequest {
+            return "<streamed upload>"
+        }
+        return "No body"
+    }
+
+    private static func bodyString(from data: Data?) -> String {
+        guard let data, !data.isEmpty else { return "No body" }
+        if let object = try? JSONSerialization.jsonObject(with: data) {
+            return prettyString(from: object)
+        }
+        return String(data: data, encoding: .utf8) ?? "<\(data.count) bytes>"
     }
 
     private static func prettyString(from object: Any) -> String {
         guard JSONSerialization.isValidJSONObject(object),
-              let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
+              let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),
               let string = String(data: data, encoding: .utf8) else {
             return "\(object)"
         }
         return string
     }
 
-    private static func responseBodyString(from data: Data?) -> String {
-        guard let data, !data.isEmpty else { return "No response body" }
-        if let object = try? JSONSerialization.jsonObject(with: data) {
-            return prettyString(from: object)
+    /// Text fields as `name: value`, files as `name: <file name, size>`.
+    private static func multipartSummary(_ data: Data, contentType: String) -> String? {
+        guard let boundary = contentType.components(separatedBy: "boundary=").last, contentType.contains("boundary="),
+              let delimiter = "--\(boundary)".data(using: .utf8),
+              let headerEnd = "\r\n\r\n".data(using: .utf8) else { return nil }
+
+        var lines: [String] = []
+        var searchStart = data.startIndex
+        while let start = data.range(of: delimiter, in: searchStart..<data.endIndex) {
+            let partStart = start.upperBound
+            let next = data.range(of: delimiter, in: partStart..<data.endIndex)
+            let partEnd = next?.lowerBound ?? data.endIndex
+            searchStart = partEnd
+            guard let split = data.range(of: headerEnd, in: partStart..<partEnd),
+                  let headers = String(data: data[partStart..<split.lowerBound], encoding: .utf8) else {
+                if next == nil { break } else { continue }
+            }
+            let name = value(of: "name", in: headers) ?? "?"
+            var body = data[split.upperBound..<partEnd]
+            if body.suffix(2) == Data("\r\n".utf8) { body = body.dropLast(2) }
+            if let fileName = value(of: "filename", in: headers) {
+                lines.append("\(name): <file \(fileName), \(body.count) bytes>")
+            } else {
+                lines.append("\(name): \(String(data: body, encoding: .utf8) ?? "<\(body.count) bytes>")")
+            }
+            if next == nil { break }
         }
-        return String(data: data, encoding: .utf8) ?? "Unable to read response body"
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
+    }
+
+    private static func value(of key: String, in headers: String) -> String? {
+        guard let range = headers.range(of: "\(key)=\"") else { return nil }
+        let rest = headers[range.upperBound...]
+        return rest.firstIndex(of: "\"").map { String(rest[..<$0]) }
     }
 }

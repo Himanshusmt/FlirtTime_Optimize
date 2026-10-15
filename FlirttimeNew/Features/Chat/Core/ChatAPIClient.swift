@@ -65,7 +65,7 @@ final class ChatAPIClient {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 120
         configuration.timeoutIntervalForResource = 600
-        session = Session(configuration: configuration, interceptor: ChatRequestInterceptor())
+        session = Session(configuration: configuration, interceptor: ChatRequestInterceptor(), eventMonitors: [APILogger.shared])
     }
 
     /// Decodes `{ success, data }` and returns `data`.
