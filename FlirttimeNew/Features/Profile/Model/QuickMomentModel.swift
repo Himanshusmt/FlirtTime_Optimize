@@ -219,8 +219,9 @@ struct QuickMomentReactionsPage: Codable {
 
     init(from decoder: Decoder) throws {
         let list = try QMList<QuickMomentReaction>(from: decoder)
-        reactions = list.items
         let c = try? decoder.container(keyedBy: QMKey.self)
+        let pagination = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("pagination"))
+        reactions = c?.first([QuickMomentReaction].self, "reactors") ?? list.items
         if let counts = c?.first([QuickMomentEmojiCount].self, "breakdown", "emojiBreakdown", "reactionBreakdown", "summary") {
             breakdown = counts
         } else if let dict = c?.first([String: Int].self, "breakdown", "emojiBreakdown", "reactionBreakdown", "summary") {
@@ -228,7 +229,7 @@ struct QuickMomentReactionsPage: Codable {
         } else {
             breakdown = []
         }
-        total = list.total ?? reactions.count
+        total = c?.int("totalReactions") ?? list.total ?? pagination?.int("total") ?? reactions.count
     }
 }
 

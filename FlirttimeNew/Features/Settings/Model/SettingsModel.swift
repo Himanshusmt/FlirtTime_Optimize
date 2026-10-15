@@ -101,10 +101,12 @@ struct BlockedUser: Codable {
     let blockedAt: String?
 
     var profile: FilteredProfile {
-        let displayName = [name, username].compactMap { $0 }.first { !$0.isEmpty } ?? "Flirt Time member"
-        let handle = username?.isEmpty == false ? username.map { "@\($0)" } : nil
-        return FilteredProfile(userId: userId, id: userId, name: displayName, photo: profilePhoto,
-                               subtitle: handle ?? "Can't see or message you", status: nil)
+        let trimmedUsername = username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let title = [trimmedUsername, trimmedName].first { !$0.isEmpty } ?? "Flirt Time member"
+        let subtitle = !trimmedName.isEmpty && trimmedName != title ? trimmedName : "Can't see or message you"
+        return FilteredProfile(userId: userId, id: userId, name: title, photo: profilePhoto,
+                               subtitle: subtitle, status: nil)
     }
 }
 

@@ -305,12 +305,18 @@ final class DiscoverViewModel {
     }
 
     /// A user's active stories, newest first; falls back to the tray's copy when the request fails or is empty.
-    func quickMoments(of item: QuickMomentTrayItem, completion: @escaping ([QuickMoment]) -> Void) {
-        guard let userId = item.user?.id else {
+    /// Own stories come from `quick-moments/me`, since the tray copy has no reaction or reply counts.
+    func quickMoments(of item: QuickMomentTrayItem, isMine: Bool = false, completion: @escaping ([QuickMoment]) -> Void) {
+        let request: Single<[QuickMoment]>
+        if isMine {
+            request = sessionManager.myQuickMoments()
+        } else if let userId = item.user?.id {
+            request = sessionManager.userQuickMoments(userId: userId)
+        } else {
             completion(item.stories)
             return
         }
-        sessionManager.userQuickMoments(userId: userId)
+        request
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { moments in
                 let sorted = moments.sorted {

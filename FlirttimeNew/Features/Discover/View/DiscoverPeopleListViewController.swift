@@ -639,12 +639,12 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
-        if isMine {
-            presentQuickMoments(item.stories, of: item, isMine: true)
-            return
-        }
-        viewModel.quickMoments(of: item) { [weak self] stories in
+        viewModel.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
+            if isMine {
+                self.presentQuickMoments(stories, of: item, isMine: true)
+                return
+            }
             guard !stories.isEmpty else {
                 self.aCustomToastView.show(message: "These moments have expired")
                 self.viewModel.loadQuickMomentTray()
