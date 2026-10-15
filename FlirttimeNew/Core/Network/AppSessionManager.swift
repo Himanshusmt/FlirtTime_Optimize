@@ -400,6 +400,15 @@ final class AppSessionManager {
         return request.map { $0.page(fallbackAuthor: .currentUser) }
     }
 
+    /// Another user's permanent moments; the backend applies audience and block rules.
+    /// `fallbackAuthor` is used for moments that come without a creator.
+    func userMoments(userId: String, page: Int, limit: Int, fallbackAuthor: MomentsAuthor? = nil) -> Single<MomentFeedPage> {
+        let params: [String: Any] = ["page": page, "limit": limit]
+        let request: Single<MomentFeedData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .userMoments(userId: userId),
+                                                                                        parameters: params, encoding: URLEncoding.queryString))
+        return request.map { $0.page(fallbackAuthor: fallbackAuthor) }
+    }
+
     /// `imageKeys` are 1 to 5 S3 keys from `media/presigned-url`, in display order. The backend
     /// returns the full `imageUrl` / `thumbnailUrl`. Caption max 500 characters, `location` max 100.
     /// `audience` is "everyone" | "matches_only" | "close_friends".

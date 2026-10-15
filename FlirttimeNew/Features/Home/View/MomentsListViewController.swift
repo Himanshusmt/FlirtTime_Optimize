@@ -48,6 +48,9 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     // MARK: - State
 
+    /// Called with the moment ID after a moment is reported and removed from this list.
+    var onVibeRemoved: ((String) -> Void)?
+
     private var scope: Scope = .everyone
     /// Scrolled to once after the first page loads.
     private var focusVibeID: String?
@@ -55,7 +58,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         switch scope {
         case .everyone: return MomentsListViewModel()
         case .currentUser: return MomentsListViewModel(onlyCurrentUser: true)
-        case .user(let id, _): return MomentsListViewModel(authorID: id)
+        case .user(let id, let name): return MomentsListViewModel(authorID: id, authorName: name)
         }
     }()
     /// Moments whose long caption the user expanded with "more".
@@ -666,7 +669,13 @@ private extension MomentsListViewController {
                 guard let self else { return }
                 self.aActivityIndicator.show()
                 self.viewModel.reportVibe(vibeId: vibe.id, reason: reason) { [weak self] result in
-                    self?.handleRemoval(result, successMessage: "Thanks for reporting. We'll review this moment.")
+                    guard let self else { return }
+                    self.handleRemoval(result, successMessage: "Thanks for reporting. We'll review this moment.")
+                    guard case .success = result else { return }
+                    self.onVibeRemoved?(vibe.id)
+                    if self.isOtherUserScope, self.viewModel.vibes.isEmpty {
+                        self.navigationController?.popViewController(animated: true)
+                    }
                 }
             })
         }

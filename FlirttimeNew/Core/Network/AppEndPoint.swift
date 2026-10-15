@@ -98,6 +98,7 @@ enum AppEndPoint: CustomStringConvertible {
     // Moments — VibeFeedViewModel / VibeUploadViewModel / VibeCommentViewModel
     case moments
     case myMoments
+    case userMoments(userId: String)
     case momentLike(momentId: String)
     case momentComments(momentId: String)
     case momentLikes(momentId: String)
@@ -178,6 +179,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .onboardingPhotos: return "api/v1/onboarding/photos"
         case .moments: return "api/v1/moments"
         case .myMoments: return "api/v1/moments/me"
+        case .userMoments(let userId): return "api/v1/users/\(userId)/moments"
         case .momentLike(let momentId): return "api/v1/moments/\(momentId)/like"
         case .momentComments(let momentId): return "api/v1/moments/\(momentId)/comments"
         case .momentLikes(let momentId): return "api/v1/moments/\(momentId)/likes"
@@ -225,7 +227,7 @@ enum AppEndPoint: CustomStringConvertible {
              .interactions, .interactionCounts, .interactionRead,
              .userProfile, .blockUser, .reportUser, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
-             .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
+             .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,

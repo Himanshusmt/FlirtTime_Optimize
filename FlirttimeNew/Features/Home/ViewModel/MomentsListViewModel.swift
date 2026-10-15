@@ -7,7 +7,8 @@ import Foundation
 import RxSwift
 import Swinject
 
-/// Moments tab (`GET moments?type=feed`) and "My Moments" (`GET moments/me`).
+/// Moments tab (`GET moments?type=feed`), "My Moments" (`GET moments/me`) and another
+/// user's moments (`GET users/:userId/moments`).
 final class MomentsListViewModel {
 
     private(set) var vibes: [MomentsPost] = []
@@ -21,20 +22,23 @@ final class MomentsListViewModel {
     /// Bumped on every like tap so only the latest response for a moment is applied.
     private var likeGeneration: [String: Int] = [:]
     private let onlyCurrentUser: Bool
-    /// Another user's moments come from `MockMomentsStore` until the API exposes them.
+    /// Set for another user's moments (`GET users/:userId/moments`).
     private let authorID: String?
+    /// Shown on that user's moments when the backend sends them without a creator.
+    private let authorName: String?
     private let sessionManager: AppSessionManager
     private let disposeBag = DisposeBag()
 
-    init(onlyCurrentUser: Bool = false, authorID: String? = nil,
+    init(onlyCurrentUser: Bool = false, authorID: String? = nil, authorName: String? = nil,
          sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.onlyCurrentUser = onlyCurrentUser
         self.authorID = authorID
+        self.authorName = authorName
         self.sessionManager = sessionManager
     }
 
-    convenience init(authorID: String) {
-        self.init(onlyCurrentUser: false, authorID: authorID)
+    convenience init(authorID: String, authorName: String? = nil) {
+        self.init(onlyCurrentUser: false, authorID: authorID, authorName: authorName)
     }
 
     var currentUserID: String? { UserDataManager.shared.appUser?.id }
@@ -73,19 +77,16 @@ final class MomentsListViewModel {
 
     private func fetchPage(_ page: Int, completion: @escaping (Result<Void, MomentsError>) -> Void) {
         isLoading = true
+        let request: Single<MomentFeedPage>
         if let authorID {
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.isLoading = false
-                let data = MockMomentsStore.shared.feed(page: page, limit: self.pageSize, authorID: authorID).data
-                self.apply(rows: data?.rows ?? [], page: page, hasMore: data?.hasMore ?? false, total: data?.count)
-                completion(.success(()))
-            }
-            return
+            let fallbackAuthor = MomentsAuthor(userId: authorID, userName: authorName, fullName: authorName,
+                                               profilePicture: nil, verified: nil, location: nil)
+            request = sessionManager.userMoments(userId: authorID, page: page, limit: pageSize, fallbackAuthor: fallbackAuthor)
+        } else if onlyCurrentUser {
+            request = sessionManager.myMoments(page: page, limit: pageSize)
+        } else {
+            request = sessionManager.momentsFeed(page: page, limit: pageSize)
         }
-        let request = onlyCurrentUser
-            ? sessionManager.myMoments(page: page, limit: pageSize)
-            : sessionManager.momentsFeed(page: page, limit: pageSize)
         request
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] response in
@@ -101,7 +102,8 @@ final class MomentsListViewModel {
     }
 
     private func apply(rows: [MomentsPost], page: Int, hasMore: Bool, total: Int?) {
-        let rows = rows.filter { !Self.isAuthorBlocked($0) }
+        // `users/:userId/moments` already applies block rules, and a stale local block would hide every row.
+        let rows = authorID == nil ? rows.filter { !Self.isAuthorBlocked($0) } : rows
         if page == 1 {
             vibes = rows
         } else {

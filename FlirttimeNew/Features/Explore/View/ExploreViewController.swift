@@ -291,11 +291,17 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         profileVC.onAction = { [weak self] action, _, _ in
             guard let self else { return }
             self.navigationController?.popViewController(animated: true)
-            guard tab == .likes else { return }
+            let isNope = action == .notMyVibe || action == .nope
+            guard isNope || tab == .likes else { return }
             self.aExploreViewModel.act(action.apiAction, on: userId) { [weak self] in
                 self?.aExploreViewModel.loadCounts()
-                [.likes, .matches].forEach { self?.loadTab($0) }
+                ExploreTab.allCases.forEach { self?.loadTab($0) }
             }
+        }
+        profileVC.onSafetyCompleted = { [weak self] _ in
+            guard let self else { return }
+            self.aExploreViewModel.loadCounts()
+            [.likes, .matches, .compliments].forEach { self.loadTab($0) }
         }
         navigationController?.pushViewController(profileVC, animated: true)
     }

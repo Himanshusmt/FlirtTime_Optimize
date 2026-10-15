@@ -39,7 +39,9 @@ struct MomentItem: Codable {
     let thumbnailUrl: String?
     let media: [MomentMedia]?
     let likesCount: Int?
+    let likeCount: Int?
     let commentsCount: Int?
+    let commentCount: Int?
     let giftsCount: Int?
     let sharesCount: Int?
     let hasReacted: Bool?
@@ -96,6 +98,7 @@ struct MomentCreator: Codable {
     let profilePicture: String?
     let profilePhoto: String?
     let isVerified: Bool?
+    let isFaceVerified: Bool?
 }
 
 struct MomentFeedPage {
@@ -147,7 +150,7 @@ extension MomentItem {
                                 userName: creator.username ?? creator.name,
                                 fullName: creator.fullName ?? creator.name,
                                 profilePicture: creator.profilePicture ?? creator.profilePhoto,
-                                verified: creator.isVerified,
+                                verified: creator.isVerified ?? creator.isFaceVerified,
                                 location: place)
         } else {
             let fallback = fallbackAuthor ?? .currentUser
@@ -173,8 +176,8 @@ extension MomentItem {
                     userId: author.userId,
                     caption: caption,
                     media: vibeMedia,
-                    likesCount: likesCount,
-                    commentsCount: commentsCount,
+                    likesCount: likesCount ?? likeCount,
+                    commentsCount: commentsCount ?? commentCount,
                     giftCount: giftsCount,
                     hasLiked: isLiked ?? hasReacted ?? (viewerReaction != nil),
                     createdAt: createdAt ?? publishedAt,

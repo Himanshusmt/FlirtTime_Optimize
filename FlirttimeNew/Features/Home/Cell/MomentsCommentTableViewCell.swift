@@ -10,11 +10,21 @@ final class MomentsCommentTableViewCell: UITableViewCell {
 
     static let identifier = "MomentsCommentTableViewCell"
 
+    private static let avatarSize: CGFloat = 40
+
+    private let cardView: UIView = {
+        let view = UIView()
+        view.backgroundColor = AppColor.WildSand
+        view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
+        return view
+    }()
+
     private let avatarImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 18
+        imageView.layer.cornerRadius = MomentsCommentTableViewCell.avatarSize / 2
         imageView.backgroundColor = AppColor.AthensGray
         return imageView
     }()
@@ -28,7 +38,7 @@ final class MomentsCommentTableViewCell: UITableViewCell {
 
     private let timeLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.fredoka(.regular, size: 13)
+        label.font = UIFont.fredoka(.regular, size: 12)
         label.textColor = AppColor.SilverChalice
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -37,8 +47,8 @@ final class MomentsCommentTableViewCell: UITableViewCell {
 
     private let bodyLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.fredoka(.regular, size: 15)
-        label.textColor = AppColor.MineShaft
+        label.font = UIFont.fredoka(.regular, size: 14)
+        label.textColor = AppColor.DoveGray
         label.numberOfLines = 0
         return label
     }()
@@ -58,7 +68,7 @@ final class MomentsCommentTableViewCell: UITableViewCell {
 
     private lazy var deleteButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .regular)), for: .normal)
+        button.setImage(UIImage(systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .regular)), for: .normal)
         button.tintColor = AppColor.SilverChalice
         button.accessibilityLabel = "Delete comment"
         button.isHidden = true
@@ -96,39 +106,50 @@ final class MomentsCommentTableViewCell: UITableViewCell {
 
         let textStack = UIStackView(arrangedSubviews: [headerStack, bodyLabel])
         textStack.axis = .vertical
-        textStack.spacing = 4
+        textStack.spacing = 2
 
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(cardView)
         [avatarImageView, textStack, trailingLabel, deleteButton].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
-            contentView.addSubview($0)
+            cardView.addSubview($0)
         }
 
-        let bottom = textStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
-        bottom.priority = .defaultHigh
-
+        let padding: CGFloat = 12
         let textTrailing = textStack.trailingAnchor.constraint(equalTo: trailingLabel.leadingAnchor, constant: -8)
         textTrailing.priority = .defaultHigh
-        deleteSpacing = textStack.trailingAnchor.constraint(lessThanOrEqualTo: deleteButton.leadingAnchor, constant: -4)
+        deleteSpacing = textStack.trailingAnchor.constraint(lessThanOrEqualTo: deleteButton.leadingAnchor, constant: -2)
+        // Keeps the card as short as its tallest item (photo or text) while both stay centred.
+        let compactHeight = cardView.heightAnchor.constraint(equalToConstant: 0)
+        compactHeight.priority = .defaultLow
 
         NSLayoutConstraint.activate([
-            avatarImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            avatarImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            avatarImageView.widthAnchor.constraint(equalToConstant: 36),
-            avatarImageView.heightAnchor.constraint(equalToConstant: 36),
-            avatarImageView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -10),
+            cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            compactHeight,
 
-            textStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            avatarImageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: padding),
+            avatarImageView.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
+            avatarImageView.widthAnchor.constraint(equalToConstant: Self.avatarSize),
+            avatarImageView.heightAnchor.constraint(equalToConstant: Self.avatarSize),
+            avatarImageView.topAnchor.constraint(greaterThanOrEqualTo: cardView.topAnchor, constant: padding),
+            avatarImageView.bottomAnchor.constraint(lessThanOrEqualTo: cardView.bottomAnchor, constant: -padding),
+
             textStack.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12),
+            textStack.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
+            textStack.topAnchor.constraint(greaterThanOrEqualTo: cardView.topAnchor, constant: padding),
+            textStack.bottomAnchor.constraint(lessThanOrEqualTo: cardView.bottomAnchor, constant: -padding),
             textTrailing,
-            bottom,
 
-            trailingLabel.centerYAnchor.constraint(equalTo: avatarImageView.centerYAnchor),
-            trailingLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            trailingLabel.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
+            trailingLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 
-            deleteButton.centerYAnchor.constraint(equalTo: nameLabel.centerYAnchor),
-            deleteButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            deleteButton.widthAnchor.constraint(equalToConstant: 30),
-            deleteButton.heightAnchor.constraint(equalToConstant: 30)
+            deleteButton.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
+            deleteButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -6),
+            deleteButton.widthAnchor.constraint(equalToConstant: 36),
+            deleteButton.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
 

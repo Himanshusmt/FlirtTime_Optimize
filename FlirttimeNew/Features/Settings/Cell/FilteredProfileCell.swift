@@ -25,7 +25,7 @@ final class FilteredProfileCell: UITableViewCell {
 
     func configure(with profile: FilteredProfile, kind: FilteredProfileKind) {
         nameLabel.text = profile.name
-        avatarImageView.loadImage(path: profile.photo, placeholder: UIImage(named: "ProfileBlur"))
+        avatarImageView.loadImage(path: profile.photo, placeholder: UIImage(named: "dummy_Profile"))
         actionButton.isHidden = kind != .blocked
         statusBadgeLabel.isHidden = kind != .reported
         switch kind {

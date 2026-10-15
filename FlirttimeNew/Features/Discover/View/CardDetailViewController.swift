@@ -13,9 +13,14 @@ final class CardDetailViewController: BaseViewController {
 
     var onAction: ((MomentsAction, [ConnectReason]?, MomentsReaction?) -> Void)?
     var onInterestTapped: ((MomentsInterest) -> Void)?
+    /// When set, the caller sends the report or block. Otherwise this screen sends it and pops.
     var onSafetyAction: ((MomentsProfile, MomentsSafetyAction) -> Void)?
+    /// Called after this screen sent a report or block itself, just before it pops.
+    var onSafetyCompleted: ((MomentsSafetyAction) -> Void)?
 
     private var profile: MomentsProfile
+    /// Moments reported from the Moments list; kept out even if the profile API still returns them.
+    private var hiddenMomentIDs = Set<Int>()
     private let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()
 
@@ -54,6 +59,7 @@ final class CardDetailViewController: BaseViewController {
             .subscribe(onSuccess: { [weak self] detail in
                 guard let self else { return }
                 self.profile = DiscoverViewModel.makeProfile(from: detail, merging: self.profile)
+                self.profile.moments.removeAll { self.hiddenMomentIDs.contains($0.id) }
                 self.buildContent()
                 self.playerChanged()
             })
@@ -435,23 +441,7 @@ final class CardDetailViewController: BaseViewController {
         let notMyVibeButton = UIButton(configuration: notMyVibe)
         notMyVibeButton.addAction(UIAction { [weak self] _ in self?.onAction?(.notMyVibe, nil, nil) }, for: .touchUpInside)
 
-        var connect = UIButton.Configuration.filled()
-        connect.cornerStyle = .capsule
-        connect.baseBackgroundColor = AppColor.Punch
-        connect.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
-        connect.imagePlacement = .trailing
-        connect.imagePadding = 8
-        connect.attributedTitle = AttributedString("Connect", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 16)]))
-        let connectButton = UIButton(configuration: connect)
-        connectButton.layer.shadowColor = AppColor.Punch.cgColor
-        connectButton.layer.shadowOpacity = 0.35
-        connectButton.layer.shadowRadius = 10
-        connectButton.layer.shadowOffset = CGSize(width: 0, height: 4)
-        connectButton.addAction(UIAction { [weak self] _ in self?.showConnectBecause() }, for: .touchUpInside)
-
-        let row = UIStackView(arrangedSubviews: [notMyVibeButton, connectButton])
-        row.spacing = 12
-        row.distribution = .fillEqually
+        let row = UIStackView(arrangedSubviews: [notMyVibeButton])
         row.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(row)
         NSLayoutConstraint.activate([
@@ -498,33 +488,24 @@ final class CardDetailViewController: BaseViewController {
         waveform?.setProgress(isPlaying ? player.progress : 0)
     }
 
-    private func showConnectBecause() {
-        let connectVC = ConnectBecauseViewController(profile: profile)
-        connectVC.onSend = { [weak self] reasons in
-            self?.dismiss(animated: true) {
-                self?.onAction?(.interested, reasons, nil)
-            }
-        }
-        connectVC.modalPresentationStyle = .pageSheet
-        if let sheet = connectVC.sheetPresentationController {
-            sheet.detents = [.medium(), .large()]
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
-        present(connectVC, animated: true)
-    }
-
     private func openMoments() {
         MomentsAnalytics.track(.vibeMomentOpened, profileID: profile.id)
-        let momentsList = MomentsListViewController.make(scope: .user(id: String(profile.id), name: profile.displayName))
+        let userID = profile.remoteUserId ?? String(profile.id)
+        let momentsList = MomentsListViewController.make(scope: .user(id: userID, name: profile.displayName))
+        momentsList.onVibeRemoved = { [weak self] momentID in
+            guard let self else { return }
+            let hiddenID = momentID.stableID
+            self.hiddenMomentIDs.insert(hiddenID)
+            self.profile.moments.removeAll { $0.id == hiddenID }
+            self.profile.momentsCount = max(0, self.profile.momentsCount - 1)
+            self.buildContent()
+            self.loadDetail()
+        }
         navigationController?.pushViewController(momentsList, animated: true)
     }
 
     private func showSafetyOptions(from sourceView: UIView) {
         let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "Report \(profile.displayName)", style: .destructive) { [weak self] _ in
-            self?.showReportReasons(from: sourceView)
-        })
         sheet.addAction(UIAlertAction(title: "Block \(profile.displayName)", style: .destructive) { [weak self] _ in
             self?.confirmBlock()
         })
@@ -533,23 +514,57 @@ final class CardDetailViewController: BaseViewController {
         present(sheet, animated: true)
     }
 
-    private func showReportReasons(from sourceView: UIView) {
-        MomentsSafety.presentReportReasons(for: profile, from: self, sourceView: sourceView) { [weak self] reason in
-            guard let self else { return }
-            self.onSafetyAction?(self.profile, .report(reason))
-        }
-    }
-
     private func confirmBlock() {
         let alert = UIAlertController(title: "Block \(profile.displayName)?",
                                       message: "They won't be able to see your profile or contact you, and you won't see them in Discover.",
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         alert.addAction(UIAlertAction(title: "Block", style: .destructive) { [weak self] _ in
-            guard let self else { return }
-            self.onSafetyAction?(self.profile, .block)
+            self?.handleSafety(.block)
         })
         present(alert, animated: true)
+    }
+
+    private func handleSafety(_ action: MomentsSafetyAction) {
+        if let onSafetyAction {
+            onSafetyAction(profile, action)
+        } else {
+            performSafety(action)
+        }
+    }
+
+    private func performSafety(_ action: MomentsSafetyAction) {
+        guard let userID = profile.remoteUserId else {
+            aCustomToastView.show(message: "This profile can't be reported right now")
+            return
+        }
+        let request: Single<Void>
+        switch action {
+        case .report(let reason):
+            request = sessionManager.reportUser(userId: userID, reason: reason.rawValue, description: reason.title)
+        case .block:
+            request = sessionManager.blockUser(userId: userID, reason: "Blocked from profile").map { _ in () }
+        }
+        let name = profile.displayName
+        aActivityIndicator.show()
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                if case .block = action {
+                    BlockedUsersManager.shared.blockUser(id: userID)
+                    self.aCustomToastView.show(message: "\(name) has been blocked")
+                } else {
+                    self.aCustomToastView.show(message: "Thanks for reporting. We'll review this profile.")
+                }
+                self.onSafetyCompleted?(action)
+                self.navigationController?.popViewController(animated: true)
+            }, onFailure: { [weak self] error in
+                self?.aActivityIndicator.hide()
+                self?.aCustomToastView.show(message: parseError(error) ?? "Something went wrong. Please try again.")
+            })
+            .disposed(by: disposeBag)
     }
 }
 
