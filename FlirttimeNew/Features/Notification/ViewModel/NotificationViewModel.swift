@@ -26,6 +26,7 @@ final class NotificationViewModel {
     private var hasMore = false
     /// Bumped on every first-page load so a slower, older response can't overwrite a newer one.
     private var generation = 0
+    private var didAutoMarkRead = false
 
     private let sessionManager: AppSessionManager
     private let disposeBag = DisposeBag()
@@ -108,11 +109,30 @@ final class NotificationViewModel {
                 self.nextCursor = feed.nextCursor
                 self.hasMore = feed.hasMore && feed.nextCursor != nil
                 self.errorMessage = nil
+                feed.sections.flatMap(\.items).forEach { ImageLoader.shared.prefetch(path: $0.image) }
                 self.sections = isFirstPage ? feed.sections : Self.merge(self.sections ?? [], with: feed.sections)
+                if isFirstPage {
+                    self.autoMarkReadIfNeeded(feed)
+                }
             }, onFailure: { [weak self] error in
                 guard let self, self.generation == current else { return }
                 self.isLoading = false
                 self.errorMessage = parseError(error) ?? "Unable to load notifications"
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Opening the screen marks everything read on the server, but rows keep their unread look until the next visit.
+    private func autoMarkReadIfNeeded(_ feed: NotificationFeed) {
+        guard !didAutoMarkRead, feed.sections.contains(where: { $0.items.contains { !$0.isRead } }) else { return }
+        didAutoMarkRead = true
+        NotificationBadgeStore.shared.set(unread: 0)
+        sessionManager.markAllNotificationsRead()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: {
+                NotificationBadgeStore.shared.set(unread: 0)
+            }, onFailure: { _ in
+                NotificationBadgeStore.shared.refresh()
             })
             .disposed(by: disposeBag)
     }

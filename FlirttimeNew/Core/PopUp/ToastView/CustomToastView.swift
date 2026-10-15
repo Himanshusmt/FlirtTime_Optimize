@@ -23,6 +23,8 @@ class CustomToastView: UIView {
     }
     
     func show(message:String?) {
+        // Display-only overlay; touches must reach the screen underneath while it's visible.
+        isUserInteractionEnabled = false
         if let window = UIApplication.shared.windows.first {
             window.addSubview(self)
         }
