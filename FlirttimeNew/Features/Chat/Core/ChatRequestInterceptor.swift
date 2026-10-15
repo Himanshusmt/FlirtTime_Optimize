@@ -71,7 +71,7 @@ final class ChatRequestInterceptor: RequestInterceptor {
             return
         }
 
-        AF.request(
+        APILogger.session.request(
             url,
             method: .post,
             parameters: ["refreshToken": store.refreshToken],

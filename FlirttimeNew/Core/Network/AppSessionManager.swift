@@ -445,6 +445,12 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    func sendCompliment(userId: String, message: String) -> Single<SentCompliment> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .userCompliment(userId: userId),
+                                                      parameters: ["message": message]))
+            .map(SentCompliment.init(json:))
+    }
+
     // MARK: - Moments
 
     func momentsFeed(page: Int, limit: Int) -> Single<MomentFeedPage> {

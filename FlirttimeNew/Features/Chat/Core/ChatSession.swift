@@ -1262,7 +1262,7 @@ final class SessionManager {
         
         print("Requesting chat presigned URL → mimeType:", mimeType, "fileName:", fileName, "folderType:", folderType)
         
-        AF.request(apiURL,
+        APILogger.session.request(apiURL,
                    method: .post,
                    parameters: parameters,
                    encoding: JSONEncoding.default,

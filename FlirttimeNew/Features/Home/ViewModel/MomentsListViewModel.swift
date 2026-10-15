@@ -22,7 +22,7 @@ final class MomentsListViewModel {
     /// Bumped on every like tap so only the latest response for a moment is applied.
     private var likeGeneration: [String: Int] = [:]
     private let onlyCurrentUser: Bool
-    /// Set for another user's moments (`GET users/:userId/moments`).
+    /// Set for another user's moments (`GET users/:userId/moments`); mock people (numeric ids) still come from `MockMomentsStore`.
     private let authorID: String?
     /// Shown on that user's moments when the backend sends them without a creator.
     private let authorName: String?
@@ -77,6 +77,16 @@ final class MomentsListViewModel {
 
     private func fetchPage(_ page: Int, completion: @escaping (Result<Void, MomentsError>) -> Void) {
         isLoading = true
+        if let authorID, OtherUserProfileRouter.remoteID(for: authorID) == nil {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isLoading = false
+                let data = MockMomentsStore.shared.feed(page: page, limit: self.pageSize, authorID: authorID).data
+                self.apply(rows: data?.rows ?? [], page: page, hasMore: data?.hasMore ?? false, total: data?.count)
+                completion(.success(()))
+            }
+            return
+        }
         let request: Single<MomentFeedPage>
         if let authorID {
             let fallbackAuthor = MomentsAuthor(userId: authorID, userName: authorName, fullName: authorName,

@@ -91,6 +91,7 @@ enum AppEndPoint: CustomStringConvertible {
     case userProfile(userId: String)
     case blockUser(userId: String)
     case reportUser(userId: String)
+    case userCompliment(userId: String)
 
     // Blocked & reported — FilteredProfilesViewModel
     case blockedUsers
@@ -182,6 +183,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
+        case .userCompliment(let userId): return "api/v1/users/\(userId)/compliment"
         case .blockedUsers: return "api/v1/users/blocked"
         case .myReports: return "api/v1/users/reports"
         case .mediaPresignedURL: return "api/v1/media/presigned-url"
@@ -235,7 +237,7 @@ enum AppEndPoint: CustomStringConvertible {
              .discoveryPeople, .discoveryAction, .interestsCatalog,
              .discoveryFilterOptions, .discoveryFilters, .discoveryFiltersReset, .discoverySearch, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
-             .userProfile, .blockUser, .reportUser, .blockedUsers, .myReports,
+             .userProfile, .blockUser, .reportUser, .userCompliment, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment,

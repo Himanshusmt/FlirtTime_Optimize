@@ -206,10 +206,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     private func updateEmptyState() {
         emptyStateLabel.isHidden = !viewModel.vibes.isEmpty
-        if case .user(_, let name) = scope {
-            let total = viewModel.vibes.isEmpty ? 0 : viewModel.totalCount
-            titleLabel.text = total > 0 ? "\(name)'s Moments (\(total))" : "\(name)'s Moments"
-        }
     }
 
     // MARK: - Header, tab bar & scroll-to-top

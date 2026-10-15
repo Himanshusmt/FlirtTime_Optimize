@@ -20,6 +20,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private static let aboutCollapsedLines = 3
     private static let headerToNameSpacing: CGFloat = 10
     private static let momentsPerRow: CGFloat = 3
+    /// Photo cards fully visible at once in the horizontal Photos carousel.
+    private static let photosPerRow: CGFloat = 2
+    /// Height / width of a photo card (165 × 230).
+    private static let photoAspectRatio: CGFloat = 230 / 165
+    /// Moment tiles shown before the "See all" tile takes the next slot.
+    static let momentsGridLimit = 8
 
     // MARK: - Set by the presenting screen
 
@@ -68,6 +74,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     @IBOutlet private weak var photosCountLabel: UILabel!
     @IBOutlet private weak var photosCollectionView: UICollectionView!
     @IBOutlet private weak var interestsSectionView: UIView!
+    @IBOutlet private weak var interestsTitleLabel: UILabel!
     @IBOutlet private weak var interestsChipsView: MomentsChipsView!
     @IBOutlet private weak var aboutMeSectionView: UIView!
     @IBOutlet private weak var basicInfoTableView: UITableView!
@@ -91,7 +98,31 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private var basicInfo: [OtherUserBasicInfo] = []
     private var moments: [MomentsPost] = []
     private var voiceWaveform: VoiceWaveformView?
-    private var momentsLayoutWidth: CGFloat = 0
+    private var gridLayoutWidth: CGFloat = 0
+
+    /// "💞 3 in common" on the trailing side of the Interests title row, styled like a shared-interest chip.
+    private lazy var commonInterestsBadge: UIButton = {
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = AppColor.Lavenderblush
+        config.baseForegroundColor = AppColor.Punch
+        config.contentInsets = NSDirectionalEdgeInsets(top: 3, leading: 10, bottom: 3, trailing: 10)
+        let badge = UIButton(configuration: config)
+        badge.isUserInteractionEnabled = false
+        badge.isHidden = true
+        badge.translatesAutoresizingMaskIntoConstraints = false
+        interestsSectionView.addSubview(badge)
+        NSLayoutConstraint.activate([
+            badge.trailingAnchor.constraint(equalTo: interestsSectionView.trailingAnchor, constant: -20),
+            badge.centerYAnchor.constraint(equalTo: interestsTitleLabel.centerYAnchor),
+            badge.leadingAnchor.constraint(greaterThanOrEqualTo: interestsTitleLabel.trailingAnchor, constant: 8)
+        ])
+        return badge
+    }()
+
+    private var momentsTotal: Int { max(viewModel.momentsTotal, moments.count) }
+    private var showsSeeAllMomentsTile: Bool { momentsTotal > Self.momentsGridLimit }
+    private var visibleMomentsCount: Int { min(moments.count, Self.momentsGridLimit) }
 
     private var isOwnProfile: Bool {
         if isMyProfile { return true }
@@ -106,6 +137,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         contentStackView.setCustomSpacing(Self.headerToNameSpacing, after: headerView)
+        momentsCollectionView.register(OtherUserSeeAllMomentsCell.self,
+                                       forCellWithReuseIdentifier: OtherUserSeeAllMomentsCell.identifier)
         details = makeDetails()
         setBinding()
         hideLoadingSections()
@@ -113,6 +146,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         configureActionBar()
         viewModel.loadJSON()
         viewModel.getCheckUserSubscribedAPI()
+        if !isMyProfile {
+            viewModel.getMyInterests()
+        }
         if isMyProfile {
             viewModel.loadOwnProfile()
         } else if let remoteUserID, !remoteUserID.isEmpty {
@@ -142,9 +178,10 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        if momentsCollectionView.bounds.width != momentsLayoutWidth {
-            momentsLayoutWidth = momentsCollectionView.bounds.width
+        if momentsCollectionView.bounds.width != gridLayoutWidth {
+            gridLayoutWidth = momentsCollectionView.bounds.width
             momentsCollectionView.collectionViewLayout.invalidateLayout()
+            photosCollectionView.collectionViewLayout.invalidateLayout()
         }
     }
 
@@ -198,8 +235,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             guard let self, let vibes else { return }
             self.moments = vibes
             self.noMomentsLabel.isHidden = !vibes.isEmpty
-            self.seeAllMomentsButton.isHidden = vibes.isEmpty
-            let total = max(self.viewModel.momentsTotal, vibes.count)
+            // The grid's own "See all" tile replaces the header button once there are more than 8 moments.
+            self.seeAllMomentsButton.isHidden = vibes.isEmpty || self.showsSeeAllMomentsTile
+            let total = self.momentsTotal
             self.momentsCountLabel.text = "\(total)"
             self.momentsCountLabel.isHidden = vibes.isEmpty
             self.momentsCountLabel.accessibilityLabel = "\(total) moments"
@@ -211,6 +249,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             let frames = self.viewModel.quickMomentFrames
             self.quickMomentsView.configure(moments: frames, avatarPath: self.details?.avatar)
             self.quickMomentsSectionView.isHidden = frames.isEmpty
+        }.store(in: &cancellables)
+
+        viewModel.$myInterests.receive(on: DispatchQueue.main).sink { [weak self] interests in
+            guard interests != nil else { return }
+            self?.showInterests()
         }.store(in: &cancellables)
 
         viewModel.$voiceIntro.receive(on: DispatchQueue.main).sink { [weak self] intro in
@@ -262,9 +305,16 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         aboutLabel.isHidden = about.isEmpty
 
         photosCountLabel.text = "\(details.photos.count)"
+        photosCountLabel.accessibilityLabel = "\(details.photos.count) photos"
         photosSectionView.isHidden = details.photos.isEmpty
         photosCollectionView.reloadData()
 
+        showInterests()
+    }
+
+    /// Interests shared with the signed-in user come first, in red, with their count beside the title.
+    private func showInterests() {
+        guard let details else { return }
         let interests: [MomentsInterest]
         if !details.interests.isEmpty {
             interests = details.interests
@@ -273,8 +323,25 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         } else {
             interests = MomentsInterestCatalog.interests(for: details.interestIDs)
         }
-        interestsChipsView.configure(interests, highlighted: [])
+
+        let sharedIDs: Set<Int>
+        if isOwnProfile {
+            sharedIDs = []
+        } else {
+            let candidates = details.sharedInterests ?? viewModel.myInterests ?? []
+            sharedIDs = Set(candidates.map(\.id)).intersection(interests.map(\.id))
+        }
+        let ordered = interests.filter { sharedIDs.contains($0.id) } + interests.filter { !sharedIDs.contains($0.id) }
+        interestsChipsView.configure(ordered, highlighted: sharedIDs)
         interestsSectionView.isHidden = interests.isEmpty
+
+        commonInterestsBadge.isHidden = sharedIDs.isEmpty
+        commonInterestsBadge.configuration?.attributedTitle = AttributedString("💞 \(sharedIDs.count) in common", attributes: AttributeContainer([
+            .font: MomentsFont.scaled(.medium, 13, style: .footnote)
+        ]))
+        commonInterestsBadge.accessibilityLabel = sharedIDs.count == 1
+            ? "1 interest in common"
+            : "\(sharedIDs.count) interests in common"
     }
 
     /// Sections filled by separate requests stay hidden until their data arrives.
@@ -447,19 +514,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     private func openPhoto(at index: Int) {
         guard let details, !isOwnProfile else { return }
-        let viewer: ShowOtherUserImageVC = ShowOtherUserImageVC.instantiateFromStoryboard()
-        viewer.isMyProfile = false
-        viewer.userID = details.userID
-        viewer.imgUsers = details.photos
-        viewer.itemIndex = index
-        viewer.userName = details.name
+        let viewer = ShowOtherUserImageVC(details: details, startIndex: index)
         viewer.callBack = { [weak self] _ in
             if UserDataManager.shared.isUserSubscriptionDone != true {
                 self?.showSubscriptionPopUp(subscriptionPopUpType: .compliment)
             }
         }
-        viewer.modalPresentationStyle = .overCurrentContext
-        viewer.modalTransitionStyle = .crossDissolve
         present(viewer, animated: true)
     }
 
@@ -515,7 +575,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 extension OtherUserProfileViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        collectionView === photosCollectionView ? (details?.photos.count ?? 0) : moments.count
+        if collectionView === photosCollectionView { return details?.photos.count ?? 0 }
+        return visibleMomentsCount + (showsSeeAllMomentsTile ? 1 : 0)
+    }
+
+    private func isSeeAllMomentsTile(_ collectionView: UICollectionView, _ indexPath: IndexPath) -> Bool {
+        collectionView === momentsCollectionView && showsSeeAllMomentsTile && indexPath.item == visibleMomentsCount
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -525,14 +590,25 @@ extension OtherUserProfileViewController: UICollectionViewDataSource, UICollecti
             cell.configure(photoPath: photos[indexPath.item].image, index: indexPath.item, total: photos.count, name: details?.name ?? "")
             return cell
         }
+        if isSeeAllMomentsTile(collectionView, indexPath) {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: OtherUserSeeAllMomentsCell.identifier, for: indexPath) as! OtherUserSeeAllMomentsCell
+            let next = moments.indices.contains(visibleMomentsCount) ? moments[visibleMomentsCount] : nil
+            cell.configure(remainingCount: momentsTotal - visibleMomentsCount, previewVibe: next)
+            return cell
+        }
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: OtherUserMomentCell.identifier, for: indexPath) as! OtherUserMomentCell
-        cell.configure(vibe: moments[indexPath.item], index: indexPath.item, total: moments.count)
+        cell.configure(vibe: moments[indexPath.item], index: indexPath.item, total: momentsTotal)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard let flow = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
-        guard collectionView === momentsCollectionView else { return flow.itemSize }
+        if collectionView === photosCollectionView {
+            let insets = flow.sectionInset.left + flow.sectionInset.right
+            let spacing = flow.minimumLineSpacing * (Self.photosPerRow - 1)
+            let width = floor((collectionView.bounds.width - insets - spacing) / Self.photosPerRow)
+            return CGSize(width: width, height: min(collectionView.bounds.height, floor(width * Self.photoAspectRatio)))
+        }
         let spacing = flow.minimumInteritemSpacing * (Self.momentsPerRow - 1)
         let width = floor((collectionView.bounds.width - spacing) / Self.momentsPerRow)
         return CGSize(width: width, height: width * 1.35)
@@ -541,6 +617,8 @@ extension OtherUserProfileViewController: UICollectionViewDataSource, UICollecti
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView === photosCollectionView {
             openPhoto(at: indexPath.item)
+        } else if isSeeAllMomentsTile(collectionView, indexPath) {
+            openMoments()
         } else {
             openMoments(focusing: moments[indexPath.item].id)
         }

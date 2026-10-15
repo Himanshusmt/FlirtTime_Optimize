@@ -26,6 +26,8 @@ struct OtherUserProfileDetails {
     var remoteUserID: String? = nil
     /// Interests by name from the API; when empty, `interestIDs` are used.
     var interests: [MomentsInterest] = []
+    /// Interests this user has in common with the signed-in user; `nil` when the API didn't send them.
+    var sharedInterests: [MomentsInterest]? = nil
     /// "More about me" answers from the API as display text, keyed by attribute alias.
     var aboutAnswers: [OtherUserAboutItem] = []
 
@@ -143,7 +145,13 @@ extension OtherUserProfileDetails {
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
         let interests = (profile.interests ?? []).compactMap { MomentsInterestCatalog.interest(named: $0.name, emoji: $0.emoji) }
-        let photos = profile.profilePhoto == nil ? (fallback?.photos ?? []) : Self.orderedPhotos([], avatar: avatar)
+        let apiPhotos = (profile.photos ?? []).map { Images(image: $0.url, type: "gallery", is_primary: $0.isPrimary) }
+        let photos: [Images]
+        if !apiPhotos.isEmpty {
+            photos = apiPhotos
+        } else {
+            photos = profile.profilePhoto == nil ? (fallback?.photos ?? []) : Self.orderedPhotos([], avatar: avatar)
+        }
 
         self.init(userID: id.stableID,
                   name: apiName.isEmpty ? (fallback?.name ?? "") : apiName,
@@ -159,6 +167,9 @@ extension OtherUserProfileDetails {
                   attributeValues: fallback?.attributeValues ?? [:],
                   remoteUserID: id,
                   interests: interests.isEmpty ? (fallback?.interests ?? []) : interests,
+                  sharedInterests: profile.sharedInterests.map { tags in
+                      tags.compactMap { MomentsInterestCatalog.interest(named: $0.name, emoji: $0.emoji) }
+                  } ?? fallback?.sharedInterests,
                   aboutAnswers: profile.moreAboutMe ?? fallback?.aboutAnswers ?? [])
     }
 }

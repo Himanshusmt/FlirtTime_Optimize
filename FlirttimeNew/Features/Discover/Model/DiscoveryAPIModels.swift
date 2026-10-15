@@ -296,6 +296,8 @@ struct OtherUserProfile: Codable {
     let interests: [DiscoveryTag]?
     let sharedInterests: [DiscoveryTag]?
     let moreAboutMe: [OtherUserAboutItem]?
+    /// Gallery photos, primary first and then in `displayOrder`.
+    let photos: [OtherUserPhoto]?
     /// "like" | "nope" | "super_like" once the signed-in user has acted on this profile.
     let myAction: String?
     /// "none" | "pending" | "matched" ...
@@ -307,42 +309,105 @@ struct OtherUserProfile: Codable {
     private enum CodingKeys: String, CodingKey {
         case userId, username, name, fullName, age, gender, city, distanceKm, distance, isVerified, isOnline, lastSeen,
              profilePhoto, coverPhoto, bio, vibeScore, vibeExplanation, voiceIntro, moments, interests, sharedInterests,
-             moreAboutMe, myAction, matchStatus, hasLiked, isMatched, canConnect
+             moreAboutMe, photos, myAction, matchStatus, hasLiked, isMatched, canConnect
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
-        userId = c.string("userId", "id")
-        username = c.string("username", "userName")
-        name = c.string("name", "nickName")
-        fullName = c.string("fullName")
-        age = c.int("age")
-        gender = c.string("gender")
-        city = c.string("city")
-        distanceKm = c.first(Double.self, "distanceKm")
-        distance = c.string("distance")
-        isVerified = c.bool("isVerified", "isFaceVerified")
-        isOnline = c.bool("isOnline")
-        lastSeen = c.string("lastSeen")
-        profilePhoto = c.string("profilePhoto", "profilePicture")
-        coverPhoto = c.string("coverPhotoUrl", "coverPhoto", "banner")
-        bio = c.string("bio", "about")
-        vibeScore = c.int("vibeScore")
-        voiceIntro = c.first(OtherUserVoiceIntro.self, "voiceIntro")
-        moments = c.first([OtherUserMoment].self, "moments")
-        interests = c.first([DiscoveryTag].self, "interests")
-        myAction = c.string("myAction")
-        matchStatus = c.string("matchStatus")
-        hasLiked = c.bool("hasLiked")
-        isMatched = c.bool("isMatched", "isMutualMatch")
-        canConnect = c.bool("canConnect")
-        moreAboutMe = OtherUserAboutItem.decodeList(from: c, key: "moreAboutMe")
+        // Some responses keep the user's details in a nested `profile` object next to `moments`,
+        // `quickMoments` and `voiceIntro`; a top-level value wins when both are present.
+        let profile = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("profile"))
+        func value<T>(_ read: (KeyedDecodingContainer<QMKey>) -> T?) -> T? {
+            read(c) ?? profile.flatMap(read)
+        }
+        let location = value { try? $0.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("location")) }
+
+        userId = value { $0.string("userId", "id") }
+        username = value { $0.string("username", "userName") }
+        name = value { $0.string("name", "displayName", "nickName") }
+        fullName = value { $0.string("fullName") }
+        age = value { $0.int("age") }
+        gender = value { $0.string("gender") }
+        city = value { $0.string("city") } ?? location?.string("city", "label", "name")
+        distanceKm = value { $0.first(Double.self, "distanceKm") }
+        distance = value { $0.string("distance") }
+        isVerified = value { $0.bool("isVerified", "isFaceVerified") }
+        isOnline = value { $0.bool("isOnline") }
+        lastSeen = value { $0.string("lastSeen") }
+        profilePhoto = value { $0.string("profilePhoto", "profilePicture") ?? $0.mediaURL("profilePhoto") }
+        coverPhoto = value { $0.string("coverPhotoUrl", "coverPhoto", "coverPicture", "banner") ?? $0.mediaURL("coverPhoto") }
+        bio = value { $0.string("bio", "about") }
+        vibeScore = value { $0.int("vibeScore") }
+        voiceIntro = value { $0.first(OtherUserVoiceIntro.self, "voiceIntro") }
+        moments = value { $0.first([OtherUserMoment].self, "moments") }
+        interests = value { $0.first([DiscoveryTag].self, "interests") }
+        photos = value { $0.first([OtherUserPhoto].self, "photos", "images", "gallery") }.map(OtherUserPhoto.ordered)
+        myAction = value { $0.string("myAction") }
+        matchStatus = value { $0.string("matchStatus") }
+        hasLiked = value { $0.bool("hasLiked") }
+        isMatched = value { $0.bool("isMatched", "isMutualMatch") }
+        canConnect = value { $0.bool("canConnect") }
+        moreAboutMe = value { OtherUserAboutItem.decodeList(from: $0, key: "moreAboutMe") }
 
         // `vibeExplanation` is either a sentence or `{ "text": "...", "sharedInterests": [...] }`.
         let explanation = try? c.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("vibeExplanation"))
         vibeExplanation = c.string("vibeExplanation") ?? explanation?.string("text", "explanation")
         sharedInterests = c.first([DiscoveryTag].self, "sharedInterests")
             ?? explanation?.first([DiscoveryTag].self, "sharedInterests")
+    }
+}
+
+/// A gallery photo as a URL string or an object such as
+/// `{ "id": "...", "url": "...", "thumbnailUrl": "...", "isPrimary": true, "displayOrder": 0 }`.
+struct OtherUserPhoto: Codable {
+    let id: String?
+    /// Full URL or relative S3 key.
+    let url: String
+    let thumbnailUrl: String?
+    let isPrimary: Bool
+    let displayOrder: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, url, thumbnailUrl, isPrimary, displayOrder
+    }
+
+    init(from decoder: Decoder) throws {
+        if let url = try? decoder.singleValueContainer().decode(String.self) {
+            id = nil
+            self.url = url
+            thumbnailUrl = nil
+            isPrimary = false
+            displayOrder = nil
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        let thumbnail = c.string("thumbnailUrl", "thumbnail")
+        guard let url = c.string("url", "imageUrl", "photoUrl", "image", "filename") ?? thumbnail else {
+            throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath, debugDescription: "Photo without url"))
+        }
+        id = c.string("id", "photoId")
+        self.url = url
+        thumbnailUrl = thumbnail
+        isPrimary = c.bool("isPrimary", "is_primary") ?? false
+        displayOrder = c.int("displayOrder", "order", "position")
+    }
+
+    /// Primary photo first, then by `displayOrder`; photos without an order keep their API order at the end.
+    static func ordered(_ photos: [OtherUserPhoto]) -> [OtherUserPhoto] {
+        photos.enumerated().sorted { lhs, rhs in
+            if lhs.element.isPrimary != rhs.element.isPrimary { return lhs.element.isPrimary }
+            let lhsOrder = lhs.element.displayOrder ?? Int.max
+            let rhsOrder = rhs.element.displayOrder ?? Int.max
+            return lhsOrder != rhsOrder ? lhsOrder < rhsOrder : lhs.offset < rhs.offset
+        }.map(\.element)
+    }
+}
+
+private extension KeyedDecodingContainer where Key == QMKey {
+    /// The `url` of a media object such as `"profilePhoto": { "url": "...", "thumbnailUrl": "..." }`.
+    func mediaURL(_ key: String) -> String? {
+        guard let media = try? nestedContainer(keyedBy: QMKey.self, forKey: QMKey(key)) else { return nil }
+        return media.string("url", "thumbnailUrl")
     }
 }
 
@@ -399,7 +464,7 @@ struct OtherUserVoiceIntro: Codable {
             return
         }
         let container = try decoder.container(keyedBy: QMKey.self)
-        url = container.string("url", "audioUrl")
+        url = container.string("url", "audioUrl", "playbackUrl")
         duration = container.first(Double.self, "durationSeconds", "duration")
         transcript = container.string("transcript")
     }
@@ -442,7 +507,7 @@ struct OtherUserMoment: Codable {
         let c = try decoder.container(keyedBy: QMKey.self)
         id = c.string("id")
         momentId = c.string("momentId")
-        mediaUrl = c.string("mediaUrl", "imageUrl", "photo", "url")
+        mediaUrl = c.string("mediaUrl", "imageUrl", "firstImageUrl", "photo", "url")
         thumbnailUrl = c.string("thumbnailUrl")
         media = c.first([MomentMedia].self, "media")
         mediaType = c.string("mediaType", "type")
@@ -450,8 +515,8 @@ struct OtherUserMoment: Codable {
         hasMultipleMedia = c.bool("hasMultipleMedia")
         caption = c.string("caption", "text")
         createdAt = c.string("createdAt", "publishedAt")
-        likesCount = c.int("likesCount")
-        commentsCount = c.int("commentsCount")
+        likesCount = c.int("likesCount", "likeCount")
+        commentsCount = c.int("commentsCount", "commentCount")
         sharesCount = c.int("sharesCount")
         giftsCount = c.int("giftsCount")
         isLiked = c.bool("isLiked", "hasLiked")
@@ -490,6 +555,23 @@ struct OtherUserMoment: Codable {
 struct UserBlockResult: Codable {
     let userId: String?
     let isBlocked: Bool?
+}
+
+/// POST `users/:userId/compliment`.
+struct SentCompliment {
+    let complimentId: String?
+    /// The response's top-level `message`, e.g. "Compliment sent successfully".
+    let message: String?
+    let isMatched: Bool
+    let matchId: String?
+
+    init(json: [String: Any]) {
+        let data = json["data"] as? [String: Any] ?? [:]
+        complimentId = data["complimentId"] as? String
+        message = json["message"] as? String
+        isMatched = data["isMatched"] as? Bool ?? false
+        matchId = data["matchId"] as? String
+    }
 }
 
 // MARK: - Local ids
