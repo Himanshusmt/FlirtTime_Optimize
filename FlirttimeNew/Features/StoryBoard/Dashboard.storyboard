@@ -138,6 +138,7 @@
                     <navigationItem key="navigationItem" id="XCe-8c-MoE"/>
                     <size key="freeformSize" width="393" height="852"/>
                     <connections>
+                        <outlet property="notificationButton" destination="mwz-vz-TbL" id="xNb-Ex-p01"/>
                         <outlet property="vwTopBar" destination="f8H-I1-wmZ" id="xTb-Ex-p01"/>
                     </connections>
                 </viewController>

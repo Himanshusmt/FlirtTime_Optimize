@@ -52,7 +52,6 @@
 		7F25E868E9ED1AFCD27272BA /* CoinsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B798B85D88C490E6DEC24C /* CoinsModel.swift */; };
 		83A05C3353C68A8CE4B419BD /* FAQCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABAF9566CAE985272DC43926 /* FAQCell.swift */; };
 		869C6A5140428E2EFF4CFD2F /* CardDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BCFC391ED16A1CC01A4B43D /* CardDetailViewController.swift */; };
-		8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44CF9558FE0250560AC807D /* MockNotifications.swift */; };
 		89EF86808206C0DE9041C21A /* MomentsRangeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B455408A16941D5D55BD4CF /* MomentsRangeSlider.swift */; };
 		8E2B3A866ACDB882CBA64898 /* VoiceIntroPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55620FC47241BE4C1F9B093 /* VoiceIntroPlayer.swift */; };
 		8E99C073A56AA399061EFB50 /* GestureActionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */; };
@@ -710,6 +709,8 @@
 		F690335568303B016201193C /* MomentsFiltersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */; };
 		F8CB26514F9C07EB669DE2C9 /* MomentsStoryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */; };
 		FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */; };
+		A1F0C0DE0000000000000001 /* DeviceTokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */; };
+		A1F0C0DE0000000000000003 /* NotificationBadgeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000004 /* NotificationBadgeStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -755,6 +756,8 @@
 		6FD407E3D6B64BCDAC702FD7 /* OtherUserBasicInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserBasicInfoCell.swift; sourceTree = "<group>"; };
 		7045A9235ADAA76496ED259C /* MockDiscover.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDiscover.swift; sourceTree = "<group>"; };
 		71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DeviceTokenManager.swift; sourceTree = "<group>"; };
+		A1F0C0DE0000000000000004 /* NotificationBadgeStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationBadgeStore.swift; sourceTree = "<group>"; };
 		7A11C0DE1E5F00A100000001 /* MomentLocationPickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentLocationPickerViewController.swift; sourceTree = "<group>"; };
 		7A11C0DE1E5F00A100000003 /* AddMomentComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddMomentComponents.swift; sourceTree = "<group>"; };
 		7A11C0DE1E5F00A100000005 /* MomentImageCropViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentImageCropViewController.swift; sourceTree = "<group>"; };
@@ -1409,7 +1412,6 @@
 		F2C76DDF0B264B66874D9647 /* StoryboardDesignableViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryboardDesignableViews.swift; sourceTree = "<group>"; };
 		F2F1942FB161BA17190F830F /* HelpSupportViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HelpSupportViewController.swift; sourceTree = "<group>"; };
 		F3E1BA562B4E8690629FCE44 /* MomentsComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsComponents.swift; sourceTree = "<group>"; };
-		F44CF9558FE0250560AC807D /* MockNotifications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockNotifications.swift; sourceTree = "<group>"; };
 		F735B997AD497BCC82C51E9E /* AddQuickMomentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddQuickMomentViewController.swift; sourceTree = "<group>"; };
 		FF221435927846A4B47EC013 /* OtherUserPhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserPhotoCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1624,6 +1626,7 @@
 			isa = PBXGroup;
 			children = (
 				71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */,
+				A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */,
 			);
 			path = NotificationManager;
 			sourceTree = "<group>";
@@ -1659,6 +1662,7 @@
 				C63D3A6CADC7DA47F32B251C /* Cell */,
 				3699F8A5733DC82E19CF4BCC /* Model */,
 				A94BDEA93CFECA6CD1FE47D1 /* View */,
+				A1F0C0DE0000000000000004 /* NotificationBadgeStore.swift */,
 			);
 			path = Notification;
 			sourceTree = "<group>";
@@ -1930,7 +1934,6 @@
 				E3A2D71E30776627008D1551 /* MockResponses.swift */,
 				E3A2D71F30776627008D1551 /* MockMomentsStore.swift */,
 				7045A9235ADAA76496ED259C /* MockDiscover.swift */,
-				F44CF9558FE0250560AC807D /* MockNotifications.swift */,
 				EBED5BEE1F747DB3CB06FD86 /* MockStore.swift */,
 			);
 			path = Mock;
@@ -4039,12 +4042,13 @@
 				0809B175D887C6F88B3CC304 /* MomentsSafety.swift in Sources */,
 				B4DF64BE43E8E42844E1A9C2 /* MomentsAnalytics.swift in Sources */,
 				FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */,
+				A1F0C0DE0000000000000001 /* DeviceTokenManager.swift in Sources */,
+				A1F0C0DE0000000000000003 /* NotificationBadgeStore.swift in Sources */,
 				6B3DF96430C5B5D2909CD495 /* NotificationViewModel.swift in Sources */,
 				1CC1633B5707BBD7FF0455D0 /* NotificationTableViewCell.swift in Sources */,
 				7ABE1E362790C85688D43430 /* NotificationModel.swift in Sources */,
 				787E36FBEEFFF9B019D5C293 /* NotificationViewController.swift in Sources */,
 				E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */,
-				8823849FC8FB25E7E060F6E2 /* MockNotifications.swift in Sources */,
 				F27CA4D6AF153AE5B5E78AA3 /* AppApiClient.swift in Sources */,
 				557783887778CC3DFC9A9FBC /* AppBackendClient.swift in Sources */,
 				9D31105C6758DE9265C83B7E /* AppConfig.swift in Sources */,

@@ -10,13 +10,8 @@ import Combine
 
 final class NotificationViewController: BaseViewController, Instantiable {
 
-    private struct Section {
-        let title: String
-        var items: [NotificationData]
-    }
-
     var aNotificationViewModel = NotificationViewModel()
-    private var sections: [Section] = []
+    private var sections: [NotificationSection] = []
     private var desposeBag: Set<AnyCancellable> = []
     private var hasLoadedOnce = false
 
@@ -98,7 +93,8 @@ final class NotificationViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
-        aNotificationViewModel.getNotificationListAPI()
+        aNotificationViewModel.load()
+        NotificationBadgeStore.shared.refresh()
     }
 
     // MARK: - UI
@@ -193,10 +189,11 @@ final class NotificationViewController: BaseViewController, Instantiable {
     // MARK: - Binding
 
     private func setBinding() {
-        aNotificationViewModel.$arrNotification.receive(on: DispatchQueue.main).sink { [weak self] model in
-            guard let self, let model else { return }
+        aNotificationViewModel.$sections.receive(on: DispatchQueue.main).sink { [weak self] sections in
+            guard let self, let sections else { return }
             self.hasLoadedOnce = true
-            self.sections = Self.groupByDay(model)
+            self.emptyTitleLabel.text = "No notifications yet"
+            self.sections = sections
             self.reloadContent()
         }.store(in: &desposeBag)
 
@@ -207,11 +204,6 @@ final class NotificationViewController: BaseViewController, Instantiable {
                 self.emptyTitleLabel.text = errorMessage
             }
             self.reloadContent()
-        }.store(in: &desposeBag)
-
-        aNotificationViewModel.$dictNotification.receive(on: DispatchQueue.main).sink { [weak self] model in
-            guard let self, let id = model?.id else { return }
-            self.markReadLocally(id: id)
         }.store(in: &desposeBag)
     }
 
@@ -224,54 +216,18 @@ final class NotificationViewController: BaseViewController, Instantiable {
     }
 
     private func updateMarkAllReadButton() {
-        markAllReadButton.isHidden = !sections.contains { $0.items.contains { $0.isRead != true } }
-    }
-
-    private func markReadLocally(id: Int) {
-        for (sectionIndex, section) in sections.enumerated() {
-            if let row = section.items.firstIndex(where: { $0.id == id }) {
-                sections[sectionIndex].items[row].isRead = true
-                tableView.reloadRows(at: [IndexPath(row: row, section: sectionIndex)], with: .none)
-                updateMarkAllReadButton()
-                return
-            }
-        }
-    }
-
-    private static func groupByDay(_ notifications: [NotificationData]) -> [Section] {
-        let calendar = Calendar.current
-        let sorted = notifications.sorted { ($0.createdDate ?? .distantPast) > ($1.createdDate ?? .distantPast) }
-        var today: [NotificationData] = []
-        var yesterday: [NotificationData] = []
-        var earlier: [NotificationData] = []
-        for notification in sorted {
-            guard let date = notification.createdDate else {
-                earlier.append(notification)
-                continue
-            }
-            if calendar.isDateInToday(date) {
-                today.append(notification)
-            } else if calendar.isDateInYesterday(date) {
-                yesterday.append(notification)
-            } else {
-                earlier.append(notification)
-            }
-        }
-        return [Section(title: "Today", items: today),
-                Section(title: "Yesterday", items: yesterday),
-                Section(title: "Earlier", items: earlier)]
-            .filter { !$0.items.isEmpty }
+        markAllReadButton.isHidden = !aNotificationViewModel.hasUnread
     }
 
     // MARK: - Actions
 
     @objc private func handleRefresh() {
-        aNotificationViewModel.getNotificationListAPI()
+        aNotificationViewModel.load()
+        NotificationBadgeStore.shared.refresh()
     }
 
     @objc private func markAllReadTapped() {
-        markAllReadButton.isHidden = true
-        aNotificationViewModel.readAllNotificationsAPI()
+        aNotificationViewModel.markAllRead()
     }
 
     @objc private func backButtonTapped() {
@@ -317,14 +273,29 @@ extension NotificationViewController: UITableViewDelegate, UITableViewDataSource
         return 40
     }
 
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        let isLastSection = indexPath.section == sections.count - 1
+        if isLastSection, indexPath.row >= sections[indexPath.section].items.count - 3 {
+            aNotificationViewModel.loadMore()
+        }
+    }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let notification = sections[indexPath.section].items[indexPath.row]
-        guard let id = notification.id else { return }
-        if notification.isRead != true {
-            aNotificationViewModel.readNotificationAPI(id: id)
+        aNotificationViewModel.markRead(id: notification.id)
+        NotificationManager.shared.handleNotification(notification.payload, from: self)
+    }
+
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let id = sections[indexPath.section].items[indexPath.row].id
+        let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
+            self?.aNotificationViewModel.delete(id: id)
+            completion(true)
         }
-        if let dataDict = notification.data?.toDictionary() {
-            NotificationManager.shared.handleNotification(dataDict, from: self)
-        }
+        delete.image = UIImage(systemName: "trash")
+        delete.backgroundColor = AppColor.Punch
+        let configuration = UISwipeActionsConfiguration(actions: [delete])
+        configuration.performsFirstActionWithFullSwipe = true
+        return configuration
     }
 }

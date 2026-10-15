@@ -27,8 +27,11 @@ class ExploreViewController: BaseViewController {
         UserDataManager.shared.isUserSubscriptionDone == true
     }
 
+    @IBOutlet private weak var notificationButton: UIButton!
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        notificationButton.bindNotificationBadge(inset: 7)
         self.setUpSegmentHeader()
         self.setUpPager()
         self.setUpBinding()
@@ -43,6 +46,7 @@ class ExploreViewController: BaseViewController {
         self.scrollToTab(ExploreTab(interactionType: strSelectedLike) ?? .likes, animated: false)
         self.refreshUpsell()
         self.aExploreViewModel.loadCounts()
+        NotificationBadgeStore.shared.refresh()
         ExploreTab.allCases.forEach(loadTab)
     }
     

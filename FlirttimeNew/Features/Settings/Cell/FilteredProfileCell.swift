@@ -30,10 +30,23 @@ final class FilteredProfileCell: UITableViewCell {
         statusBadgeLabel.isHidden = kind != .reported
         switch kind {
         case .blocked:
-            subtitleLabel.text = profile.location ?? "Can't see or message you"
+            subtitleLabel.text = profile.subtitle ?? "Can't see or message you"
             actionButton.accessibilityLabel = "Unblock \(profile.name)"
         case .reported:
-            subtitleLabel.text = "Our team is reviewing this profile"
+            subtitleLabel.text = profile.subtitle?.isEmpty == false ? profile.subtitle : "Our team is reviewing this profile"
+            let style = Self.statusStyle(for: profile.status)
+            statusBadgeLabel.text = style.text
+            statusBadgeLabel.textColor = style.color
+            statusBadgeLabel.backgroundColor = style.color.withAlphaComponent(0.12)
+        }
+    }
+
+    private static func statusStyle(for status: String?) -> (text: String, color: UIColor) {
+        switch status?.lowercased() {
+        case "reviewed": return ("Reviewed", .systemBlue)
+        case "resolved": return ("Resolved", .systemGreen)
+        case "dismissed": return ("Dismissed", AppColor.DoveGray)
+        default: return ("In review", UIColor(red: 0.94, green: 0.56, blue: 0, alpha: 1))
         }
     }
 

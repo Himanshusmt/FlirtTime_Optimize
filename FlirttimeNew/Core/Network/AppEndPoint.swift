@@ -87,6 +87,10 @@ enum AppEndPoint: CustomStringConvertible {
     case blockUser(userId: String)
     case reportUser(userId: String)
 
+    // Blocked & reported — FilteredProfilesViewModel
+    case blockedUsers
+    case myReports
+
     // Media — S3 presigned uploads
     case mediaPresignedURL
     case onboardingPhotos
@@ -121,6 +125,17 @@ enum AppEndPoint: CustomStringConvertible {
 
     // Premium — SubscriptionPlanStore
     case subscriptions
+
+    // Push devices — DeviceTokenManager
+    case deviceRegister
+    case deviceUnregister
+
+    // Notifications — NotificationViewModel / NotificationBadgeStore
+    case notifications
+    case notificationCounts
+    case notificationRead(id: String)
+    case notificationsReadAll
+    case notification(id: String)
 
     var description: String {
         switch self {
@@ -157,6 +172,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .userProfile(let userId): return "api/v1/users/\(userId)/profile"
         case .blockUser(let userId): return "api/v1/users/\(userId)/block"
         case .reportUser(let userId): return "api/v1/users/\(userId)/report"
+        case .blockedUsers: return "api/v1/users/blocked"
+        case .myReports: return "api/v1/users/reports"
         case .mediaPresignedURL: return "api/v1/media/presigned-url"
         case .onboardingPhotos: return "api/v1/onboarding/photos"
         case .moments: return "api/v1/moments"
@@ -182,6 +199,13 @@ enum AppEndPoint: CustomStringConvertible {
         case .quickMomentViewers(let momentId): return "api/v1/quick-moments/\(momentId)/viewers"
         case .coinPackages: return "api/v1/coin-packages"
         case .subscriptions: return "api/v1/subscriptions"
+        case .deviceRegister: return "api/v1/devices/register"
+        case .deviceUnregister: return "api/v1/devices/unregister"
+        case .notifications: return "api/v1/notifications"
+        case .notificationCounts: return "api/v1/notifications/counts"
+        case .notificationRead(let id): return "api/v1/notifications/\(id)/read"
+        case .notificationsReadAll: return "api/v1/notifications/read-all"
+        case .notification(let id): return "api/v1/notifications/\(id)"
         }
     }
 
@@ -199,14 +223,16 @@ enum AppEndPoint: CustomStringConvertible {
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
              .discoveryPeople, .discoveryAction, .interestsCatalog, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
-             .userProfile, .blockUser, .reportUser,
+             .userProfile, .blockUser, .reportUser, .blockedUsers, .myReports,
              .mediaPresignedURL, .onboardingPhotos,
              .moments, .myMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers,
-             .coinPackages, .subscriptions:
+             .coinPackages, .subscriptions,
+             .deviceRegister, .deviceUnregister,
+             .notifications, .notificationCounts, .notificationRead, .notificationsReadAll, .notification:
             return false
         }
     }

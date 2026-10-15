@@ -312,6 +312,8 @@ extension String {
 
 extension UIViewController {
     func navigateToLoginScreen(){
+        DeviceTokenManager.shared.unregister()
+        NotificationBadgeStore.shared.set(unread: 0)
         ChatAuthStore.shared.logout()
         UserDataManager.shared.removeUserData()
         MockDataStore.shared.reset()

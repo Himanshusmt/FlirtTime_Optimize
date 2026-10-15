@@ -62,10 +62,90 @@ enum FilteredProfileKind: Int {
 }
 
 struct FilteredProfile {
-    let userID: Int
+    /// The blocked or reported user; `nil` when a report has no target user.
+    let userId: String?
+    /// Row id: the block id or report id.
+    let id: String
     let name: String
     let photo: String?
-    let location: String?
+    let subtitle: String?
+    /// Report status: pending | reviewed | dismissed | resolved.
+    let status: String?
+}
+
+// MARK: - Blocked users / my reports API
+
+struct ListPagination: Codable {
+    let total: Int?
+    let page: Int?
+    let limit: Int?
+    let totalPages: Int?
+
+    var hasMore: Bool {
+        guard let page, let totalPages else { return false }
+        return page < totalPages
+    }
+}
+
+struct BlockedUsersPage: Codable {
+    let blockedUsers: [BlockedUser]
+    let pagination: ListPagination?
+}
+
+struct BlockedUser: Codable {
+    let userId: String
+    let name: String?
+    let username: String?
+    let profilePhoto: String?
+    let reason: String?
+    let blockedAt: String?
+
+    var profile: FilteredProfile {
+        let displayName = [name, username].compactMap { $0 }.first { !$0.isEmpty } ?? "Flirt Time member"
+        let handle = username?.isEmpty == false ? username.map { "@\($0)" } : nil
+        return FilteredProfile(userId: userId, id: userId, name: displayName, photo: profilePhoto,
+                               subtitle: handle ?? "Can't see or message you", status: nil)
+    }
+}
+
+struct MyReportsPage: Codable {
+    let reports: [UserReport]
+    let pagination: ListPagination?
+}
+
+struct UserReport: Codable {
+    let id: String
+    let targetUserId: String?
+    /// user | moment
+    let targetType: String?
+    let targetName: String?
+    let targetPhoto: String?
+    let momentId: String?
+    let momentThumbnail: String?
+    /// API code, e.g. "harassment"; `description` is the readable label.
+    let reason: String?
+    let description: String?
+    /// pending | reviewed | dismissed | resolved
+    let status: String?
+    let createdAt: String?
+
+    var profile: FilteredProfile {
+        let name = targetName?.isEmpty == false ? targetName! : "Flirt Time member"
+        let reasonText = description?.isEmpty == false
+            ? description
+            : reason.map { $0.replacingOccurrences(of: "_", with: " ").capitalizingFirstLetter }
+        let isMoment = targetType == "moment"
+        let subject = isMoment ? "Moment" : "Profile"
+        let subtitle = [subject, reasonText].compactMap { $0 }.joined(separator: " · ")
+        let thumbnail = momentThumbnail?.isEmpty == false ? momentThumbnail : nil
+        let photo = isMoment ? (thumbnail ?? targetPhoto) : targetPhoto
+        return FilteredProfile(userId: targetUserId, id: id, name: name, photo: photo,
+                               subtitle: subtitle, status: status)
+    }
+}
+
+private extension String {
+    var capitalizingFirstLetter: String { prefix(1).uppercased() + dropFirst() }
 }
 
 enum FAQCategory: Int, CaseIterable {

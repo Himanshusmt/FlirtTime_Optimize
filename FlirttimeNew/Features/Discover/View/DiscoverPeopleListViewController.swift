@@ -63,9 +63,13 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         return pill
     }()
 
-    private lazy var notificationButton = headerButton(image: UIImage(named: "Notification"), label: "Notifications") { [weak self] in
-        self?.notificationTapped()
-    }
+    private lazy var notificationButton: UIButton = {
+        let button = headerButton(image: UIImage(named: "Notification"), label: "Notifications") { [weak self] in
+            self?.notificationTapped()
+        }
+        button.bindNotificationBadge(inset: 9)
+        return button
+    }()
 
     private lazy var filterButton = headerButton(
         image: UIImage(systemName: "slider.horizontal.3", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))?
@@ -198,6 +202,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: false)
         CoinWallet.shared.refresh()
+        NotificationBadgeStore.shared.refresh()
     }
 
     override func viewWillDisappear(_ animated: Bool) {

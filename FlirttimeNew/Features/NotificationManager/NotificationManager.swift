@@ -38,12 +38,26 @@ struct NotificationType: Equatable {
         self.rawValue = rawValue
     }
 
+    // TODO: confirm the backend `type` values once a sample notifications response is available.
+    private static let aliases: [String: NotificationType] = [
+        "super_like": .favorite, "superlike": .favorite, "super-like": .favorite,
+        "new_match": .match, "new_message": .message, "chat_message": .message,
+        "missed_call": .missedCall, "profile_verified": .profileImageVerified,
+        "photo_approved": .imageVerified, "photo_rejected": .imageUnverified,
+        "photo_not_approved": .imageUnverified, "profile_incomplete": .incomplete,
+        "subscription": .membershipUpgrade, "premium": .membershipUpgrade
+    ]
+
     init(from userInfo: [AnyHashable: Any]) {
-        if let rawType = userInfo["notify_type"] as? String {
-            self = NotificationType.allTypes.first(where: { $0.rawValue == rawType }) ?? .unknown
-        } else {
+        guard let rawType = (userInfo["notify_type"] ?? userInfo["type"]) as? String else {
             self = .unknown
+            return
         }
+        let normalized = rawType.lowercased()
+        self = NotificationType.allTypes.first(where: { $0.rawValue.lowercased() == normalized })
+            ?? Self.aliases[normalized]
+            ?? Self.aliases[normalized.replacingOccurrences(of: "-", with: "_")]
+            ?? .unknown
     }
 }
 

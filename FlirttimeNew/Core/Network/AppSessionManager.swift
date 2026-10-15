@@ -353,6 +353,27 @@ final class AppSessionManager {
                                                   parameters: ["reason": reason]))
     }
 
+    func unblockUser(userId: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .blockUser(userId: userId)))
+            .map { _ in () }
+    }
+
+    /// Users the signed-in user has blocked, newest first.
+    func blockedUsers(page: Int, limit: Int = 20) -> Single<BlockedUsersPage> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .blockedUsers,
+                                                  parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
+    }
+
+    /// User and moment reports filed by the signed-in user. `status` is pending | reviewed | dismissed | resolved,
+    /// `targetType` is user | moment.
+    func myReports(page: Int, limit: Int = 20, status: String? = nil, targetType: String? = nil) -> Single<MyReportsPage> {
+        var params: [String: Any] = ["page": page, "limit": limit]
+        if let status { params["status"] = status }
+        if let targetType { params["targetType"] = targetType }
+        return backendClient.load(request: AppApiRequest(method: .get, endPoint: .myReports,
+                                                         parameters: params, encoding: URLEncoding.queryString))
+    }
+
     /// `reason` is one of the API codes: fake_profile, harassment, inappropriate_content, spam, scam, underage, other.
     func reportUser(userId: String, reason: String, description: String? = nil) -> Single<Void> {
         var params: [String: Any] = ["reason": reason]
@@ -577,6 +598,67 @@ final class AppSessionManager {
         backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .subscriptions))
     }
 
+    // MARK: - Notifications
+
+    /// Sectioned (Today / Yesterday / Earlier) by the server in `timeZone`; pass the previous page's `nextCursor` for more.
+    func notifications(limit: Int = 20, cursor: String? = nil,
+                       timeZone: String = TimeZone.current.identifier) -> Single<NotificationFeed> {
+        var params: [String: Any] = ["limit": limit, "tz": timeZone]
+        if let cursor, !cursor.isEmpty { params["cursor"] = cursor }
+        return backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .notifications,
+                                                             parameters: params, encoding: URLEncoding.queryString))
+            .map { NotificationFeed(json: $0) }
+    }
+
+    func notificationCounts() -> Single<NotificationCounts> {
+        backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .notificationCounts))
+            .map { NotificationCounts(json: $0) }
+    }
+
+    func markNotificationRead(id: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .notificationRead(id: id)))
+            .map { _ in () }
+    }
+
+    func markAllNotificationsRead() -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .notificationsReadAll))
+            .map { _ in () }
+    }
+
+    func deleteNotification(id: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .notification(id: id)))
+            .map { _ in () }
+    }
+
+    // MARK: - Devices
+
+    /// Registering a token that belongs to another account moves it to the signed-in user.
+    func registerDevice(token: String) -> Single<Void> {
+        let params: [String: Any] = [
+            "deviceToken": token,
+            "platform": "ios",
+            "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
+            "deviceModel": Self.deviceModel
+        ]
+        return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .deviceRegister, parameters: params))
+            .map { _ in () }
+    }
+
+    func unregisterDevice(token: String) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .deviceUnregister,
+                                                      parameters: ["deviceToken": token]))
+            .map { _ in () }
+    }
+
+    /// Hardware identifier such as "iPhone15,2".
+    private static var deviceModel: String {
+        var info = utsname()
+        uname(&info)
+        return withUnsafeBytes(of: &info.machine) { buffer in
+            String(decoding: buffer.prefix { $0 != 0 }, as: UTF8.self)
+        }
+    }
+
     // MARK: - Session
 
     func logout() {
@@ -593,6 +675,7 @@ final class AppSessionManager {
             }
             AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
             if let user = auth.user { UserDataManager.shared.appUser = user }
+            DeviceTokenManager.shared.registerIfNeeded(force: true)
             return auth
         }
     }

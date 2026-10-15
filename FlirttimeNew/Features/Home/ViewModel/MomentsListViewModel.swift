@@ -174,12 +174,23 @@ final class MomentsListViewModel {
     }
 
     /// Blocks the moment's author and drops all of their moments from the feed; returns the removed rows.
-    func blockAuthor(of vibe: MomentsPost) -> [Int] {
-        guard let authorID = Self.authorID(of: vibe) else { return [] }
-        BlockedUsersManager.shared.blockUser(id: authorID)
-        let rows = vibes.indices.filter { Self.authorID(of: vibes[$0]) == authorID }
-        vibes.removeAll { Self.authorID(of: $0) == authorID }
-        return rows
+    func blockAuthor(of vibe: MomentsPost, completion: @escaping (Result<[Int], MomentsError>) -> Void) {
+        guard let authorID = Self.authorID(of: vibe) else {
+            completion(.failure(MomentsError(message: "This user can't be blocked right now")))
+            return
+        }
+        sessionManager.blockUser(userId: authorID, reason: "Blocked from Moments")
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] _ in
+                guard let self else { return }
+                BlockedUsersManager.shared.blockUser(id: authorID)
+                let rows = self.vibes.indices.filter { Self.authorID(of: self.vibes[$0]) == authorID }
+                self.vibes.removeAll { Self.authorID(of: $0) == authorID }
+                completion(.success(rows))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to block this user")))
+            })
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Like

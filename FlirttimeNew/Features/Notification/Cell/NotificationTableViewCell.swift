@@ -153,15 +153,15 @@ final class NotificationTableViewCell: UITableViewCell {
         ])
     }
 
-    func setUI(data: NotificationData) {
-        let isUnread = data.isRead != true
+    func setUI(data: AppNotification) {
+        let isUnread = !data.isRead
         titleLabel.text = data.title
         bodyLabel.text = data.body
-        timeLabel.text = data.createdDate.map(Self.shortElapsedText) ?? ""
+        timeLabel.text = data.createdAt.map(Self.shortElapsedText) ?? ""
         unreadDotView.isHidden = !isUnread
         cardView.backgroundColor = isUnread ? AppColor.Lavenderblush : AppColor.WildSand
 
-        if let image = data.data?.image, !image.isEmpty {
+        if let image = data.image, !image.isEmpty {
             avatarImageView.contentMode = .scaleAspectFill
             avatarImageView.loadImage(path: image, placeholder: UIImage(named: "dummy_Profile"))
         } else {

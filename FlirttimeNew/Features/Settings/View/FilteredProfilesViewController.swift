@@ -22,7 +22,10 @@ final class FilteredProfilesViewController: BaseViewController, Instantiable {
 
     private let viewModel = FilteredProfilesViewModel()
     private var cancellables: Set<AnyCancellable> = []
-    private var hasLoaded = false
+
+    private var hasLoaded: Bool {
+        viewModel.loadedKinds.contains(kind)
+    }
 
     private var kind: FilteredProfileKind {
         FilteredProfileKind(rawValue: segmentControl.selectedSegmentIndex) ?? .blocked
@@ -41,8 +44,8 @@ final class FilteredProfilesViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
-        if !hasLoaded { loadingIndicator.startAnimating() }
         viewModel.load()
+        reload()
     }
 
     private func setupSegmentControl() {
@@ -51,20 +54,29 @@ final class FilteredProfilesViewController: BaseViewController, Instantiable {
     }
 
     private func setBinding() {
-        Publishers.CombineLatest(viewModel.$blocked, viewModel.$reported)
+        Publishers.CombineLatest4(viewModel.$blocked, viewModel.$reported, viewModel.$loadedKinds, viewModel.$blockedTotal)
             .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] blocked, reported in
-                guard let self else { return }
-                self.hasLoaded = true
-                self.segmentControl.setTitle("Blocked (\(blocked.count))", forSegmentAt: FilteredProfileKind.blocked.rawValue)
-                self.segmentControl.setTitle("Reported (\(reported.count))", forSegmentAt: FilteredProfileKind.reported.rawValue)
-                self.reload()
+            .sink { [weak self] _ in
+                self?.reload()
+            }.store(in: &cancellables)
+
+        viewModel.$errorMessage
+            .compactMap { $0 }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] message in
+                self?.aCustomToastView.show(message: message)
             }.store(in: &cancellables)
     }
 
     private func reload() {
-        loadingIndicator.stopAnimating()
+        segmentControl.setTitle("Blocked (\(viewModel.count(for: .blocked)))", forSegmentAt: FilteredProfileKind.blocked.rawValue)
+        segmentControl.setTitle("Reported (\(viewModel.count(for: .reported)))", forSegmentAt: FilteredProfileKind.reported.rawValue)
+        if hasLoaded || !profiles.isEmpty {
+            loadingIndicator.stopAnimating()
+        } else {
+            loadingIndicator.startAnimating()
+        }
         profilesTableView.reloadData()
         let isEmpty = hasLoaded && profiles.isEmpty
         emptyStateView.isHidden = !isEmpty
@@ -85,9 +97,10 @@ final class FilteredProfilesViewController: BaseViewController, Instantiable {
         aDeleteCustomPopUp.show(message: Constants.UnblockType.unblockMessage + profile.name + "?",
                                 button1Text: Constants.AlertButtons.cancel,
                                 button2Text: Constants.AlertButtons.okay) { [weak self] in
-            guard let self else { return }
-            self.viewModel.unblock(profile)
-            self.aCustomToastView.show(message: "\(profile.name) has been unblocked")
+            self?.viewModel.unblock(profile) { [weak self] success in
+                guard success else { return }
+                self?.aCustomToastView.show(message: "\(profile.name) has been unblocked")
+            }
         }
     }
 
@@ -117,5 +130,11 @@ extension FilteredProfilesViewController: UITableViewDataSource, UITableViewDele
         cell.configure(with: profile, kind: kind)
         cell.onAction = { [weak self] in self?.confirmUnblock(profile) }
         return cell
+    }
+
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if indexPath.row >= profiles.count - 3 {
+            viewModel.loadMore(kind)
+        }
     }
 }

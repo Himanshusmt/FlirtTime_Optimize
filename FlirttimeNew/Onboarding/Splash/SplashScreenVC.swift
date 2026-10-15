@@ -83,6 +83,7 @@ class SplashScreenVC: UIViewController,Instantiable {
         }
         sessionManager.getMe()
             .subscribe(onSuccess: { [weak self] _ in
+                DeviceTokenManager.shared.registerIfNeeded(force: true)
                 self?.routeByLocalState()
             }, onFailure: { [weak self] error in
                 if httpStatusCode(from: error) == 401 {

@@ -116,12 +116,16 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         view.addBlushBackground()
         setUI()
         setUploadBinding()
+        notificationButton.bindNotificationBadge(inset: 10)
         loadFeed(showLoader: true)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: scope.isPushed)
+        if !scope.isPushed {
+            NotificationBadgeStore.shared.refresh()
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -679,12 +683,21 @@ private extension MomentsListViewController {
         alert.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         alert.addAction(UIAlertAction(title: "Block", style: .destructive) { [weak self] _ in
             guard let self else { return }
-            let rows = self.viewModel.blockAuthor(of: vibe)
-            self.tableView.deleteRows(at: rows.map { IndexPath(row: $0, section: 0) }, with: .fade)
-            self.updateEmptyState()
-            self.aCustomToastView.show(message: "\(name) has been blocked")
-            if self.isOtherUserScope {
-                self.navigationController?.popToRootViewController(animated: true)
+            self.aActivityIndicator.show()
+            self.viewModel.blockAuthor(of: vibe) { [weak self] result in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                switch result {
+                case .success(let rows):
+                    self.tableView.deleteRows(at: rows.map { IndexPath(row: $0, section: 0) }, with: .fade)
+                    self.updateEmptyState()
+                    self.aCustomToastView.show(message: "\(name) has been blocked")
+                    if self.isOtherUserScope {
+                        self.navigationController?.popToRootViewController(animated: true)
+                    }
+                case .failure(let error):
+                    self.aCustomToastView.show(message: error.message)
+                }
             }
         })
         present(alert, animated: true)
