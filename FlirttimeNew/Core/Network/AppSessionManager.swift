@@ -134,8 +134,9 @@ final class AppSessionManager {
 
     /// Pass only the fields that change. `dateOfBirth` must be "yyyy-MM-dd" and 18+.
     ///
-    /// The server requires the whole profile on every PATCH, so the current `fullName`, `nickName`,
-    /// `dateOfBirth`, `gender` and `about` from `auth/me` are always sent, with `params` on top.
+    /// The server requires the whole profile on every PATCH, so the current `fullName`, `username`,
+    /// `dateOfBirth`, `gender` and `about` from `auth/me` are always sent, with `params` on top
+    /// (e.g. `location`, `latitude`, `longitude`).
     func updateProfileFields(_ params: [String: Any]) -> Single<Void> {
         let backendClient = self.backendClient
         return getMe()
@@ -157,7 +158,7 @@ final class AppSessionManager {
         let fullName = text(user?.fullName) ?? (nameParts.isEmpty ? nil : nameParts.joined(separator: " "))
         var fields: [String: Any] = [:]
         fields["fullName"] = fullName
-        fields["nickName"] = text(user?.nickName) ?? text(user?.username) ?? text(user?.firstName) ?? fullName
+        fields["username"] = text(user?.username) ?? text(user?.nickName)
         fields["dateOfBirth"] = text(user?.dateOfBirth).map { String($0.prefix(10)) }
         fields["gender"] = text(user?.gender)
         fields["about"] = text(user?.about)

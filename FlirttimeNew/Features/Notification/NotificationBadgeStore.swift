@@ -44,29 +44,38 @@ extension UIView {
 
     private static var notificationBadgeKey: UInt8 = 0
 
-    /// Shows a red dot at the top-right of the view while there are unread notifications.
-    /// `inset` is the dot's distance from the top and trailing edges.
+    /// Shows the unread notification count ("9+" above 9) at the top-right of the view; hidden at 0.
+    /// `inset` positions the badge's center relative to the top and trailing edges.
     func bindNotificationBadge(inset: CGFloat = 8) {
-        let dot = UIView()
-        dot.backgroundColor = AppColor.Punch
-        dot.layer.cornerRadius = 4.5
-        dot.layer.borderWidth = 1.5
-        dot.layer.borderColor = AppColor.AppWhite.cgColor
-        dot.isUserInteractionEnabled = false
-        dot.isHidden = true
-        dot.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(dot)
+        let badgeSize: CGFloat = 18
+        let badge = UILabel()
+        badge.backgroundColor = AppColor.Punch
+        badge.textColor = .white
+        badge.font = .systemFont(ofSize: 10, weight: .bold)
+        badge.textAlignment = .center
+        badge.layer.cornerRadius = badgeSize / 2
+        badge.layer.borderWidth = 1.5
+        badge.layer.borderColor = AppColor.AppWhite.cgColor
+        badge.clipsToBounds = true
+        badge.isUserInteractionEnabled = false
+        badge.isHidden = true
+        badge.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(badge)
         NSLayoutConstraint.activate([
-            dot.widthAnchor.constraint(equalToConstant: 9),
-            dot.heightAnchor.constraint(equalToConstant: 9),
-            dot.topAnchor.constraint(equalTo: topAnchor, constant: inset),
-            dot.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -inset)
+            badge.heightAnchor.constraint(equalToConstant: badgeSize),
+            badge.widthAnchor.constraint(greaterThanOrEqualToConstant: badgeSize),
+            badge.centerYAnchor.constraint(equalTo: topAnchor, constant: inset),
+            badge.centerXAnchor.constraint(equalTo: trailingAnchor, constant: -inset)
         ])
 
         let subscription = NotificationBadgeStore.shared.$unreadCount
             .receive(on: DispatchQueue.main)
-            .sink { [weak dot] count in
-                dot?.isHidden = count == 0
+            .sink { [weak self, weak badge] count in
+                guard let badge else { return }
+                badge.isHidden = count == 0
+                badge.text = count > 9 ? " 9+ " : "\(count)"
+                badge.accessibilityLabel = "\(count) unread notifications"
+                self?.accessibilityValue = count == 0 ? nil : "\(count) unread"
             }
         objc_setAssociatedObject(self, &Self.notificationBadgeKey, subscription, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }

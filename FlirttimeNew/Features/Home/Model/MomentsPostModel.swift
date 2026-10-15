@@ -175,6 +175,8 @@ struct MomentsReceivedGift: Codable {
 // MARK: - Helpers
 struct MomentsError: LocalizedError {
     let message: String
+    /// Alert title, when the failure has a more specific one than "Error".
+    var title: String? = nil
     var errorDescription: String? { message }
 }
 

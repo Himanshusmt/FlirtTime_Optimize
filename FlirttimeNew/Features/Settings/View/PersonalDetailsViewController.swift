@@ -5,6 +5,7 @@
 
 import UIKit
 import Combine
+import CoreLocation
 
 final class PersonalDetailsViewController: BaseViewController, Instantiable {
 
@@ -42,12 +43,13 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        noteLabel.text = "Location can't be changed here. Email and phone changes need a verification code."
+        noteLabel.superview?.superview?.isHidden = true
         makeRowEditable(fullNameLabel, hint: "Edit your full name", action: #selector(editNameTapped))
         makeRowEditable(usernameLabel, hint: "Edit your username", action: #selector(editUsernameTapped))
         makeRowEditable(emailLabel, hint: "Change your email", action: #selector(editEmailTapped))
         makeRowEditable(phoneLabel, hint: "Change your phone number", action: #selector(editPhoneTapped))
         makeRowEditable(dobLabel, hint: "Change your date of birth", action: #selector(editDateOfBirthTapped))
+        makeRowEditable(locationLabel, hint: "Change your location", action: #selector(editLocationTapped))
         setBinding()
     }
 
@@ -92,9 +94,9 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
-    /// Saved as `nickName`; falls back to the account username.
+    /// Saved as `username`; falls back to the nickname.
     private static func username(of user: AppUser) -> String? {
-        [user.nickName, user.username]
+        [user.username, user.nickName]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty }
     }
@@ -198,7 +200,7 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
             let username = (alert?.textFields?.first?.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard username != current else { return }
             guard let error = Self.usernameValidationError(username) else {
-                self.save(["nickName": username], message: "Username updated")
+                self.save(["username": username], message: "Username updated")
                 return
             }
             self.showNewAlertPopUp(Title: "Username", Msg: error, isSuccess: false) { _ in }
@@ -288,6 +290,102 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
         sheet.sheetPresentationController?.detents = [.medium()]
         sheet.sheetPresentationController?.prefersGrabberVisible = true
         present(sheet, animated: true)
+    }
+
+    // MARK: - Location
+
+    @objc private func editLocationTapped() {
+        let sheet = UIAlertController(title: "Location", message: "People nearby see you based on this.", preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "Use my current location", style: .default) { [weak self] _ in
+            self?.useCurrentLocation()
+        })
+        sheet.addAction(UIAlertAction(title: "Enter a city", style: .default) { [weak self] _ in
+            self?.enterCity()
+        })
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(sheet, animated: true)
+    }
+
+    private func useCurrentLocation() {
+        let service = LocationService.shared
+        setLoading(true)
+        service.requestLocationPermission { [weak self] granted in
+            guard let self else { return }
+            guard granted else {
+                self.setLoading(false)
+                self.showNewAlertPopUp(Title: "Location", Msg: "Allow location access in Settings to use your current location.", isSuccess: false) { _ in }
+                return
+            }
+            service.getCurrentLocation { [weak self] location, _ in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    guard let location else {
+                        self.setLoading(false)
+                        self.showNewAlertPopUp(Title: "Location", Msg: "Couldn't find your location. Please try again or enter a city.", isSuccess: false) { _ in }
+                        return
+                    }
+                    CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, _ in
+                        DispatchQueue.main.async {
+                            self?.setLoading(false)
+                            self?.saveLocation(placemarks?.first, fallback: location)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func enterCity() {
+        let alert = UIAlertController(title: "Enter a city", message: nil, preferredStyle: .alert)
+        alert.addTextField { field in
+            field.placeholder = "e.g. Mumbai"
+            field.autocapitalizationType = .words
+            field.textContentType = .addressCity
+            field.clearButtonMode = .whileEditing
+        }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            guard let self else { return }
+            let city = (alert?.textFields?.first?.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard city.count >= 2 else {
+                self.showNewAlertPopUp(Title: "Location", Msg: "Please enter a city name.", isSuccess: false) { _ in }
+                return
+            }
+            self.setLoading(true)
+            CLGeocoder().geocodeAddressString(city) { [weak self] placemarks, _ in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.setLoading(false)
+                    guard let placemark = placemarks?.first else {
+                        self.showNewAlertPopUp(Title: "Location", Msg: "We couldn't find \"\(city)\". Please check the spelling.", isSuccess: false) { _ in }
+                        return
+                    }
+                    self.saveLocation(placemark, fallback: nil)
+                }
+            }
+        })
+        present(alert, animated: true)
+    }
+
+    /// Saves "City, State" with its coordinates.
+    private func saveLocation(_ placemark: CLPlacemark?, fallback: CLLocation?) {
+        guard let coordinate = (placemark?.location ?? fallback)?.coordinate else {
+            showNewAlertPopUp(Title: "Location", Msg: "Couldn't find that place. Please try again.", isSuccess: false) { _ in }
+            return
+        }
+        let parts = [placemark?.locality ?? placemark?.subAdministrativeArea, placemark?.administrativeArea]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        var unique: [String] = []
+        for part in parts where !unique.contains(part) { unique.append(part) }
+        guard !unique.isEmpty else {
+            showNewAlertPopUp(Title: "Location", Msg: "Couldn't find a city for that place. Please enter a city.", isSuccess: false) { _ in }
+            return
+        }
+        save(["location": unique.joined(separator: ", "),
+              "latitude": coordinate.latitude,
+              "longitude": coordinate.longitude],
+             message: "Location updated")
     }
 
     // MARK: - Actions
