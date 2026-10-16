@@ -7,7 +7,7 @@ import Foundation
 import RxSwift
 import Swinject
 
-// TODO: replace the MockDataStore calls with the notify-settings, change-email and delete-account endpoints.
+// TODO: replace the MockDataStore calls with the notify-settings endpoints.
 final class SettingsViewModel {
 
     @Published private(set) var user: UserDetailsData?
@@ -153,8 +153,17 @@ final class SettingsViewModel {
             .disposed(by: disposeBag)
     }
 
-    func deleteAccount(completion: @escaping () -> Void) {
-        respond(completion)
+    /// Deletes the account on the server. `completion(true)` only on success so the UI can leave the screen.
+    func deleteAccount(completion: @escaping (Bool) -> Void) {
+        sessionManager.deleteAccount()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in
+                completion(true)
+            }, onFailure: { [weak self] error in
+                self?.errorMessage = parseError(error) ?? "Unable to delete your account. Please try again."
+                completion(false)
+            })
+            .disposed(by: disposeBag)
     }
 
     private func respond(_ block: @escaping () -> Void) {

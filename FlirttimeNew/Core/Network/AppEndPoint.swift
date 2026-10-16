@@ -49,6 +49,9 @@ enum AppEndPoint: CustomStringConvertible {
     // My Profile — ProfileViewModel
     case myProfile
 
+    // Delete account — PersonalDetailsViewController
+    case deleteAccount
+
     // Change email / phone (logged in) — ChangeEmailViewController
     case profileEmailRequestOTP
     case profileEmailVerifyOTP
@@ -163,6 +166,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .me: return "api/v1/auth/me"
         case .logout: return "api/v1/auth/logout"
         case .updateProfile, .myProfile: return "api/v1/users/profile"
+        case .deleteAccount: return "api/v1/users/account"
         case .profileEmailRequestOTP: return "api/v1/users/profile/email/request-otp"
         case .profileEmailVerifyOTP: return "api/v1/users/profile/email/verify-otp"
         case .profileEmailResendOTP: return "api/v1/users/profile/email/resend-otp"
@@ -240,7 +244,7 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .logout, .updateProfile, .myProfile, .voiceIntro,
+        case .me, .logout, .updateProfile, .myProfile, .deleteAccount, .voiceIntro,
              .profileEmailRequestOTP, .profileEmailVerifyOTP, .profileEmailResendOTP,
              .profilePhoneRequestOTP, .profilePhoneVerifyOTP, .profilePhoneResendOTP, .gestureUpload, .profilePhotoUpload,
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,

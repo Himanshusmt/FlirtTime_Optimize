@@ -776,6 +776,12 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    /// Permanently deletes the signed-in account. Call while the access token is still present.
+    func deleteAccount() -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .deleteAccount))
+            .map { _ in () }
+    }
+
     func logout() {
         AppTokenStore.shared.clear()
         UserDataManager.shared.removeUserData()

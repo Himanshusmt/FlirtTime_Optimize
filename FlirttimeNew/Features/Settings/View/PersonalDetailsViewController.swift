@@ -370,9 +370,11 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
         aDeleteCustomPopUp.show(message: Constants.deleteAccount.delete, button1Text: Constants.AlertButtons.yes, button2Text: Constants.AlertButtons.No, deleteType: .logout) { [weak self] in
             guard let self else { return }
             self.setLoading(true)
-            self.viewModel.deleteAccount { [weak self] in
-                self?.setLoading(false)
-                self?.navigateToLoginScreen()
+            self.viewModel.deleteAccount { [weak self] success in
+                guard let self else { return }
+                self.setLoading(false)
+                guard success else { return }
+                self.navigateToLoginScreen()
             }
         }
     }
