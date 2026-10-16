@@ -11,6 +11,9 @@ import StoreKit
 
 final class CoinsViewController: BaseViewController {
 
+    /// When set (e.g. opened from the gift sheet), successful purchase dismisses back to the caller.
+    var onPurchased: (() -> Void)?
+
     private let viewModel = CoinsViewModel()
     private var cancellables: Set<AnyCancellable> = []
     private var packCards: [CoinPackCardView] = []
@@ -121,8 +124,12 @@ final class CoinsViewController: BaseViewController {
         view.addSubview(background)
         background.pinEdges(to: view)
 
-        let back = StoreUI.circleButton(symbol: "chevron.left", label: "Back", onDark: false)
-        back.addAction(UIAction { [weak self] _ in self?.navigationController?.popViewController(animated: true) }, for: .touchUpInside)
+        let back = StoreUI.circleButton(
+            symbol: navigationController?.viewControllers.first == self ? "xmark" : "chevron.left",
+            label: "Back",
+            onDark: false
+        )
+        back.addAction(UIAction { [weak self] _ in self?.close() }, for: .touchUpInside)
         let title = UILabel.vibeLabel(.bold, 20, style: .title3, color: AppColor.AppBlack)
         title.text = "Coin Shop"
         title.textAlignment = .center
@@ -258,12 +265,24 @@ final class CoinsViewController: BaseViewController {
         case .purchased(let coins, let message):
             MomentsHaptics.connected()
             balanceCard.celebrate()
-            showNewAlertPopUp(Title: "+\(coins) coins 🎉", Msg: message, isSuccess: true) { _ in }
+            showNewAlertPopUp(Title: "+\(coins) coins 🎉", Msg: message, isSuccess: true) { [weak self] _ in
+                guard let self, self.onPurchased != nil else { return }
+                self.onPurchased?()
+                self.close()
+            }
         case .pending:
             aCustomToastView.show(message: "Your purchase is waiting for approval. Coins will be added once it's confirmed.")
         case .failed(let message):
             MomentsHaptics.failed()
             showNewAlertPopUp(Title: "Purchase failed", Msg: message, isSuccess: false) { _ in }
+        }
+    }
+
+    private func close() {
+        if let navigationController, navigationController.viewControllers.first != self {
+            navigationController.popViewController(animated: true)
+        } else {
+            dismiss(animated: true)
         }
     }
 }

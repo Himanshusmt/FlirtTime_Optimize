@@ -503,24 +503,28 @@ final class DiscoverViewModel {
         let interests = uniqueInterests(person.interestTags ?? [])
         let shared = uniqueInterests(person.sharedInterests ?? [])
         let photos = [person.profilePhoto].compactMap { $0 }.filter { !$0.isEmpty }
+        let locationLabel = person.location ?? person.city
+        let matchScore = person.profileMatchPercentage ?? person.vibeScore
 
         var profile = MomentsProfile(id: userID.stableID,
                                   displayName: displayName(username: person.username, name: person.name),
                                   age: person.age,
                                   isVerified: person.isVerified == true,
                                   gender: nil,
-                                  city: cityName(from: person.city),
+                                  city: cityName(from: locationLabel),
                                   distanceKm: person.distanceKm,
-                                  isOnline: nil,
+                                  isOnline: person.isOnline,
                                   datingIntent: nil,
                                   photos: photos,
-                                  about: "",
+                                  about: person.about?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                                   interests: interests,
                                   sharedInterests: shared,
                                   reasons: reasons(shared: shared, sameCity: nil),
                                   voiceIntro: nil,
                                   moments: [],
-                                  vibeScore: person.vibeScore)
+                                  vibeScore: matchScore)
+        profile.commonInterestsCount = person.commonInterestsCount
+        profile.momentsCount = person.totalMoments ?? 0
         profile.remoteUserId = userID
         return profile
     }
@@ -545,13 +549,15 @@ final class DiscoverViewModel {
         default: gender = nil
         }
         let intent = FilterModel.datingIntents.first { $0.apiValue == person.lookingFor }?.title
+        let locationLabel = person.location ?? person.city
+        let matchScore = person.profileMatchPercentage ?? person.vibeScore
 
         var profile = MomentsProfile(id: userID.stableID,
                                   displayName: displayName(username: person.username, name: person.name),
                                   age: person.age,
                                   isVerified: (person.isFaceVerified ?? person.isVerified) == true,
                                   gender: gender,
-                                  city: cityName(from: person.city),
+                                  city: cityName(from: locationLabel),
                                   distanceKm: person.distanceKm,
                                   isOnline: person.isOnline,
                                   datingIntent: intent,
@@ -562,7 +568,9 @@ final class DiscoverViewModel {
                                   reasons: reasons(shared: shared, sameCity: nil),
                                   voiceIntro: nil,
                                   moments: [],
-                                  vibeScore: person.vibeScore)
+                                  vibeScore: matchScore)
+        profile.commonInterestsCount = person.commonInterestsCount
+        profile.momentsCount = person.totalMoments ?? 0
         profile.remoteUserId = userID
         return profile
     }
@@ -633,6 +641,8 @@ final class DiscoverViewModel {
                                   voiceIntro: voice ?? base.voiceIntro,
                                   moments: moments.isEmpty ? base.moments : moments,
                                   vibeScore: detail.vibeScore ?? base.vibeScore)
+        profile.commonInterestsCount = base.commonInterestsCount
+        profile.momentsCount = max(base.momentsCount, moments.count)
         profile.remoteUserId = base.remoteUserId
         return profile
     }

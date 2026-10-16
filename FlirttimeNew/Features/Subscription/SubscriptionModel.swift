@@ -45,8 +45,12 @@ struct MySubscriptionResponse: Decodable {
         status = c.bool("status")
         success = c.bool("success")
         message = c.string("message")
-        if let nested = c.first(MySubscriptionData.self, "data", "subscription", "membership") {
-            membership = nested.hasSubscriptionContent ? nested : nil
+        // Preferred shape: `{ data: { isSubscribed, plan, subscription, benefits } }`
+        if let nested = c.first(MySubscriptionData.self, "data"), nested.hasSubscriptionContent {
+            membership = nested
+        } else if let nested = c.first(MySubscriptionData.self, "subscription", "membership"),
+                  nested.hasSubscriptionContent {
+            membership = nested
         } else if let direct = try? MySubscriptionData(from: decoder), direct.hasSubscriptionContent {
             membership = direct
         } else {
@@ -69,41 +73,95 @@ struct MySubscriptionData: Decodable, Equatable {
     let billingCycle: String?
     let purchasedAt: String?
     let expiresAt: String?
+    let nextRenewalDate: String?
     let transactionId: String?
     let originalTransactionId: String?
     let bonusCoins: Int?
+    let remainingValidity: RemainingValidity?
+    let benefitTexts: [String]?
+
+    /// Days left from the server countdown (preferred) or computed from `expiresAt`.
+    struct RemainingValidity: Decodable, Equatable {
+        let days: Int?
+        let hours: Int?
+        let minutes: Int?
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: QMKey.self)
+            days = c.int("days")
+            hours = c.int("hours")
+            minutes = c.int("minutes")
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
-        if let intId = c.int("id") {
+        let plan = c.first(MySubscriptionPlanInfo.self, "plan")
+        let detail = c.first(MySubscriptionDetail.self, "subscription")
+
+        if let detailId = detail?.id {
+            id = detailId
+        } else if let intId = c.int("id") {
             id = String(intId)
         } else {
             id = c.string("id", "subscriptionId")
         }
-        planName = c.string("planName", "name", "title", "plan", "plan_name")
-            ?? c.first(MySubscriptionPlanInfo.self, "plan")?.name
-        productId = c.string("productId", "product_id", "appleProductId", "apple_product_id")
-            ?? c.first(MySubscriptionPlanInfo.self, "plan")?.productId
-        platform = c.string("platform", "store", "paymentGateway", "payment_gateway")
-        status = c.string("status")
-        isActive = c.bool("isActive", "is_active", "isSubscribed", "is_subscribed")
-            ?? status.map { $0.lowercased() == "active" || $0.lowercased() == "subscribed" }
-        autoRenew = c.bool("autoRenew", "auto_renew", "willAutoRenew", "will_auto_renew", "isRecurring", "is_recurring")
-        if let amount = c.first(Double.self, "price", "paidAmount", "paid_amount", "amount") {
+
+        planName = plan?.name
+            ?? c.string("planName", "name", "title", "plan_name")
+        productId = detail?.productId
+            ?? plan?.productId
+            ?? c.string("productId", "product_id", "appleProductId", "apple_product_id")
+        platform = detail?.platform
+            ?? c.string("platform", "store", "paymentGateway", "payment_gateway")
+        status = detail?.status ?? c.string("status")
+
+        let topLevelActive = c.bool("isActive", "is_active", "isSubscribed", "is_subscribed")
+        let expired = detail?.isExpired ?? c.bool("isExpired", "is_expired")
+        if let topLevelActive {
+            isActive = topLevelActive
+        } else if let expired {
+            isActive = !expired
+        } else if let status {
+            let value = status.lowercased()
+            isActive = value == "active" || value == "subscribed" || value == "trialing"
+        } else {
+            isActive = nil
+        }
+
+        autoRenew = detail?.autoRenewing
+            ?? c.bool("autoRenew", "auto_renew", "autoRenewing", "auto_renewing",
+                      "willAutoRenew", "will_auto_renew", "isRecurring", "is_recurring")
+
+        if let planPrice = plan?.price, !planPrice.isEmpty {
+            price = planPrice
+        } else if let amount = c.first(Double.self, "price", "paidAmount", "paid_amount", "amount") {
             price = String(amount)
         } else {
             price = c.string("price", "paidAmount", "paid_amount", "amount")
         }
-        currency = c.string("currency")
-        billingCycle = c.string("billingCycle", "billing_cycle", "duration", "period")
-            ?? c.first(MySubscriptionPlanInfo.self, "plan")?.billingCycle
-        purchasedAt = c.string("purchasedAt", "purchaseDate", "purchase_date", "startDate", "start_date",
-                               "startsAt", "starts_at", "createdAt", "created_at")
-        expiresAt = c.string("expiresAt", "expirationDate", "expiration_date", "endDate", "end_date",
-                             "renewsAt", "renews_at", "nextBillingDate", "next_billing_date")
+        currency = plan?.currency ?? c.string("currency")
+        billingCycle = plan?.billingCycle
+            ?? c.string("billingCycle", "billing_cycle", "duration", "period")
+
+        purchasedAt = detail?.startsAt
+            ?? c.string("purchasedAt", "purchaseDate", "purchase_date", "startDate", "start_date",
+                        "startsAt", "starts_at", "createdAt", "created_at")
+        expiresAt = detail?.expiresAt
+            ?? c.string("expiresAt", "expirationDate", "expiration_date", "endDate", "end_date",
+                        "renewsAt", "renews_at", "nextBillingDate", "next_billing_date")
+        nextRenewalDate = detail?.nextRenewalDate
+            ?? c.string("nextRenewalDate", "next_renewal_date", "renewsAt", "renews_at")
+
         transactionId = c.string("transactionId", "transaction_id")
         originalTransactionId = c.string("originalTransactionId", "original_transaction_id")
-        bonusCoins = c.int("bonusCoins", "bonus_coins")
+        bonusCoins = plan?.includedCoins ?? c.int("bonusCoins", "bonus_coins", "includedCoins", "included_coins")
+        remainingValidity = detail?.remainingValidity
+            ?? c.first(RemainingValidity.self, "remainingValidity", "remaining_validity")
+        benefitTexts = (c.first([PlanFeature].self, "benefits") ?? [])
+            .compactMap(\.text)
+            .filter { !$0.isEmpty }
+            .nilIfEmpty
     }
 
     /// Enough fields to treat this as a real membership payload (vs an empty `{}`).
@@ -151,6 +209,10 @@ struct MySubscriptionData: Decodable, Equatable {
         return "Inactive"
     }
 
+    var displayAutoRenewal: String {
+        autoRenew == true ? "On" : "Off"
+    }
+
     var formattedExpiry: String? {
         guard let date = Self.parseDate(expiresAt) else { return expiresAt }
         return Self.dateTimeFormatter.string(from: date)
@@ -161,22 +223,47 @@ struct MySubscriptionData: Decodable, Equatable {
         return Self.dateTimeFormatter.string(from: date)
     }
 
-    /// Whole days until `expiresAt`. `nil` when the end date is unknown.
+    var formattedNextRenewal: String? {
+        let raw = nextRenewalDate ?? (autoRenew == true ? expiresAt : nil)
+        guard let date = Self.parseDate(raw) else { return raw }
+        return Self.dateTimeFormatter.string(from: date)
+    }
+
+    /// Whole days until expiry. Prefers server `remainingValidity.days`.
     var daysRemaining: Int? {
+        if let days = remainingValidity?.days { return max(days, 0) }
         guard let end = Self.parseDate(expiresAt) else { return nil }
         let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()),
                                                    to: Calendar.current.startOfDay(for: end)).day
         return days.map { max($0, 0) }
     }
 
+    /// Show the countdown only in the final 5 days before expiry.
+    var shouldShowDaysRemaining: Bool {
+        guard isCurrentlyActive, let days = daysRemaining else { return false }
+        return days <= 5
+    }
+
     var daysRemainingTitle: String? {
+        guard shouldShowDaysRemaining else { return nil }
+        if let remaining = remainingValidity {
+            if let days = remaining.days, days > 0 {
+                return "\(days) day\(days == 1 ? "" : "s") left"
+            }
+            if let hours = remaining.hours, hours > 0 {
+                return "\(hours) hour\(hours == 1 ? "" : "s") left"
+            }
+            if let minutes = remaining.minutes, minutes > 0 {
+                return "\(minutes) min\(minutes == 1 ? "" : "s") left"
+            }
+        }
         guard let days = daysRemaining else { return nil }
         if days == 0 { return "Ends today" }
         return "\(days) day\(days == 1 ? "" : "s") left"
     }
 
     var daysRemainingSubtitle: String {
-        if autoRenew == true { return "Renews automatically before this ends" }
+        if autoRenew == true { return "Auto-renewal is on — renews before this ends" }
         return isCurrentlyActive ? "Subscription ends soon" : "Subscription ended"
     }
 
@@ -188,13 +275,24 @@ struct MySubscriptionData: Decodable, Equatable {
         return price
     }
 
-    var renewalSummary: String {
-        guard let expiry = formattedExpiry else {
-            return autoRenew == true ? "Renews automatically" : "Active membership"
-        }
+    var autoRenewalLine: String {
         if autoRenew == true {
-            return "Renews on \(expiry)"
+            if let next = formattedNextRenewal {
+                return "Auto-renewal On · Next on \(next)"
+            }
+            return "Auto-renewal On"
         }
+        return "Auto-renewal Off"
+    }
+
+    var renewalSummary: String {
+        if autoRenew == true {
+            if let next = formattedNextRenewal {
+                return "Renews on \(next)"
+            }
+            return "Renews automatically"
+        }
+        guard let expiry = formattedExpiry else { return "Active membership" }
         return isCurrentlyActive ? "Expires on \(expiry)" : "Ended on \(expiry)"
     }
 
@@ -223,13 +321,59 @@ private struct MySubscriptionPlanInfo: Decodable {
     let name: String?
     let productId: String?
     let billingCycle: String?
+    let price: String?
+    let currency: String?
+    let includedCoins: Int?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         name = c.string("name", "title", "planName")
         productId = c.string("productId", "product_id", "appleProductId", "apple_product_id")
         billingCycle = c.string("billingCycle", "billing_cycle")
+        if let amount = c.first(Double.self, "price") {
+            price = String(amount)
+        } else {
+            price = c.string("price")
+        }
+        currency = c.string("currency")
+        includedCoins = c.int("includedCoins", "included_coins", "bonusCoins", "bonus_coins")
     }
+}
+
+private struct MySubscriptionDetail: Decodable {
+    let id: String?
+    let productId: String?
+    let platform: String?
+    let status: String?
+    let autoRenewing: Bool?
+    let isExpired: Bool?
+    let startsAt: String?
+    let expiresAt: String?
+    let nextRenewalDate: String?
+    let remainingValidity: MySubscriptionData.RemainingValidity?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        if let intId = c.int("id") {
+            id = String(intId)
+        } else {
+            id = c.string("id", "subscriptionId")
+        }
+        productId = c.string("productId", "product_id")
+        platform = c.string("platform")
+        status = c.string("status")
+        autoRenewing = c.bool("autoRenewing", "auto_renewing", "autoRenew", "auto_renew")
+        isExpired = c.bool("isExpired", "is_expired")
+        startsAt = c.string("startsAt", "starts_at", "startDate", "start_date")
+        expiresAt = c.string("expiresAt", "expires_at", "endDate", "end_date")
+        nextRenewalDate = c.string("nextRenewalDate", "next_renewal_date")
+        remainingValidity = c.first(MySubscriptionData.RemainingValidity.self,
+                                    "remainingValidity", "remaining_validity")
+    }
+}
+
+private extension Array {
+    var nilIfEmpty: [Element]? { isEmpty ? nil : self }
 }
 
 struct SubscriptionModel: Codable {

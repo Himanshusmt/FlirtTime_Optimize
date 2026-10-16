@@ -70,6 +70,13 @@ class ProfileViewController: BaseViewController {
     }()
     private lazy var membershipCardContainer = padded(membershipCard, top: 24)
 
+    private lazy var coinsCard: ProfileCoinsCard = {
+        let card = ProfileCoinsCard()
+        card.addAction(UIAction { [weak self] _ in self?.openCoinShop() }, for: .touchUpInside)
+        return card
+    }()
+    private lazy var coinsCardContainer = padded(coinsCard, top: 24)
+
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
     override func viewDidLoad() {
@@ -110,6 +117,7 @@ class ProfileViewController: BaseViewController {
         aProfileViewModel.getMyProfile()
         aProfileViewModel.getQuickMoments()
         aProfileViewModel.getMyMoments()
+        CoinWallet.shared.refresh()
         SubscriptionMembershipStore.shared.refresh()
     }
 
@@ -198,6 +206,11 @@ class ProfileViewController: BaseViewController {
         SubscriptionMembershipStore.shared.$membership
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateSubscriptionCards() }
+            .store(in: &desposeBag)
+
+        CoinWallet.shared.$balance
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] balance in self?.coinsCard.setBalance(balance) }
             .store(in: &desposeBag)
     }
 
@@ -310,6 +323,7 @@ class ProfileViewController: BaseViewController {
         contentStack.addArrangedSubview(padded(makeActionButtons(), top: 20))
         contentStack.addArrangedSubview(padded(makeVoiceSection(), top: 28))
         contentStack.addArrangedSubview(makeQuickMomentsSection())
+        contentStack.addArrangedSubview(coinsCardContainer)
         contentStack.addArrangedSubview(premiumCardContainer)
         contentStack.addArrangedSubview(membershipCardContainer)
         updateSubscriptionCards()
