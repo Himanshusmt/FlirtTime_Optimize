@@ -156,6 +156,7 @@ enum AppEndPoint: CustomStringConvertible {
     case notificationRead(id: String)
     case notificationsReadAll
     case notification(id: String)
+    case notificationSettings
 
     var description: String {
         switch self {
@@ -241,6 +242,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .notificationRead(let id): return "api/v1/notifications/\(id)/read"
         case .notificationsReadAll: return "api/v1/notifications/read-all"
         case .notification(let id): return "api/v1/notifications/\(id)"
+        case .notificationSettings: return "api/v1/users/notification-settings"
         }
     }
 
@@ -268,7 +270,8 @@ enum AppEndPoint: CustomStringConvertible {
              .quickMomentView, .quickMomentViewers,
              .coinPackages, .coinsPurchaseVerify, .walletBalance, .subscriptions, .subscriptionsPurchaseVerify, .mySubscription,
              .deviceRegister, .deviceUnregister,
-             .notifications, .notificationCounts, .notificationRead, .notificationsReadAll, .notification:
+             .notifications, .notificationCounts, .notificationRead, .notificationsReadAll, .notification,
+             .notificationSettings:
             return false
         }
     }

@@ -61,7 +61,6 @@ struct NotificationType: Equatable {
     }
 }
 
-// TODO: add push registration / UNUserNotificationCenterDelegate from FlirtTime once push is set up.
 final class NotificationManager {
 
     static let shared = NotificationManager()

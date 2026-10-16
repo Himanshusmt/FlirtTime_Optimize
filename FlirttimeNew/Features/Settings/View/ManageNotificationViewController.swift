@@ -43,17 +43,21 @@ final class ManageNotificationViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
-        viewModel.loadProfile()
+        viewModel.loadNotificationSettings()
         refreshPushPermission()
     }
 
     private func setBinding() {
-        viewModel.$user.receive(on: DispatchQueue.main).sink { [weak self] user in
-            guard let self, user != nil else { return }
-            let settings = self.viewModel.notifySettings
+        viewModel.$notificationSettings.receive(on: DispatchQueue.main).sink { [weak self] settings in
+            guard let self else { return }
             for (key, toggle) in self.switches {
-                toggle.isOn = settings?.value(for: key) ?? key.defaultValue
+                toggle.isOn = settings?[key] ?? key.defaultValue
             }
+        }.store(in: &cancellables)
+
+        viewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
         }.store(in: &cancellables)
     }
 

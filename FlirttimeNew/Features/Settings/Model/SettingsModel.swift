@@ -28,6 +28,79 @@ enum NotificationSettingKey: String, CaseIterable {
             return false
         }
     }
+
+    /// Keys shown on the Manage Notifications screen / backed by `notification-settings` API.
+    static let managedKeys: [NotificationSettingKey] = [
+        .newMessage, .newMatches, .likesCommentsCalls, .profileVisit, .push, .newTipsAvailable
+    ]
+}
+
+/// `GET/PATCH /api/v1/users/notification-settings` payload.
+struct NotificationSettingsDTO: Codable, Equatable {
+    var pushNotifications: Bool
+    var newMessages: Bool
+    var newMatches: Bool
+    var likeComments: Bool
+    var profileVisits: Bool
+    var datingTips: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case pushNotifications = "push_notifications"
+        case newMessages = "new_messages"
+        case newMatches = "new_matches"
+        case likeComments = "like_comments"
+        case profileVisits = "profile_visits"
+        case datingTips = "dating_tips"
+    }
+
+    var asSwitchMap: [NotificationSettingKey: Bool] {
+        [
+            .push: pushNotifications,
+            .newMessage: newMessages,
+            .newMatches: newMatches,
+            .likesCommentsCalls: likeComments,
+            .profileVisit: profileVisits,
+            .newTipsAvailable: datingTips
+        ]
+    }
+
+    init(
+        pushNotifications: Bool = NotificationSettingKey.push.defaultValue,
+        newMessages: Bool = NotificationSettingKey.newMessage.defaultValue,
+        newMatches: Bool = NotificationSettingKey.newMatches.defaultValue,
+        likeComments: Bool = NotificationSettingKey.likesCommentsCalls.defaultValue,
+        profileVisits: Bool = NotificationSettingKey.profileVisit.defaultValue,
+        datingTips: Bool = NotificationSettingKey.newTipsAvailable.defaultValue
+    ) {
+        self.pushNotifications = pushNotifications
+        self.newMessages = newMessages
+        self.newMatches = newMatches
+        self.likeComments = likeComments
+        self.profileVisits = profileVisits
+        self.datingTips = datingTips
+    }
+
+    init(from switches: [NotificationSettingKey: Bool]) {
+        self.init(
+            pushNotifications: switches[.push] ?? NotificationSettingKey.push.defaultValue,
+            newMessages: switches[.newMessage] ?? NotificationSettingKey.newMessage.defaultValue,
+            newMatches: switches[.newMatches] ?? NotificationSettingKey.newMatches.defaultValue,
+            likeComments: switches[.likesCommentsCalls] ?? NotificationSettingKey.likesCommentsCalls.defaultValue,
+            profileVisits: switches[.profileVisit] ?? NotificationSettingKey.profileVisit.defaultValue,
+            datingTips: switches[.newTipsAvailable] ?? NotificationSettingKey.newTipsAvailable.defaultValue
+        )
+    }
+
+    var asParameters: [String: Any] {
+        [
+            CodingKeys.pushNotifications.rawValue: pushNotifications,
+            CodingKeys.newMessages.rawValue: newMessages,
+            CodingKeys.newMatches.rawValue: newMatches,
+            CodingKeys.likeComments.rawValue: likeComments,
+            CodingKeys.profileVisits.rawValue: profileVisits,
+            CodingKeys.datingTips.rawValue: datingTips
+        ]
+    }
 }
 
 extension NotifySettings {

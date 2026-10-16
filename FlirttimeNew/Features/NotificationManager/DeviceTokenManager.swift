@@ -7,14 +7,8 @@ import Foundation
 import RxSwift
 import Swinject
 
-// TODO: Firebase push setup, once GoogleService-Info.plist is provided:
-// 1. Add the FirebaseMessaging Swift package and GoogleService-Info.plist to the target.
-// 2. In AppDelegate: `FirebaseApp.configure()`, `Messaging.messaging().delegate = ...`,
-//    `UNUserNotificationCenter.current().delegate = ...` and `application.registerForRemoteNotifications()`.
-// 3. In `application(_:didRegisterForRemoteNotificationsWithDeviceToken:)` set `Messaging.messaging().apnsToken`.
-// 4. In `messaging(_:didReceiveRegistrationToken:)` call `DeviceTokenManager.shared.update(fcmToken:)`.
-
 /// Keeps the FCM token registered with the backend (`devices/register`) for the signed-in user.
+/// Firebase wiring lives in `AppDelegate` (`FirebaseApp.configure`, Messaging + APNs delegates).
 final class DeviceTokenManager {
 
     static let shared = DeviceTokenManager()

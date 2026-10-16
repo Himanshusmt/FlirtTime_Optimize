@@ -770,6 +770,15 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
+    func getNotificationSettings() -> Single<NotificationSettingsDTO> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .notificationSettings))
+    }
+
+    func updateNotificationSettings(_ settings: NotificationSettingsDTO) -> Single<NotificationSettingsDTO> {
+        backendClient.load(request: AppApiRequest(method: .patch, endPoint: .notificationSettings,
+                                                  parameters: settings.asParameters))
+    }
+
     // MARK: - Devices
 
     /// Registering a token that belongs to another account moves it to the signed-in user.

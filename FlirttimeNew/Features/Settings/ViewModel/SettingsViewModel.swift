@@ -7,7 +7,6 @@ import Foundation
 import RxSwift
 import Swinject
 
-// TODO: replace the MockDataStore calls with the notify-settings endpoints.
 final class SettingsViewModel {
 
     @Published private(set) var user: UserDetailsData?
@@ -15,6 +14,8 @@ final class SettingsViewModel {
     @Published private(set) var appUser: AppUser?
     /// `users/profile`, for the header photo and verified badge.
     @Published private(set) var myProfile: MyProfileData?
+    /// Manage Notifications screen — from `GET/PATCH users/notification-settings`.
+    @Published private(set) var notificationSettings: [NotificationSettingKey: Bool]?
     @Published var errorMessage: String?
 
     private let store = MockDataStore.shared
@@ -69,10 +70,35 @@ final class SettingsViewModel {
             .disposed(by: disposeBag)
     }
 
+    func loadNotificationSettings() {
+        sessionManager.getNotificationSettings()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] dto in
+                self?.notificationSettings = dto.asSwitchMap
+            }, onFailure: { [weak self] error in
+                self?.errorMessage = parseError(error) ?? "Unable to load notification settings"
+                if self?.notificationSettings == nil {
+                    self?.notificationSettings = Dictionary(
+                        uniqueKeysWithValues: NotificationSettingKey.managedKeys.map { ($0, $0.defaultValue) }
+                    )
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
     func updateNotificationSettings(_ settings: [NotificationSettingKey: Bool]) {
-        let payload = Dictionary(uniqueKeysWithValues: settings.map { ($0.key.rawValue, $0.value) })
-        store.updateUser(with: ["notify_settings": payload])
-        user = store.currentUserResponse()?.data
+        let previous = notificationSettings
+        notificationSettings = settings
+        let dto = NotificationSettingsDTO(from: settings)
+        sessionManager.updateNotificationSettings(dto)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] updated in
+                self?.notificationSettings = updated.asSwitchMap
+            }, onFailure: { [weak self] error in
+                self?.notificationSettings = previous
+                self?.errorMessage = parseError(error) ?? "Unable to save notification settings"
+            })
+            .disposed(by: disposeBag)
     }
 
     func updateVisibility(_ key: VisibilitySettingKey, isOn: Bool) {
