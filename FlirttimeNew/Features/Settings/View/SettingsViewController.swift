@@ -37,7 +37,7 @@ final class SettingsViewController: BaseViewController, Instantiable {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
-        premiumCardView.isHidden = UserDataManager.shared.isUserSubscriptionDone == true
+        updatePremiumCardVisibility()
         viewModel.loadProfile()
     }
 
@@ -55,12 +55,25 @@ final class SettingsViewController: BaseViewController, Instantiable {
                 self.verifiedImageView.isHidden = (profile?.isVerified ?? user?.isFaceVerified) != true
                 let avatar = profile?.avatarURL ?? user?.profilePicture
                 self.avatarImageView.loadImage(path: avatar, placeholder: UIImage(named: "ProfileBlur"))
+                self.updatePremiumCardVisibility(isSubscribed: data?.isSubscribed ?? user?.isSubscribed)
             }.store(in: &cancellables)
 
         viewModel.$errorMessage.receive(on: DispatchQueue.main).sink { [weak self] error in
             guard let self, let error else { return }
             self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
         }.store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .userSubscriptionStatusDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updatePremiumCardVisibility() }
+            .store(in: &cancellables)
+    }
+
+    private func updatePremiumCardVisibility(isSubscribed: Bool? = nil) {
+        let subscribed = isSubscribed
+            ?? UserDataManager.shared.isUserSubscriptionDone
+            ?? false
+        premiumCardView.isHidden = subscribed
     }
 
     private func push(_ viewController: UIViewController) {

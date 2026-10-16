@@ -5,6 +5,10 @@
 
 import Foundation
 
+extension Notification.Name {
+    static let userSubscriptionStatusDidChange = Notification.Name("UserDataManager.userSubscriptionStatusDidChange")
+}
+
 final class UserDataManager {
 
     let defaults = UserDefaults.standard
@@ -47,7 +51,19 @@ final class UserDataManager {
 
     var isUserSubscriptionDone: Bool? {
         get { defaults.object(forKey: "subscribe") as? Bool }
-        set { defaults.set(newValue, forKey: "subscribe") }
+        set {
+            let previous = defaults.object(forKey: "subscribe") as? Bool
+            defaults.set(newValue, forKey: "subscribe")
+            if previous != newValue {
+                NotificationCenter.default.post(name: .userSubscriptionStatusDidChange, object: newValue)
+            }
+        }
+    }
+
+    /// Applies the server `isSubscribed` flag from profile / me responses.
+    func applySubscriptionStatus(_ isSubscribed: Bool?) {
+        guard let isSubscribed else { return }
+        isUserSubscriptionDone = isSubscribed
     }
 
     var ProfileStatus: String? {

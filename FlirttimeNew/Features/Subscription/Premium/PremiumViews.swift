@@ -548,9 +548,9 @@ final class PremiumMemberBanner: UIView {
         let icon = PremiumTheme.iconBubble("crown.fill", size: 40, pointSize: 17)
         icon.backgroundColor = .white
         let title = UILabel.vibeLabel(.bold, 16, style: .headline, color: PremiumTheme.accent)
-        title.text = "You're a Premium member"
+        title.text = "You're a Premium user"
         let subtitle = UILabel.vibeLabel(.regular, 13, style: .footnote, color: PremiumTheme.secondaryText, lines: 0)
-        subtitle.text = "Everything is unlocked. Enjoy!"
+        subtitle.text = "Everything is unlocked — enjoy the full Flirttime experience."
         let text = UIStackView(arrangedSubviews: [title, subtitle])
         text.axis = .vertical
         text.spacing = 2
@@ -560,7 +560,7 @@ final class PremiumMemberBanner: UIView {
         addSubview(row)
         row.pinEdges(to: self, insets: UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 14))
         isAccessibilityElement = true
-        accessibilityLabel = "You're a Premium member. Everything is unlocked."
+        accessibilityLabel = "You're a Premium user. Everything is unlocked."
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

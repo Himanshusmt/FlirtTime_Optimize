@@ -155,6 +155,7 @@ class OtherUserProfileViewModel {
         sessionManager.userQuickMoments(userId: userID)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] moments in
+                // `isViewed` from each story drives the WhatsApp-style ring (gray = viewed, red = unseen).
                 self?.quickMoments = moments.sorted {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
@@ -162,6 +163,18 @@ class OtherUserProfileViewModel {
             }, onFailure: { [weak self] _ in
                 self?.endRequest()
             })
+            .disposed(by: disposeBag)
+    }
+
+    /// Marks a Quick Moment seen and greys its ring immediately in the profile row.
+    func markQuickMomentViewed(id: String) {
+        if let index = quickMoments.firstIndex(where: { $0.id == id }), !quickMoments[index].hasViewed {
+            var updated = quickMoments
+            updated[index].hasViewed = true
+            quickMoments = updated
+        }
+        sessionManager.markQuickMomentViewed(momentId: id)
+            .subscribe(onSuccess: { }, onFailure: { _ in })
             .disposed(by: disposeBag)
     }
 

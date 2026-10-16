@@ -142,14 +142,16 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
 private final class MomentCell: UICollectionViewCell {
 
     static let reuseID = "MomentCell"
+    private static let avatarSize: CGFloat = 28
+    private static let ringSize: CGFloat = 36
 
     private let textBackground = MomentsGradientView(colors: MomentsTheme.storyBackground(0))
     private let textLabel = UILabel.vibeLabel(.bold, 17, style: .headline, color: .white, lines: 0)
     private let imageView = UIImageView()
+    private let statusRing = QuickMomentStatusRingView()
     private let avatar = UIImageView()
     private let nameLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
     private let timeLabel = UILabel.vibeLabel(.regular, 11, style: .caption2, color: UIColor.white.withAlphaComponent(0.85))
-    private let countLabel = UILabel.vibeLabel(.bold, 12, style: .caption1, color: .white)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -169,47 +171,51 @@ private final class MomentCell: UICollectionViewCell {
         contentView.addSubview(imageView)
         imageView.pinEdges(to: contentView)
 
-        countLabel.textAlignment = .center
-        countLabel.backgroundColor = UIColor.black.withAlphaComponent(0.45)
-        countLabel.layer.cornerRadius = 11
-        countLabel.clipsToBounds = true
-        countLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(countLabel)
         NSLayoutConstraint.activate([
             textLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor, constant: -16),
             textLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14),
             textLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -14),
-            textLabel.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 36),
-            countLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            countLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            countLabel.heightAnchor.constraint(equalToConstant: 22),
-            countLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 22)
+            textLabel.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 36)
         ])
         let shade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.7)],
                                      start: CGPoint(x: 0.5, y: 0.55), end: CGPoint(x: 0.5, y: 1))
         contentView.addSubview(shade)
         shade.pinEdges(to: contentView)
 
+        let avatarWrap = UIView()
+        avatarWrap.translatesAutoresizingMaskIntoConstraints = false
+        statusRing.translatesAutoresizingMaskIntoConstraints = false
+        avatarWrap.addSubview(statusRing)
         avatar.contentMode = .scaleAspectFill
         avatar.clipsToBounds = true
-        avatar.layer.cornerRadius = 14
-        avatar.layer.borderWidth = 2
-        avatar.layer.borderColor = AppColor.Punch.cgColor
+        avatar.layer.cornerRadius = Self.avatarSize / 2
+        avatar.translatesAutoresizingMaskIntoConstraints = false
+        avatarWrap.addSubview(avatar)
+        NSLayoutConstraint.activate([
+            statusRing.topAnchor.constraint(equalTo: avatarWrap.topAnchor),
+            statusRing.leadingAnchor.constraint(equalTo: avatarWrap.leadingAnchor),
+            statusRing.trailingAnchor.constraint(equalTo: avatarWrap.trailingAnchor),
+            statusRing.bottomAnchor.constraint(equalTo: avatarWrap.bottomAnchor),
+            avatarWrap.widthAnchor.constraint(equalToConstant: Self.ringSize),
+            avatarWrap.heightAnchor.constraint(equalToConstant: Self.ringSize),
+            avatar.widthAnchor.constraint(equalToConstant: Self.avatarSize),
+            avatar.heightAnchor.constraint(equalToConstant: Self.avatarSize),
+            avatar.centerXAnchor.constraint(equalTo: avatarWrap.centerXAnchor),
+            avatar.centerYAnchor.constraint(equalTo: avatarWrap.centerYAnchor)
+        ])
+
         let texts = UIStackView(arrangedSubviews: [nameLabel, timeLabel])
         texts.axis = .vertical
-        let row = UIStackView(arrangedSubviews: [avatar, texts])
+        let row = UIStackView(arrangedSubviews: [avatarWrap, texts])
         row.spacing = 8
         row.alignment = .center
         row.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(row)
         NSLayoutConstraint.activate([
-            avatar.widthAnchor.constraint(equalToConstant: 28),
-            avatar.heightAnchor.constraint(equalToConstant: 28),
             row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
             row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
         ])
-        contentView.bringSubviewToFront(countLabel)
         isAccessibilityElement = true
         accessibilityTraits = .button
     }
@@ -232,16 +238,20 @@ private final class MomentCell: UICollectionViewCell {
         textLabel.isHidden = photo != nil
 
         avatar.loadImage(path: tray.user?.photo, placeholder: UIImage(named: "ProfileBlur"))
-        avatar.layer.borderColor = (isMine || tray.hasUnread ? AppColor.Punch : AppColor.SilverChalice).cgColor
+        let segments = tray.statusRingSegmentViewed(isMine: isMine)
+        statusRing.configure(segmentViewed: segments)
         let name = isMine ? "My story" : (tray.user?.name ?? tray.user?.fullName ?? "Someone")
         nameLabel.text = name
         timeLabel.text = tray.timeText
 
-        let count = max(tray.activeCount, tray.stories.count)
-        countLabel.text = " \(count) "
-        countLabel.isHidden = count < 2
-        accessibilityLabel = [name, count > 1 ? "\(count) stories" : nil, tray.hasUnread ? "new" : nil, tray.timeText]
-            .compactMap { $0 }.joined(separator: ", ")
+        let count = segments.count
+        let unreadCount = segments.filter { !$0 }.count
+        accessibilityLabel = [
+            name,
+            count > 1 ? "\(count) stories" : nil,
+            !isMine && unreadCount > 0 ? "\(unreadCount) new" : (tray.hasUnread ? "new" : nil),
+            tray.timeText
+        ].compactMap { $0 }.joined(separator: ", ")
     }
 
     override var isHighlighted: Bool {

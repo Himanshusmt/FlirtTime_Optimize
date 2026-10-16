@@ -29,9 +29,25 @@ final class SubscriptionPlanStore {
 
     private let sessionManager: AppSessionManager
     private let disposeBag = DisposeBag()
+    private var entitlementObserver: NSObjectProtocol?
 
     private init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
+        entitlementObserver = NotificationCenter.default.addObserver(
+            forName: StoreManager.entitlementsDidChange,
+            object: nil,
+            queue: .main
+        ) { note in
+            guard let transaction = note.object as? Transaction,
+                  transaction.productType == .autoRenewable else { return }
+            guard let signed = note.userInfo?[StoreManager.signedTransactionUserInfoKey] as? String,
+                  !signed.isEmpty else {
+                AppLogger.debug("[Premium] Deferred subscription for \(transaction.productID) has no signed transaction; skipping verify")
+                PremiumViewModel.refreshMembership()
+                return
+            }
+            PremiumViewModel.verifyDeferred(transaction: transaction, signedTransaction: signed)
+        }
     }
 
     /// Must be called on the main queue. Calls made while a load is in flight are ignored;
@@ -75,5 +91,40 @@ final class SubscriptionPlanStore {
             PremiumViewModel.PlanOption(plan: plan, product: products.first { $0.id == plan.appleProductID })
         }
         state = options.isEmpty ? .failed("No plans available right now") : .loaded
+    }
+}
+
+/// Cached `GET /api/v1/subscriptions/my` for Profile and Coin Shop membership cards.
+final class SubscriptionMembershipStore {
+
+    static let shared = SubscriptionMembershipStore()
+
+    @Published private(set) var membership: MySubscriptionData?
+    @Published private(set) var isLoading = false
+
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
+
+    private init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
+    }
+
+    /// Fetches the latest membership. Safe to call from `viewWillAppear`.
+    func refresh() {
+        isLoading = true
+        sessionManager.mySubscription()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] membership in
+                guard let self else { return }
+                self.membership = membership
+                self.isLoading = false
+                if let membership {
+                    UserDataManager.shared.applySubscriptionStatus(membership.isCurrentlyActive)
+                }
+            }, onFailure: { [weak self] error in
+                AppLogger.debug("[Premium] my subscription failed: \(parseError(error) ?? error.localizedDescription)")
+                self?.isLoading = false
+            })
+            .disposed(by: disposeBag)
     }
 }

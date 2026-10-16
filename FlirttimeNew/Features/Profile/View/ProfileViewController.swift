@@ -8,6 +8,7 @@
 import UIKit
 import Photos
 import Combine
+import StoreKit
 
 class ProfileViewController: BaseViewController {
 
@@ -61,6 +62,13 @@ class ProfileViewController: BaseViewController {
     private lazy var photosContainer = padded(section("My Photos", content: horizontalScroller(for: photosRow, height: 150), actionTitle: "Edit") { [weak self] in
         self?.openEditProfile()
     }, top: 28, horizontal: 0)
+    private lazy var premiumCardContainer = padded(makePremiumCard(), top: 24)
+    private lazy var membershipCard: SubscriptionMembershipCard = {
+        let card = SubscriptionMembershipCard()
+        card.onManage = { [weak self] in self?.manageSubscription() }
+        return card
+    }()
+    private lazy var membershipCardContainer = padded(membershipCard, top: 24)
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
@@ -102,6 +110,7 @@ class ProfileViewController: BaseViewController {
         aProfileViewModel.getMyProfile()
         aProfileViewModel.getQuickMoments()
         aProfileViewModel.getMyMoments()
+        SubscriptionMembershipStore.shared.refresh()
     }
 
     @objc private func pullToRefresh() {
@@ -180,6 +189,16 @@ class ProfileViewController: BaseViewController {
             self.aActivityIndicator.hide()
             self.showImageAlertPopUp(TitleMsg: error, TitleBtn: "Discard")
         }.store(in: &desposeBag)
+
+        NotificationCenter.default.publisher(for: .userSubscriptionStatusDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateSubscriptionCards() }
+            .store(in: &desposeBag)
+
+        SubscriptionMembershipStore.shared.$membership
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateSubscriptionCards() }
+            .store(in: &desposeBag)
     }
 
     private var avatarPath: String? {
@@ -231,6 +250,30 @@ class ProfileViewController: BaseViewController {
         interestsContainer.isHidden = interests.isEmpty
 
         setPhotos(info?.photoURLs ?? [])
+        updateSubscriptionCards()
+    }
+
+    private func updateSubscriptionCards() {
+        let membership = SubscriptionMembershipStore.shared.membership
+        let hasActiveMembership = membership?.isCurrentlyActive == true
+        let subscribed = hasActiveMembership
+            || aProfileViewModel.myProfile?.isSubscribed == true
+            || UserDataManager.shared.isUserSubscriptionDone == true
+        premiumCardContainer.isHidden = subscribed
+        membershipCardContainer.isHidden = !hasActiveMembership
+        if let membership, hasActiveMembership {
+            membershipCard.configure(membership)
+        }
+    }
+
+    private func manageSubscription() {
+        if let scene = view.window?.windowScene {
+            Task { @MainActor in
+                try? await AppStore.showManageSubscriptions(in: scene)
+            }
+        } else {
+            openPremium()
+        }
     }
 
     // MARK: - UI
@@ -267,7 +310,9 @@ class ProfileViewController: BaseViewController {
         contentStack.addArrangedSubview(padded(makeActionButtons(), top: 20))
         contentStack.addArrangedSubview(padded(makeVoiceSection(), top: 28))
         contentStack.addArrangedSubview(makeQuickMomentsSection())
-        contentStack.addArrangedSubview(padded(makePremiumCard(), top: 24))
+        contentStack.addArrangedSubview(premiumCardContainer)
+        contentStack.addArrangedSubview(membershipCardContainer)
+        updateSubscriptionCards()
         contentStack.addArrangedSubview(interestsContainer)
         contentStack.addArrangedSubview(padded(makeMomentsSection(), top: 28))
         contentStack.addArrangedSubview(photosContainer)

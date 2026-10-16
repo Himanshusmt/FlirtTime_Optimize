@@ -36,6 +36,8 @@ struct AppUser: Codable {
     let isFaceVerified: Bool?
     let faceVerifiedAt: String?
     let isProfileComplete: Bool?
+    /// Server Premium flag from `auth/me` when present.
+    let isSubscribed: Bool?
     let createdAt: String?
     let updatedAt: String?
 }

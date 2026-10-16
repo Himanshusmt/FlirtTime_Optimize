@@ -47,7 +47,7 @@ final class AppApiClient {
     }
 
     /// Decodes the whole body as `T`.
-    func loadDirect<T: Codable>(request: AppApiRequest) -> Single<T> {
+    func loadDirect<T: Decodable>(request: AppApiRequest) -> Single<T> {
         perform(request) { data, _ in
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
