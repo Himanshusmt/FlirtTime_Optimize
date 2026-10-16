@@ -770,6 +770,12 @@ final class AppSessionManager {
 
     // MARK: - Session
 
+    /// Invalidates the session on the server. Call while the access token is still present.
+    func logoutFromServer() -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .logout, parameters: [:]))
+            .map { _ in () }
+    }
+
     func logout() {
         AppTokenStore.shared.clear()
         UserDataManager.shared.removeUserData()

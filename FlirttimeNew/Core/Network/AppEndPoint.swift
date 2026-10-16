@@ -39,8 +39,9 @@ enum AppEndPoint: CustomStringConvertible {
     // Sign in with Apple — LoginOptionsViewController / LoginViewController
     case appleLogin
 
-    // Session — SplashScreenVC
+    // Session — SplashScreenVC / navigateToLoginScreen
     case me
+    case logout
 
     // Introduce yourself — UserDetailsViewController
     case updateProfile
@@ -160,6 +161,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .phoneResendOTP: return "api/v1/auth/phone/resend-otp"
         case .appleLogin: return "api/v1/auth/apple"
         case .me: return "api/v1/auth/me"
+        case .logout: return "api/v1/auth/logout"
         case .updateProfile, .myProfile: return "api/v1/users/profile"
         case .profileEmailRequestOTP: return "api/v1/users/profile/email/request-otp"
         case .profileEmailVerifyOTP: return "api/v1/users/profile/email/verify-otp"
@@ -238,7 +240,7 @@ enum AppEndPoint: CustomStringConvertible {
              .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
              .appleLogin:
             return true
-        case .me, .updateProfile, .myProfile, .voiceIntro,
+        case .me, .logout, .updateProfile, .myProfile, .voiceIntro,
              .profileEmailRequestOTP, .profileEmailVerifyOTP, .profileEmailResendOTP,
              .profilePhoneRequestOTP, .profilePhoneVerifyOTP, .profilePhoneResendOTP, .gestureUpload, .profilePhotoUpload,
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,

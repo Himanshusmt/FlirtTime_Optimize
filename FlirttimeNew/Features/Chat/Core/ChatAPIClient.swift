@@ -44,7 +44,7 @@ struct APIHTTPError: Error, LocalizedError {
 
 extension Error {
     var statusCode: Int {
-        if let httpError = self as? APIHTTPError { return httpError.statusCode }
+        if let httpError = self as? APIHTTPError { return httpError.statusCode } 
         if let afError = self as? AFError { return afError.responseCode ?? -1 }
         return (self as NSError).userInfo["statusCode"] as? Int ?? -1
     }

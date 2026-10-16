@@ -10,6 +10,8 @@ import CoreLocation
 import Photos
 import PhotosUI
 import PDFKit
+import RxSwift
+import Swinject
 
 extension UIView {
     public func setRoundedManualTopCorners(cornerRadius: CGFloat) {
@@ -311,11 +313,33 @@ extension String {
 }
 
 extension UIViewController {
-    func navigateToLoginScreen(){
+    func navigateToLoginScreen() {
+        let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+        let finish: () -> Void = { [weak self] in
+            self?.clearSessionAndShowLogin()
+        }
+        guard sessionManager.isLoggedIn else {
+            finish()
+            return
+        }
+        // Retain until complete so the request is not cancelled; keep the Bearer token for this call.
+        var disposable: Disposable?
+        disposable = sessionManager.logoutFromServer()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { _ in
+                disposable = nil
+                finish()
+            }, onFailure: { _ in
+                disposable = nil
+                finish()
+            })
+    }
+
+    private func clearSessionAndShowLogin() {
         DeviceTokenManager.shared.unregister()
         NotificationBadgeStore.shared.set(unread: 0)
         ChatAuthStore.shared.logout()
-        UserDataManager.shared.removeUserData()
+        Container.appContainer.resolve(AppSessionManager.self)?.logout()
         MockDataStore.shared.reset()
         let aLoginViewController = LoginOptionsViewController.instantiateFromStoryboard()
         let navigationController = UINavigationController(rootViewController: aLoginViewController)
