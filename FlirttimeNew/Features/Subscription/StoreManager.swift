@@ -37,6 +37,8 @@ final class StoreManager {
     /// Posted on the main queue when the active subscription changes outside a purchase flow
     /// (renewal, refund, Ask to Buy approval, purchase on another device).
     static let entitlementsDidChange = Notification.Name("StoreManager.entitlementsDidChange")
+    /// `userInfo` key for the App Store JWS string when posting `entitlementsDidChange`.
+    static let signedTransactionUserInfoKey = "signedTransaction"
 
     private var productCache: [String: Product] = [:]
     private var updatesTask: Task<Void, Never>?
@@ -49,10 +51,15 @@ final class StoreManager {
         updatesTask = Task.detached { [weak self] in
             for await update in Transaction.updates {
                 guard let self, let transaction = try? self.verified(update) else { continue }
-                Self.log("TRANSACTION UPDATE", transaction, signedTransaction: update.jwsRepresentation)
+                let signedTransaction = update.jwsRepresentation
+                Self.log("TRANSACTION UPDATE", transaction, signedTransaction: signedTransaction)
                 await transaction.finish()
                 await MainActor.run {
-                    NotificationCenter.default.post(name: StoreManager.entitlementsDidChange, object: transaction)
+                    NotificationCenter.default.post(
+                        name: StoreManager.entitlementsDidChange,
+                        object: transaction,
+                        userInfo: [StoreManager.signedTransactionUserInfoKey: signedTransaction]
+                    )
                 }
             }
         }
@@ -97,24 +104,29 @@ final class StoreManager {
         }
     }
 
-    /// Syncs with the App Store and returns the active subscription, if any.
-    func restorePurchases() async throws -> Transaction? {
+    /// Syncs with the App Store and returns the active subscription plus its App Store JWS, if any.
+    func restorePurchases() async throws -> (transaction: Transaction, signedTransaction: String)? {
         try await AppStore.sync()
-        return await activeSubscription()
+        return await activeSubscriptionSigned()
     }
 
     // MARK: - Entitlements
 
     /// The latest active auto-renewable subscription, if any.
     func activeSubscription() async -> Transaction? {
-        var latest: Transaction?
+        await activeSubscriptionSigned()?.transaction
+    }
+
+    /// Latest active auto-renewable subscription with the JWS the backend verifies with Apple.
+    func activeSubscriptionSigned() async -> (transaction: Transaction, signedTransaction: String)? {
+        var latest: (transaction: Transaction, signedTransaction: String)?
         for await entitlement in Transaction.currentEntitlements {
             guard let transaction = try? verified(entitlement),
                   transaction.productType == .autoRenewable,
                   transaction.revocationDate == nil,
                   (transaction.expirationDate ?? .distantFuture) > Date() else { continue }
-            if latest == nil || transaction.purchaseDate > latest!.purchaseDate {
-                latest = transaction
+            if latest == nil || transaction.purchaseDate > latest!.transaction.purchaseDate {
+                latest = (transaction, entitlement.jwsRepresentation)
             }
         }
         return latest

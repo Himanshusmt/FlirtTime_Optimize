@@ -22,7 +22,7 @@ final class AppBackendClient {
         apiClient.load(request: request)
     }
 
-    func loadDirect<T: Codable>(request: AppApiRequest) -> Single<T> {
+    func loadDirect<T: Decodable>(request: AppApiRequest) -> Single<T> {
         apiClient.loadDirect(request: request)
     }
 

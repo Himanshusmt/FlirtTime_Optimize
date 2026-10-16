@@ -143,6 +143,14 @@ class ExploreViewController: BaseViewController {
             self.segmentHeader.setCount(counts.matches, for: .matches)
             self.segmentHeader.setCount(counts.compliments, for: .compliments)
         }.store(in: &desposeBag)
+
+        NotificationCenter.default.publisher(for: .userSubscriptionStatusDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshUpsell()
+                ExploreTab.allCases.forEach { self?.reloadPage($0) }
+            }
+            .store(in: &desposeBag)
     }
 
     // MARK: - Tabs

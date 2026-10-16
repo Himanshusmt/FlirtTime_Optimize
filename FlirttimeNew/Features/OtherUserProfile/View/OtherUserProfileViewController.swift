@@ -258,7 +258,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             self.showProfile()
             self.refreshBasicInfo()
             self.configureActionBar()
-            self.quickMomentsView.configure(moments: self.viewModel.quickMomentFrames, avatarPath: self.details?.avatar)
+            self.quickMomentsView.configure(
+                moments: self.viewModel.quickMomentFrames,
+                avatarPath: self.details?.avatar,
+                showsViewedStatus: !self.isOwnProfile
+            )
         }.store(in: &cancellables)
 
         viewModel.$isLoadingProfile.receive(on: DispatchQueue.main).sink { [weak self] isLoading in
@@ -294,7 +298,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         viewModel.$quickMoments.receive(on: DispatchQueue.main).sink { [weak self] _ in
             guard let self else { return }
             let frames = self.viewModel.quickMomentFrames
-            self.quickMomentsView.configure(moments: frames, avatarPath: self.details?.avatar)
+            self.quickMomentsView.configure(
+                moments: frames,
+                avatarPath: self.details?.avatar,
+                showsViewedStatus: !self.isOwnProfile
+            )
             self.quickMomentsSectionView.isHidden = frames.isEmpty
         }.store(in: &cancellables)
 
@@ -324,10 +332,6 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
         }.store(in: &cancellables)
 
-        viewModel.$aCheckUserSubscribe.receive(on: DispatchQueue.main).sink { model in
-            guard let model else { return }
-            UserDataManager.shared.isUserSubscriptionDone = model.data?.isActive != false
-        }.store(in: &cancellables)
     }
 
     private func showProfile() {
@@ -537,9 +541,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     private func openQuickMoment(at index: Int) {
-        let frames = viewModel.quickMomentFrames
-        guard let details, frames.indices.contains(index) else { return }
-        let profile = MomentsProfile(id: details.userID,
+        // Row is newest-first; viewer plays oldest-first (same as Discover).
+        let newestFirst = viewModel.quickMoments
+        guard let details, newestFirst.indices.contains(index) else { return }
+        let stories = Array(newestFirst.reversed())
+        let playbackIndex = (newestFirst.count - 1) - index
+        let userId = details.remoteUserID ?? String(details.userID)
+        var profile = MomentsProfile(id: details.userID,
                                   displayName: details.name,
                                   age: details.age,
                                   isVerified: details.isVerified,
@@ -554,9 +562,25 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                   sharedInterests: [],
                                   reasons: [],
                                   voiceIntro: nil,
-                                  moments: frames,
+                                  moments: stories.enumerated().map { $0.element.storyMoment(id: $0.offset) },
                                   vibeScore: nil)
-        present(QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: isMyProfile), animated: true)
+        profile.remoteUserId = userId
+
+        let viewer = QuickMomentViewController(profile: profile, startIndex: playbackIndex, isOwnMoments: isOwnProfile)
+
+        if !isOwnProfile {
+            var seen = Set<String>()
+            viewer.onMomentShown = { [weak self] shownIndex in
+                guard let self, stories.indices.contains(shownIndex), !stories[shownIndex].hasViewed,
+                      seen.insert(stories[shownIndex].id).inserted else { return }
+                self.viewModel.markQuickMomentViewed(id: stories[shownIndex].id)
+            }
+        }
+        viewer.onDismiss = { [weak self] in
+            guard let self, !self.isOwnProfile else { return }
+            self.viewModel.getQuickMoments(userID: userId)
+        }
+        present(viewer, animated: true)
     }
 
     private func openPhoto(at index: Int) {

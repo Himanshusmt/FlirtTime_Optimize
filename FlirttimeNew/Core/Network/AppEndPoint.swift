@@ -132,11 +132,15 @@ enum AppEndPoint: CustomStringConvertible {
     case quickMomentView(momentId: String)
     case quickMomentViewers(momentId: String)
 
-    // Coin Shop — CoinPackStore
+    // Coin Shop — CoinPackStore / CoinsViewModel / CoinWallet
     case coinPackages
+    case coinsPurchaseVerify
+    case walletBalance
 
-    // Premium — SubscriptionPlanStore
+    // Premium — SubscriptionPlanStore / PremiumViewModel
     case subscriptions
+    case subscriptionsPurchaseVerify
+    case mySubscription
 
     // Push devices — DeviceTokenManager
     case deviceRegister
@@ -219,7 +223,11 @@ enum AppEndPoint: CustomStringConvertible {
         case .quickMomentView(let momentId): return "api/v1/quick-moments/\(momentId)/view"
         case .quickMomentViewers(let momentId): return "api/v1/quick-moments/\(momentId)/viewers"
         case .coinPackages: return "api/v1/coin-packages"
+        case .coinsPurchaseVerify: return "api/v1/coins/purchase/verify"
+        case .walletBalance: return "api/v1/wallet/balance"
         case .subscriptions: return "api/v1/subscriptions"
+        case .subscriptionsPurchaseVerify: return "api/v1/subscriptions/purchase/verify"
+        case .mySubscription: return "api/v1/subscriptions/my"
         case .deviceRegister: return "api/v1/devices/register"
         case .deviceUnregister: return "api/v1/devices/unregister"
         case .notifications: return "api/v1/notifications"
@@ -252,7 +260,7 @@ enum AppEndPoint: CustomStringConvertible {
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
              .quickMomentView, .quickMomentViewers,
-             .coinPackages, .subscriptions,
+             .coinPackages, .coinsPurchaseVerify, .walletBalance, .subscriptions, .subscriptionsPurchaseVerify, .mySubscription,
              .deviceRegister, .deviceUnregister,
              .notifications, .notificationCounts, .notificationRead, .notificationsReadAll, .notification:
             return false

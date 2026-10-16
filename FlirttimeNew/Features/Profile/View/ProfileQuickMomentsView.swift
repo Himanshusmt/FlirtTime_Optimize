@@ -3,6 +3,7 @@
 //  FlirttimeNew
 //
 //  Story-style row on the Profile tab: an "Add" bubble followed by the user's own Quick Moments.
+//  On another user's profile, bubbles use a WhatsApp-style status ring (red = unseen, gray = viewed).
 //
 
 import UIKit
@@ -19,6 +20,8 @@ final class ProfileQuickMomentsView: UIView {
 
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
+    /// When true, rings reflect the visitor's viewed / unseen state.
+    private var showsViewedStatus = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -49,10 +52,15 @@ final class ProfileQuickMomentsView: UIView {
         ])
     }
 
-    func configure(moments: [MomentsStory], avatarPath: String?) {
+    /// - Parameter showsViewedStatus: Use WhatsApp-style red/gray rings for a visitor on someone else's profile.
+    func configure(moments: [MomentsStory], avatarPath: String?, showsViewedStatus: Bool = false) {
+        self.showsViewedStatus = showsViewedStatus
         stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         if showsAddButton {
             stack.addArrangedSubview(addItem(avatarPath: avatarPath))
+        } else if showsViewedStatus, !moments.isEmpty {
+            // Leading avatar with the full multi-segment ring (same language as the Discover tray).
+            stack.addArrangedSubview(statusAvatarItem(moments: moments, avatarPath: avatarPath))
         }
         for (index, moment) in moments.enumerated() {
             stack.addArrangedSubview(momentItem(moment, index: index, total: moments.count))
@@ -100,18 +108,52 @@ final class ProfileQuickMomentsView: UIView {
         return item
     }
 
+    /// User avatar with one ring segment per Quick Moment (oldest → newest).
+    private func statusAvatarItem(moments: [MomentsStory], avatarPath: String?) -> UIView {
+        let size = Self.bubbleSize
+        let bubble = UIView()
+
+        let ring = QuickMomentStatusRingView()
+        ring.lineWidth = 3
+        // Moments are newest-first in the row; the ring draws oldest → newest like WhatsApp.
+        ring.configure(segmentViewed: moments.reversed().map(\.hasViewed))
+        ring.translatesAutoresizingMaskIntoConstraints = false
+        bubble.addSubview(ring)
+
+        let avatar = UIImageView()
+        avatar.contentMode = .scaleAspectFill
+        avatar.clipsToBounds = true
+        avatar.layer.cornerRadius = (size - 12) / 2
+        avatar.backgroundColor = AppColor.AthensGray
+        avatar.loadImage(path: avatarPath, placeholder: UIImage(named: "ProfileBlur"))
+        avatar.translatesAutoresizingMaskIntoConstraints = false
+        bubble.addSubview(avatar)
+
+        NSLayoutConstraint.activate([
+            ring.topAnchor.constraint(equalTo: bubble.topAnchor),
+            ring.leadingAnchor.constraint(equalTo: bubble.leadingAnchor),
+            ring.trailingAnchor.constraint(equalTo: bubble.trailingAnchor),
+            ring.bottomAnchor.constraint(equalTo: bubble.bottomAnchor),
+            avatar.centerXAnchor.constraint(equalTo: bubble.centerXAnchor),
+            avatar.centerYAnchor.constraint(equalTo: bubble.centerYAnchor),
+            avatar.widthAnchor.constraint(equalToConstant: size - 12),
+            avatar.heightAnchor.constraint(equalToConstant: size - 12)
+        ])
+
+        let unread = moments.filter { !$0.hasViewed }.count
+        let item = makeItem(circle: bubble, title: unread > 0 ? "New" : "Viewed", titleColor: unread > 0 ? AppColor.Punch : AppColor.DoveGray)
+        item.accessibilityLabel = unread > 0
+            ? "Quick moments, \(unread) unseen of \(moments.count)"
+            : "Quick moments, all \(moments.count) viewed"
+        // Oldest unseen in newest-first order (viewer remaps to oldest-first playback).
+        let startIndex = moments.lastIndex(where: { !$0.hasViewed }) ?? max(moments.count - 1, 0)
+        item.addAction(UIAction { [weak self] _ in self?.onSelect?(startIndex) }, for: .touchUpInside)
+        return item
+    }
+
     private func momentItem(_ moment: MomentsStory, index: Int, total: Int) -> UIView {
         let size = Self.bubbleSize
-        let ring = MomentsGradientView(colors: MomentsTheme.brandGradient)
-        ring.layer.cornerRadius = size / 2
-        ring.clipsToBounds = true
-
-        let gap = UIView()
-        gap.backgroundColor = AppColor.AppWhite
-        gap.layer.cornerRadius = (size - 6) / 2
-        gap.clipsToBounds = true
-        ring.addSubview(gap)
-        gap.pinEdges(to: ring, insets: UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3))
+        let bubble = UIView()
 
         let content: UIView
         if moment.isText {
@@ -130,13 +172,46 @@ final class ProfileQuickMomentsView: UIView {
             content = image
         }
         content.clipsToBounds = true
-        content.layer.cornerRadius = (size - 12) / 2
-        gap.addSubview(content)
-        content.pinEdges(to: gap, insets: UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3))
+        content.layer.cornerRadius = (size - 14) / 2
+        content.translatesAutoresizingMaskIntoConstraints = false
 
-        let bubble = UIView()
-        bubble.addSubview(ring)
-        ring.pinEdges(to: bubble)
+        if showsViewedStatus {
+            // Per-moment ring: red if this visitor hasn't seen it, light gray if they have.
+            let ring = QuickMomentStatusRingView()
+            ring.lineWidth = 3
+            ring.configure(segmentViewed: [moment.hasViewed])
+            ring.translatesAutoresizingMaskIntoConstraints = false
+            bubble.addSubview(ring)
+            bubble.addSubview(content)
+            NSLayoutConstraint.activate([
+                ring.topAnchor.constraint(equalTo: bubble.topAnchor),
+                ring.leadingAnchor.constraint(equalTo: bubble.leadingAnchor),
+                ring.trailingAnchor.constraint(equalTo: bubble.trailingAnchor),
+                ring.bottomAnchor.constraint(equalTo: bubble.bottomAnchor),
+                content.centerXAnchor.constraint(equalTo: bubble.centerXAnchor),
+                content.centerYAnchor.constraint(equalTo: bubble.centerYAnchor),
+                content.widthAnchor.constraint(equalToConstant: size - 14),
+                content.heightAnchor.constraint(equalToConstant: size - 14)
+            ])
+        } else {
+            let ring = MomentsGradientView(colors: MomentsTheme.brandGradient)
+            ring.layer.cornerRadius = size / 2
+            ring.clipsToBounds = true
+            bubble.addSubview(ring)
+            ring.pinEdges(to: bubble)
+
+            let gap = UIView()
+            gap.backgroundColor = AppColor.AppWhite
+            gap.layer.cornerRadius = (size - 6) / 2
+            gap.clipsToBounds = true
+            ring.addSubview(gap)
+            gap.pinEdges(to: ring, insets: UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3))
+
+            content.layer.cornerRadius = (size - 12) / 2
+            gap.addSubview(content)
+            content.pinEdges(to: gap, insets: UIEdgeInsets(top: 3, left: 3, bottom: 3, right: 3))
+        }
+
         let activity = (moment.reactionsCount ?? 0) + (moment.repliesCount ?? 0)
         if activity > 0 {
             let badge = UILabel.vibeLabel(.bold, 11, style: .caption2, color: .white)
@@ -158,11 +233,18 @@ final class ProfileQuickMomentsView: UIView {
         }
 
         let time = moment.postedAt.map { MomentsDate.timeAgo(from: MomentsDate.string(from: $0)) }
-        let item = makeItem(circle: bubble, title: time ?? " ", titleColor: AppColor.DoveGray)
-        item.accessibilityLabel = (showsAddButton ? "Your quick moment" : "Quick moment") + " \(index + 1) of \(total)"
-            + (moment.postedAgoText.map { ", \($0)" } ?? "")
-            + (moment.caption.map { ". \($0)" } ?? "")
-            + (activity > 0 ? ". \(moment.reactionsCount ?? 0) reactions, \(moment.repliesCount ?? 0) replies" : "")
+        let titleColor = showsViewedStatus && !moment.hasViewed ? AppColor.Punch : AppColor.DoveGray
+        let item = makeItem(circle: bubble, title: time ?? " ", titleColor: titleColor)
+        var label = (showsAddButton ? "Your quick moment" : "Quick moment") + " \(index + 1) of \(total)"
+        if showsViewedStatus {
+            label += moment.hasViewed ? ", viewed" : ", new"
+        }
+        label += (moment.postedAgoText.map { ", \($0)" } ?? "")
+        label += (moment.caption.map { ". \($0)" } ?? "")
+        if activity > 0 {
+            label += ". \(moment.reactionsCount ?? 0) reactions, \(moment.repliesCount ?? 0) replies"
+        }
+        item.accessibilityLabel = label
         item.addAction(UIAction { [weak self] _ in self?.onSelect?(index) }, for: .touchUpInside)
         return item
     }

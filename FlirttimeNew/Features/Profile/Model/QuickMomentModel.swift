@@ -47,6 +47,14 @@ extension KeyedDecodingContainer where Key == QMKey {
     func bool(_ keys: String...) -> Bool? {
         for key in keys {
             if let value = try? decodeIfPresent(Bool.self, forKey: QMKey(key)) { return value }
+            if let value = try? decodeIfPresent(Int.self, forKey: QMKey(key)) { return value != 0 }
+            if let value = try? decodeIfPresent(String.self, forKey: QMKey(key)) {
+                switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+                case "true", "1", "yes": return true
+                case "false", "0", "no": return false
+                default: break
+                }
+            }
         }
         return nil
     }
@@ -66,7 +74,32 @@ struct QMList<Item: Codable>: Codable {
         let container = try decoder.container(keyedBy: QMKey.self)
         items = container.first([Item].self, "quickMoments", "moments", "stories", "items",
                                 "reactions", "viewers", "users", "results", "data") ?? []
-        total = container.int("totalCount", "total", "count")
+        total = container.int("totalStories", "totalCount", "total", "count", "storiesCount")
+    }
+}
+
+/// `GET quick-moments/user/:userId` — `data: { author, stories, totalStories }`.
+struct UserQuickMomentsData: Codable {
+    let author: QuickMomentUser?
+    let stories: [QuickMoment]
+    let totalStories: Int?
+
+    init(from decoder: Decoder) throws {
+        // Flat array fallback.
+        if let array = try? [QuickMoment](from: decoder) {
+            author = nil
+            stories = array
+            totalStories = array.count
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        author = c.first(QuickMomentUser.self, "author", "user", "creator")
+        let list = c.first([QuickMoment].self, "stories", "quickMoments", "moments", "items") ?? []
+        // Newest first, matching the profile row / tray.
+        stories = list.sorted {
+            (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
+        }
+        totalStories = c.int("totalStories", "totalCount", "total", "count") ?? stories.count
     }
 }
 
@@ -152,7 +185,8 @@ struct QuickMoment: Codable {
         viewsCount = c.int("viewsCount", "viewCount", "totalViews") ?? 0
         topReactions = QuickMoment.emojis(in: c)
         viewerReaction = c.string("viewerReaction", "myReaction")
-        hasViewed = c.bool("hasViewed", "isViewed", "seen") ?? false
+        // API uses `isViewed` on user/tray stories; older payloads used `hasViewed` / `seen`.
+        hasViewed = c.bool("isViewed", "hasViewed", "seen") ?? false
         let user = c.first(QuickMomentUser.self, "user", "author", "creator")
         author = user?.author
         userId = c.string("userId", "creatorId", "authorId") ?? user?.id
@@ -339,7 +373,8 @@ extension QuickMoment {
                           textBackground: QuickMomentColors.backgroundIndex(for: backgroundColor),
                           reactionsCount: reactionsCount,
                           repliesCount: repliesCount,
-                          topReactions: Array(topReactions.prefix(3)))
+                          topReactions: Array(topReactions.prefix(3)),
+                          hasViewed: hasViewed)
     }
 }
 

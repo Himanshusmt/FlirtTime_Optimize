@@ -10,12 +10,15 @@ struct MyProfileData: Codable {
     let profile: MyProfileInfo?
     let interests: [MyProfileInterest]
     let voiceIntro: MyProfileVoiceIntro?
+    /// Server Premium flag; drives upsell cards and subscription popups.
+    let isSubscribed: Bool?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         profile = c.first(MyProfileInfo.self, "profile")
         interests = c.first([MyProfileInterest].self, "interests") ?? []
         voiceIntro = c.first(MyProfileVoiceIntro.self, "voiceIntro")
+        isSubscribed = c.bool("isSubscribed", "is_subscribed") ?? profile?.isSubscribed
     }
 
     /// Interests in the user's chosen order.
@@ -36,6 +39,7 @@ struct MyProfileInfo: Codable {
     let photos: [MyProfilePhoto]
     let isVerified: Bool?
     let completionPercentage: Int?
+    let isSubscribed: Bool?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
@@ -55,6 +59,7 @@ struct MyProfileInfo: Codable {
         photos = c.first([MyProfilePhoto].self, "photos") ?? []
         isVerified = c.bool("isVerified", "isFaceVerified")
         completionPercentage = c.int("completionPercentage", "profileCompletion")
+        isSubscribed = c.bool("isSubscribed", "is_subscribed")
     }
 
     /// "City, State", skipping whichever part is missing.

@@ -5,9 +5,10 @@
 
 import Foundation
 import Combine
+import RxSwift
 import StoreKit
+import Swinject
 
-// TODO: replace the MockStore response with the coin purchase request.
 final class CoinsViewModel {
 
     struct PackOption: Hashable {
@@ -46,8 +47,11 @@ final class CoinsViewModel {
     let events = PassthroughSubject<PurchaseEvent, Never>()
 
     private let packStore = CoinPackStore.shared
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
 
-    init() {
+    init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
         packStore.$options.assign(to: &$options)
         packStore.$state
             .map { state -> State in
@@ -60,16 +64,17 @@ final class CoinsViewModel {
             .assign(to: &$state)
     }
 
-    private func respond(_ block: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
-    }
-
     /// Uses the packs preloaded at launch; refetches only if that load failed or hasn't run.
     func load() {
-        CoinWallet.shared.refresh()
+        refreshBalance()
         if packStore.options.isEmpty {
             packStore.preload()
         }
+    }
+
+    /// Re-fetches wallet coins from the backend (Discover / Coin Shop appearance).
+    func refreshBalance() {
+        CoinWallet.shared.refresh()
     }
 
     func purchase(_ option: PackOption) {
@@ -83,10 +88,11 @@ final class CoinsViewModel {
             do {
                 switch try await StoreManager.shared.purchase(product) {
                 case .purchased(let transaction, let signedTransaction):
-                    let parameters = Self.purchaseParameters(pack: option.pack, product: product,
-                                                             transaction: transaction, signedTransaction: signedTransaction)
+                    let parameters = Self.purchaseParameters(pack: option.pack,
+                                                             transaction: transaction,
+                                                             signedTransaction: signedTransaction)
                     Self.log(parameters, pack: option.pack)
-                    credit(option.pack, transactionID: String(transaction.id))
+                    verifyAndCredit(pack: option.pack, parameters: parameters)
                 case .pending:
                     purchasingPackID = nil
                     events.send(.pending)
@@ -100,37 +106,52 @@ final class CoinsViewModel {
         }
     }
 
-    private func credit(_ pack: CoinData, transactionID: String) {
-        respond { [weak self] in
-            guard let self else { return }
-            self.purchasingPackID = nil
-            let json = MockStore.shared.purchaseCoinsJSON(package: pack, transactionID: transactionID)
-            guard let response = MockDataStore.shared.decode(CoinPurchaseResponse.self, from: json), response.status else {
-                self.events.send(.failed("Your purchase went through but the coins haven't arrived yet. They'll be added shortly."))
-                return
-            }
-            if let balance = response.data?.balance {
-                CoinWallet.shared.update(balance)
-            }
-            self.events.send(.purchased(coins: pack.totalCoins, message: response.message))
-        }
+    /// Sends the App Store receipt to the backend, which verifies with Apple and credits once per transaction.
+    private func verifyAndCredit(pack: CoinData, parameters: [String: Any]) {
+        sessionManager.verifyCoinPurchase(parameters: parameters)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self else { return }
+                self.purchasingPackID = nil
+                guard response.isSuccessful else {
+                    // Still pull wallet in case the credit landed but the envelope looked unsuccessful.
+                    CoinWallet.shared.refresh()
+                    self.events.send(.failed("Your purchase went through but the coins haven't arrived yet. They'll be added shortly."))
+                    return
+                }
+                if let balance = response.data?.walletBalance {
+                    CoinWallet.shared.update(balance)
+                }
+                // Always re-sync from wallet/balance so Discover + Coin Shop match the server.
+                CoinWallet.shared.refresh()
+                let coins = response.data?.coinsCredited ?? pack.totalCoins
+                let message = response.message?.isEmpty == false
+                    ? (response.message ?? "")
+                    : "\(coins) coins added to your wallet"
+                self.events.send(.purchased(coins: coins, message: message))
+            }, onFailure: { [weak self] error in
+                guard let self else { return }
+                self.purchasingPackID = nil
+                // App Store already charged; wallet refresh may still pick up a server-side credit.
+                CoinWallet.shared.refresh()
+                let message = parseError(error)
+                    ?? "Your purchase went through but the coins haven't arrived yet. They'll be added shortly."
+                self.events.send(.failed(message))
+            })
+            .disposed(by: disposeBag)
     }
 
-    /// Body for the backend's coin purchase verification. The server should verify
-    /// `signed_transaction` with Apple, then credit `package_id` once per `transaction_id`.
-    static func purchaseParameters(pack: CoinData, product: Product,
-                                   transaction: Transaction, signedTransaction: String) -> [String: Any] {
+    /// Body for `POST /api/v1/coins/purchase/verify`. The server verifies
+    /// `signedTransactionInfo` with Apple, then credits `packageId` once per `transactionId`.
+    static func purchaseParameters(pack: CoinData,
+                                   transaction: Transaction,
+                                   signedTransaction: String) -> [String: Any] {
         [
             "platform": "ios",
-            "package_id": pack.id ?? 0,
-            "product_id": transaction.productID,
-            "transaction_id": String(transaction.id),
-            "original_transaction_id": String(transaction.originalID),
-            "purchase_date": ISO8601DateFormatter().string(from: transaction.purchaseDate),
-            "price": NSDecimalNumber(decimal: product.price).stringValue,
-            "currency": product.priceFormatStyle.currencyCode,
-            "environment": transaction.environment.rawValue,
-            "signed_transaction": signedTransaction
+            "packageId": pack.id ?? 0,
+            "productId": transaction.productID,
+            "transactionId": String(transaction.id),
+            "signedTransactionInfo": signedTransaction
         ]
     }
 

@@ -192,6 +192,8 @@ final class CoinBalanceCard: UIView {
         ])
         layer.shadowColor = AppColor.Punch.cgColor
         isAccessibilityElement = true
+        amountLabel.text = "0"
+        accessibilityLabel = "Your balance, 0 coins"
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

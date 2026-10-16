@@ -74,6 +74,9 @@ class BaseViewController: UIViewController {
     }
 
     func showSubscriptionPopUp(isToChatView:Bool? = false, chatUserID:Int? = nil, isToHomeView:Bool? = false, subscriptionPopUpType: SubscriptionPopUpType?) {
+        // Server `isSubscribed` is the source of truth — don't upsell Premium members.
+        guard UserDataManager.shared.isUserSubscriptionDone != true else { return }
+
         let customView = SubscriptionPopUp(frame: CGRect(x: 0, y: 0, width: self.view.frame.width , height: self.view.frame.height))
         if isToHomeView == true {
             customView.isToHome = true

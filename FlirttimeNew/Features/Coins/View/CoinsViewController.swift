@@ -7,6 +7,7 @@
 
 import UIKit
 import Combine
+import StoreKit
 
 final class CoinsViewController: BaseViewController {
 
@@ -35,6 +36,12 @@ final class CoinsViewController: BaseViewController {
     private lazy var premiumCard: UIControl = {
         let card = CoinPremiumUpsellCard()
         card.addAction(UIAction { [weak self] _ in self?.openPremium(source: nil) }, for: .touchUpInside)
+        return card
+    }()
+
+    private lazy var membershipCard: SubscriptionMembershipCard = {
+        let card = SubscriptionMembershipCard()
+        card.onManage = { [weak self] in self?.manageSubscription() }
         return card
     }()
 
@@ -79,7 +86,31 @@ final class CoinsViewController: BaseViewController {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        premiumCard.isHidden = UserDataManager.shared.isUserSubscriptionDone == true
+        updateSubscriptionCards()
+        SubscriptionMembershipStore.shared.refresh()
+        // Always re-fetch wallet coins when opening the shop (not only on first load).
+        viewModel.refreshBalance()
+    }
+
+    private func updateSubscriptionCards() {
+        let membership = SubscriptionMembershipStore.shared.membership
+        let hasActiveMembership = membership?.isCurrentlyActive == true
+        let subscribed = hasActiveMembership || UserDataManager.shared.isUserSubscriptionDone == true
+        premiumCard.isHidden = subscribed
+        membershipCard.isHidden = !hasActiveMembership
+        if let membership, hasActiveMembership {
+            membershipCard.configure(membership)
+        }
+    }
+
+    private func manageSubscription() {
+        if let scene = view.window?.windowScene {
+            Task { @MainActor in
+                try? await AppStore.showManageSubscriptions(in: scene)
+            }
+        } else {
+            openPremium(source: nil)
+        }
     }
 
     // MARK: - UI
@@ -109,11 +140,12 @@ final class CoinsViewController: BaseViewController {
         note.textAlignment = .center
         let privacy = StoreUI.linkButton("Privacy Policy") { [weak self] in self?.loadPrivacyPolicy() }
 
-        let content = UIStackView(arrangedSubviews: [balanceCard, premiumCard, packsTitle, gridStack,
+        let content = UIStackView(arrangedSubviews: [balanceCard, premiumCard, membershipCard, packsTitle, gridStack,
                                                      loadingView, errorLabel, retryButton, note, privacy])
         content.axis = .vertical
         content.spacing = 14
         content.setCustomSpacing(24, after: premiumCard)
+        content.setCustomSpacing(24, after: membershipCard)
         content.setCustomSpacing(24, after: gridStack)
         content.setCustomSpacing(4, after: note)
 
@@ -171,6 +203,16 @@ final class CoinsViewController: BaseViewController {
         viewModel.events
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in self?.handle(event) }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .userSubscriptionStatusDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateSubscriptionCards() }
+            .store(in: &cancellables)
+
+        SubscriptionMembershipStore.shared.$membership
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateSubscriptionCards() }
             .store(in: &cancellables)
     }
 

@@ -81,7 +81,10 @@ final class AppSessionManager {
     func getMe() -> Single<AppUser?> {
         let request: Single<MeResponse> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .me))
         return request.map { response in
-            if let user = response.user { UserDataManager.shared.appUser = user }
+            if let user = response.user {
+                UserDataManager.shared.appUser = user
+                UserDataManager.shared.applySubscriptionStatus(user.isSubscribed)
+            }
             return response.user
         }
     }
@@ -89,6 +92,9 @@ final class AppSessionManager {
     /// Everything the My Profile screen shows except moments and quick moments, which have their own calls.
     func myProfile() -> Single<MyProfileData> {
         backendClient.load(request: AppApiRequest(method: .get, endPoint: .myProfile))
+            .do(onSuccess: { data in
+                UserDataManager.shared.applySubscriptionStatus(data.isSubscribed)
+            })
     }
 
     /// `audio` is an AAC `.m4a` file up to 10 MB; `duration` is in whole seconds (max 60).
@@ -615,9 +621,9 @@ final class AppSessionManager {
     }
 
     func userQuickMoments(userId: String) -> Single<[QuickMoment]> {
-        let request: Single<QMList<QuickMoment>> = backendClient.load(request: AppApiRequest(method: .get,
-                                                                                             endPoint: .userQuickMoments(userId: userId)))
-        return request.map(\.items)
+        let request: Single<UserQuickMomentsData> = backendClient.load(request: AppApiRequest(method: .get,
+                                                                                              endPoint: .userQuickMoments(userId: userId)))
+        return request.map(\.stories)
     }
 
     /// `backgroundColor` / `textColor` are hex like "#2d0b1e". Returns `nil` when the backend
@@ -701,10 +707,35 @@ final class AppSessionManager {
                                                         encoding: URLEncoding.queryString))
     }
 
+    /// Verifies an App Store coin purchase with the backend and credits the wallet.
+    /// Body: `platform`, `packageId`, `productId`, `transactionId`, `signedTransactionInfo`.
+    func verifyCoinPurchase(parameters: [String: Any]) -> Single<CoinPurchaseResponse> {
+        backendClient.loadDirect(request: AppApiRequest(method: .post, endPoint: .coinsPurchaseVerify,
+                                                        parameters: parameters))
+    }
+
+    /// Current coin balance for the signed-in user (`GET /api/v1/wallet/balance`).
+    func walletBalance() -> Single<WalletBalanceResponse> {
+        backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .walletBalance))
+    }
+
     // MARK: - Subscriptions
 
     func subscriptionPlans() -> Single<SubscriptionModel> {
         backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .subscriptions))
+    }
+
+    /// Verifies an App Store subscription with the backend and activates Premium.
+    /// Body: `platform`, `productId`, `transactionId`, `signedTransactionInfo`.
+    func verifySubscriptionPurchase(parameters: [String: Any]) -> Single<SubscriptionPurchaseResponse> {
+        backendClient.loadDirect(request: AppApiRequest(method: .post, endPoint: .subscriptionsPurchaseVerify,
+                                                        parameters: parameters))
+    }
+
+    /// The signed-in user's current subscription, if any (`GET /api/v1/subscriptions/my`).
+    func mySubscription() -> Single<MySubscriptionData?> {
+        backendClient.loadDirect(request: AppApiRequest(method: .get, endPoint: .mySubscription))
+            .map { (response: MySubscriptionResponse) in response.membership }
     }
 
     // MARK: - Notifications
@@ -773,6 +804,7 @@ final class AppSessionManager {
     func logout() {
         AppTokenStore.shared.clear()
         UserDataManager.shared.removeUserData()
+        CoinWallet.shared.update(0)
     }
 
     /// Decodes an auth response and stores its token.
@@ -785,6 +817,7 @@ final class AppSessionManager {
             AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
             if let user = auth.user { UserDataManager.shared.appUser = user }
             DeviceTokenManager.shared.registerIfNeeded(force: true)
+            CoinWallet.shared.refresh()
             return auth
         }
     }

@@ -90,6 +90,124 @@ enum HeartBurst {
     }
 }
 
+// MARK: - Quick Moment status ring (WhatsApp-style)
+
+/// Segmented ring around a tray avatar: one arc per active Quick Moment.
+/// Unviewed segments use the brand red; viewed segments use light gray. Gaps appear when count ≥ 2.
+final class QuickMomentStatusRingView: UIView {
+
+    var lineWidth: CGFloat = 2.5 {
+        didSet { setNeedsLayout() }
+    }
+    var unreadColor: UIColor = AppColor.Punch {
+        didSet { applyColors() }
+    }
+    /// Light gray for already-seen segments (`isViewed == true`).
+    var viewedColor: UIColor = AppColor.SilverChalice {
+        didSet { applyColors() }
+    }
+
+    /// Parallel to segments, oldest → newest (clockwise from the top). `true` = viewed.
+    private var segmentViewed: [Bool] = []
+    private var segmentLayers: [CAShapeLayer] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func configure(segmentViewed: [Bool]) {
+        self.segmentViewed = segmentViewed
+        rebuildLayersIfNeeded()
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updatePaths()
+    }
+
+    private func rebuildLayersIfNeeded() {
+        let count = segmentViewed.count
+        while segmentLayers.count > count {
+            segmentLayers.removeLast().removeFromSuperlayer()
+        }
+        while segmentLayers.count < count {
+            let layer = CAShapeLayer()
+            layer.fillColor = nil
+            layer.lineCap = .butt
+            layer.contentsScale = UIScreen.main.scale
+            self.layer.addSublayer(layer)
+            segmentLayers.append(layer)
+        }
+        applyColors()
+    }
+
+    private func applyColors() {
+        for (index, layer) in segmentLayers.enumerated() {
+            let viewed = segmentViewed.indices.contains(index) ? segmentViewed[index] : false
+            layer.strokeColor = (viewed ? viewedColor : unreadColor).cgColor
+            layer.lineWidth = lineWidth
+        }
+    }
+
+    private func updatePaths() {
+        let count = segmentLayers.count
+        guard count > 0, bounds.width > 0, bounds.height > 0 else { return }
+
+        let inset = lineWidth / 2
+        let rect = bounds.insetBy(dx: inset, dy: inset)
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        let twoPi = 2 * CGFloat.pi
+        // WhatsApp-like gaps: none for a single story; otherwise scale down as count grows.
+        let gap: CGFloat = {
+            guard count > 1 else { return 0 }
+            let degrees: CGFloat = count <= 3 ? 14 : max(8, 36 / CGFloat(count))
+            return degrees * .pi / 180
+        }()
+        let sweep = (twoPi - gap * CGFloat(count)) / CGFloat(count)
+        var start = -CGFloat.pi / 2 + gap / 2
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for layer in segmentLayers {
+            let end = start + max(sweep, 0.01)
+            let path = UIBezierPath(arcCenter: center, radius: radius, startAngle: start, endAngle: end, clockwise: true)
+            layer.path = path.cgPath
+            layer.frame = bounds
+            layer.lineWidth = lineWidth
+            start = end + gap
+        }
+        CATransaction.commit()
+    }
+}
+
+extension QuickMomentTrayItem {
+    /// Per-segment viewed flags for `QuickMomentStatusRingView`, oldest → newest.
+    /// Own stories stay “unread” (brand color) so the ring reads as active.
+    func statusRingSegmentViewed(isMine: Bool) -> [Bool] {
+        let count = max(1, max(activeCount, stories.count))
+        if isMine {
+            return Array(repeating: false, count: count)
+        }
+        if stories.count >= count {
+            return Array(stories.suffix(count).reversed().map(\.hasViewed))
+        }
+        if !stories.isEmpty {
+            // Oldest → newest among known stories, then pad unknown slots from tray unread flag.
+            var flags = stories.reversed().map(\.hasViewed)
+            let pad = count - flags.count
+            flags += Array(repeating: !hasUnread, count: pad)
+            return flags
+        }
+        return Array(repeating: !hasUnread, count: count)
+    }
+}
+
 // MARK: - Voice waveform
 
 final class VoiceWaveformView: UIView {

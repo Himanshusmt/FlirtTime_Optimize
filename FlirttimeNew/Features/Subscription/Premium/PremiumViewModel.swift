@@ -5,9 +5,10 @@
 
 import Foundation
 import Combine
+import RxSwift
 import StoreKit
+import Swinject
 
-// TODO: replace the MockStore responses with the subscription/create / subscription/check requests.
 final class PremiumViewModel {
 
     struct PlanOption: Hashable {
@@ -68,9 +69,12 @@ final class PremiumViewModel {
     let events = PassthroughSubject<PurchaseEvent, Never>()
 
     private let planStore = SubscriptionPlanStore.shared
+    private let sessionManager: AppSessionManager
+    private let disposeBag = DisposeBag()
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
+    init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
+        self.sessionManager = sessionManager
         planStore.$options
             .sink { [weak self] options in
                 guard let self else { return }
@@ -101,10 +105,6 @@ final class PremiumViewModel {
         return percent >= 5 ? percent : nil
     }
 
-    private func respond(_ block: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + MockDataStore.responseDelay, execute: block)
-    }
-
     // MARK: - Loading
 
     /// Uses the plans preloaded at launch; refetches only if that load failed or hasn't run.
@@ -125,8 +125,11 @@ final class PremiumViewModel {
         Task { @MainActor in
             do {
                 switch try await StoreManager.shared.purchase(product) {
-                case .purchased(let transaction, _):
-                    sendSubscription(for: option, transaction: transaction, restored: false)
+                case .purchased(let transaction, let signedTransaction):
+                    let parameters = Self.purchaseParameters(transaction: transaction,
+                                                             signedTransaction: signedTransaction)
+                    Self.log(parameters, plan: option.plan)
+                    verifyAndActivate(parameters: parameters, restored: false)
                 case .pending:
                     isPurchasing = false
                     events.send(.pending)
@@ -146,18 +149,16 @@ final class PremiumViewModel {
         isRestoring = true
         Task { @MainActor in
             do {
-                guard let transaction = try await StoreManager.shared.restorePurchases() else {
+                guard let restored = try await StoreManager.shared.restorePurchases() else {
                     resetProgress()
                     events.send(.failed("We couldn't find an active subscription for this Apple ID."))
                     return
                 }
-                guard let option = options.first(where: { $0.plan.appleProductID == transaction.productID }) else {
-                    resetProgress()
-                    setSubscribed(true)
-                    events.send(.restored("Your Premium membership has been restored."))
-                    return
-                }
-                sendSubscription(for: option, transaction: transaction, restored: true)
+                let parameters = Self.purchaseParameters(transaction: restored.transaction,
+                                                         signedTransaction: restored.signedTransaction)
+                let plan = options.first { $0.plan.appleProductID == restored.transaction.productID }?.plan
+                Self.log(parameters, plan: plan)
+                verifyAndActivate(parameters: parameters, restored: true)
             } catch {
                 resetProgress()
                 events.send(.failed(error.localizedDescription))
@@ -170,35 +171,63 @@ final class PremiumViewModel {
         isRestoring = false
     }
 
-    /// Records the App Store transaction on our server, which grants the membership and bonus coins.
-    private func sendSubscription(for option: PlanOption, transaction: Transaction, restored: Bool) {
-        let start = transaction.purchaseDate
-        let end = transaction.expirationDate
-            ?? Calendar.current.date(byAdding: .day, value: option.plan.durationDays ?? 30, to: start) ?? start
-        let subscription = Subscription(
-            title: option.title,
-            description: "amount paid for \(option.plan.durationTitle)",
-            productID: transaction.productID,
-            transactionID: String(transaction.originalID),
-            paidAmount: NSDecimalNumber(decimal: option.product?.price ?? Decimal(string: option.plan.price ?? "") ?? 0).doubleValue,
-            currency: option.product?.priceFormatStyle.currencyCode ?? option.plan.currency ?? "",
-            startDate: MockStore.dayFormatter.string(from: start),
-            endDate: MockStore.dayFormatter.string(from: end),
-            paymentGateway: "applepay")
+    /// Sends the App Store JWS to the backend, which verifies with Apple and activates Premium once per transaction.
+    private func verifyAndActivate(parameters: [String: Any], restored: Bool) {
+        sessionManager.verifySubscriptionPurchase(parameters: parameters)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] response in
+                guard let self else { return }
+                self.resetProgress()
+                guard response.isSuccessful else {
+                    self.events.send(.failed("Your purchase went through but we couldn't activate it yet. Tap Restore Purchases to try again."))
+                    return
+                }
+                self.setSubscribed(response.data?.isActive ?? true)
+                if let balance = response.data?.walletBalance {
+                    CoinWallet.shared.update(balance)
+                } else {
+                    CoinWallet.shared.refresh()
+                }
+                // Refresh profile + membership card so Premium details stay in sync with the server.
+                self.sessionManager.myProfile().subscribe().disposed(by: self.disposeBag)
+                SubscriptionMembershipStore.shared.refresh()
+                let message = response.message.isEmpty
+                    ? (restored ? "Your Premium membership has been restored." : "Welcome to Flirttime Premium!")
+                    : response.message
+                self.events.send(restored ? .restored(message) : .purchased(message))
+            }, onFailure: { [weak self] error in
+                guard let self else { return }
+                self.resetProgress()
+                // App Store already charged; StoreKit keeps the entitlement so Restore can retry.
+                let message = parseError(error)
+                    ?? "Your purchase went through but we couldn't activate it yet. Tap Restore Purchases to try again."
+                self.events.send(.failed(message))
+            })
+            .disposed(by: disposeBag)
+    }
 
-        respond { [weak self] in
-            guard let self else { return }
-            self.resetProgress()
-            let json = MockStore.shared.createSubscriptionJSON(subscription.parameters, plan: option.plan)
-            guard let response = MockDataStore.shared.decode(SubscriptionResponse.self, from: json), response.status else {
-                // The App Store charge succeeded; StoreKit keeps the entitlement so the next refresh recovers it.
-                self.events.send(.failed("Your purchase went through but we couldn't activate it yet. Tap Restore Purchases to try again."))
-                return
-            }
-            self.setSubscribed(true)
-            CoinWallet.shared.refresh()
-            self.events.send(restored ? .restored(response.message) : .purchased(response.message))
-        }
+    /// Body for `POST /api/v1/subscriptions/purchase/verify`. The server verifies
+    /// `signedTransactionInfo` with Apple, then activates Premium once per `transactionId`.
+    static func purchaseParameters(transaction: Transaction, signedTransaction: String) -> [String: Any] {
+        [
+            "platform": "ios",
+            "productId": transaction.productID,
+            "transactionId": String(transaction.id),
+            "signedTransactionInfo": signedTransaction
+        ]
+    }
+
+    private static func log(_ parameters: [String: Any], plan: SubscriptionPlanData?) {
+        let body = (try? JSONSerialization.data(withJSONObject: parameters, options: [.prettyPrinted, .sortedKeys]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "\(parameters)"
+        AppLogger.debug("""
+
+        ===== SUBSCRIPTION PURCHASE =====
+        Plan: \(plan?.name ?? "-") (id \(plan?.id ?? 0))
+        Backend request body:
+        \(body)
+        =================================
+        """)
     }
 
     // MARK: - Status
@@ -214,16 +243,35 @@ final class PremiumViewModel {
         isSubscribed = value
     }
 
-    /// Membership is active when the server says so (any platform) or StoreKit holds a live entitlement.
+    /// Membership UI uses the server `isSubscribed` flag synced from profile / me.
     static func refreshMembership(completion: ((Bool) -> Void)? = nil) {
-        Task { @MainActor in
-            let storeKitActive = await StoreManager.shared.hasActiveSubscription()
-            let check = MockDataStore.shared.decode(CheckSubscriptionResponse.self, from: MockStore.shared.checkSubscriptionJSON())
-            let isActive = storeKitActive || check?.data?.isActive == true
-            UserDataManager.shared.isUserSubscriptionDone = isActive
+        DispatchQueue.main.async {
+            let isActive = UserDataManager.shared.isUserSubscriptionDone == true
             completion?(isActive)
         }
     }
+
+    /// Verifies a deferred subscription (Ask to Buy / renewal) that arrived outside the purchase sheet.
+    static func verifyDeferred(transaction: Transaction, signedTransaction: String) {
+        let parameters = purchaseParameters(transaction: transaction, signedTransaction: signedTransaction)
+        log(parameters, plan: SubscriptionPlanStore.shared.options
+            .first { $0.plan.appleProductID == transaction.productID }?.plan)
+        let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+        sessionManager.verifySubscriptionPurchase(parameters: parameters)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { response in
+                guard response.isSuccessful else { return }
+                UserDataManager.shared.isUserSubscriptionDone = response.data?.isActive ?? true
+                if let balance = response.data?.walletBalance {
+                    CoinWallet.shared.update(balance)
+                }
+            }, onFailure: { error in
+                AppLogger.debug("[Premium] Deferred verify failed: \(parseError(error) ?? error.localizedDescription)")
+            })
+            .disposed(by: deferredDisposeBag)
+    }
+
+    private static let deferredDisposeBag = DisposeBag()
 
     static func format(_ amount: Decimal, currency: String?) -> String {
         amount.formatted(.currency(code: currency ?? "INR").precision(.fractionLength(0...2)))

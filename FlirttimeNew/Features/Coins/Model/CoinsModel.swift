@@ -83,12 +83,150 @@ struct CoinData: Codable, Hashable {
     }
 }
 
-struct CoinPurchaseResponse: Codable {
-    let status: Bool
-    let message: String
-    let data: CoinBalanceData?
+struct CoinPurchaseResponse: Decodable {
+    let status: Bool?
+    let success: Bool?
+    let message: String?
+    let data: CoinPurchaseData?
+
+    /// Backend may set either `status` or `success`.
+    var isSuccessful: Bool { status == true || success == true }
 }
 
-struct CoinBalanceData: Codable {
+struct CoinPurchaseData: Decodable {
+    let alreadyProcessed: Bool?
+    let purchaseId: String?
+    let package: CoinPurchasePackageInfo?
+    let coinsCredited: Int?
+    let baseCoins: Int?
+    let bonusCoins: Int?
+    let previousBalance: Int?
+    let currentBalance: Int?
+    let status: String?
+    let acknowledged: Bool?
+    /// Legacy mock field; prefer `currentBalance`.
     let balance: Int?
+
+    var walletBalance: Int? { currentBalance ?? balance }
+
+    enum CodingKeys: String, CodingKey {
+        case alreadyProcessed, purchaseId, package, coinsCredited, baseCoins, bonusCoins
+        case previousBalance, currentBalance, status, acknowledged, balance
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        alreadyProcessed = try? c.decodeIfPresent(Bool.self, forKey: .alreadyProcessed)
+        purchaseId = try? c.decodeIfPresent(String.self, forKey: .purchaseId)
+        package = try? c.decodeIfPresent(CoinPurchasePackageInfo.self, forKey: .package)
+        coinsCredited = Self.decodeInt(c, .coinsCredited)
+        baseCoins = Self.decodeInt(c, .baseCoins)
+        bonusCoins = Self.decodeInt(c, .bonusCoins)
+        previousBalance = Self.decodeInt(c, .previousBalance)
+        currentBalance = Self.decodeInt(c, .currentBalance)
+        status = try? c.decodeIfPresent(String.self, forKey: .status)
+        acknowledged = try? c.decodeIfPresent(Bool.self, forKey: .acknowledged)
+        balance = Self.decodeInt(c, .balance)
+    }
+
+    private static func decodeInt(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> Int? {
+        if let v = try? c.decodeIfPresent(Int.self, forKey: key) { return v }
+        if let v = try? c.decodeIfPresent(Double.self, forKey: key) { return Int(v) }
+        if let s = try? c.decodeIfPresent(String.self, forKey: key), let v = Int(s) { return v }
+        return nil
+    }
+}
+
+struct CoinPurchasePackageInfo: Decodable {
+    let id: Int?
+    let name: String?
+    let productId: String?
+}
+
+// MARK: - Wallet balance (`GET /api/v1/wallet/balance`)
+
+struct WalletBalanceResponse: Decodable {
+    let status: Bool?
+    let success: Bool?
+    let message: String?
+    let data: WalletBalanceData?
+
+    var isSuccessful: Bool { status == true || success == true }
+}
+
+struct WalletBalanceData: Decodable {
+    let userId: String?
+    let coins: Int?
+    let recentTransactions: [WalletTransaction]?
+
+    enum CodingKeys: String, CodingKey {
+        case userId, coins, recentTransactions
+        case user_id, coin_balance, balance
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let s = try? c.decodeIfPresent(String.self, forKey: .userId) {
+            userId = s
+        } else if let s = try? c.decodeIfPresent(String.self, forKey: .user_id) {
+            userId = s
+        } else if let i = try? c.decodeIfPresent(Int.self, forKey: .userId) {
+            userId = String(i)
+        } else {
+            userId = nil
+        }
+        // Prefer `coins`; accept common aliases so a schema tweak doesn't leave the UI on stale/mock values.
+        coins = Self.decodeInt(c, keys: [.coins, .coin_balance, .balance])
+        recentTransactions = (try? c.decodeIfPresent([WalletTransaction].self, forKey: .recentTransactions)) ?? nil
+    }
+
+    private static func decodeInt(_ c: KeyedDecodingContainer<CodingKeys>, keys: [CodingKeys]) -> Int? {
+        for key in keys {
+            if let v = try? c.decodeIfPresent(Int.self, forKey: key) { return v }
+            if let v = try? c.decodeIfPresent(Double.self, forKey: key) { return Int(v) }
+            if let s = try? c.decodeIfPresent(String.self, forKey: key), let v = Int(s) { return v }
+        }
+        return nil
+    }
+}
+
+struct WalletTransaction: Decodable {
+    let id: String?
+    let type: String?
+    let amount: Int?
+    let balanceBefore: Int?
+    let balanceAfter: Int?
+    let description: String?
+    let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, amount, description, createdAt
+        case balanceBefore, balanceAfter
+        case balance_before, balance_after, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let s = try? c.decodeIfPresent(String.self, forKey: .id) {
+            id = s
+        } else if let i = try? c.decodeIfPresent(Int.self, forKey: .id) {
+            id = String(i)
+        } else {
+            id = nil
+        }
+        type = try? c.decodeIfPresent(String.self, forKey: .type)
+        amount = Self.decodeInt(c, key: .amount)
+        balanceBefore = Self.decodeInt(c, key: .balanceBefore) ?? Self.decodeInt(c, key: .balance_before)
+        balanceAfter = Self.decodeInt(c, key: .balanceAfter) ?? Self.decodeInt(c, key: .balance_after)
+        description = try? c.decodeIfPresent(String.self, forKey: .description)
+        createdAt = (try? c.decodeIfPresent(String.self, forKey: .createdAt))
+            ?? (try? c.decodeIfPresent(String.self, forKey: .created_at))
+    }
+
+    private static func decodeInt(_ c: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) -> Int? {
+        if let v = try? c.decodeIfPresent(Int.self, forKey: key) { return v }
+        if let v = try? c.decodeIfPresent(Double.self, forKey: key) { return Int(v) }
+        if let s = try? c.decodeIfPresent(String.self, forKey: key), let v = Int(s) { return v }
+        return nil
+    }
 }

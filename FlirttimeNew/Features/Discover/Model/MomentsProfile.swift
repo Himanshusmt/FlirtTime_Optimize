@@ -121,6 +121,8 @@ struct MomentsStory: Hashable {
     var reactionsCount: Int?
     var repliesCount: Int?
     var topReactions: [String] = []
+    /// Whether the signed-in visitor has already seen this Quick Moment.
+    var hasViewed: Bool = false
 
     var isText: Bool { imagePath.isEmpty }
 
