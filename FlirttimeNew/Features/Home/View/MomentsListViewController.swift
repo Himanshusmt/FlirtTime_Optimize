@@ -27,7 +27,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     // MARK: - Outlets
 
-    /// Floats above the feed so hiding it never moves the table mid-drag.
     @IBOutlet private weak var headerContainerView: UIView!
     @IBOutlet private weak var logoImageView: UIImageView!
     @IBOutlet private weak var notificationButton: UIButton!
@@ -72,18 +71,9 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     /// The tab bar's centre button rises above the bar and would cover the last row's actions.
     private static let centerTabButtonOverlap: CGFloat = 44
 
-    private var scrollToTopBottomSpacing: CGFloat = 0
-    /// The header and tab bar stay visible until the feed has scrolled past the filter row.
-    private static let chromeRevealOffset: CGFloat = 60
-    /// Scroll distance in one direction before the header and tab bar toggle, so small jitters don't flicker them.
-    private static let chromeToggleDistance: CGFloat = 24
-    private static let chromeAnimationDuration: TimeInterval = 0.3
     /// FlirtTime showed the scroll-to-top button once the fourth moment came on screen.
     private static let scrollToTopRevealRow = 3
 
-    private var isChromeHidden = false
-    private var lastContentOffsetY: CGFloat = 0
-    private var directionalScrollDistance: CGFloat = 0
     private var isScrollToTopVisible = false
 
     /// FlirtTime's Moments filter row. Only "Add new moment" acts; the distance chips just select.
@@ -131,11 +121,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         }
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        setChromeHidden(false, animated: false)
-    }
-
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateTableTopInset()
@@ -157,8 +142,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     }
 
     private func setUI() {
-        scrollToTopBottomSpacing = scrollToTopBottomConstraint.constant
-
         logoImageView.isHidden = scope.isPushed
         notificationButton.isHidden = scope.isPushed
         backButton.isHidden = !scope.isPushed
@@ -208,63 +191,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         emptyStateLabel.isHidden = !viewModel.vibes.isEmpty
     }
 
-    // MARK: - Header, tab bar & scroll-to-top
-
-    /// Only the Moments tab hides its header and tab bar; pushed feeds keep their back button on screen.
-    private var canAutoHideChrome: Bool { !scope.isPushed }
-
-    private func updateChromeVisibility(for scrollView: UIScrollView) {
-        let offsetY = scrollView.contentOffset.y
-        defer { lastContentOffsetY = offsetY }
-        guard canAutoHideChrome else { return }
-
-        let topOffsetY = -scrollView.adjustedContentInset.top
-        guard offsetY > topOffsetY + MomentsListViewController.chromeRevealOffset else {
-            directionalScrollDistance = 0
-            setChromeHidden(false, animated: true)
-            return
-        }
-
-        let maxOffsetY = scrollView.contentSize.height - scrollView.bounds.height + scrollView.adjustedContentInset.bottom
-        guard scrollView.isDragging || scrollView.isDecelerating, offsetY < maxOffsetY else { return }
-
-        let delta = offsetY - lastContentOffsetY
-        guard delta != 0 else { return }
-        if (delta > 0) != (directionalScrollDistance > 0) {
-            directionalScrollDistance = 0
-        }
-        directionalScrollDistance += delta
-        if abs(directionalScrollDistance) >= MomentsListViewController.chromeToggleDistance {
-            setChromeHidden(directionalScrollDistance > 0, animated: true)
-            directionalScrollDistance = 0
-        }
-    }
-
-    private func setChromeHidden(_ hidden: Bool, animated: Bool) {
-        guard hidden != isChromeHidden, isViewLoaded else { return }
-        isChromeHidden = hidden
-        hideShowTabBar(isHide: hidden)
-
-        // The tab bar slides off screen without changing the safe area, so the button drops by the bar's height.
-        let tabBarOffset = view.safeAreaInsets.bottom - (view.window?.safeAreaInsets.bottom ?? 0)
-        scrollToTopBottomConstraint.constant = hidden ? scrollToTopBottomSpacing - tabBarOffset : scrollToTopBottomSpacing
-
-        // The header sits below the status bar, so sliding it by its own height plus the safe-area top clears the screen.
-        let headerOffset = headerContainerView.frame.maxY
-        let changes = {
-            self.headerContainerView.transform = hidden ? CGAffineTransform(translationX: 0, y: -headerOffset) : .identity
-            self.headerContainerView.alpha = hidden ? 0 : 1
-            self.view.layoutIfNeeded()
-        }
-        guard animated else {
-            changes()
-            return
-        }
-        UIView.animate(withDuration: MomentsListViewController.chromeAnimationDuration,
-                       delay: 0,
-                       options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut],
-                       animations: changes)
-    }
+    // MARK: - Scroll-to-top
 
     private func updateScrollToTopButton() {
         let isPastRevealRow = tableView.indexPathsForVisibleRows?.contains { $0.row >= MomentsListViewController.scrollToTopRevealRow } ?? false
@@ -288,7 +215,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     @IBAction private func scrollToTopTapped(_ sender: UIButton) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        setChromeHidden(false, animated: true)
         tableView.setContentOffset(CGPoint(x: 0, y: -tableView.adjustedContentInset.top), animated: true)
     }
 
@@ -465,13 +391,7 @@ extension MomentsListViewController: UITableViewDataSource, UITableViewDelegate 
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === tableView else { return }
-        updateChromeVisibility(for: scrollView)
         updateScrollToTopButton()
-    }
-
-    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
-        setChromeHidden(false, animated: true)
-        return true
     }
 }
 
