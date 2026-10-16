@@ -27,14 +27,72 @@ struct DiscoveryPerson: Codable {
     let username: String?
     let name: String?
     let age: Int?
+    let about: String?
+    /// Full location label from the API (e.g. "Mumbai, Maharashtra, India"); falls back to `city`.
+    let location: String?
     let city: String?
     let distanceKm: Double?
     let isVerified: Bool?
-    /// Relative S3 key, e.g. "verifications/<userId>/<file>.jpg"; `nil` when the user has no photo.
+    let isOnline: Bool?
+    /// Relative S3 key or full URL; `nil` when the user has no photo.
     let profilePhoto: String?
     let interestTags: [DiscoveryTag]?
     let sharedInterests: [DiscoveryTag]?
+    /// Overlap count from the API; preferred over `sharedInterests.count` when present.
+    let commonInterestsCount: Int?
+    /// Match percentage; preferred over legacy `vibeScore` when present.
+    let profileMatchPercentage: Int?
     let vibeScore: Int?
+    /// Total moments posted (may exceed any preview list).
+    let totalMoments: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case userId, username, name, age, about, location, city, distanceKm, isVerified, isOnline
+        case profilePhoto, interestTags, sharedInterests, commonInterestsCount
+        case profileMatchPercentage, vibeScore, totalMoments
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        userId = c.string("userId", "id")
+        username = c.string("username", "userName")
+        name = c.string("name", "displayName", "fullName")
+        age = c.int("age")
+        about = c.string("about", "bio")
+        location = c.string("location")
+        city = c.string("city")
+        distanceKm = c.first(Double.self, "distanceKm")
+        isVerified = c.bool("isVerified", "isFaceVerified")
+        isOnline = c.bool("isOnline")
+        profilePhoto = c.string("profilePhotoUrl", "profilePhoto", "profilePicture", "primaryPhotoUrl")
+        interestTags = c.first([DiscoveryTag].self, "interests", "interestTags")
+        sharedInterests = c.first([DiscoveryTag].self, "sharedInterests")
+        commonInterestsCount = c.int("commonInterestsCount")
+        profileMatchPercentage = c.int("profileMatchPercentage")
+        vibeScore = c.int("vibeScore")
+        totalMoments = c.int("totalMoments", "momentsCount")
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(userId, forKey: .userId)
+        try c.encodeIfPresent(username, forKey: .username)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encodeIfPresent(age, forKey: .age)
+        try c.encodeIfPresent(about, forKey: .about)
+        try c.encodeIfPresent(location, forKey: .location)
+        try c.encodeIfPresent(city, forKey: .city)
+        try c.encodeIfPresent(distanceKm, forKey: .distanceKm)
+        try c.encodeIfPresent(isVerified, forKey: .isVerified)
+        try c.encodeIfPresent(isOnline, forKey: .isOnline)
+        try c.encodeIfPresent(profilePhoto, forKey: .profilePhoto)
+        try c.encodeIfPresent(interestTags, forKey: .interestTags)
+        try c.encodeIfPresent(sharedInterests, forKey: .sharedInterests)
+        try c.encodeIfPresent(commonInterestsCount, forKey: .commonInterestsCount)
+        try c.encodeIfPresent(profileMatchPercentage, forKey: .profileMatchPercentage)
+        try c.encodeIfPresent(vibeScore, forKey: .vibeScore)
+        try c.encodeIfPresent(totalMoments, forKey: .totalMoments)
+    }
 }
 
 /// An interest as a plain string or an object such as `{ "id": "...", "name": "Cooking", "emoji": "🍳" }`
@@ -187,6 +245,8 @@ struct DiscoverySearchProfile: Codable {
     let isVerified: Bool?
     let isOnline: Bool?
     let distanceKm: Double?
+    /// Full location label (e.g. "Mumbai, Maharashtra, India"); preferred over `city`.
+    let location: String?
     let city: String?
     /// "long_term" | "casual" | "not_sure"
     let lookingFor: String?
@@ -197,7 +257,73 @@ struct DiscoverySearchProfile: Codable {
     let photos: [DiscoverySearchPhoto]?
     let interests: [DiscoveryTag]?
     let sharedInterests: [DiscoveryTag]?
+    let commonInterestsCount: Int?
+    let profileMatchPercentage: Int?
     let vibeScore: Int?
+    let totalMoments: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, userId, name, username, age, gender, bio, isFaceVerified, isVerified, isOnline
+        case distanceKm, location, city, lookingFor, primaryPhotoUrl, profilePhotoUrl, about
+        case photos, interests, sharedInterests, commonInterestsCount, profileMatchPercentage
+        case vibeScore, totalMoments
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        id = c.string("id")
+        userId = c.string("userId", "id")
+        name = c.string("name", "displayName", "fullName")
+        username = c.string("username", "userName")
+        age = c.int("age")
+        gender = c.string("gender")
+        bio = c.string("bio")
+        isFaceVerified = c.bool("isFaceVerified")
+        isVerified = c.bool("isVerified", "isFaceVerified")
+        isOnline = c.bool("isOnline")
+        distanceKm = c.first(Double.self, "distanceKm")
+        location = c.string("location")
+        city = c.string("city")
+        lookingFor = c.string("lookingFor")
+        primaryPhotoUrl = c.string("primaryPhotoUrl")
+        profilePhotoUrl = c.string("profilePhotoUrl", "profilePhoto", "profilePicture")
+        about = c.string("about", "bio")
+        photos = c.first([DiscoverySearchPhoto].self, "photos")
+        interests = c.first([DiscoveryTag].self, "interests", "interestTags")
+        sharedInterests = c.first([DiscoveryTag].self, "sharedInterests")
+        commonInterestsCount = c.int("commonInterestsCount")
+        profileMatchPercentage = c.int("profileMatchPercentage")
+        vibeScore = c.int("vibeScore")
+        totalMoments = c.int("totalMoments", "momentsCount")
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(id, forKey: .id)
+        try c.encodeIfPresent(userId, forKey: .userId)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encodeIfPresent(username, forKey: .username)
+        try c.encodeIfPresent(age, forKey: .age)
+        try c.encodeIfPresent(gender, forKey: .gender)
+        try c.encodeIfPresent(bio, forKey: .bio)
+        try c.encodeIfPresent(isFaceVerified, forKey: .isFaceVerified)
+        try c.encodeIfPresent(isVerified, forKey: .isVerified)
+        try c.encodeIfPresent(isOnline, forKey: .isOnline)
+        try c.encodeIfPresent(distanceKm, forKey: .distanceKm)
+        try c.encodeIfPresent(location, forKey: .location)
+        try c.encodeIfPresent(city, forKey: .city)
+        try c.encodeIfPresent(lookingFor, forKey: .lookingFor)
+        try c.encodeIfPresent(primaryPhotoUrl, forKey: .primaryPhotoUrl)
+        try c.encodeIfPresent(profilePhotoUrl, forKey: .profilePhotoUrl)
+        try c.encodeIfPresent(about, forKey: .about)
+        try c.encodeIfPresent(photos, forKey: .photos)
+        try c.encodeIfPresent(interests, forKey: .interests)
+        try c.encodeIfPresent(sharedInterests, forKey: .sharedInterests)
+        try c.encodeIfPresent(commonInterestsCount, forKey: .commonInterestsCount)
+        try c.encodeIfPresent(profileMatchPercentage, forKey: .profileMatchPercentage)
+        try c.encodeIfPresent(vibeScore, forKey: .vibeScore)
+        try c.encodeIfPresent(totalMoments, forKey: .totalMoments)
+    }
 }
 
 struct DiscoverySearchData: Codable {

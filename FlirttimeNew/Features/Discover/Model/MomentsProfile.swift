@@ -154,6 +154,8 @@ struct MomentsProfile: Equatable {
     let about: String
     let interests: [MomentsInterest]
     let sharedInterests: [MomentsInterest]
+    /// API `commonInterestsCount` when provided; otherwise derived from `sharedInterests`.
+    var commonInterestsCount: Int? = nil
     let reasons: [String]
     let voiceIntro: MomentsVoiceIntro?
     var moments: [MomentsStory]
@@ -195,10 +197,11 @@ struct MomentsProfile: Equatable {
     }
 
     var sharedVibesText: String? {
-        switch sharedInterests.count {
-        case 0: return nil
+        let count = commonInterestsCount ?? sharedInterests.count
+        switch count {
+        case ..<1: return nil
         case 1: return "1 Shared Interest"
-        default: return "\(sharedInterests.count) Shared Interests"
+        default: return "\(count) Shared Interests"
         }
     }
 

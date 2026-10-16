@@ -98,11 +98,11 @@ final class MomentsCardView: UIView {
         contentView.addSubview(topShade)
 
         var badges: [UIView] = []
-        if profile.isOnline == true {
-            let online = PaddedPillLabel()
-            online.setDot(AppColor.OceanGreen)
-            online.text = "Online now"
-            badges.append(online)
+        if let isOnline = profile.isOnline {
+            let status = PaddedPillLabel()
+            status.setDot(isOnline ? AppColor.OceanGreen : AppColor.Punch)
+            status.text = isOnline ? "Online" : "Offline"
+            badges.append(status)
         }
         if let momentsText = profile.momentsCountText {
             let moments = PaddedPillLabel()
