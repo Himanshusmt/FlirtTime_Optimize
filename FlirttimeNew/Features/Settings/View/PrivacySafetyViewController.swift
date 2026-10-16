@@ -16,7 +16,6 @@ final class PrivacySafetyViewController: BaseViewController, Instantiable {
     @IBOutlet private weak var showDistanceSwitch: UISwitch!
     @IBOutlet private weak var showOnlineSwitch: UISwitch!
     @IBOutlet private weak var publicSearchSwitch: UISwitch!
-    @IBOutlet private weak var emailLabel: UILabel!
 
     private let viewModel = SettingsViewModel()
     private var cancellables: Set<AnyCancellable> = []
@@ -48,8 +47,6 @@ final class PrivacySafetyViewController: BaseViewController, Instantiable {
             self.showDistanceSwitch.isOn = info?.distanceShow ?? true
             self.showOnlineSwitch.isOn = info?.onlineShow ?? true
             self.publicSearchSwitch.isOn = info?.enablePublicSearch ?? true
-            let email = user.email?.trimmingCharacters(in: .whitespaces) ?? ""
-            self.emailLabel.text = email.isEmpty ? "Add an email" : email
         }.store(in: &cancellables)
     }
 
@@ -63,21 +60,5 @@ final class PrivacySafetyViewController: BaseViewController, Instantiable {
         guard let key = switches.first(where: { $0.value === sender })?.key else { return }
         UISelectionFeedbackGenerator().selectionChanged()
         viewModel.updateVisibility(key, isOn: sender.isOn)
-    }
-
-    @IBAction private func changeEmailTapped(_ sender: UIButton) {
-        navigationController?.pushViewController(ChangeEmailViewController.instantiateFromStoryboard(), animated: true)
-    }
-
-    @IBAction private func filteredProfilesTapped(_ sender: UIButton) {
-        navigationController?.pushViewController(FilteredProfilesViewController.instantiateFromStoryboard(), animated: true)
-    }
-
-    @IBAction private func termsTapped(_ sender: UIButton) {
-        loadTermsAndConditions()
-    }
-
-    @IBAction private func privacyPolicyTapped(_ sender: UIButton) {
-        loadPrivacyPolicy()
     }
 }

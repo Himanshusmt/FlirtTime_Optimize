@@ -183,7 +183,7 @@ enum FAQCatalog {
                 answer: "Verified profiles get a badge on their card, which tells people your photos really match you. Verified members get noticeably more matches."),
         FAQItem(category: .account,
                 question: "Can I change my email address?",
-                answer: "Yes. Go to Settings > Privacy & safety > Email. We'll send a code to your new address to confirm it's yours."),
+                answer: "You can add an email from Settings > Personal details if you don't have one yet. Once it's saved, it can't be changed."),
         FAQItem(category: .account,
                 question: "How do I delete my account?",
                 answer: "Go to Settings > Personal details and tap Delete account. This removes your profile, matches and messages, and can't be undone."),

@@ -41,6 +41,7 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
     private let viewModel = SettingsViewModel()
     private var cancellables: Set<AnyCancellable> = []
     private var pendingValue: String?
+    private var isAdding = true
     private var resendTimer: Timer?
     private var resendSecondsLeft = 0
     private var countryCode = "+91"
@@ -74,6 +75,7 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureForKind()
+        applyAddOrChangeCopy()
         setBinding()
         codeSectionView.isHidden = true
         codeTextField.keyboardType = .numberPad
@@ -121,6 +123,25 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
         emailTextField.leftViewMode = .always
     }
 
+    /// This screen is only opened to add a missing email or phone. Copy stays on "add" in that case.
+    private func applyAddOrChangeCopy() {
+        if kind == .email {
+            titleLabel.text = isAdding ? "Add email" : "Change email"
+            heroTitleLabel.text = isAdding ? "Add your email" : "Want to change your email?"
+            heroSubtitleLabel.text = isAdding
+                ? "We'll send a verification code to this address to make sure it's yours."
+                : "We'll send a verification code to your new address to make sure it's yours."
+            newValueCaptionLabel.text = isAdding ? "Email" : "New email"
+        } else {
+            titleLabel.text = isAdding ? "Add phone" : "Change phone"
+            heroTitleLabel.text = isAdding ? "Add your phone number" : "Want to change your phone number?"
+            heroSubtitleLabel.text = isAdding
+                ? "We'll text a verification code to this number to make sure it's yours."
+                : "We'll text a verification code to your new number to make sure it's yours."
+            newValueCaptionLabel.text = isAdding ? "Phone number" : "New phone number"
+        }
+    }
+
     private func updateCountryCodeButton() {
         countryCodeButton.setTitle("\(countryCode) ▾", for: .normal)
         countryCodeButton.sizeToFit()
@@ -131,7 +152,9 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
             guard let self, let user else { return }
             let current = (self.kind == .email ? user.email : user.phone)?.trimmingCharacters(in: .whitespaces) ?? ""
             let placeholder = self.kind == .email ? "No email added yet" : "No phone number added yet"
+            self.isAdding = current.isEmpty
             self.currentEmailLabel.text = current.isEmpty ? placeholder : current
+            self.applyAddOrChangeCopy()
         }.store(in: &cancellables)
     }
 
@@ -182,7 +205,13 @@ final class ChangeEmailViewController: BaseViewController, Instantiable {
             switch result {
             case .success:
                 self.view.endEditing(true)
-                self.aCustomToastView.show(message: self.kind == .email ? "Your email has been updated" : "Your phone number has been updated")
+                let message: String
+                if self.kind == .email {
+                    message = self.isAdding ? "Your email has been added" : "Your email has been updated"
+                } else {
+                    message = self.isAdding ? "Your phone number has been added" : "Your phone number has been updated"
+                }
+                self.aCustomToastView.show(message: message)
                 self.navigationController?.popViewController(animated: true)
             case .failure(let error):
                 self.codeFieldView.layer.borderColor = AppColor.AlertBottomFailure.cgColor
