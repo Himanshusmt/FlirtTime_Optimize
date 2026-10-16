@@ -18,11 +18,6 @@ final class ManageNotificationViewController: BaseViewController, Instantiable {
     @IBOutlet private weak var likesCommentsCallsSwitch: UISwitch!
     @IBOutlet private weak var profileVisitSwitch: UISwitch!
     @IBOutlet private weak var pushSwitch: UISwitch!
-    @IBOutlet private weak var emailSwitch: UISwitch!
-    @IBOutlet private weak var appUpdatesSwitch: UISwitch!
-    @IBOutlet private weak var promotionSwitch: UISwitch!
-    @IBOutlet private weak var discountSwitch: UISwitch!
-    @IBOutlet private weak var newServiceSwitch: UISwitch!
     @IBOutlet private weak var newTipsSwitch: UISwitch!
     @IBOutlet private weak var pushDisabledBanner: UIView!
 
@@ -35,11 +30,6 @@ final class ManageNotificationViewController: BaseViewController, Instantiable {
          .likesCommentsCalls: likesCommentsCallsSwitch,
          .profileVisit: profileVisitSwitch,
          .push: pushSwitch,
-         .email: emailSwitch,
-         .appUpdates: appUpdatesSwitch,
-         .promotion: promotionSwitch,
-         .discountAvailable: discountSwitch,
-         .newServiceAvailable: newServiceSwitch,
          .newTipsAvailable: newTipsSwitch]
     }
 

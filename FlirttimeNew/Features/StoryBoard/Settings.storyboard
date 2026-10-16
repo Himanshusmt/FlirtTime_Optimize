@@ -387,96 +387,7 @@
                                                                             <constraint firstAttribute="trailing" secondItem="stg-01-26x" secondAttribute="trailing" id="cst-01-31x"/>
                                                                         </constraints>
                                                                     </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-32x" userLabel="Privacy &amp; safety Row">
-                                                                        <rect key="frame" x="0" y="65.5" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-33x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="lock.shield.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-36x">
-                                                                                        <rect key="frame" x="10.5" y="10.5" width="19" height="18.5"/>
-                                                                                        <color key="tintColor" red="0.5411764705882353" green="0.24705882352941178" blue="0.9882352941176471" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-01-37x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-01-38x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9450980392156862" green="0.9176470588235294" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-01-34x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-01-35x"/>
-                                                                                    <constraint firstItem="stg-01-36x" firstAttribute="centerX" secondItem="stg-01-33x" secondAttribute="centerX" id="cst-01-39x"/>
-                                                                                    <constraint firstItem="stg-01-36x" firstAttribute="centerY" secondItem="stg-01-33x" secondAttribute="centerY" id="cst-01-40x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-43x">
-                                                                                <rect key="frame" x="70" y="14" width="244" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Privacy &amp; safety" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-41x" userLabel="Privacy &amp; safety Title">
-                                                                                        <rect key="frame" x="0" y="0" width="244" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Profile visibility and contact details" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-42x" userLabel="Privacy &amp; safety Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="244" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-50x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-01-51x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="chevron.right" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-55x" userLabel="Chevron">
-                                                                                <rect key="frame" x="326" y="26.5" width="9" height="12.5"/>
-                                                                                <color key="tintColor" red="0.7764705882352941" green="0.7764705882352941" blue="0.7764705882352941" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="bold"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="9" id="cst-01-56x"/>
-                                                                                    <constraint firstAttribute="height" constant="15" id="cst-01-57x"/>
-                                                                                </constraints>
-                                                                            </imageView>
-                                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-61x" userLabel="Privacy &amp; safety Button">
-                                                                                <rect key="frame" x="0" y="0" width="353" height="65.5"/>
-                                                                                <accessibility key="accessibilityConfiguration" label="Privacy &amp; safety"/>
-                                                                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                                <state key="normal"/>
-                                                                                <connections>
-                                                                                    <action selector="privacySafetyTapped:" destination="vc-00-01x" eventType="touchUpInside" id="act-01-62x"/>
-                                                                                </connections>
-                                                                            </button>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-01-33x" firstAttribute="leading" secondItem="stg-01-32x" secondAttribute="leading" constant="16" id="cst-01-44x"/>
-                                                                            <constraint firstItem="stg-01-33x" firstAttribute="centerY" secondItem="stg-01-32x" secondAttribute="centerY" id="cst-01-45x"/>
-                                                                            <constraint firstItem="stg-01-43x" firstAttribute="leading" secondItem="stg-01-33x" secondAttribute="trailing" constant="14" id="cst-01-46x"/>
-                                                                            <constraint firstItem="stg-01-43x" firstAttribute="top" secondItem="stg-01-32x" secondAttribute="top" constant="14" id="cst-01-47x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-01-43x" secondAttribute="bottom" constant="14" id="cst-01-48x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-01-49x"/>
-                                                                            <constraint firstItem="stg-01-50x" firstAttribute="leading" secondItem="stg-01-43x" secondAttribute="leading" id="cst-01-52x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-01-50x" secondAttribute="trailing" id="cst-01-53x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-01-50x" secondAttribute="bottom" id="cst-01-54x"/>
-                                                                            <constraint firstItem="stg-01-55x" firstAttribute="centerY" secondItem="stg-01-32x" secondAttribute="centerY" id="cst-01-58x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-01-55x" secondAttribute="trailing" constant="18" id="cst-01-59x"/>
-                                                                            <constraint firstItem="stg-01-55x" firstAttribute="leading" secondItem="stg-01-43x" secondAttribute="trailing" constant="12" id="cst-01-60x"/>
-                                                                            <constraint firstItem="stg-01-61x" firstAttribute="top" secondItem="stg-01-32x" secondAttribute="top" id="cst-01-63x"/>
-                                                                            <constraint firstItem="stg-01-61x" firstAttribute="leading" secondItem="stg-01-32x" secondAttribute="leading" id="cst-01-64x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-01-61x" secondAttribute="bottom" id="cst-01-65x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-01-61x" secondAttribute="trailing" id="cst-01-66x"/>
-                                                                        </constraints>
-                                                                    </view>
+
                                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-01-67x" userLabel="Notifications Row">
                                                                         <rect key="frame" x="0" y="131.5" width="353" height="65.5"/>
                                                                         <subviews>
@@ -1843,7 +1754,7 @@
                                 <rect key="frame" x="0" y="177" width="393" height="675"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="24" translatesAutoresizingMaskIntoConstraints="NO" id="stg-06-22x" userLabel="Content Stack">
-                                        <rect key="frame" x="20" y="8" width="353" height="895.5"/>
+                                        <rect key="frame" x="20" y="8" width="353" height="475"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-06-34x" userLabel="Push Disabled Banner">
                                                 <rect key="frame" x="0" y="-44" width="353" height="44"/>
@@ -2071,7 +1982,7 @@
                                                                             <constraint firstItem="stg-07-00x" firstAttribute="leading" secondItem="stg-06-88x" secondAttribute="trailing" constant="12" id="cst-07-05x"/>
                                                                         </constraints>
                                                                     </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-06x" userLabel="Likes, comments &amp; calls Row">
+                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-06x" userLabel="Likes &amp; comments Row">
                                                                         <rect key="frame" x="0" y="147" width="353" height="81.5"/>
                                                                         <subviews>
                                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-07x" userLabel="Icon Tile">
@@ -2101,13 +2012,13 @@
                                                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-17x">
                                                                                 <rect key="frame" x="70" y="14" width="206" height="53.5"/>
                                                                                 <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Likes, comments &amp; calls" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-15x" userLabel="Likes, comments &amp; calls Title">
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Likes &amp; comments" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-15x" userLabel="Likes &amp; comments Title">
                                                                                         <rect key="frame" x="0" y="0" width="206" height="19.5"/>
                                                                                         <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
                                                                                         <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
                                                                                         <nil key="highlightedColor"/>
                                                                                     </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Reactions on your moments and calls" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-16x" userLabel="Likes, comments &amp; calls Subtitle">
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Reactions on your moments" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-16x" userLabel="Likes &amp; comments Subtitle">
                                                                                         <rect key="frame" x="0" y="21.5" width="206" height="31.5"/>
                                                                                         <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
                                                                                         <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
@@ -2190,6 +2101,13 @@
                                                                                     </label>
                                                                                 </subviews>
                                                                             </stackView>
+                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-59s" userLabel="Separator">
+                                                                                <rect key="frame" x="70" y="80.5" width="283" height="1"/>
+                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                <constraints>
+                                                                                    <constraint firstAttribute="height" constant="1" id="cst-07-59s1"/>
+                                                                                </constraints>
+                                                                            </view>
                                                                             <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-53x" userLabel="profileVisitSwitch">
                                                                                 <rect key="frame" x="288" y="25.5" width="51" height="31"/>
                                                                                 <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
@@ -2206,547 +2124,16 @@
                                                                             <constraint firstItem="stg-07-46x" firstAttribute="top" secondItem="stg-07-35x" secondAttribute="top" constant="14" id="cst-07-50x"/>
                                                                             <constraint firstAttribute="bottom" secondItem="stg-07-46x" secondAttribute="bottom" constant="14" id="cst-07-51x"/>
                                                                             <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-07-52x"/>
+                                                                            <constraint firstItem="stg-07-59s" firstAttribute="leading" secondItem="stg-07-46x" secondAttribute="leading" id="cst-07-59s2"/>
+                                                                            <constraint firstAttribute="trailing" secondItem="stg-07-59s" secondAttribute="trailing" id="cst-07-59s3"/>
+                                                                            <constraint firstAttribute="bottom" secondItem="stg-07-59s" secondAttribute="bottom" id="cst-07-59s4"/>
                                                                             <constraint firstItem="stg-07-53x" firstAttribute="centerY" secondItem="stg-07-35x" secondAttribute="centerY" id="cst-07-56x"/>
                                                                             <constraint firstAttribute="trailing" secondItem="stg-07-53x" secondAttribute="trailing" constant="16" id="cst-07-57x"/>
                                                                             <constraint firstItem="stg-07-53x" firstAttribute="leading" secondItem="stg-07-46x" secondAttribute="trailing" constant="12" id="cst-07-58x"/>
                                                                         </constraints>
                                                                     </view>
-                                                                </subviews>
-                                                            </stackView>
-                                                        </subviews>
-                                                        <color key="backgroundColor" red="1.0" green="1.0" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                        <constraints>
-                                                            <constraint firstItem="stg-07-60x" firstAttribute="top" secondItem="stg-07-59x" secondAttribute="top" id="cst-07-61x"/>
-                                                            <constraint firstItem="stg-07-60x" firstAttribute="leading" secondItem="stg-07-59x" secondAttribute="leading" id="cst-07-62x"/>
-                                                            <constraint firstAttribute="bottom" secondItem="stg-07-60x" secondAttribute="bottom" id="cst-07-63x"/>
-                                                            <constraint firstAttribute="trailing" secondItem="stg-07-60x" secondAttribute="trailing" id="cst-07-64x"/>
-                                                        </constraints>
-                                                        <userDefinedRuntimeAttributes>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="20"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor"><color key="value" red="0.0" green="0.0" blue="0.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity"><real key="value" value="0.06"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius"><real key="value" value="14"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset"><size key="value" width="0" height="6"/></userDefinedRuntimeAttribute>
-                                                        </userDefinedRuntimeAttributes>
-                                                    </view>
-                                                </subviews>
-                                            </stackView>
-                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-37x" userLabel="How we reach you Section">
-                                                <rect key="frame" x="0" y="359.5" width="353" height="157.5"/>
-                                                <subviews>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-32x" userLabel="How we reach you Header Wrap">
-                                                        <rect key="frame" x="0" y="0" width="353" height="16"/>
-                                                        <subviews>
-                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="HOW WE REACH YOU" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="1" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-31x" userLabel="How we reach you Header">
-                                                                <rect key="frame" x="6" y="0" width="341" height="16"/>
-                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
-                                                                <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                <nil key="highlightedColor"/>
-                                                            </label>
-                                                        </subviews>
-                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                        <constraints>
-                                                            <constraint firstItem="stg-08-31x" firstAttribute="top" secondItem="stg-08-32x" secondAttribute="top" id="cst-08-33x"/>
-                                                            <constraint firstItem="stg-08-31x" firstAttribute="leading" secondItem="stg-08-32x" secondAttribute="leading" constant="6" id="cst-08-34x"/>
-                                                            <constraint firstAttribute="bottom" secondItem="stg-08-31x" secondAttribute="bottom" id="cst-08-35x"/>
-                                                            <constraint firstAttribute="trailing" secondItem="stg-08-31x" secondAttribute="trailing" constant="6" id="cst-08-36x"/>
-                                                        </constraints>
-                                                    </view>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-25x" userLabel="Card">
-                                                        <rect key="frame" x="0" y="26" width="353" height="131.5"/>
-                                                        <subviews>
-                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="0" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-26x">
-                                                                <rect key="frame" x="0" y="0" width="353" height="131.5"/>
-                                                                <subviews>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-72x" userLabel="Push notifications Row">
-                                                                        <rect key="frame" x="0" y="0" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-73x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="bell.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-76x">
-                                                                                        <rect key="frame" x="10.5" y="10.5" width="19" height="19.5"/>
-                                                                                        <color key="tintColor" red="0.058823529411764705" green="0.403921568627451" blue="0.996078431372549" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-07-77x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-07-78x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9058823529411765" green="0.9411764705882353" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-07-74x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-07-75x"/>
-                                                                                    <constraint firstItem="stg-07-76x" firstAttribute="centerX" secondItem="stg-07-73x" secondAttribute="centerX" id="cst-07-79x"/>
-                                                                                    <constraint firstItem="stg-07-76x" firstAttribute="centerY" secondItem="stg-07-73x" secondAttribute="centerY" id="cst-07-80x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-83x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Push notifications" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-81x" userLabel="Push notifications Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Alerts on this device" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-82x" userLabel="Push notifications Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-90x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-07-91x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-95x" userLabel="pushSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-07-96x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-07-73x" firstAttribute="leading" secondItem="stg-07-72x" secondAttribute="leading" constant="16" id="cst-07-84x"/>
-                                                                            <constraint firstItem="stg-07-73x" firstAttribute="centerY" secondItem="stg-07-72x" secondAttribute="centerY" id="cst-07-85x"/>
-                                                                            <constraint firstItem="stg-07-83x" firstAttribute="leading" secondItem="stg-07-73x" secondAttribute="trailing" constant="14" id="cst-07-86x"/>
-                                                                            <constraint firstItem="stg-07-83x" firstAttribute="top" secondItem="stg-07-72x" secondAttribute="top" constant="14" id="cst-07-87x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-07-83x" secondAttribute="bottom" constant="14" id="cst-07-88x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-07-89x"/>
-                                                                            <constraint firstItem="stg-07-90x" firstAttribute="leading" secondItem="stg-07-83x" secondAttribute="leading" id="cst-07-92x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-07-90x" secondAttribute="trailing" id="cst-07-93x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-07-90x" secondAttribute="bottom" id="cst-07-94x"/>
-                                                                            <constraint firstItem="stg-07-95x" firstAttribute="centerY" secondItem="stg-07-72x" secondAttribute="centerY" id="cst-07-98x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-07-95x" secondAttribute="trailing" constant="16" id="cst-07-99x"/>
-                                                                            <constraint firstItem="stg-07-95x" firstAttribute="leading" secondItem="stg-07-83x" secondAttribute="trailing" constant="12" id="cst-08-00x"/>
-                                                                        </constraints>
-                                                                    </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-01x" userLabel="Email Row">
-                                                                        <rect key="frame" x="0" y="65.5" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-02x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="envelope.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-05x">
-                                                                                        <rect key="frame" x="10.5" y="11.5" width="19" height="16.5"/>
-                                                                                        <color key="tintColor" red="0.23137254901960785" green="0.6470588235294118" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-08-06x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-08-07x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9019607843137255" green="0.9647058823529412" blue="0.9372549019607843" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-08-03x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-08-04x"/>
-                                                                                    <constraint firstItem="stg-08-05x" firstAttribute="centerX" secondItem="stg-08-02x" secondAttribute="centerX" id="cst-08-08x"/>
-                                                                                    <constraint firstItem="stg-08-05x" firstAttribute="centerY" secondItem="stg-08-02x" secondAttribute="centerY" id="cst-08-09x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-12x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Email" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-10x" userLabel="Email Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Updates sent to your inbox" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-11x" userLabel="Email Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-19x" userLabel="emailSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-08-20x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-08-02x" firstAttribute="leading" secondItem="stg-08-01x" secondAttribute="leading" constant="16" id="cst-08-13x"/>
-                                                                            <constraint firstItem="stg-08-02x" firstAttribute="centerY" secondItem="stg-08-01x" secondAttribute="centerY" id="cst-08-14x"/>
-                                                                            <constraint firstItem="stg-08-12x" firstAttribute="leading" secondItem="stg-08-02x" secondAttribute="trailing" constant="14" id="cst-08-15x"/>
-                                                                            <constraint firstItem="stg-08-12x" firstAttribute="top" secondItem="stg-08-01x" secondAttribute="top" constant="14" id="cst-08-16x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-08-12x" secondAttribute="bottom" constant="14" id="cst-08-17x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-08-18x"/>
-                                                                            <constraint firstItem="stg-08-19x" firstAttribute="centerY" secondItem="stg-08-01x" secondAttribute="centerY" id="cst-08-22x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-08-19x" secondAttribute="trailing" constant="16" id="cst-08-23x"/>
-                                                                            <constraint firstItem="stg-08-19x" firstAttribute="leading" secondItem="stg-08-12x" secondAttribute="trailing" constant="12" id="cst-08-24x"/>
-                                                                        </constraints>
-                                                                    </view>
-                                                                </subviews>
-                                                            </stackView>
-                                                        </subviews>
-                                                        <color key="backgroundColor" red="1.0" green="1.0" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                        <constraints>
-                                                            <constraint firstItem="stg-08-26x" firstAttribute="top" secondItem="stg-08-25x" secondAttribute="top" id="cst-08-27x"/>
-                                                            <constraint firstItem="stg-08-26x" firstAttribute="leading" secondItem="stg-08-25x" secondAttribute="leading" id="cst-08-28x"/>
-                                                            <constraint firstAttribute="bottom" secondItem="stg-08-26x" secondAttribute="bottom" id="cst-08-29x"/>
-                                                            <constraint firstAttribute="trailing" secondItem="stg-08-26x" secondAttribute="trailing" id="cst-08-30x"/>
-                                                        </constraints>
-                                                        <userDefinedRuntimeAttributes>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="20"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor"><color key="value" red="0.0" green="0.0" blue="0.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity"><real key="value" value="0.06"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius"><real key="value" value="14"/></userDefinedRuntimeAttribute>
-                                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset"><size key="value" width="0" height="6"/></userDefinedRuntimeAttribute>
-                                                        </userDefinedRuntimeAttributes>
-                                                    </view>
-                                                </subviews>
-                                            </stackView>
-                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-90x" userLabel="From Flirt Time Section">
-                                                <rect key="frame" x="0" y="541" width="353" height="354.5"/>
-                                                <subviews>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-85x" userLabel="From Flirt Time Header Wrap">
-                                                        <rect key="frame" x="0" y="0" width="353" height="16"/>
-                                                        <subviews>
-                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="FROM FLIRT TIME" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="1" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-84x" userLabel="From Flirt Time Header">
-                                                                <rect key="frame" x="6" y="0" width="341" height="16"/>
-                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
-                                                                <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                <nil key="highlightedColor"/>
-                                                            </label>
-                                                        </subviews>
-                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                        <constraints>
-                                                            <constraint firstItem="stg-09-84x" firstAttribute="top" secondItem="stg-09-85x" secondAttribute="top" id="cst-09-86x"/>
-                                                            <constraint firstItem="stg-09-84x" firstAttribute="leading" secondItem="stg-09-85x" secondAttribute="leading" constant="6" id="cst-09-87x"/>
-                                                            <constraint firstAttribute="bottom" secondItem="stg-09-84x" secondAttribute="bottom" id="cst-09-88x"/>
-                                                            <constraint firstAttribute="trailing" secondItem="stg-09-84x" secondAttribute="trailing" constant="6" id="cst-09-89x"/>
-                                                        </constraints>
-                                                    </view>
-                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-78x" userLabel="Card">
-                                                        <rect key="frame" x="0" y="26" width="353" height="328.5"/>
-                                                        <subviews>
-                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="0" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-79x">
-                                                                <rect key="frame" x="0" y="0" width="353" height="328.5"/>
-                                                                <subviews>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-38x" userLabel="App updates Row">
-                                                                        <rect key="frame" x="0" y="0" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-39x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="sparkles" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-42x">
-                                                                                        <rect key="frame" x="10.5" y="9" width="19" height="20.5"/>
-                                                                                        <color key="tintColor" red="0.058823529411764705" green="0.403921568627451" blue="0.996078431372549" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-08-43x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-08-44x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9058823529411765" green="0.9411764705882353" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-08-40x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-08-41x"/>
-                                                                                    <constraint firstItem="stg-08-42x" firstAttribute="centerX" secondItem="stg-08-39x" secondAttribute="centerX" id="cst-08-45x"/>
-                                                                                    <constraint firstItem="stg-08-42x" firstAttribute="centerY" secondItem="stg-08-39x" secondAttribute="centerY" id="cst-08-46x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-49x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="App updates" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-47x" userLabel="App updates Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="New features and improvements" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-48x" userLabel="App updates Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-56x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-08-57x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-61x" userLabel="appUpdatesSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-08-62x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-08-39x" firstAttribute="leading" secondItem="stg-08-38x" secondAttribute="leading" constant="16" id="cst-08-50x"/>
-                                                                            <constraint firstItem="stg-08-39x" firstAttribute="centerY" secondItem="stg-08-38x" secondAttribute="centerY" id="cst-08-51x"/>
-                                                                            <constraint firstItem="stg-08-49x" firstAttribute="leading" secondItem="stg-08-39x" secondAttribute="trailing" constant="14" id="cst-08-52x"/>
-                                                                            <constraint firstItem="stg-08-49x" firstAttribute="top" secondItem="stg-08-38x" secondAttribute="top" constant="14" id="cst-08-53x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-08-49x" secondAttribute="bottom" constant="14" id="cst-08-54x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-08-55x"/>
-                                                                            <constraint firstItem="stg-08-56x" firstAttribute="leading" secondItem="stg-08-49x" secondAttribute="leading" id="cst-08-58x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-08-56x" secondAttribute="trailing" id="cst-08-59x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-08-56x" secondAttribute="bottom" id="cst-08-60x"/>
-                                                                            <constraint firstItem="stg-08-61x" firstAttribute="centerY" secondItem="stg-08-38x" secondAttribute="centerY" id="cst-08-64x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-08-61x" secondAttribute="trailing" constant="16" id="cst-08-65x"/>
-                                                                            <constraint firstItem="stg-08-61x" firstAttribute="leading" secondItem="stg-08-49x" secondAttribute="trailing" constant="12" id="cst-08-66x"/>
-                                                                        </constraints>
-                                                                    </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-67x" userLabel="Promotions Row">
-                                                                        <rect key="frame" x="0" y="65.5" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-68x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="megaphone.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-71x">
-                                                                                        <rect key="frame" x="10.5" y="10" width="19" height="19.5"/>
-                                                                                        <color key="tintColor" red="0.9372549019607843" green="0.5568627450980392" blue="0.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-08-72x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-08-73x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="1.0" green="0.9568627450980393" blue="0.8823529411764706" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-08-69x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-08-70x"/>
-                                                                                    <constraint firstItem="stg-08-71x" firstAttribute="centerX" secondItem="stg-08-68x" secondAttribute="centerX" id="cst-08-74x"/>
-                                                                                    <constraint firstItem="stg-08-71x" firstAttribute="centerY" secondItem="stg-08-68x" secondAttribute="centerY" id="cst-08-75x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-78x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Promotions" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-76x" userLabel="Promotions Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Events and special campaigns" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-77x" userLabel="Promotions Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-85x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-08-86x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-90x" userLabel="promotionSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-08-91x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-08-68x" firstAttribute="leading" secondItem="stg-08-67x" secondAttribute="leading" constant="16" id="cst-08-79x"/>
-                                                                            <constraint firstItem="stg-08-68x" firstAttribute="centerY" secondItem="stg-08-67x" secondAttribute="centerY" id="cst-08-80x"/>
-                                                                            <constraint firstItem="stg-08-78x" firstAttribute="leading" secondItem="stg-08-68x" secondAttribute="trailing" constant="14" id="cst-08-81x"/>
-                                                                            <constraint firstItem="stg-08-78x" firstAttribute="top" secondItem="stg-08-67x" secondAttribute="top" constant="14" id="cst-08-82x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-08-78x" secondAttribute="bottom" constant="14" id="cst-08-83x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-08-84x"/>
-                                                                            <constraint firstItem="stg-08-85x" firstAttribute="leading" secondItem="stg-08-78x" secondAttribute="leading" id="cst-08-87x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-08-85x" secondAttribute="trailing" id="cst-08-88x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-08-85x" secondAttribute="bottom" id="cst-08-89x"/>
-                                                                            <constraint firstItem="stg-08-90x" firstAttribute="centerY" secondItem="stg-08-67x" secondAttribute="centerY" id="cst-08-93x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-08-90x" secondAttribute="trailing" constant="16" id="cst-08-94x"/>
-                                                                            <constraint firstItem="stg-08-90x" firstAttribute="leading" secondItem="stg-08-78x" secondAttribute="trailing" constant="12" id="cst-08-95x"/>
-                                                                        </constraints>
-                                                                    </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-96x" userLabel="Discounts Row">
-                                                                        <rect key="frame" x="0" y="131.5" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-97x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="tag.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-00x">
-                                                                                        <rect key="frame" x="10.5" y="10" width="19" height="21"/>
-                                                                                        <color key="tintColor" red="0.23137254901960785" green="0.6470588235294118" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-09-01x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-09-02x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9019607843137255" green="0.9647058823529412" blue="0.9372549019607843" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-08-98x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-08-99x"/>
-                                                                                    <constraint firstItem="stg-09-00x" firstAttribute="centerX" secondItem="stg-08-97x" secondAttribute="centerX" id="cst-09-03x"/>
-                                                                                    <constraint firstItem="stg-09-00x" firstAttribute="centerY" secondItem="stg-08-97x" secondAttribute="centerY" id="cst-09-04x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-07x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Discounts" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-05x" userLabel="Discounts Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Offers on Premium and coins" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-06x" userLabel="Discounts Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-14x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-09-15x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-19x" userLabel="discountSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-09-20x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-08-97x" firstAttribute="leading" secondItem="stg-08-96x" secondAttribute="leading" constant="16" id="cst-09-08x"/>
-                                                                            <constraint firstItem="stg-08-97x" firstAttribute="centerY" secondItem="stg-08-96x" secondAttribute="centerY" id="cst-09-09x"/>
-                                                                            <constraint firstItem="stg-09-07x" firstAttribute="leading" secondItem="stg-08-97x" secondAttribute="trailing" constant="14" id="cst-09-10x"/>
-                                                                            <constraint firstItem="stg-09-07x" firstAttribute="top" secondItem="stg-08-96x" secondAttribute="top" constant="14" id="cst-09-11x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-09-07x" secondAttribute="bottom" constant="14" id="cst-09-12x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-09-13x"/>
-                                                                            <constraint firstItem="stg-09-14x" firstAttribute="leading" secondItem="stg-09-07x" secondAttribute="leading" id="cst-09-16x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-09-14x" secondAttribute="trailing" id="cst-09-17x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-09-14x" secondAttribute="bottom" id="cst-09-18x"/>
-                                                                            <constraint firstItem="stg-09-19x" firstAttribute="centerY" secondItem="stg-08-96x" secondAttribute="centerY" id="cst-09-22x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-09-19x" secondAttribute="trailing" constant="16" id="cst-09-23x"/>
-                                                                            <constraint firstItem="stg-09-19x" firstAttribute="leading" secondItem="stg-09-07x" secondAttribute="trailing" constant="12" id="cst-09-24x"/>
-                                                                        </constraints>
-                                                                    </view>
-                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-25x" userLabel="New services Row">
-                                                                        <rect key="frame" x="0" y="197" width="353" height="65.5"/>
-                                                                        <subviews>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-26x" userLabel="Icon Tile">
-                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
-                                                                                <subviews>
-                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="star.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-29x">
-                                                                                        <rect key="frame" x="10.5" y="9.5" width="19" height="19.5"/>
-                                                                                        <color key="tintColor" red="0.5411764705882353" green="0.24705882352941178" blue="0.9882352941176471" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
-                                                                                        <constraints>
-                                                                                            <constraint firstAttribute="width" constant="19" id="cst-09-30x"/>
-                                                                                            <constraint firstAttribute="height" constant="19" id="cst-09-31x"/>
-                                                                                        </constraints>
-                                                                                    </imageView>
-                                                                                </subviews>
-                                                                                <color key="backgroundColor" red="0.9450980392156862" green="0.9176470588235294" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="width" constant="40" id="cst-09-27x"/>
-                                                                                    <constraint firstAttribute="height" constant="40" id="cst-09-28x"/>
-                                                                                    <constraint firstItem="stg-09-29x" firstAttribute="centerX" secondItem="stg-09-26x" secondAttribute="centerX" id="cst-09-32x"/>
-                                                                                    <constraint firstItem="stg-09-29x" firstAttribute="centerY" secondItem="stg-09-26x" secondAttribute="centerY" id="cst-09-33x"/>
-                                                                                </constraints>
-                                                                                <userDefinedRuntimeAttributes>
-                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
-                                                                                </userDefinedRuntimeAttributes>
-                                                                            </view>
-                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-36x">
-                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
-                                                                                <subviews>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="New services" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-34x" userLabel="New services Title">
-                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
-                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="When we launch something new" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-35x" userLabel="New services Subtitle">
-                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
-                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
-                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                        <nil key="highlightedColor"/>
-                                                                                    </label>
-                                                                                </subviews>
-                                                                            </stackView>
-                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-43x" userLabel="Separator">
-                                                                                <rect key="frame" x="70" y="64.5" width="283" height="1"/>
-                                                                                <color key="backgroundColor" red="0.9411764705882353" green="0.9411764705882353" blue="0.9529411764705882" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <constraints>
-                                                                                    <constraint firstAttribute="height" constant="1" id="cst-09-44x"/>
-                                                                                </constraints>
-                                                                            </view>
-                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-48x" userLabel="newServiceSwitch">
-                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
-                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
-                                                                                <connections>
-                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-09-49x"/>
-                                                                                </connections>
-                                                                            </switch>
-                                                                        </subviews>
-                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                                        <constraints>
-                                                                            <constraint firstItem="stg-09-26x" firstAttribute="leading" secondItem="stg-09-25x" secondAttribute="leading" constant="16" id="cst-09-37x"/>
-                                                                            <constraint firstItem="stg-09-26x" firstAttribute="centerY" secondItem="stg-09-25x" secondAttribute="centerY" id="cst-09-38x"/>
-                                                                            <constraint firstItem="stg-09-36x" firstAttribute="leading" secondItem="stg-09-26x" secondAttribute="trailing" constant="14" id="cst-09-39x"/>
-                                                                            <constraint firstItem="stg-09-36x" firstAttribute="top" secondItem="stg-09-25x" secondAttribute="top" constant="14" id="cst-09-40x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-09-36x" secondAttribute="bottom" constant="14" id="cst-09-41x"/>
-                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-09-42x"/>
-                                                                            <constraint firstItem="stg-09-43x" firstAttribute="leading" secondItem="stg-09-36x" secondAttribute="leading" id="cst-09-45x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-09-43x" secondAttribute="trailing" id="cst-09-46x"/>
-                                                                            <constraint firstAttribute="bottom" secondItem="stg-09-43x" secondAttribute="bottom" id="cst-09-47x"/>
-                                                                            <constraint firstItem="stg-09-48x" firstAttribute="centerY" secondItem="stg-09-25x" secondAttribute="centerY" id="cst-09-51x"/>
-                                                                            <constraint firstAttribute="trailing" secondItem="stg-09-48x" secondAttribute="trailing" constant="16" id="cst-09-52x"/>
-                                                                            <constraint firstItem="stg-09-48x" firstAttribute="leading" secondItem="stg-09-36x" secondAttribute="trailing" constant="12" id="cst-09-53x"/>
-                                                                        </constraints>
-                                                                    </view>
                                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-54x" userLabel="Dating tips Row">
-                                                                        <rect key="frame" x="0" y="262.5" width="353" height="65.5"/>
+                                                                        <rect key="frame" x="0" y="310" width="353" height="65.5"/>
                                                                         <subviews>
                                                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-09-55x" userLabel="Icon Tile">
                                                                                 <rect key="frame" x="16" y="13" width="40" height="40"/>
@@ -2815,10 +2202,10 @@
                                                         </subviews>
                                                         <color key="backgroundColor" red="1.0" green="1.0" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
                                                         <constraints>
-                                                            <constraint firstItem="stg-09-79x" firstAttribute="top" secondItem="stg-09-78x" secondAttribute="top" id="cst-09-80x"/>
-                                                            <constraint firstItem="stg-09-79x" firstAttribute="leading" secondItem="stg-09-78x" secondAttribute="leading" id="cst-09-81x"/>
-                                                            <constraint firstAttribute="bottom" secondItem="stg-09-79x" secondAttribute="bottom" id="cst-09-82x"/>
-                                                            <constraint firstAttribute="trailing" secondItem="stg-09-79x" secondAttribute="trailing" id="cst-09-83x"/>
+                                                            <constraint firstItem="stg-07-60x" firstAttribute="top" secondItem="stg-07-59x" secondAttribute="top" id="cst-07-61x"/>
+                                                            <constraint firstItem="stg-07-60x" firstAttribute="leading" secondItem="stg-07-59x" secondAttribute="leading" id="cst-07-62x"/>
+                                                            <constraint firstAttribute="bottom" secondItem="stg-07-60x" secondAttribute="bottom" id="cst-07-63x"/>
+                                                            <constraint firstAttribute="trailing" secondItem="stg-07-60x" secondAttribute="trailing" id="cst-07-64x"/>
                                                         </constraints>
                                                         <userDefinedRuntimeAttributes>
                                                             <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="20"/></userDefinedRuntimeAttribute>
@@ -2830,6 +2217,121 @@
                                                     </view>
                                                 </subviews>
                                             </stackView>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-37x" userLabel="How we reach you Section">
+                                                <rect key="frame" x="0" y="359.5" width="353" height="157.5"/>
+                                                <subviews>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-32x" userLabel="How we reach you Header Wrap">
+                                                        <rect key="frame" x="0" y="0" width="353" height="16"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="HOW WE REACH YOU" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="1" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-31x" userLabel="How we reach you Header">
+                                                                <rect key="frame" x="6" y="0" width="341" height="16"/>
+                                                                <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="13"/>
+                                                                <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                        </subviews>
+                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                        <constraints>
+                                                            <constraint firstItem="stg-08-31x" firstAttribute="top" secondItem="stg-08-32x" secondAttribute="top" id="cst-08-33x"/>
+                                                            <constraint firstItem="stg-08-31x" firstAttribute="leading" secondItem="stg-08-32x" secondAttribute="leading" constant="6" id="cst-08-34x"/>
+                                                            <constraint firstAttribute="bottom" secondItem="stg-08-31x" secondAttribute="bottom" id="cst-08-35x"/>
+                                                            <constraint firstAttribute="trailing" secondItem="stg-08-31x" secondAttribute="trailing" constant="6" id="cst-08-36x"/>
+                                                        </constraints>
+                                                    </view>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-25x" userLabel="Card">
+                                                        <rect key="frame" x="0" y="26" width="353" height="65.5"/>
+                                                        <subviews>
+                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="0" translatesAutoresizingMaskIntoConstraints="NO" id="stg-08-26x">
+                                                                <rect key="frame" x="0" y="0" width="353" height="65.5"/>
+                                                                <subviews>
+                                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-72x" userLabel="Push notifications Row">
+                                                                        <rect key="frame" x="0" y="0" width="353" height="65.5"/>
+                                                                        <subviews>
+                                                                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-73x" userLabel="Icon Tile">
+                                                                                <rect key="frame" x="16" y="13" width="40" height="40"/>
+                                                                                <subviews>
+                                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" image="bell.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-76x">
+                                                                                        <rect key="frame" x="10.5" y="10.5" width="19" height="19.5"/>
+                                                                                        <color key="tintColor" red="0.058823529411764705" green="0.403921568627451" blue="0.996078431372549" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <preferredSymbolConfiguration key="preferredSymbolConfiguration" weight="semibold"/>
+                                                                                        <constraints>
+                                                                                            <constraint firstAttribute="width" constant="19" id="cst-07-77x"/>
+                                                                                            <constraint firstAttribute="height" constant="19" id="cst-07-78x"/>
+                                                                                        </constraints>
+                                                                                    </imageView>
+                                                                                </subviews>
+                                                                                <color key="backgroundColor" red="0.9058823529411765" green="0.9411764705882353" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                <constraints>
+                                                                                    <constraint firstAttribute="width" constant="40" id="cst-07-74x"/>
+                                                                                    <constraint firstAttribute="height" constant="40" id="cst-07-75x"/>
+                                                                                    <constraint firstItem="stg-07-76x" firstAttribute="centerX" secondItem="stg-07-73x" secondAttribute="centerX" id="cst-07-79x"/>
+                                                                                    <constraint firstItem="stg-07-76x" firstAttribute="centerY" secondItem="stg-07-73x" secondAttribute="centerY" id="cst-07-80x"/>
+                                                                                </constraints>
+                                                                                <userDefinedRuntimeAttributes>
+                                                                                    <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="12.8"/></userDefinedRuntimeAttribute>
+                                                                                </userDefinedRuntimeAttributes>
+                                                                            </view>
+                                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-83x">
+                                                                                <rect key="frame" x="70" y="14" width="206" height="37.5"/>
+                                                                                <subviews>
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Push notifications" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-81x" userLabel="Push notifications Title">
+                                                                                        <rect key="frame" x="0" y="0" width="206" height="19.5"/>
+                                                                                        <fontDescription key="fontDescription" name="Fredoka-Medium" family="Fredoka" pointSize="16"/>
+                                                                                        <color key="textColor" red="0.1450980392156863" green="0.1450980392156863" blue="0.1450980392156863" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <nil key="highlightedColor"/>
+                                                                                    </label>
+                                                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Alerts on this device" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-82x" userLabel="Push notifications Subtitle">
+                                                                                        <rect key="frame" x="0" y="21.5" width="206" height="16"/>
+                                                                                        <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="13"/>
+                                                                                        <color key="textColor" red="0.4588235294117647" green="0.4588235294117647" blue="0.4588235294117647" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                        <nil key="highlightedColor"/>
+                                                                                    </label>
+                                                                                </subviews>
+                                                                            </stackView>
+                                                                            
+                                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="stg-07-95x" userLabel="pushSwitch">
+                                                                                <rect key="frame" x="288" y="17.5" width="51" height="31"/>
+                                                                                <color key="onTintColor" red="0.8509803921568627" green="0.16862745098039217" blue="0.16862745098039217" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                                                <connections>
+                                                                                    <action selector="switchChanged:" destination="vc-05-98x" eventType="valueChanged" id="act-07-96x"/>
+                                                                                </connections>
+                                                                            </switch>
+                                                                        </subviews>
+                                                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        <constraints>
+                                                                            <constraint firstItem="stg-07-73x" firstAttribute="leading" secondItem="stg-07-72x" secondAttribute="leading" constant="16" id="cst-07-84x"/>
+                                                                            <constraint firstItem="stg-07-73x" firstAttribute="centerY" secondItem="stg-07-72x" secondAttribute="centerY" id="cst-07-85x"/>
+                                                                            <constraint firstItem="stg-07-83x" firstAttribute="leading" secondItem="stg-07-73x" secondAttribute="trailing" constant="14" id="cst-07-86x"/>
+                                                                            <constraint firstItem="stg-07-83x" firstAttribute="top" secondItem="stg-07-72x" secondAttribute="top" constant="14" id="cst-07-87x"/>
+                                                                            <constraint firstAttribute="bottom" secondItem="stg-07-83x" secondAttribute="bottom" constant="14" id="cst-07-88x"/>
+                                                                            <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="64" id="cst-07-89x"/>
+                                                                            <constraint firstItem="stg-07-95x" firstAttribute="centerY" secondItem="stg-07-72x" secondAttribute="centerY" id="cst-07-98x"/>
+                                                                            <constraint firstAttribute="trailing" secondItem="stg-07-95x" secondAttribute="trailing" constant="16" id="cst-07-99x"/>
+                                                                            <constraint firstItem="stg-07-95x" firstAttribute="leading" secondItem="stg-07-83x" secondAttribute="trailing" constant="12" id="cst-08-00x"/>
+                                                                        </constraints>
+                                                                    </view>
+                                                                    
+                                                                </subviews>
+                                                            </stackView>
+                                                        </subviews>
+                                                        <color key="backgroundColor" red="1.0" green="1.0" blue="1.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/>
+                                                        <constraints>
+                                                            <constraint firstItem="stg-08-26x" firstAttribute="top" secondItem="stg-08-25x" secondAttribute="top" id="cst-08-27x"/>
+                                                            <constraint firstItem="stg-08-26x" firstAttribute="leading" secondItem="stg-08-25x" secondAttribute="leading" id="cst-08-28x"/>
+                                                            <constraint firstAttribute="bottom" secondItem="stg-08-26x" secondAttribute="bottom" id="cst-08-29x"/>
+                                                            <constraint firstAttribute="trailing" secondItem="stg-08-26x" secondAttribute="trailing" id="cst-08-30x"/>
+                                                        </constraints>
+                                                        <userDefinedRuntimeAttributes>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius"><real key="value" value="20"/></userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor"><color key="value" red="0.0" green="0.0" blue="0.0" alpha="1.0" colorSpace="custom" customColorSpace="sRGB"/></userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity"><real key="value" value="0.06"/></userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius"><real key="value" value="14"/></userDefinedRuntimeAttribute>
+                                                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset"><size key="value" width="0" height="6"/></userDefinedRuntimeAttribute>
+                                                        </userDefinedRuntimeAttributes>
+                                                    </view>
+                                                </subviews>
+                                            </stackView>
+                                            
                                         </subviews>
                                     </stackView>
                                 </subviews>
@@ -2868,11 +2370,6 @@
                         <outlet property="likesCommentsCallsSwitch" destination="stg-07-29x" id="out-07-31x"/>
                         <outlet property="profileVisitSwitch" destination="stg-07-53x" id="out-07-55x"/>
                         <outlet property="pushSwitch" destination="stg-07-95x" id="out-07-97x"/>
-                        <outlet property="emailSwitch" destination="stg-08-19x" id="out-08-21x"/>
-                        <outlet property="appUpdatesSwitch" destination="stg-08-61x" id="out-08-63x"/>
-                        <outlet property="promotionSwitch" destination="stg-08-90x" id="out-08-92x"/>
-                        <outlet property="discountSwitch" destination="stg-09-19x" id="out-09-21x"/>
-                        <outlet property="newServiceSwitch" destination="stg-09-48x" id="out-09-50x"/>
                         <outlet property="newTipsSwitch" destination="stg-09-72x" id="out-09-74x"/>
                     </connections>
                 </viewController>

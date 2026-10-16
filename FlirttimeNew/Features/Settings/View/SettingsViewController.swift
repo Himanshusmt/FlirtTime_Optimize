@@ -98,10 +98,6 @@ final class SettingsViewController: BaseViewController, Instantiable {
         push(PersonalDetailsViewController.instantiateFromStoryboard())
     }
 
-    @IBAction private func privacySafetyTapped(_ sender: UIButton) {
-        push(PrivacySafetyViewController.instantiateFromStoryboard())
-    }
-
     @IBAction private func notificationsTapped(_ sender: UIButton) {
         push(ManageNotificationViewController.instantiateFromStoryboard())
     }
