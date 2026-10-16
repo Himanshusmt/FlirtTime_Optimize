@@ -106,8 +106,17 @@ class BaseViewController: UIViewController {
         }
     }
 
-    func openCoinShop() {
-        navigationController?.pushViewController(CoinsViewController(), animated: true)
+    func openCoinShop(onPurchased: (() -> Void)? = nil) {
+        let coinsVC = CoinsViewController()
+        coinsVC.onPurchased = onPurchased
+        if let navigationController {
+            navigationController.pushViewController(coinsVC, animated: true)
+        } else {
+            let nav = UINavigationController(rootViewController: coinsVC)
+            nav.isNavigationBarHidden = true
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
+        }
     }
 
     /// Placeholder for destinations whose module has not been ported yet.

@@ -216,6 +216,91 @@ final class CoinBalanceCard: UIView {
     }
 }
 
+// MARK: - Profile coins
+
+/// Profile section card: live balance plus a clear path into the Coin Shop.
+/// Styled to sit with the Premium / membership cards (Lavenderblush + Punch).
+final class ProfileCoinsCard: UIControl {
+
+    private let amountLabel = UILabel.vibeLabel(.bold, 20, style: .title3, color: AppColor.Punch)
+    private let coinImage = UIImageView(image: UIImage(named: "singleCoin"))
+
+    override var isHighlighted: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.15) {
+                self.alpha = self.isHighlighted ? 0.85 : 1
+                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.98, y: 0.98) : .identity
+            }
+        }
+    }
+
+    init() {
+        super.init(frame: .zero)
+        // Same soft blush surface as SubscriptionMembershipCard on Profile.
+        backgroundColor = AppColor.Lavenderblush
+        layer.cornerRadius = 20
+        layer.cornerCurve = .continuous
+        layer.shadowOpacity = 0
+
+        let coinBadge = UIView()
+        coinBadge.backgroundColor = AppColor.AppWhite
+        coinBadge.layer.cornerRadius = 22
+        coinImage.contentMode = .scaleAspectFit
+        coinImage.translatesAutoresizingMaskIntoConstraints = false
+        coinBadge.addSubview(coinImage)
+
+        let title = UILabel.vibeLabel(.bold, 15, style: .subheadline, color: AppColor.Punch)
+        title.text = "My Coins"
+        let subtitle = UILabel.vibeLabel(.regular, 12, style: .caption1, color: AppColor.DoveGray)
+        subtitle.text = "For Super Likes, gifts and more"
+        let texts = UIStackView(arrangedSubviews: [title, amountLabel, subtitle])
+        texts.axis = .vertical
+        texts.alignment = .leading
+        texts.spacing = 2
+        texts.setCustomSpacing(4, after: amountLabel)
+
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = AppColor.Punch
+        config.baseForegroundColor = .white
+        config.contentInsets = NSDirectionalEdgeInsets(top: 11, leading: 14, bottom: 11, trailing: 14)
+        config.attributedTitle = AttributedString("Get coins", attributes: AttributeContainer([
+            .font: MomentsFont.scaled(.bold, 14)
+        ]))
+        let getCoins = UIButton(configuration: config)
+        getCoins.isUserInteractionEnabled = false
+        getCoins.setContentHuggingPriority(.required, for: .horizontal)
+
+        let row = UIStackView(arrangedSubviews: [coinBadge, texts, getCoins])
+        row.spacing = 12
+        row.alignment = .center
+        row.isUserInteractionEnabled = false
+        addSubview(row)
+        row.pinEdges(to: self, insets: UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14))
+
+        NSLayoutConstraint.activate([
+            coinBadge.widthAnchor.constraint(equalToConstant: 44),
+            coinBadge.heightAnchor.constraint(equalToConstant: 44),
+            coinImage.centerXAnchor.constraint(equalTo: coinBadge.centerXAnchor),
+            coinImage.centerYAnchor.constraint(equalTo: coinBadge.centerYAnchor),
+            coinImage.widthAnchor.constraint(equalToConstant: 26),
+            coinImage.heightAnchor.constraint(equalToConstant: 26)
+        ])
+
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        accessibilityHint = "Opens the coin shop"
+        setBalance(0)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func setBalance(_ balance: Int) {
+        amountLabel.text = "\(balance.vibeCountText) coins"
+        accessibilityLabel = "My Coins, \(balance) coins. Get coins"
+    }
+}
+
 // MARK: - Premium upsell
 
 final class CoinPremiumUpsellCard: UIControl {

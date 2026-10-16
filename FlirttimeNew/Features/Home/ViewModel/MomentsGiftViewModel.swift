@@ -45,6 +45,11 @@ final class MomentsGiftViewModel {
         selectedAmount <= coinBalance
     }
 
+    /// Keeps the gift sheet in sync after buying coins in the Coin Shop.
+    func syncBalanceFromWallet() {
+        coinBalance = CoinWallet.shared.balance
+    }
+
     func isSelected(_ gift: MomentsGift) -> Bool {
         selectedGiftIds.contains(gift.id)
     }

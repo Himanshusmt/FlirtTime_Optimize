@@ -140,6 +140,7 @@ final class SubscriptionMembershipCard: UIView {
     private let detailsPanel = UIView()
     private let planLabel = UILabel.vibeLabel(.bold, 16, style: .headline, color: AppColor.AppBlack)
     private let priceLabel = UILabel.vibeLabel(.regular, 13, style: .footnote, color: AppColor.DoveGray)
+    private let autoRenewLabel = UILabel.vibeLabel(.medium, 12, style: .caption1, color: AppColor.DoveGray)
     private let daysBanner = UIView()
     private let daysTitleLabel = UILabel.vibeLabel(.bold, 18, style: .headline, color: AppColor.Punch)
     private let daysSubtitleLabel = UILabel.vibeLabel(.regular, 12, style: .caption1, color: AppColor.DoveGray)
@@ -191,16 +192,14 @@ final class SubscriptionMembershipCard: UIView {
     func configure(_ membership: MySubscriptionData) {
         statusChip.configure(text: membership.displayStatus, isActive: membership.isCurrentlyActive)
 
-        planLabel.text = membership.displayPlanName.hasSuffix("Premium")
-            ? membership.displayPlanName
-            : "\(membership.displayPlanName) Premium"
+        planLabel.text = membership.displayPlanName
 
         if let days = membership.daysRemainingTitle {
             collapsedSubtitle = "\(membership.displayPlanName) · \(days)"
         } else if let price = membership.priceLine {
             collapsedSubtitle = "\(membership.displayPlanName) · \(price)"
         } else {
-            collapsedSubtitle = "Tap the arrow to view plan details"
+            collapsedSubtitle = "\(membership.displayStatus) · \(membership.autoRenewalLine)"
         }
         subtitleLabel.text = isExpanded
             ? "Everything is unlocked — enjoy Flirttime Premium."
@@ -213,33 +212,41 @@ final class SubscriptionMembershipCard: UIView {
             priceLabel.isHidden = true
         }
 
+        autoRenewLabel.text = membership.autoRenewalLine
+        autoRenewLabel.isHidden = false
+
         if let daysTitle = membership.daysRemainingTitle {
             daysTitleLabel.text = daysTitle
             daysSubtitleLabel.text = membership.daysRemainingSubtitle
             daysBanner.isHidden = false
-        } else if let price = membership.priceLine {
-            daysTitleLabel.text = price
+        } else {
+            daysTitleLabel.text = membership.displayStatus
             daysSubtitleLabel.text = membership.renewalSummary
             daysBanner.isHidden = false
-            priceLabel.isHidden = true
-        } else {
-            daysBanner.isHidden = true
         }
 
         startedBox.configure(title: "Started", value: membership.formattedPurchaseDate ?? "—")
-        expiresBox.configure(title: "Expires", value: membership.formattedExpiry ?? "—")
+        let endTitle = membership.autoRenew == true ? "Renews" : "Expires"
+        expiresBox.configure(title: endTitle, value: membership.formattedExpiry ?? "—")
 
+        let apiBenefits = membership.benefitTexts
         let planFeatures = SubscriptionPlanStore.shared.options
             .first { $0.plan.appleProductID == membership.productId }?
             .plan.features?
             .compactMap(\.text)
             .filter { !$0.isEmpty }
-        setBenefits(planFeatures?.isEmpty == false ? planFeatures! : Self.defaultBenefits)
+        if let apiBenefits, !apiBenefits.isEmpty {
+            setBenefits(apiBenefits)
+        } else if let planFeatures, !planFeatures.isEmpty {
+            setBenefits(planFeatures)
+        } else {
+            setBenefits(Self.defaultBenefits)
+        }
 
         setExpanded(false, animated: false)
         setBenefitsExpanded(false, animated: false)
 
-        accessibilityLabel = "You're a Premium user. \(membership.displayStatus)."
+        accessibilityLabel = "You're a Premium user. \(membership.displayStatus). \(membership.autoRenewalLine)."
     }
 
     private func setUI() {
@@ -269,7 +276,7 @@ final class SubscriptionMembershipCard: UIView {
         headerRow.pinEdges(to: headerView)
 
         // Details (plan / days / dates / actions)
-        let planBlock = UIStackView(arrangedSubviews: [planLabel, priceLabel])
+        let planBlock = UIStackView(arrangedSubviews: [planLabel, priceLabel, autoRenewLabel])
         planBlock.axis = .vertical
         planBlock.spacing = 2
 
