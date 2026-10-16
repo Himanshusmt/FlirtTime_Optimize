@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Combine
 
 final class MomentsGiftViewController: BaseViewController {
 
@@ -16,6 +17,7 @@ final class MomentsGiftViewController: BaseViewController {
 
     private let viewModel: MomentsGiftViewModel
     private let receiverName: String
+    private var cancellables: Set<AnyCancellable> = []
 
     private let itemsPerRow: CGFloat = 4
     private let itemSpacing: CGFloat = 10
@@ -35,6 +37,25 @@ final class MomentsGiftViewController: BaseViewController {
         label.font = UIFont.fredoka(.medium, size: 14)
         label.textColor = AppColor.DoveGray
         return label
+    }()
+
+    private lazy var addCoinsButton: UIButton = {
+        var configuration = UIButton.Configuration.filled()
+        configuration.baseBackgroundColor = AppColor.Punch
+        configuration.baseForegroundColor = AppColor.AppWhite
+        configuration.cornerStyle = .capsule
+        configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12)
+        configuration.image = UIImage(systemName: "plus",
+                                      withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .bold))
+        configuration.imagePadding = 4
+        var title = AttributedString("Add Coins")
+        title.font = UIFont.fredoka(.medium, size: 13)
+        configuration.attributedTitle = title
+        let button = UIButton(configuration: configuration)
+        button.addTarget(self, action: #selector(addCoinsTapped), for: .touchUpInside)
+        button.accessibilityLabel = "Add Coins"
+        button.accessibilityHint = "Opens the coin shop"
+        return button
     }()
 
     private lazy var collectionView: UICollectionView = {
@@ -60,7 +81,7 @@ final class MomentsGiftViewController: BaseViewController {
 
     private let warningLabel: UILabel = {
         let label = UILabel()
-        label.text = "You don't have enough coins for these gifts"
+        label.text = "You don't have enough coins — tap Add Coins to top up"
         label.font = UIFont.fredoka(.regular, size: 13)
         label.textColor = AppColor.Punch
         label.textAlignment = .center
@@ -93,8 +114,16 @@ final class MomentsGiftViewController: BaseViewController {
         view.backgroundColor = AppColor.AppWhite
         titleLabel.text = receiverName.isEmpty ? "Send a gift" : "Send a gift to \(receiverName)"
         setUI()
+        bindWallet()
         refreshState()
         loadCatalog()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Cover the case where the user tops up and comes back via Back without purchasing.
+        viewModel.syncBalanceFromWallet()
+        refreshState()
     }
 
     private func setUI() {
@@ -106,7 +135,12 @@ final class MomentsGiftViewController: BaseViewController {
         balanceStack.spacing = 6
         balanceStack.alignment = .center
 
-        [titleLabel, balanceStack, collectionView, loadingIndicator, warningLabel, sendButton].forEach {
+        let balanceRow = UIStackView(arrangedSubviews: [balanceStack, addCoinsButton])
+        balanceRow.axis = .horizontal
+        balanceRow.spacing = 10
+        balanceRow.alignment = .center
+
+        [titleLabel, balanceRow, collectionView, loadingIndicator, warningLabel, sendButton].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -116,12 +150,13 @@ final class MomentsGiftViewController: BaseViewController {
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
 
-            balanceStack.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            balanceStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            balanceRow.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            balanceRow.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             coinImageView.widthAnchor.constraint(equalToConstant: 18),
             coinImageView.heightAnchor.constraint(equalToConstant: 18),
+            addCoinsButton.heightAnchor.constraint(equalToConstant: 30),
 
-            collectionView.topAnchor.constraint(equalTo: balanceStack.bottomAnchor, constant: 12),
+            collectionView.topAnchor.constraint(equalTo: balanceRow.bottomAnchor, constant: 12),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: warningLabel.topAnchor, constant: -8),
@@ -138,6 +173,17 @@ final class MomentsGiftViewController: BaseViewController {
             sendButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
             sendButton.heightAnchor.constraint(equalToConstant: 50)
         ])
+    }
+
+    private func bindWallet() {
+        CoinWallet.shared.$balance
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.viewModel.syncBalanceFromWallet()
+                self.refreshState()
+            }
+            .store(in: &cancellables)
     }
 
     private func refreshState() {
@@ -158,6 +204,7 @@ final class MomentsGiftViewController: BaseViewController {
         warningLabel.isHidden = viewModel.canAffordSelection
         sendButton.isEnabled = count > 0 && viewModel.canAffordSelection && !viewModel.isSending
         sendButton.alpha = sendButton.isEnabled || viewModel.isSending ? 1 : 0.5
+        addCoinsButton.isEnabled = !viewModel.isSending
         isModalInPresentation = viewModel.isSending
     }
 
@@ -173,6 +220,14 @@ final class MomentsGiftViewController: BaseViewController {
                 self.titleLabel.text = "Send a gift to \(name)"
             }
             self.collectionView.reloadData()
+            self.refreshState()
+        }
+    }
+
+    @objc private func addCoinsTapped() {
+        openCoinShop { [weak self] in
+            guard let self else { return }
+            self.viewModel.syncBalanceFromWallet()
             self.refreshState()
         }
     }
