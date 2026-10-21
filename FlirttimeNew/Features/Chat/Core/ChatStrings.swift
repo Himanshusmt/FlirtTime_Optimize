@@ -6,6 +6,7 @@ enum ChatStrings: String {
     case chat_1member = "CHAT_1_MEMBER"
     case chat_accessToPhotosDenied = "CHAT_ACCESS_TO_PHOTOS_DENIED"
     case chat_activeUsers = "CHAT_ACTIVE_USERS"
+    case chat_addMoments = "CHAT_ADD_MOMENTS"
     case chat_addLabelHere = "CHAT_ADD_LABEL_HERE"
     case chat_allowContactAccessMessage = "CHAT_ALLOW_CONTACT_ACCESS_MESSAGE"
     case chat_appleMaps = "CHAT_APPLE_MAPS"
@@ -18,6 +19,7 @@ enum ChatStrings: String {
     case chat_blockUserDescription = "CHAT_BLOCK_USER_DESCRIPTION"
     case chat_blockedUserHint = "CHAT_BLOCKED_USER_HINT"
     case chat_call = "CHAT_CALL"
+    case chat_calls = "CHAT_CALLS"
     case chat_camera = "CHAT_CAMERA"
     case chat_cancel = "CHAT_CANCEL"
     case chat_channelLabel = "CHAT_CHANNEL_LABEL"
@@ -111,11 +113,13 @@ enum ChatStrings: String {
     case chat_messagesDeleted = "CHAT_MESSAGES_DELETED"
     case chat_momentNotice = "CHAT_MOMENT_NOTICE"
     case chat_moreNumbers = "CHAT_MORE_NUMBERS"
+    case chat_myStory = "CHAT_MY_STORY"
     case chat_mute = "CHAT_MUTE"
     case chat_muteConfirmation = "CHAT_MUTE_CONFIRMATION"
     case chat_muteDescription = "CHAT_MUTE_DESCRIPTION"
     case chat_newChat = "CHAT_NEW_CHAT"
     case chat_newMessage = "CHAT_NEW_MESSAGE"
+    case chat_noCallsYet = "CHAT_NO_CALLS_YET"
     case chat_noChatsYet = "CHAT_NO_CHATS_YET"
     case chat_noContactsFound = "CHAT_NO_CONTACTS_FOUND"
     case chat_noInfoAvailable = "CHAT_NO_INFO_AVAILABLE"
@@ -137,6 +141,7 @@ enum ChatStrings: String {
     case chat_pleaseEnableLocation = "CHAT_PLEASE_ENABLE_LOCATION_ACCESS_IN_SETTINGS_TO_SHARE_YOUR_LOCATION"
     case chat_poll = "CHAT_POLL"
     case chat_post = "CHAT_POST"
+    case chat_quickMoments = "CHAT_QUICK_MOMENTS"
     case chat_react = "CHAT_REACT"
     case chat_readBy = "CHAT_READ_BY"
     case chat_readMore = "CHAT_READ_MORE"
@@ -188,6 +193,7 @@ enum ChatStrings: String {
     case chat_voteDetails = "CHAT_VOTE_DETAILS"
     case chat_yesterday = "CHAT_YESTERDAY"
     case chat_you = "CHAT_YOU"
+    case chat_yourStory = "CHAT_YOUR_STORY"
     case delete = "Delete"
     case done = "DONE"
     case online = "online"
@@ -212,6 +218,7 @@ extension ChatStrings {
         "CHAT_1_MEMBER": "1 member",
         "CHAT_ACCESS_TO_PHOTOS_DENIED": "Access to photos denied",
         "CHAT_ACTIVE_USERS": "Active Users",
+        "CHAT_ADD_MOMENTS": "Add new",
         "CHAT_ADD_LABEL_HERE": "Add your label here",
         "CHAT_ALLOW_CONTACT_ACCESS_MESSAGE": "Please allow contact access in Settings to share contacts.",
         "CHAT_APPLE_MAPS": "Apple Maps",
@@ -224,6 +231,7 @@ extension ChatStrings {
         "CHAT_BLOCK_USER_DESCRIPTION": "Are you sure you want to block %@?",
         "CHAT_BLOCKED_USER_HINT": "You blocked this user",
         "CHAT_CALL": "Call",
+        "CHAT_CALLS": "Calls",
         "CHAT_CAMERA": "Camera",
         "CHAT_CANCEL": "Cancel",
         "CHAT_CHANNEL_LABEL": "Channel",
@@ -317,11 +325,13 @@ extension ChatStrings {
         "CHAT_MESSAGES_DELETED": "messages deleted",
         "CHAT_MOMENT_NOTICE": "This will only take a moment",
         "CHAT_MORE_NUMBERS": "%@ more numbers",
+        "CHAT_MY_STORY": "My story",
         "CHAT_MUTE": "Mute",
         "CHAT_MUTE_CONFIRMATION": "Mute Chat?",
         "CHAT_MUTE_DESCRIPTION": "Are you sure you want to mute chat? You can unmute chat by dragging left.",
         "CHAT_NEW_CHAT": "New Chat",
         "CHAT_NEW_MESSAGE": "New message",
+        "CHAT_NO_CALLS_YET": "No calls yet",
         "CHAT_NO_CHATS_YET": "No chats yet",
         "CHAT_NO_CONTACTS_FOUND": "No Contacts Found",
         "CHAT_NO_INFO_AVAILABLE": "No info available",
@@ -343,6 +353,7 @@ extension ChatStrings {
         "CHAT_PLEASE_ENABLE_LOCATION_ACCESS_IN_SETTINGS_TO_SHARE_YOUR_LOCATION": "Please enable location access in Settings to share your location.",
         "CHAT_POLL": "Poll",
         "CHAT_POST": "Post",
+        "CHAT_QUICK_MOMENTS": "Quick Moments",
         "CHAT_REACT": "React",
         "CHAT_READ_BY": "Read By",
         "CHAT_READ_MORE": "Read more",
@@ -394,6 +405,7 @@ extension ChatStrings {
         "CHAT_VOTE_DETAILS": "Vote details",
         "CHAT_YESTERDAY": "Yesterday",
         "CHAT_YOU": "You",
+        "CHAT_YOUR_STORY": "Your story",
         "Delete": "Delete",
         "DONE": "Done",
         "online": "Online",

@@ -31,11 +31,19 @@ final class SessionManager {
         return backendClient.load(request: apiRequest)
     }
 
-    func reportuser(userID : String, reason : String) -> Single<DataRequest>{
-        var params = [String:Any]()
-        params["user_id"] = userID
-        params["reason"] = reason
-        let apiRequest: ApiRequest = ApiRequest(method: .post, endPoint: .reportUser, parameters: params)
+    /// FlirtTime — POST `/api/v1/users/{id}/report`
+    /// Body: `{ reason, description?, conversationId? }`
+    func reportuser(
+        userID: String,
+        reason: String,
+        description: String? = nil,
+        conversationId: String? = nil
+    ) -> Single<DataRequest> {
+        var params: [String: Any] = ["reason": reason]
+        if let description, !description.isEmpty { params["description"] = description }
+        if let conversationId, !conversationId.isEmpty { params["conversationId"] = conversationId }
+        let apiRequest = ApiRequest(method: .post, endPoint: .reportUser(userID), parameters: params)
+        AppLogger.debug("ChatAPI: POST /api/v1/users/\(userID)/report reason=\(reason)")
         return backendClient.loadDataRequest(request: apiRequest)
     }
 
@@ -44,27 +52,49 @@ final class SessionManager {
         return backendClient.load(request: apiRequest)
     }
 
-    func blockUser(id: String,userId:String) -> Single<BlockListUserDataModel> {
-        // NEW API — POST users/{id}/block (no body required)
-        let apiRequest: ApiRequest = ApiRequest(method: .post, endPoint: .blockUser(id), parameters: nil)
+    /// FlirtTime — POST `/api/v1/users/{id}/block` `{ reason }`
+    func blockUser(
+        id: String,
+        userId: String,
+        reason: String = "Inappropriate behavior"
+    ) -> Single<BlockListUserDataModel> {
+        let params = ["reason": reason]
+        let apiRequest = ApiRequest(method: .post, endPoint: .blockUser(id), parameters: params)
+        AppLogger.debug("ChatAPI: POST /api/v1/users/\(id)/block")
         return backendClient.load(request: apiRequest)
             .do(onSuccess: { _ in
-                // Notify all screens (home feed etc.) so the blocked user's content is removed,
-                // no matter which tab/screen the block was triggered from.
                 DispatchQueue.main.async {
                     BlockedUsersManager.shared.blockUser(id: id)
                 }
             })
     }
 
+    /// FlirtTime — DELETE `/api/v1/users/{id}/block`
     func unblockUser(id: String) -> Single<Bool> {
-        let apiRequest: ApiRequest = ApiRequest(method: .delete, endPoint: .unblockUser(id))
+        let apiRequest = ApiRequest(method: .delete, endPoint: .unblockUser(id))
+        AppLogger.debug("ChatAPI: DELETE /api/v1/users/\(id)/block")
         return backendClient.load(request: apiRequest)
             .do(onSuccess: { _ in
                 DispatchQueue.main.async {
                     BlockedUsersManager.shared.unblockUser(id: id)
                 }
             })
+    }
+
+    /// FlirtTime — GET `/api/v1/users/blocked?page=1&limit=20`
+    func getBlockedUsers(page: Int = 1, limit: Int = 20) -> Single<BlockedUsersPage> {
+        let params: [String: Any] = ["page": page, "limit": limit]
+        let apiRequest = ApiRequest(
+            method: .get,
+            endPoint: .blockedUsers,
+            parameters: params,
+            encoding: URLEncoding.queryString
+        )
+        AppLogger.debug("ChatAPI: GET /api/v1/users/blocked?page=\(page)&limit=\(limit)")
+        return backendClient.load(request: apiRequest)
+            .catch { _ in
+                self.backendClient.loadModelData(request: apiRequest)
+            }
     }
 
     /// NEW API — `POST media/uploads`
@@ -456,6 +486,48 @@ final class SessionManager {
         return uploadedETag
     }
 
+    /// FlirtTime chat media: `POST /api/v1/media/uploads` → PUT file to `uploadUrl` → key + thumbnail.
+    func uploadChatAttachment(
+        data: Data,
+        kind: String,
+        contentType: String,
+        fileName: String
+    ) -> Single<ChatPresignedUploadResult> {
+        createMediaUpload(
+            purpose: "chat",
+            kind: kind,
+            contentType: contentType,
+            fileName: fileName,
+            byteSize: data.count
+        )
+        .flatMap { [weak self] session -> Single<ChatPresignedUploadResult> in
+            guard let self else { return .error(APIError.apiError("Session unavailable")) }
+            guard let uploadUrl = session.resolvedUploadUrl, !uploadUrl.isEmpty else {
+                return .error(APIError.apiError("uploadUrl missing from media/uploads"))
+            }
+            guard let key = session.resolvedStorageKey, !key.isEmpty else {
+                return .error(APIError.apiError("key missing from media/uploads"))
+            }
+            let method = (session.upload?.method ?? "PUT").uppercased()
+            let headerContentType = session.resolvedContentType ?? contentType
+            AppLogger.debug("ChatAPI: PUT presigned upload \(key) bytes=\(data.count) contentType=\(headerContentType)")
+            return self.putBytesToPresignedURL(
+                urlString: uploadUrl,
+                method: method,
+                contentType: headerContentType,
+                body: data
+            )
+            .map { _ in
+                ChatPresignedUploadResult(
+                    key: key,
+                    publicUrl: session.resolvedPublicUrl,
+                    thumbnailUrl: session.resolvedThumbnailUrl,
+                    contentType: headerContentType
+                )
+            }
+        }
+    }
+
     /// NEW API video/large file path via media/uploads session
     /// For videos, pass `thumbnail` (uploaded image mediaId or public URL) so feed/vibe media gets a poster.
     func uploadViaMediaUploadsSession(
@@ -468,7 +540,17 @@ final class SessionManager {
         height: Int? = nil,
         thumbnail: String? = nil
     ) -> Single<String> {
-        createMediaUpload(
+        if purpose == "chat" {
+            return uploadChatAttachment(
+                data: data,
+                kind: kind,
+                contentType: contentType,
+                fileName: fileName
+            )
+            .map { $0.key }
+        }
+
+        return createMediaUpload(
             purpose: purpose,
             kind: kind,
             contentType: contentType,
@@ -477,6 +559,17 @@ final class SessionManager {
         )
         .flatMap { [weak self] session -> Single<String> in
             guard let self else { return .error(APIError.apiError("Session unavailable")) }
+            if let uploadUrl = session.resolvedUploadUrl, !uploadUrl.isEmpty,
+               session.resolvedMediaId == nil || session.resolvedMediaId?.isEmpty == true {
+                let headerContentType = session.resolvedContentType ?? contentType
+                return self.putBytesToPresignedURL(
+                    urlString: uploadUrl,
+                    method: (session.upload?.method ?? "PUT").uppercased(),
+                    contentType: headerContentType,
+                    body: data
+                )
+                .map { session.resolvedStorageKey ?? session.resolvedPublicUrl ?? "" }
+            }
             guard let mediaId = session.resolvedMediaId, !mediaId.isEmpty else {
                 return .error(APIError.apiError("mediaId missing from media/uploads"))
             }
@@ -689,15 +782,12 @@ final class SessionManager {
                           showPinned: Bool = false,
                           lastSync: String? = nil,
                           before: String? = nil) -> Single<ChatMessageUserData> {
-        // NEW API — GET chat/conversations?limit=30&archived=true|false (FE fetchConversations)
-        // Use String values so URLEncoding emits `archived=false` (not `0`/`1`).
+        // FlirtTime — GET /api/v1/chats?page=1&limit=20
         var params = [String: Any]()
+        params["page"] = "\(max(page, 1))"
         params["limit"] = "\(limit)"
-        params["archived"] = showArchived ? "true" : "false"
-        // Keep page for older backends; FE primarily uses limit + cursor.
-        params["page"] = "\(page)"
-        // Legacy filters kept for compatibility if backend still accepts them
         if !search.isEmpty { params["search"] = search }
+        if showArchived { params["archived"] = "true" }
         if showPinned { params["showPinned"] = "true" }
         if let lastSync = lastSync, !lastSync.isEmpty {
             params["lastSync"] = lastSync
@@ -706,19 +796,23 @@ final class SessionManager {
             params["cursor"] = before
             params["before"] = before
         }
-        
-        let apiRequest = ApiRequest(method: .get, endPoint: .getConversations, parameters: params, encoding: URLEncoding.queryString)
-        print("ChatAPI: getConversations → chat/conversations?limit=\(limit)&archived=\(showArchived ? "true" : "false")")
-        return backendClient.loadChatData(request: apiRequest)
-            .do(onError: { _ in })
-                }
 
-    func getConversationMessages(conversationId: String, page: Int = 1, limit: Int = 40) -> Single<ConversationMessagesResponse> {
-        // NEW API — GET chat/conversations/{id}/messages?limit=40 (+ page / cursor / before)
+        let apiRequest = ApiRequest(method: .get, endPoint: .getConversations, parameters: params, encoding: URLEncoding.queryString)
+        AppLogger.debug("ChatAPI: GET /api/v1/chats?page=\(page)&limit=\(limit)")
+        return backendClient.loadModelData(request: apiRequest)
+            .map { (response: ChatListAPIResponse) in response.resolved }
+            .catch { _ in
+                self.backendClient.loadChatData(request: apiRequest)
+            }
+    }
+
+    func getConversationMessages(conversationId: String, page: Int = 1, limit: Int = 30) -> Single<ConversationMessagesResponse> {
+        // FlirtTime — GET /api/v1/chats/{id}/messages?page=1&limit=30
         var params = [String: Any]()
         params["page"] = page
         params["limit"] = limit
         let apiRequest = ApiRequest(method: .get, endPoint: .getConversationMessages(conversationId), parameters: params, encoding: URLEncoding.queryString)
+        AppLogger.debug("ChatAPI: GET /api/v1/chats/\(conversationId)/messages?page=\(page)&limit=\(limit)")
         return backendClient.loadModelData(request: apiRequest)
     }
 
@@ -736,18 +830,18 @@ final class SessionManager {
         return backendClient.loadModelData(request: apiRequest)
     }
 
-    func getConversationMessagesBefore(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 20) -> Single<ConversationMessagesResponse> {
+    func getConversationMessagesBefore(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 30) -> Single<ConversationMessagesResponse> {
+        // FlirtTime — GET /api/v1/chats/{id}/messages?limit=30&before=ISO8601
         var params = [String: Any]()
-        params["page"] = page
         params["limit"] = limit
-        
-        // Format date as ISO8601 with fractional seconds
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let beforeString = formatter.string(from: beforeDate)
         params["before"] = beforeString
-        
+        if page > 1 { params["page"] = page }
+
         let apiRequest = ApiRequest(method: .get, endPoint: .getConversationMessages(conversationId), parameters: params, encoding: URLEncoding.queryString)
+        AppLogger.debug("ChatAPI: GET /api/v1/chats/\(conversationId)/messages?limit=\(limit)&before=\(beforeString)")
         return backendClient.loadModelData(request: apiRequest)
     }
 
@@ -878,8 +972,12 @@ final class SessionManager {
             }
     }
 
-    /// NEW API — POST chat/messages (FE `sendChatMessage`)
-    /// Body: conversationId, body?, type?, mediaIds?, location?, poll?, postId?, clientMessageId?, replyToId?
+    /// FlirtTime — POST /api/v1/chats/{id}/messages
+    /// Body: `{ content, messageType, metadata? }`
+    ///   text     → `{ "content": "Hello", "messageType": "text" }`
+    ///   image    → `{ "messageType": "image", "content": "<url>", "metadata": { "source": "photo" } }`
+    ///   audio    → `{ "messageType": "audio", "content": "<url>" }`
+    ///   location → `{ "messageType": "location", "metadata": { latitude, longitude, name } }`
     func sendChatMessage(
         conversationId: String,
         body: String? = nil,
@@ -889,21 +987,53 @@ final class SessionManager {
         poll: [String: Any]? = nil,
         postId: String? = nil,
         clientMessageId: String? = nil,
-        replyToId: String? = nil
+        replyToId: String? = nil,
+        contentURL: String? = nil,
+        metadata: [String: Any]? = nil
     ) -> Single<ConversationMessage> {
-        var params: [String: Any] = ["conversationId": conversationId]
-        if let body { params["body"] = body }
-        if let type, !type.isEmpty { params["type"] = type }
-        if let mediaIds, !mediaIds.isEmpty { params["mediaIds"] = mediaIds }
-        if let location { params["location"] = location }
-        if let poll { params["poll"] = poll }
-        if let postId, !postId.isEmpty { params["postId"] = postId }
+        let messageType = (type?.isEmpty == false ? type : "text") ?? "text"
+        var params: [String: Any] = [
+            "type": messageType,
+            "messageType": messageType
+        ]
+        var meta = metadata ?? [:]
+
+        let resolvedContent = [contentURL, body, mediaIds?.first]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+
+        switch messageType.lowercased() {
+        case "image":
+            if let resolvedContent { params["content"] = resolvedContent }
+            if meta["source"] == nil { meta["source"] = "photo" }
+            params["metadata"] = meta
+        case "audio", "voice":
+            if let resolvedContent { params["content"] = resolvedContent }
+            if !meta.isEmpty { params["metadata"] = meta }
+        case "location":
+            if let location {
+                if let lat = location["latitude"] ?? location["lat"] { meta["latitude"] = lat }
+                if let lng = location["longitude"] ?? location["lng"] { meta["longitude"] = lng }
+                if let name = location["name"] { meta["name"] = name }
+                if let address = location["address"] { meta["address"] = address }
+                if meta["name"] == nil, let address = location["address"] { meta["name"] = address }
+            }
+            params["metadata"] = meta
+        case "contact":
+            params["metadata"] = meta
+        default:
+            if let resolvedContent { params["content"] = resolvedContent }
+            if !meta.isEmpty { params["metadata"] = meta }
+        }
+
         if let clientMessageId, !clientMessageId.isEmpty { params["clientMessageId"] = clientMessageId }
         if let replyToId, !replyToId.isEmpty { params["replyToId"] = replyToId }
+        if let poll { params["poll"] = poll }
+        if let postId, !postId.isEmpty { params["postId"] = postId }
 
         let apiRequest = ApiRequest(
             method: .post,
-            endPoint: .sendChatMessage,
+            endPoint: .sendChatMessage(conversationId),
             parameters: params,
             encoding: JSONEncoding.default
         )
@@ -914,26 +1044,160 @@ final class SessionManager {
                 }
                 return message
             }
+            .catch { _ in
+                self.decodeSentMessage(request: apiRequest)
+            }
     }
 
-    /// NEW API — PATCH chat/conversations/{id}/messages/{messageId}/pin (FE `pinChatMessage`)
-    /// Body: `{ pinned: Bool, pinDuration?: String }`
+    /// FlirtTime — POST `/api/v1/chats/{id}/messages` as `multipart/form-data`
+    /// with `file` / `image`, `messageType`, optional `caption`, and S3 `key`.
+    func sendChatMessageMultipart(
+        conversationId: String,
+        fileData: Data,
+        fileName: String,
+        mimeType: String,
+        messageType: String,
+        caption: String? = nil,
+        clientMessageId: String? = nil,
+        recipientIds: [String]? = nil,
+        extraFields: [String: Any] = [:]
+    ) -> Single<ConversationMessage> {
+        var params: [String: Any] = [
+            "type": messageType,
+            "messageType": messageType
+        ]
+        if let caption, !caption.isEmpty { params["caption"] = caption }
+        if let clientMessageId, !clientMessageId.isEmpty { params["clientMessageId"] = clientMessageId }
+        if let recipientIds {
+            let peers = recipientIds.filter { !$0.isEmpty }
+            if peers.count == 1 { params["recipientId"] = peers[0] }
+            if !peers.isEmpty { params["recipientIds"] = peers.joined(separator: ",") }
+        }
+        for (key, value) in extraFields {
+            params[key] = value
+        }
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .sendChatMessage(conversationId),
+            parameters: params
+        )
+        AppLogger.debug("ChatAPI: POST /api/v1/chats/\(conversationId)/messages multipart type=\(messageType) file=\(fileName)")
+        return backendClient.uploadMultipart(
+            request: apiRequest,
+            fileData: fileData,
+            fileName: fileName,
+            mimeType: mimeType,
+            fileField: "file"
+        )
+        .map { data -> ConversationMessage in
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = Self.conversationMessage(fromSendJSON: json) else {
+                throw APIError.apiError("sendChatMessage multipart: missing message in response")
+            }
+            return message
+        }
+    }
+
+    /// FlirtTime — POST `/api/v1/chat/messages` for a new 1:1 or broadcast.
+    func sendDirectChatMessage(
+        recipientIds: [String],
+        type: String = "text",
+        content: String? = nil,
+        location: [String: Any]? = nil,
+        metadata: [String: Any]? = nil,
+        clientMessageId: String? = nil
+    ) -> Single<ConversationMessage> {
+        let peers = recipientIds.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        var params: [String: Any] = ["type": type, "messageType": type]
+        if peers.count == 1 {
+            params["recipientId"] = peers[0]
+        }
+        if !peers.isEmpty {
+            params["recipientIds"] = peers
+        }
+        if let content, !content.isEmpty { params["content"] = content }
+        var meta = metadata ?? [:]
+        if type.lowercased() == "location", let location {
+            if let lat = location["latitude"] ?? location["lat"] { meta["latitude"] = lat }
+            if let lng = location["longitude"] ?? location["lng"] { meta["longitude"] = lng }
+            if let name = location["name"] { meta["name"] = name }
+            if let address = location["address"] { meta["address"] = address }
+            if meta["name"] == nil, let address = location["address"] { meta["name"] = address }
+        }
+        if !meta.isEmpty { params["metadata"] = meta }
+        if let clientMessageId, !clientMessageId.isEmpty { params["clientMessageId"] = clientMessageId }
+
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .sendDirectChatMessage,
+            parameters: params,
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug("ChatAPI: POST /api/v1/chat/messages type=\(type) recipients=\(peers.count)")
+        return decodeSentMessage(request: apiRequest)
+    }
+
+    private func decodeSentMessage(request: ApiRequest) -> Single<ConversationMessage> {
+        backendClient.loadDataRequest(request: request)
+            .map { response -> ConversationMessage in
+                guard let data = response.data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    throw APIError.apiError("sendChatMessage: empty response")
+                }
+                guard let message = Self.conversationMessage(fromSendJSON: json) else {
+                    throw APIError.apiError("sendChatMessage: missing message in response")
+                }
+                return message
+            }
+    }
+
+    private static func conversationMessage(fromSendJSON json: [String: Any]) -> ConversationMessage? {
+        let payload = (json["data"] as? [String: Any]) ?? json
+        if let messageDict = payload["message"] as? [String: Any] {
+            return ConversationMessage.fromDictionary(messageDict)
+        }
+        if let results = payload["results"] as? [[String: Any]] {
+            for row in results {
+                if let status = row["status"] as? String, status.lowercased() != "success" { continue }
+                if var messageDict = row["message"] as? [String: Any] {
+                    if (messageDict["conversationId"] as? String)?.isEmpty != false,
+                       let cid = row["conversationId"] as? String {
+                        messageDict["conversationId"] = cid
+                    }
+                    if let message = ConversationMessage.fromDictionary(messageDict) {
+                        return message
+                    }
+                }
+            }
+        }
+        return ConversationMessage.fromDictionary(payload)
+    }
+
+    /// FlirtTime — POST `/api/v1/chats/{id}/messages/{messageId}/pin` `{ isPinned, scope? }`
     func pinChatMessage(
         conversationId: String,
         messageId: String,
         pinned: Bool,
-        pinDuration: String? = nil
+        pinDuration: String? = nil,
+        scope: String? = nil
     ) -> Single<ConversationMessage> {
-        var params: [String: Any] = ["pinned": pinned]
-        if pinned, let pinDuration, !pinDuration.isEmpty {
-            params["pinDuration"] = pinDuration
+        var params: [String: Any] = [
+            "isPinned": pinned,
+            "pinned": pinned
+        ]
+        if pinned {
+            params["scope"] = (scope?.isEmpty == false ? scope : "me") ?? "me"
+            if let pinDuration, !pinDuration.isEmpty {
+                params["pinDuration"] = pinDuration
+            }
         }
         let apiRequest = ApiRequest(
-            method: .patch,
+            method: .post,
             endPoint: .pinConversationMessage(conversationId, messageId),
             parameters: params,
             encoding: JSONEncoding.default
         )
+        AppLogger.debug("ChatAPI: POST /api/v1/chats/\(conversationId)/messages/\(messageId)/pin isPinned=\(pinned)")
         return backendClient.loadChatData(request: apiRequest)
             .map { (data: SendChatMessageAPIData) -> ConversationMessage in
                 guard let message = data.message else {
@@ -941,31 +1205,85 @@ final class SessionManager {
                 }
                 return message
             }
-    }
-
-    /// NEW API — GET chat/conversations/{id}/pinned-message (FE `fetchPinnedMessage`)
-    func fetchPinnedMessage(conversationId: String) -> Single<ConversationMessage?> {
-        let apiRequest = ApiRequest(
-            method: .get,
-            endPoint: .getPinnedMessage(conversationId)
-        )
-        return backendClient.loadChatData(request: apiRequest)
-            .map { (data: PinnedMessageAPIData) -> ConversationMessage? in
-                data.message
+            .catch { _ -> Single<ConversationMessage> in
+                self.decodeSentMessage(request: apiRequest)
+                    .catch { _ -> Single<ConversationMessage> in
+                        if let stub = ConversationMessage.fromDictionary([
+                            "id": messageId,
+                            "conversationId": conversationId,
+                            "isPinned": pinned,
+                            "messageType": "text",
+                            "content": ""
+                        ]) {
+                            return .just(stub)
+                        }
+                        return .error(APIError.apiError("pinChatMessage: empty response"))
+                    }
             }
     }
 
-    /// NEW API — POST chat/conversations/{id}/read (FE markConversationRead)
+    /// FlirtTime — GET `/api/v1/chats/{id}/messages/pinned?limit=30`
+    func fetchPinnedMessages(conversationId: String, limit: Int = 30) -> Single<[ConversationMessage]> {
+        let params: [String: Any] = ["limit": limit]
+        let apiRequest = ApiRequest(
+            method: .get,
+            endPoint: .getPinnedMessages(conversationId),
+            parameters: params,
+            encoding: URLEncoding.queryString
+        )
+        AppLogger.debug("ChatAPI: GET /api/v1/chats/\(conversationId)/messages/pinned?limit=\(limit)")
+        return backendClient.loadChatData(request: apiRequest)
+            .map { (data: PinnedMessagesAPIData) in data.messages }
+            .catch { _ in
+                self.backendClient.loadModelData(request: apiRequest)
+                    .map { (response: ConversationMessagesResponse) in
+                        let page = response.data.data
+                        if !page.messages.isEmpty { return page.messages }
+                        return page.pinnedMessages ?? []
+                    }
+            }
+    }
+
+    /// Convenience — first pinned message from GET `/messages/pinned`.
+    func fetchPinnedMessage(conversationId: String) -> Single<ConversationMessage?> {
+        fetchPinnedMessages(conversationId: conversationId, limit: 30)
+            .map { $0.first }
+    }
+
+    /// FlirtTime — POST /api/v1/chats/{id}/read
     func markConversationReadREST(conversationId: String, messageId: String? = nil) -> Single<ChatConversationReadAPIData> {
         var params: [String: Any] = [:]
         if let messageId, !messageId.isEmpty { params["messageId"] = messageId }
         let apiRequest = ApiRequest(
             method: .post,
             endPoint: .markConversationRead(conversationId),
+            parameters: params.isEmpty ? nil : params,
+            encoding: JSONEncoding.default
+        )
+        return backendClient.loadChatData(request: apiRequest)
+            .catch { _ in
+                Single.just(ChatConversationReadAPIData(conversationId: conversationId, unreadCount: 0))
+            }
+    }
+
+    /// FlirtTime — POST /api/v1/chats/{id}/pin `{ isPinned: true|false }`
+    func pinConversation(conversationId: String, isPinned: Bool) -> Single<UpdateConversationSettingsAPIData> {
+        let params: [String: Any] = ["isPinned": isPinned]
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .pinConversation(conversationId),
             parameters: params,
             encoding: JSONEncoding.default
         )
         return backendClient.loadChatData(request: apiRequest)
+            .map { (data: UpdateConversationSettingsAPIData) in data }
+            .catch { _ in
+                Single.just(
+                    UpdateConversationSettingsAPIData(
+                        settings: ConversationSettings(isPinned: isPinned)
+                    )
+                )
+            }
     }
 
     /// NEW API — POST chat/conversations/{id}/unread
@@ -1087,7 +1405,7 @@ final class SessionManager {
             }
     }
 
-    /// NEW API — POST chat/conversations. Prefer `createChatConversation`. OLD body used participants/isGroup/groupAvatar.
+    /// FlirtTime — POST /api/v1/chats `{ recipientId }`
     func createChat(participants: [String], isGroup: Bool, title: String, groupAvatar: String) -> Single<[String: Any]> {
         return createChatConversation(
             participantIds: participants,
@@ -1097,21 +1415,67 @@ final class SessionManager {
         )
     }
 
-    /// NEW API — POST calls/ (Android StartCallRequest)
-    /// Body: `{ conversationId, type: "audio"|"video" }`
-    /// Response: `{ success, data: { call, token, uid, appId } }` (CallSession)
-    func startAgoraCall(conversationId: String, type: String) -> Single<[String: Any]> {
+    /// FlirtTime — POST /api/v1/calls/video/initiate `{ calleeId, conversationId }`
+    func startAgoraCall(conversationId: String, type: String, calleeId: String? = nil) -> Single<[String: Any]> {
+        AppLogger.debug("startAgoraCall type=\(type) conversationId=\(conversationId)")
+        return initiateVideoCall(calleeId: calleeId ?? "", conversationId: conversationId)
+    }
+
+    /// FlirtTime — GET /api/v1/calls/video/active
+    func fetchAgoraCall(callId: String) -> Single<[String: Any]> {
+        getActiveVideoCall()
+            .map { dict in
+                let id = (dict["id"] as? String) ?? (dict["callId"] as? String) ?? ""
+                if id.isEmpty || id == callId { return dict }
+                if let call = dict["call"] as? [String: Any] {
+                    let nestedId = (call["id"] as? String) ?? (call["callId"] as? String) ?? ""
+                    if nestedId == callId { return dict }
+                }
+                return dict
+            }
+    }
+
+    func initiateVideoCall(calleeId: String, conversationId: String) -> Single<[String: Any]> {
         let params: [String: Any] = [
-            "conversationId": conversationId,
-            "type": type
+            "calleeId": calleeId,
+            "conversationId": conversationId
         ]
         let apiRequest = ApiRequest(
             method: .post,
-            endPoint: .startAgoraCall,
+            endPoint: .initiateVideoCall,
             parameters: params,
             encoding: JSONEncoding.default
         )
-        return backendClient.loadDataRequest(request: apiRequest).map { response -> [String: Any] in
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/video/initiate calleeId=\(calleeId) conversationId=\(conversationId)")
+        return unwrapJSON(apiRequest)
+    }
+
+    func acceptVideoCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .acceptVideoCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/video/\(callId)/accept")
+        return unwrapJSON(apiRequest)
+    }
+
+    func rejectVideoCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .rejectVideoCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/video/\(callId)/reject")
+        return unwrapJSON(apiRequest)
+    }
+
+    func endVideoCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .endVideoCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/video/\(callId)/end")
+        return unwrapJSON(apiRequest)
+    }
+
+    func getActiveVideoCall() -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .get, endPoint: .getActiveVideoCall)
+        AppLogger.debug("ChatAPI: GET /api/v1/calls/video/active")
+        return unwrapJSON(apiRequest)
+    }
+
+    private func unwrapJSON(_ apiRequest: ApiRequest) -> Single<[String: Any]> {
+        backendClient.loadDataRequest(request: apiRequest).map { response -> [String: Any] in
             guard let data = response.data else { return [:] }
             guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 return [:]
@@ -1123,61 +1487,39 @@ final class SessionManager {
         }
     }
 
-    /// NEW API — GET calls/{callId}
-    /// Used to hide the Join banner when the group call has already ended.
-    func fetchAgoraCall(callId: String) -> Single<[String: Any]> {
-        let apiRequest = ApiRequest(
-            method: .get,
-            endPoint: .getAgoraCall(callId),
-            parameters: nil,
-            encoding: URLEncoding.default
-        )
-        return backendClient.loadDataRequest(request: apiRequest).map { response -> [String: Any] in
-            guard let data = response.data else { return [:] }
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                return [:]
-            }
-            if let dataObj = json["data"] as? [String: Any] {
-                return dataObj
-            }
-            return json
-        }
-    }
-
-    /// NEW API — POST chat/conversations
-    /// Body: `{ participantIds, type: "direct"|"group", title?, avatarPath? }`
-    /// Response: `{ success, data: { conversation: { id, ... } }, message }`
+    /// FlirtTime — POST /api/v1/chats `{ recipientId }`
     func createChatConversation(
         participantIds: [String],
         type: String = "direct",
         title: String? = nil,
         avatarPath: String? = nil
     ) -> Single<[String: Any]> {
-        var params: [String: Any] = [
-            "participantIds": participantIds,
-            "type": type
-        ]
-        if let title, !title.isEmpty {
-            params["title"] = title
-        }
-        if let avatarPath, !avatarPath.isEmpty {
-            params["avatarPath"] = avatarPath
-        }
+        let recipientId = participantIds
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? ""
+        return createChat(recipientId: recipientId)
+    }
 
+    /// FlirtTime — POST /api/v1/chats `{ "recipientId": "<userId>" }`
+    func createChat(recipientId: String) -> Single<[String: Any]> {
+        let params: [String: Any] = ["recipientId": recipientId]
         let apiRequest = ApiRequest(
             method: .post,
             endPoint: .createChatConversation,
             parameters: params,
             encoding: JSONEncoding.default
         )
+        AppLogger.debug("ChatAPI: POST /api/v1/chats recipientId=\(recipientId)")
         return backendClient.loadDataRequest(request: apiRequest).map { response -> [String: Any] in
             guard let data = response.data else { return [:] }
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    // NEW: data.conversation { id, peer, members, ... }
                     if let dataObj = json["data"] as? [String: Any] {
                         if let conversation = dataObj["conversation"] as? [String: Any] {
                             return conversation
+                        }
+                        if let chat = dataObj["chat"] as? [String: Any] {
+                            return chat
                         }
                         return dataObj
                     }
@@ -1186,25 +1528,18 @@ final class SessionManager {
                        let firstObj = dataArray.first {
                         return firstObj
                     }
-                    if let dataAnyArray = json["data"] as? [Any],
-                       let firstDict = dataAnyArray.first as? [String: Any] {
-                        return firstDict
-                    }
-                    // Some responses return the conversation at the root
                     if json["id"] != nil || json["conversationId"] != nil {
                         return json
                     }
                 }
             } catch {
-                print("Error parsing NEW chat/conversations response: \(error)")
+                AppLogger.debug("Error parsing POST /api/v1/chats response: \(error)")
             }
             return [:]
         }
     }
 
-    /// NEW API — GET chat/conversations/{id}
-    /// FE: `fetchConversation` → `{ conversation }` with `members` + `participantsCount`.
-    /// https://onevibe.walit.in/api/v1/chat/conversations/{id}
+    /// FlirtTime — GET /api/v1/chats/{id} (header, peer, shared interests)
     func getConversationDetail(conversationId: String) -> Single<ChatMessageRow> {
         let apiRequest = ApiRequest(method: .get, endPoint: .getGroupDetails(conversationId))
         // Prefer full-body decode (handles success/data/conversation nesting)

@@ -45,11 +45,70 @@ protocol ChatMessageServiceProtocol {
         poll: [String: Any]?,
         clientMessageId: String?,
         replyToId: String?,
+        recipientIds: [String]?,
+        metadata: [String: Any]?,
         completion: ((Result<ConversationMessage, Error>) -> Void)?
     ) -> Bool
 
     /// Legacy name — routes through REST (no socket emit).
     func emitMessage(conversationId: String, messageType: String, content: String, replyToId: String?, metadata: [String: Any]?, isMediaAttach: Bool, mediaPath: String?, filename: String?, filesize: String?) -> Bool
+}
+
+extension ChatMessageServiceProtocol {
+    @discardableResult
+    func sendViaREST(
+        conversationId: String,
+        type: String,
+        body: String?,
+        mediaIds: [String]?,
+        location: [String: Any]?,
+        poll: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?,
+        completion: ((Result<ConversationMessage, Error>) -> Void)?
+    ) -> Bool {
+        sendViaREST(
+            conversationId: conversationId,
+            type: type,
+            body: body,
+            mediaIds: mediaIds,
+            location: location,
+            poll: poll,
+            clientMessageId: clientMessageId,
+            replyToId: replyToId,
+            recipientIds: nil,
+            metadata: nil,
+            completion: completion
+        )
+    }
+
+    @discardableResult
+    func sendViaREST(
+        conversationId: String,
+        type: String,
+        body: String?,
+        mediaIds: [String]?,
+        location: [String: Any]?,
+        poll: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?,
+        recipientIds: [String]?,
+        completion: ((Result<ConversationMessage, Error>) -> Void)?
+    ) -> Bool {
+        sendViaREST(
+            conversationId: conversationId,
+            type: type,
+            body: body,
+            mediaIds: mediaIds,
+            location: location,
+            poll: poll,
+            clientMessageId: clientMessageId,
+            replyToId: replyToId,
+            recipientIds: recipientIds,
+            metadata: nil,
+            completion: completion
+        )
+    }
 }
 
 class ChatMessageService: ChatMessageServiceProtocol {
@@ -188,7 +247,7 @@ class ChatMessageService: ChatMessageServiceProtocol {
         }
     }
     
-    func loadMessagesBeforeAsync(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 20) async throws -> ConversationMessagesResponse {
+    func loadMessagesBeforeAsync(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 30) async throws -> ConversationMessagesResponse {
         try await withCheckedThrowingContinuation { continuation in
             sessionManager.getConversationMessagesBefore(conversationId: conversationId, beforeDate: beforeDate, page: page, limit: limit)
                 .subscribe(onSuccess: { response in
@@ -366,7 +425,7 @@ class ChatMessageService: ChatMessageServiceProtocol {
         .eraseToAnyPublisher()
     }
 
-    func loadMessagesBefore(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 20) -> AnyPublisher<ConversationMessagesResponse, Error> {
+    func loadMessagesBefore(conversationId: String, beforeDate: Date, page: Int = 1, limit: Int = 30) -> AnyPublisher<ConversationMessagesResponse, Error> {
         Future<ConversationMessagesResponse, Error> { promise in
             Task {
                 do {
@@ -382,7 +441,8 @@ class ChatMessageService: ChatMessageServiceProtocol {
 
     // MARK: - REST Send (FE sendChatMessage)
 
-    /// POST `/api/v1/chat/messages` — primary send path matching onevibe_frontend-main.
+    /// POST `/api/v1/chats/{id}/messages` for an open thread, or
+    /// POST `/api/v1/chat/messages` when sending by recipient.
     @discardableResult
     func sendViaREST(
         conversationId: String,
@@ -393,31 +453,65 @@ class ChatMessageService: ChatMessageServiceProtocol {
         poll: [String: Any]? = nil,
         clientMessageId: String? = nil,
         replyToId: String? = nil,
+        recipientIds: [String]? = nil,
+        metadata: [String: Any]? = nil,
         completion: ((Result<ConversationMessage, Error>) -> Void)? = nil
     ) -> Bool {
         guard sessionManager.user?.userId != nil else {
             AppLogger.debug("[sendViaREST] User ID not available")
             return false
         }
-        guard !conversationId.isEmpty else {
-            AppLogger.debug("[sendViaREST] Empty conversationId")
+        let peers = (recipientIds ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        guard !conversationId.isEmpty || !peers.isEmpty else {
+            AppLogger.debug("[sendViaREST] Empty conversationId and recipientIds")
             return false
         }
 
         let resolvedType = type.isEmpty ? "text" : type
-        AppLogger.debug("[sendViaREST] ▶ POST chat/messages conversationId=\(conversationId) type=\(resolvedType) replyToId=\(replyToId ?? "nil") clientMessageId=\(clientMessageId ?? "nil")")
+        if conversationId.isEmpty {
+            AppLogger.debug("[sendViaREST] ▶ POST /api/v1/chat/messages type=\(resolvedType) recipients=\(peers.count) clientMessageId=\(clientMessageId ?? "nil")")
+        } else {
+            AppLogger.debug("[sendViaREST] ▶ POST /api/v1/chats/\(conversationId)/messages type=\(resolvedType) replyToId=\(replyToId ?? "nil") clientMessageId=\(clientMessageId ?? "nil")")
+        }
 
-        sessionManager.sendChatMessage(
-            conversationId: conversationId,
-            body: body,
-            type: resolvedType,
-            mediaIds: mediaIds,
-            location: location,
-            poll: poll,
-            postId: nil,
-            clientMessageId: clientMessageId,
-            replyToId: replyToId
-        )
+        if !conversationId.isEmpty {
+            emitSendMessage(
+                conversationId: conversationId,
+                type: resolvedType,
+                body: body,
+                mediaIds: mediaIds,
+                location: location,
+                clientMessageId: clientMessageId,
+                replyToId: replyToId,
+                metadata: metadata
+            )
+        }
+
+        let send: Single<ConversationMessage>
+        if conversationId.isEmpty {
+            send = sessionManager.sendDirectChatMessage(
+                recipientIds: peers,
+                type: resolvedType,
+                content: body ?? mediaIds?.first,
+                location: location,
+                metadata: metadata,
+                clientMessageId: clientMessageId
+            )
+        } else {
+            send = sessionManager.sendChatMessage(
+                conversationId: conversationId,
+                body: body,
+                type: resolvedType,
+                mediaIds: mediaIds,
+                location: location,
+                poll: poll,
+                postId: nil,
+                clientMessageId: clientMessageId,
+                replyToId: replyToId,
+                metadata: metadata
+            )
+        }
+        send
         .subscribe(onSuccess: { message in
             var msg = message
             // Ensure optimistic match key survives round-trip
@@ -476,5 +570,151 @@ class ChatMessageService: ChatMessageServiceProtocol {
             replyToId: replyToId,
             completion: nil
         )
+    }
+
+    /// FlirtTime — emit `chat:send_message` so the peer gets `chat:message_received` live.
+    /// Image handler accepts `imageUrl`, `image`, or a `data:image/...;base64,` URI.
+    private func emitSendMessage(
+        conversationId: String,
+        type: String,
+        body: String?,
+        mediaIds: [String]?,
+        location: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?,
+        metadata: [String: Any]?
+    ) {
+        let payload = Self.chatSendMessagePayload(
+            conversationId: conversationId,
+            type: type,
+            body: body,
+            mediaIds: mediaIds,
+            location: location,
+            clientMessageId: clientMessageId,
+            replyToId: replyToId,
+            metadata: metadata
+        )
+        AppLogger.debug("[sendViaREST] emit chat:send_message conversationId=\(conversationId) type=\(type)")
+        ChatSocketManager.shared.emitMessage(SocketEvent.sendConversationMessage.rawValue, withData: [payload])
+    }
+
+    static func emitImageSendMessage(
+        conversationId: String,
+        imageUrl: String?,
+        image: String? = nil,
+        fileData: Data? = nil,
+        mimeType: String = "image/jpeg",
+        content: String? = nil,
+        clientMessageId: String? = nil,
+        replyToId: String? = nil,
+        thumbnailUrl: String? = nil
+    ) {
+        guard !conversationId.isEmpty else { return }
+        var metadata: [String: Any] = ["source": "photo"]
+        if let thumbnailUrl, !thumbnailUrl.isEmpty { metadata["thumbnailUrl"] = thumbnailUrl }
+        if let imageUrl, !imageUrl.isEmpty { metadata["imageUrl"] = imageUrl }
+        let payload = chatSendMessagePayload(
+            conversationId: conversationId,
+            type: "image",
+            body: content,
+            mediaIds: content.map { [$0] },
+            location: nil,
+            clientMessageId: clientMessageId,
+            replyToId: replyToId,
+            metadata: metadata,
+            fileData: fileData,
+            mimeType: mimeType,
+            imageOverride: image,
+            imageUrlOverride: imageUrl
+        )
+        AppLogger.debug("[SOCKET] emit chat:send_message image conversationId=\(conversationId)")
+        ChatSocketManager.shared.emitMessage(SocketEvent.sendConversationMessage.rawValue, withData: [payload])
+    }
+
+    static func chatSendMessagePayload(
+        conversationId: String,
+        type: String,
+        body: String?,
+        mediaIds: [String]?,
+        location: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?,
+        metadata: [String: Any]?,
+        fileData: Data? = nil,
+        mimeType: String = "image/jpeg",
+        imageOverride: String? = nil,
+        imageUrlOverride: String? = nil
+    ) -> [String: Any] {
+        var payload: [String: Any] = [
+            "conversationId": conversationId,
+            "messageType": type,
+            "type": type
+        ]
+        if let body, !body.isEmpty { payload["content"] = body }
+        if let first = mediaIds?.first, !first.isEmpty, payload["content"] == nil {
+            payload["content"] = first
+        }
+
+        var meta = metadata ?? [:]
+        if type.lowercased() == "location", let location {
+            if let lat = location["latitude"] ?? location["lat"] { meta["latitude"] = lat }
+            if let lng = location["longitude"] ?? location["lng"] { meta["longitude"] = lng }
+            if let name = location["name"] { meta["name"] = name }
+            if let address = location["address"] { meta["address"] = address }
+            if meta["name"] == nil, let address = location["address"] { meta["name"] = address }
+        }
+
+        if type.lowercased() == "image" {
+            if meta["source"] == nil { meta["source"] = "photo" }
+            let resolvedImageURL = resolvedImageSocketURL(
+                override: imageUrlOverride,
+                metadata: meta,
+                content: payload["content"] as? String,
+                fileData: fileData,
+                mimeType: mimeType
+            )
+            if let resolvedImageURL {
+                payload["imageUrl"] = resolvedImageURL
+                payload["image"] = imageOverride ?? resolvedImageURL
+                if payload["content"] == nil {
+                    payload["content"] = resolvedImageURL
+                }
+            } else if let imageOverride, !imageOverride.isEmpty {
+                payload["image"] = imageOverride
+                payload["imageUrl"] = imageOverride
+            }
+        }
+
+        if !meta.isEmpty { payload["metadata"] = meta }
+        if let clientMessageId, !clientMessageId.isEmpty { payload["clientMessageId"] = clientMessageId }
+        if let replyToId, !replyToId.isEmpty { payload["replyToId"] = replyToId }
+        return payload
+    }
+
+    private static func resolvedImageSocketURL(
+        override: String?,
+        metadata: [String: Any],
+        content: String?,
+        fileData: Data?,
+        mimeType: String
+    ) -> String? {
+        let candidates = [
+            override,
+            metadata["imageUrl"] as? String,
+            metadata["mediaUrl"] as? String,
+            metadata["publicUrl"] as? String,
+            metadata["image"] as? String,
+            content
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+        if let http = candidates.first(where: { $0.lowercased().hasPrefix("http://") || $0.lowercased().hasPrefix("https://") || $0.lowercased().hasPrefix("data:image") }) {
+            return http
+        }
+        if let first = candidates.first { return first }
+        guard let fileData, !fileData.isEmpty else { return nil }
+        let mime = mimeType.isEmpty ? "image/jpeg" : mimeType
+        return "data:\(mime);base64,\(fileData.base64EncodedString())"
     }
 }

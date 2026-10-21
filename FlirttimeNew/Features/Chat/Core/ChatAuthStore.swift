@@ -26,14 +26,19 @@ final class ChatAuthStore {
 
     var accessToken: String {
         lock.lock()
-        defer { lock.unlock() }
-        return accessTokenValue
+        let chatToken = accessTokenValue
+        lock.unlock()
+        if !chatToken.isEmpty { return chatToken }
+        // FlirtTime chat uses the same Bearer token as the rest of the app.
+        return AppTokenStore.shared.accessToken
     }
 
     var refreshToken: String {
         lock.lock()
-        defer { lock.unlock() }
-        return refreshTokenValue
+        let chatRefresh = refreshTokenValue
+        lock.unlock()
+        if !chatRefresh.isEmpty { return chatRefresh }
+        return AppTokenStore.shared.refreshToken
     }
 
     var hasAccessToken: Bool { !accessToken.isEmpty }

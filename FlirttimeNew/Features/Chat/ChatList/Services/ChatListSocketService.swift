@@ -122,6 +122,7 @@ class ChatListSocketService: ObservableObject {
         guard !areListenersConfigured else { return }
 
         setupConversationSettingsListener()
+        setupConversationArchivedListener()
         setupUserBlockListeners()
         setupNewMessageListener()
         setupInboxRefreshListener()
@@ -170,8 +171,21 @@ class ChatListSocketService: ObservableObject {
     }
     
     func emitDeleteConversation(conversationId: String, forEveryone: Bool = false) {
-        let payload: [String: Any] = ["conversationId": conversationId, "forEveryone": forEveryone]
+        let payload: [String: Any] = [
+            "conversationId": conversationId,
+            "deleteType": forEveryone ? "everyone" : "me"
+        ]
+        AppLogger.debug("[DeleteChat] emit conversation:delete id=\(conversationId) deleteType=\(payload["deleteType"] ?? "")")
         chatSocketManager.emitMessage(SocketEvent.deleteConversation.rawValue, withData: [payload])
+    }
+
+    func emitArchiveConversation(conversationId: String, isArchived: Bool) {
+        let payload: [String: Any] = [
+            "conversationId": conversationId,
+            "isArchived": isArchived
+        ]
+        AppLogger.debug("[Archive] emit conversation:archive id=\(conversationId) isArchived=\(isArchived)")
+        chatSocketManager.emitMessage(SocketEvent.archiveConversation.rawValue, withData: [payload])
     }
 
     /// NEW — emit `chat:conversation:create` (c2s). Peers get fanout via inbox:refresh / member:added.
@@ -255,10 +269,35 @@ class ChatListSocketService: ObservableObject {
         
     private func setupConversationSettingsListener() {
         listen(SocketEvent.conversationSettingsUpdated.rawValue) { [weak self] data in
-            guard let dataDict = data.first as? [String: Any],
-                  let parsed = SocketAckParser.conversationSettings(from: dataDict) else { return }
+            self?.handleConversationSettingsPayload(data)
+        }
+    }
+
+    /// FlirtTime — `conversation:archived` keeps archive/unarchive in sync across devices.
+    private func setupConversationArchivedListener() {
+        listen(SocketEvent.conversationArchived.rawValue) { [weak self] data in
+            self?.handleConversationSettingsPayload(data)
+        }
+    }
+
+    private func handleConversationSettingsPayload(_ data: [Any]) {
+        guard let dataDict = data.first as? [String: Any] else { return }
+        let body = (dataDict["data"] as? [String: Any]) ?? dataDict
+        if let parsed = SocketAckParser.conversationSettings(from: body) {
             Task { @MainActor in
-                self?._settingsUpdatedSubject.send((parsed.conversationId, parsed.settings))
+                self._settingsUpdatedSubject.send((parsed.conversationId, parsed.settings))
+            }
+            return
+        }
+        let conversationId = (body["conversationId"] as? String)
+            ?? (body["conversation_id"] as? String)
+            ?? (body["id"] as? String)
+            ?? ""
+        guard !conversationId.isEmpty else { return }
+        if let archived = SocketAckParser.boolValue(from: body["isArchived"])
+            ?? SocketAckParser.boolValue(from: body["archived"]) {
+            Task { @MainActor in
+                self._settingsUpdatedSubject.send((conversationId, ["isArchived": archived]))
             }
         }
     }

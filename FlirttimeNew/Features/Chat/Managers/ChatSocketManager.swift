@@ -74,15 +74,15 @@ enum SocketAckParser {
     }
 }
 
-/// Socket.IO events — https://socket.onevibe.walit.in/console (`/console/events.json`)
-/// NEW names use `namespace:action` (e.g. `chat:message:send`). OLD kebab-case noted in comments.
+/// Socket.IO events — FlirtTime (`https://flirttimeapi.walit.in`, path `/socket.io`).
+/// Names follow the FlirtTime chatArchiveDelete / chat / video_call catalog.
 enum SocketEvent: String, CaseIterable {
     case socketAck = "socket_ack" // legacy client ack helper
 
     // MARK: Chat messages
-    case sendConversationMessage = "chat:message:send" // NEW — OLD: send-conversation-message / send-new-message
-    case sendConversationMessageAck = "chat:message:send:ack" // NEW — OLD: send-conversation-message-ack / new-message-ack
-    case getMessage = "chat:message:new" // NEW listener — OLD: get-message
+    case sendConversationMessage = "chat:send_message"
+    case sendConversationMessageAck = "chat:message_sent"
+    case getMessage = "chat:message_received"
     case translateMessage = "chat:message:translate" // NEW — OLD: translate-message
     case translateMessageAck = "chat:message:translate:ack" // NEW — OLD: translate-message-ack
     case editMessage = "chat:message:edit" // NEW — OLD: edit-message / update-conversation-message
@@ -100,9 +100,9 @@ enum SocketEvent: String, CaseIterable {
     case messageDelivered = "chat:message:delivered" // NEW
     case chatListing = "chat:message:list" // NEW — OLD: chat-listing
     case chatListingResp = "chat:message:list:ack" // NEW — OLD: chat-listing-resp
-    case seenMessages = "chat:message:seen" // NEW — OLD: seen-messages / mark-conversation-messages-seen
-    case seenMessagesAck = "chat:message:seen:ack" // NEW — OLD: mark-conversation-messages-seen-ack
-    case conversationMessageStatusUpdate = "chat:message:status" // NEW — OLD: conversation-message-status-update
+    case seenMessages = "chat:mark_read"
+    case seenMessagesAck = "chat:mark_read:ack"
+    case conversationMessageStatusUpdate = "chat:read_receipt"
 
     // Aliases kept so existing call sites compile (same NEW event names)
     static var sendNewMessage: SocketEvent { .sendConversationMessage }
@@ -128,8 +128,9 @@ enum SocketEvent: String, CaseIterable {
     case userBlocked = "user:blocked"
     /// FE / socket console — block edge removed
     case userUnblocked = "user:unblocked"
-    case deleteConversation = "chat:conversation:delete" // NEW — OLD: delete-conversation
-    case deleteConversationAck = "chat:conversation:delete:ack" // NEW — OLD: delete-conversation-ack
+    case deleteConversation = "conversation:delete"
+    case archiveConversation = "conversation:archive"
+    case conversationArchived = "conversation:archived"
     case createConversation = "chat:conversation:create" // NEW — OLD: create-conversation
     case createConversationAck = "chat:conversation:create:ack" // NEW
     case listConversations = "chat:conversation:list" // NEW — c2s inbox via socket
@@ -143,7 +144,8 @@ enum SocketEvent: String, CaseIterable {
     case getGlobalUnreadCountAck = "chat:unread:get:ack" // NEW
     case conversationScreenshot = "chat:screenshot" // NEW — OLD: conversation-screenshot
     case conversationSystemMessage = "chat:system:message" // NEW — OLD: conversation-system-message
-    case conversationDeletedPush = "chat:conversation:deleted" // NEW — s2c remove from UI
+    case conversationDeletedPush = "conversation:deleted"
+    static var deleteConversationAck: SocketEvent { .conversationDeletedPush }
     case conversationSettingsUpdateAck = "chat:conversation:settings:update:ack" // NEW
     case memberAdd = "chat:member:add" // NEW — c2s add members
     case memberAddAck = "chat:member:add:ack" // NEW
@@ -176,11 +178,11 @@ enum SocketEvent: String, CaseIterable {
     case presenceGet = "presence:get" // NEW — FE subscribePresence({ userIds })
     case getOnlineUsers = "presence:online:list" // NEW — OLD: get-online-users
     case getOnlineUsersAck = "presence:online:list:ack" // NEW — OLD: get-online-users-ack
-    case userTyping = "presence:typing" // NEW emit — OLD: user-typing
-    case userTypingUpdate = "presence:typing:update" // NEW listener (was same as emit on OLD user-typing)
+    case userTyping = "chat:typing"
     case heartbeat = "system:heartbeat" // NEW — OLD: heartbeat
     case heartbeatAck = "system:heartbeat:ack" // NEW — OLD: heartbeat-ack
     static var listenUserStatus: SocketEvent { .broadcastUserStatus }
+    static var userTypingUpdate: SocketEvent { .userTyping }
 
     case error = "error" // NEW — OLD: exception
     case disconnected = "disconnected"
@@ -506,8 +508,9 @@ class ChatSocketManager {
             }
         }
 
-        guard let token = keychain[ChatConfig.accessTokenKey], !token.isEmpty else {
-            print("[Socket] Cannot connect — access token not found in keychain.")
+        let token = ChatAuthStore.shared.accessToken
+        guard !token.isEmpty else {
+            print("[Socket] Cannot connect — access token not found.")
             return
         }
 
@@ -601,8 +604,7 @@ class ChatSocketManager {
     }
 
     func hasAccessToken() -> Bool {
-        guard let token = keychain[ChatConfig.accessTokenKey] else { return false }
-        return !token.isEmpty
+        ChatAuthStore.shared.hasAccessToken
     }
 
     private func retryConnection() {

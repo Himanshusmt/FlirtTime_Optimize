@@ -182,7 +182,8 @@ extension ChatDetailViewController {
                             isGroup: self.isGroupChat,
                             displayName: displayName,
                             avatarURL: avatarURL,
-                            groupMembers: groupMembers
+                            groupMembers: groupMembers,
+                            calleeId: self.viewModel.selectedUserChatID
                         )
                     } catch {
                         let message: String

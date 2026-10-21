@@ -259,6 +259,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         SocketEvent.conversationSettingsUpdated.rawValue,
         SocketEvent.deleteConversation.rawValue,
         SocketEvent.deleteConversationAck.rawValue,
+        SocketEvent.conversationArchived.rawValue,
         SocketEvent.incomingChannelMessage.rawValue,
         SocketEvent.sendMessageToChannelAck.rawValue,
         SocketEvent.adminDeleteChannelMessageAck.rawValue,
@@ -795,24 +796,18 @@ class ChatSocketService: ChatSocketServiceProtocol {
         emitMarkMessagesSeen(conversationId: conversationId, messageId: nil)
     }
 
-    /// Console `chat:message:seen` sample: `{ requestId, conversationId, messageId }`
-    /// `messageId` is required by the server for sender `chat:message:status` fanout.
+    /// FlirtTime — emit `chat:mark_read` `{ conversationId, messageId }`.
     func emitMarkMessagesSeen(conversationId: String, messageId: String?) {
         guard !conversationId.isEmpty else { return }
-        guard let messageId, !messageId.isEmpty else {
-            AppLogger.debug(
-                "[MarkSeen] Skipped chat:message:seen — messageId required by console contract conversationId=\(conversationId)"
-            )
-            return
-        }
-        let payload: [String: Any] = [
-            "requestId": UUID().uuidString,
-            "conversationId": conversationId,
-            "messageId": messageId
+        var payload: [String: Any] = [
+            "conversationId": conversationId
         ]
+        if let messageId, !messageId.isEmpty {
+            payload["messageId"] = messageId
+        }
         socketManager.emitMessage(SocketEvent.markConversationMessagesSeen.rawValue, withData: [payload])
         AppLogger.debug(
-            "[MarkSeen] Emitted chat:message:seen conversationId=\(conversationId) messageId=\(messageId.prefix(8))"
+            "[MarkSeen] Emitted chat:mark_read conversationId=\(conversationId) messageId=\(messageId ?? "nil")"
         )
     }
 

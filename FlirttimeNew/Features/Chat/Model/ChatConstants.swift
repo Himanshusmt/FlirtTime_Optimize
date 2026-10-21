@@ -20,7 +20,7 @@ enum ChatConstants {
     enum Pagination {
         static let initialDisplayCount = 20
         static let silentPreloadCount = 40
-        static let paginationBatchSize = 40
+        static let paginationBatchSize = 30
         static let messageLoadLimit = 100
         static let mediaRefreshLimit = 50
         static let forwardConversationsPageSize = 20

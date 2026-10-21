@@ -7,6 +7,7 @@ import Foundation
 import Combine
 import Swinject
 import RxSwift
+import ImageIO
 
 // MARK: - Models
 
@@ -357,16 +358,17 @@ final class BackgroundUploadService: ObservableObject {
 
         guard !Task.isCancelled else { return }
 
-        // Step 3–4: NEW media pipeline — media/images or media/uploads (purpose: chat) → mediaId
+        // Step 3–4: POST /api/v1/media/uploads → PUT file to uploadUrl → S3 key
         updateStatus(tempId: currentTask.tempId, status: .uploading)
 
-        guard let mediaId = await uploadChatMedia(task: currentTask, fileURL: uploadFileURL) else {
+        guard let uploaded = await uploadChatMedia(task: currentTask, fileURL: uploadFileURL) else {
             if isCompressedCopy {
                 try? FileManager.default.removeItem(at: uploadFileURL)
             }
             markFailed(tempId: currentTask.tempId, reason: "media upload failed")
             return
         }
+        let mediaId = uploaded.key
 
         if isCompressedCopy {
             try? FileManager.default.removeItem(at: uploadFileURL)
@@ -378,7 +380,14 @@ final class BackgroundUploadService: ObservableObject {
             var updatedMsg = entry.message
             var meta = updatedMsg.metadata ?? [:]
             meta["cachedMediaId"] = AnyCodable(mediaId)
+            meta["cachedS3Key"] = AnyCodable(mediaId)
             meta["cachedFileSize"] = AnyCodable(compressedFileSize)
+            if let thumbnailUrl = uploaded.thumbnailUrl {
+                meta["thumbnailUrl"] = AnyCodable(thumbnailUrl)
+            }
+            if let publicUrl = uploaded.publicUrl {
+                meta["publicUrl"] = AnyCodable(publicUrl)
+            }
             updatedMsg.metadata = meta
             PendingMessageStore.shared.save(
                 tempId: currentTask.tempId, message: updatedMsg,
@@ -397,7 +406,8 @@ final class BackgroundUploadService: ObservableObject {
             task: currentTask,
             mediaIds: [mediaId],
             filename: currentTask.filename,
-            filesize: compressedFileSize
+            filesize: compressedFileSize,
+            uploaded: uploaded
         )
     }
 
@@ -477,15 +487,15 @@ final class BackgroundUploadService: ObservableObject {
                 status: .uploading
             )
 
-            guard let mediaId = await uploadChatMedia(task: itemTask, fileURL: uploadFileURL) else {
+            guard let uploaded = await uploadChatMedia(task: itemTask, fileURL: uploadFileURL) else {
                 if isCompressedCopy { try? FileManager.default.removeItem(at: uploadFileURL) }
                 markFailed(tempId: task.tempId, reason: "album item \(i) upload failed")
                 return
             }
             if isCompressedCopy { try? FileManager.default.removeItem(at: uploadFileURL) }
 
-            mediaIds[i] = mediaId
-            items[i].cachedMediaId = mediaId
+            mediaIds[i] = uploaded.key
+            items[i].cachedMediaId = uploaded.key
 
             // Persist progress so retry can skip finished items
             if let entry = PendingMessageStore.shared.pendingMessagesForAll()
@@ -678,7 +688,13 @@ final class BackgroundUploadService: ObservableObject {
 
     // MARK: - REST Send after media upload
 
-    private func sendMediaMessageREST(task: UploadTask, mediaIds: [String], filename: String, filesize: String) async {
+    private func sendMediaMessageREST(
+        task: UploadTask,
+        mediaIds: [String],
+        filename: String,
+        filesize: String,
+        uploaded: ChatPresignedUploadResult? = nil
+    ) async {
         let resolvedType = mediaIds.count > 1 ? "image" : task.messageType
         if task.isChannel {
             await sendChannelMediaMessageREST(task: task, mediaIds: mediaIds, messageType: resolvedType)
@@ -690,8 +706,41 @@ final class BackgroundUploadService: ObservableObject {
             return
         }
 
+        let contentKey = uploaded?.key ?? mediaIds.first
+        var metadata: [String: Any] = ["source": resolvedType == "image" ? "photo" : resolvedType]
+        if let thumbnailUrl = uploaded?.thumbnailUrl ?? pendingThumbnailURL(for: task.tempId) {
+            metadata["thumbnailUrl"] = thumbnailUrl
+        }
+        if let publicUrl = uploaded?.publicUrl {
+            metadata["imageUrl"] = publicUrl
+            metadata["mediaUrl"] = publicUrl
+        }
+        if resolvedType == "image",
+           let size = imagePixelSize(at: task.localFileURL) {
+            metadata["width"] = size.width
+            metadata["height"] = size.height
+        }
+
+        let fileData = (try? Data(contentsOf: URL(fileURLWithPath: task.localFileURL)))
+        let mimeType = uploaded?.contentType
+            ?? (resolvedType == "audio" ? "audio/mp4" : "image/jpeg")
+
+        if resolvedType == "image" {
+            ChatMessageService.emitImageSendMessage(
+                conversationId: task.conversationId,
+                imageUrl: uploaded?.publicUrl ?? metadata["imageUrl"] as? String,
+                image: uploaded?.key ?? contentKey,
+                fileData: fileData,
+                mimeType: mimeType,
+                content: contentKey,
+                clientMessageId: task.tempId,
+                replyToId: task.replyToId,
+                thumbnailUrl: metadata["thumbnailUrl"] as? String
+            )
+        }
+
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            _ = sessionManager.sendChatMessage(
+            let jsonSend = sessionManager.sendChatMessage(
                 conversationId: task.conversationId,
                 body: nil,
                 type: resolvedType,
@@ -700,8 +749,32 @@ final class BackgroundUploadService: ObservableObject {
                 poll: nil,
                 postId: nil,
                 clientMessageId: task.tempId,
-                replyToId: task.replyToId
+                replyToId: task.replyToId,
+                contentURL: contentKey,
+                metadata: metadata
             )
+
+            let send: Single<ConversationMessage>
+            if let fileData, !fileData.isEmpty, resolvedType == "image" || resolvedType == "audio" {
+                var extra = metadata
+                extra["content"] = contentKey ?? ""
+                extra["key"] = contentKey ?? ""
+                send = sessionManager.sendChatMessageMultipart(
+                    conversationId: task.conversationId,
+                    fileData: fileData,
+                    fileName: filename,
+                    mimeType: mimeType,
+                    messageType: resolvedType,
+                    caption: nil,
+                    clientMessageId: task.tempId,
+                    extraFields: extra
+                )
+                .catch { _ in jsonSend }
+            } else {
+                send = jsonSend
+            }
+
+            _ = send
             .subscribe(
                 onSuccess: { [weak self] message in
                     Task { @MainActor in
@@ -786,17 +859,17 @@ final class BackgroundUploadService: ObservableObject {
 
     // MARK: - NEW Media Upload (purpose: chat)
 
-    /// Uploads image/video via NEW media APIs and returns `mediaId` for `chat:message:send`.
-    private func uploadChatMedia(task: UploadTask, fileURL: URL) async -> String? {
+    /// Uploads image/audio via presigned PUT, or video via chunked uploads.
+    private func uploadChatMedia(task: UploadTask, fileURL: URL) async -> ChatPresignedUploadResult? {
         guard let sessionManager else { return nil }
 
         if task.messageType == "video" {
             return await withCheckedContinuation { continuation in
                 var resumed = false
-                let finish: (String?) -> Void = { id in
+                let finish: (ChatPresignedUploadResult?) -> Void = { result in
                     guard !resumed else { return }
                     resumed = true
-                    continuation.resume(returning: id)
+                    continuation.resume(returning: result)
                 }
                 _ = sessionManager.uploadVideoFileViaChunkedUploads(
                     fileURL: fileURL,
@@ -807,7 +880,7 @@ final class BackgroundUploadService: ObservableObject {
                 .subscribe(
                     onSuccess: { mediaId in
                         AppLogger.debug("[BGUpload] Video mediaId=\(mediaId)")
-                        finish(mediaId)
+                        finish(ChatPresignedUploadResult(key: mediaId, publicUrl: nil, thumbnailUrl: nil, contentType: "video/mp4"))
                     },
                     onFailure: { error in
                         AppLogger.debug("[BGUpload] Video upload failed: \(error.localizedDescription)")
@@ -817,42 +890,52 @@ final class BackgroundUploadService: ObservableObject {
             }
         }
 
-        // Image — prefer media/images (purpose: chat), fallback media/uploads
-        guard let imageData = try? Data(contentsOf: fileURL), !imageData.isEmpty else { return nil }
+        guard let fileData = try? Data(contentsOf: fileURL), !fileData.isEmpty else { return nil }
+        let kind = task.messageType == "audio" ? "audio" : "image"
+        let contentType = task.messageType == "audio" ? "audio/mp4" : "image/jpeg"
 
         return await withCheckedContinuation { continuation in
             var resumed = false
-            let finish: (String?) -> Void = { id in
+            let finish: (ChatPresignedUploadResult?) -> Void = { result in
                 guard !resumed else { return }
                 resumed = true
-                continuation.resume(returning: id)
+                continuation.resume(returning: result)
             }
 
-            _ = sessionManager.uploadPostImageDirect(imageData: imageData, purpose: "chat")
-                .map { session -> String in
-                    if let id = session.resolvedMediaId, !id.isEmpty { return id }
-                    throw APIError.apiError("media/images did not return mediaId")
+            _ = sessionManager.uploadChatAttachment(
+                data: fileData,
+                kind: kind,
+                contentType: contentType,
+                fileName: task.filename
+            )
+            .subscribe(
+                onSuccess: { uploaded in
+                    AppLogger.debug("[BGUpload] PUT \(kind) key=\(uploaded.key) thumb=\(uploaded.thumbnailUrl ?? "nil")")
+                    finish(uploaded)
+                },
+                onFailure: { error in
+                    AppLogger.debug("[BGUpload] \(kind) upload failed: \(error.localizedDescription)")
+                    finish(nil)
                 }
-                .catch { _ -> Single<String> in
-                    sessionManager.uploadViaMediaUploadsSession(
-                        data: imageData,
-                        purpose: "chat",
-                        kind: "image",
-                        contentType: "image/jpeg",
-                        fileName: task.filename
-                    )
-                }
-                .subscribe(
-                    onSuccess: { mediaId in
-                        AppLogger.debug("[BGUpload] Image mediaId=\(mediaId)")
-                        finish(mediaId)
-                    },
-                    onFailure: { error in
-                        AppLogger.debug("[BGUpload] Image upload failed: \(error.localizedDescription)")
-                        finish(nil)
-                    }
-                )
+            )
         }
+    }
+
+    private func pendingThumbnailURL(for tempId: String) -> String? {
+        PendingMessageStore.shared.pendingMessagesForAll()
+            .first(where: { $0.tempId == tempId })?
+            .message.metadata?["thumbnailUrl"]?.value as? String
+    }
+
+    private func imagePixelSize(at path: String) -> (width: Int, height: Int)? {
+        let url = URL(fileURLWithPath: path) as CFURL
+        guard let source = CGImageSourceCreateWithURL(url, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = props[kCGImagePropertyPixelWidth] as? Int,
+              let height = props[kCGImagePropertyPixelHeight] as? Int else {
+            return nil
+        }
+        return (width, height)
     }
 
     // MARK: - Status Management

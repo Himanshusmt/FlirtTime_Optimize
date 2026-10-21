@@ -8,8 +8,10 @@
 import UIKit
 import SwiftUI
 import Combine
+import RxSwift
+import Swinject
 
-final class ChatListContainerViewController: UIViewController {
+final class ChatListContainerViewController: BaseViewController {
 
     let navigator = ChatListNavigator()
     var storyData: OtherStoryResponseModel?
@@ -20,6 +22,9 @@ final class ChatListContainerViewController: UIViewController {
     private var inAppBanner: ChatInAppNotificationBanner?
     private var cancellables = Set<AnyCancellable>()
     private var noInternetAlertShown = false
+    private let disposeBag = DisposeBag()
+    private lazy var quickMomentsHost = DiscoverViewModel()
+    private lazy var profileViewModel = ProfileViewModel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,11 +33,24 @@ final class ChatListContainerViewController: UIViewController {
         navigator.uikitPushHandler = { [weak self] navData in
             self?.pushChatDetail(navData: navData)
         }
+        navigator.onOpenCoinShop = { [weak self] in
+            self?.openCoinShop()
+        }
+        navigator.onOpenNotifications = { [weak self] in
+            self?.openNotifications()
+        }
+        navigator.onAddQuickMoment = { [weak self] in
+            self?.openAddQuickMoment()
+        }
+        navigator.onOpenQuickMoment = { [weak self] item, isMine in
+            self?.openQuickMoments(of: item, isMine: isMine)
+        }
         tapGesture()
         ChatMockSeeder.shared.seedIfNeeded()
         embedChatListView()
         bindInAppBanner()
         bindNetworkMonitor()
+        bindOwnAvatar()
         view.enforceRTLIfNeeded()
     }
 
@@ -106,6 +124,19 @@ final class ChatListContainerViewController: UIViewController {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    private func bindOwnAvatar() {
+        navigator.ownAvatarPath = UserDataManager.shared.userAvtarImage
+            ?? UserDataManager.shared.appUser?.profilePicture
+        profileViewModel.$myProfile
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] profile in
+                guard let url = profile?.profile?.avatarURL, !url.isEmpty else { return }
+                self?.navigator.ownAvatarPath = url
+            }
+            .store(in: &cancellables)
+        profileViewModel.getMyProfile()
     }
 
     private func embedChatListView() {
@@ -223,6 +254,129 @@ final class ChatListContainerViewController: UIViewController {
         }
         banner.show(in: view, below: nil)
         inAppBanner = banner
+    }
+
+    // MARK: - Header + Quick Moments
+
+    private func openNotifications() {
+        let notifications: NotificationViewController = NotificationViewController.instantiateFromStoryboard()
+        navigationController?.pushViewController(notifications, animated: true)
+    }
+
+    private func openAddQuickMoment() {
+        let composer = AddQuickMomentViewController()
+        composer.onShare = { [weak self] text, background, image in
+            guard let self else { return }
+            self.setLoading(true)
+            self.profileViewModel.createQuickMoment(text: text, background: background, image: image) { [weak self] result in
+                guard let self else { return }
+                self.setLoading(false)
+                switch result {
+                case .success:
+                    self.aCustomToastView.show(message: "Quick moment shared")
+                    self.quickMomentsHost.loadQuickMomentTray()
+                    self.navigator.onChatDetailPopped?()
+                case .failure(let error):
+                    self.aCustomToastView.show(message: error.message)
+                }
+            }
+        }
+        present(composer, animated: true)
+    }
+
+    private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
+        quickMomentsHost.quickMoments(of: item, isMine: isMine) { [weak self] stories in
+            guard let self else { return }
+            if isMine {
+                self.presentQuickMoments(stories, of: item, isMine: true)
+                return
+            }
+            guard !stories.isEmpty else {
+                self.aCustomToastView.show(message: "These moments have expired")
+                self.quickMomentsHost.loadQuickMomentTray()
+                return
+            }
+            self.presentQuickMoments(stories, of: item, isMine: false)
+        }
+    }
+
+    private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
+        let stories = Array(stories.reversed())
+        guard !stories.isEmpty else { return }
+        let user = item.user
+        let userId = user?.id ?? stories.first?.userId
+        var profile = MomentsProfile(
+            id: userId?.stableID ?? 0,
+            displayName: isMine ? "You" : (user?.name ?? user?.fullName ?? "Someone"),
+            age: nil,
+            isVerified: user?.isVerified ?? false,
+            gender: nil,
+            city: user?.location,
+            distanceKm: nil,
+            isOnline: nil,
+            datingIntent: nil,
+            photos: [user?.photo].compactMap { $0 },
+            about: "",
+            interests: [],
+            sharedInterests: [],
+            reasons: [],
+            voiceIntro: nil,
+            moments: stories.enumerated().map { $0.element.storyMoment(id: $0.offset) },
+            vibeScore: nil
+        )
+        profile.remoteUserId = userId
+        let startIndex = isMine ? 0 : (stories.firstIndex { !$0.hasViewed } ?? 0)
+        let viewer = QuickMomentViewController(profile: profile, startIndex: startIndex, isOwnMoments: isMine)
+
+        if isMine {
+            viewer.onShowActivity = { index, presenter in
+                guard stories.indices.contains(index) else { return }
+                let activity = QuickMomentActivityViewController(moment: stories[index])
+                activity.modalPresentationStyle = .pageSheet
+                if let sheet = activity.sheetPresentationController {
+                    sheet.detents = [.medium(), .large()]
+                    sheet.prefersGrabberVisible = true
+                }
+                presenter.present(activity, animated: true)
+            }
+            viewer.onDelete = { [weak self] index in
+                guard stories.indices.contains(index) else { return }
+                self?.quickMomentsHost.deleteQuickMoment(id: stories[index].id) { message in
+                    self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
+                }
+            }
+        } else {
+            var seen = Set<String>()
+            viewer.onMomentShown = { [weak self] index in
+                guard stories.indices.contains(index), !stories[index].hasViewed,
+                      seen.insert(stories[index].id).inserted else { return }
+                self?.quickMomentsHost.markQuickMomentViewed(id: stories[index].id)
+            }
+            viewer.onReact = { [weak self] index, emoji in
+                guard stories.indices.contains(index) else { return }
+                self?.quickMomentsHost.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
+                    self?.aCustomToastView.show(message: message)
+                }
+            }
+            viewer.onReply = { [weak self] index, message in
+                guard stories.indices.contains(index) else { return }
+                self?.quickMomentsHost.replyToQuickMoment(id: stories[index].id, message: message) { error in
+                    self?.aCustomToastView.show(message: error)
+                }
+            }
+            viewer.onViewProfile = { [weak self] profile in
+                self?.dismiss(animated: true) {
+                    let profileVC = CardDetailViewController(profile: profile)
+                    profileVC.hidesBottomBarWhenPushed = true
+                    self?.navigationController?.pushViewController(profileVC, animated: true)
+                }
+            }
+        }
+        viewer.onDismiss = { [weak self] in
+            self?.quickMomentsHost.loadQuickMomentTray()
+            self?.navigator.onChatDetailPopped?()
+        }
+        (navigationController ?? self).present(viewer, animated: true)
     }
 }
 

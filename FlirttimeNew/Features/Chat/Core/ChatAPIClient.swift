@@ -115,6 +115,39 @@ final class ChatAPIClient {
         }
     }
 
+    func uploadMultipart(
+        request: ApiRequest,
+        fileData: Data,
+        fileName: String,
+        mimeType: String,
+        fileField: String = "file"
+    ) -> Single<Data> {
+        guard let url = url(for: request.endPoint) else {
+            return .error(APIError.apiError("Chat base URL is not configured"))
+        }
+        return Single.create { [session] single in
+            let upload = session.upload(multipartFormData: { form in
+                form.append(fileData, withName: fileField, fileName: fileName, mimeType: mimeType)
+                for (key, value) in request.parameters ?? [:] {
+                    if let data = "\(value)".data(using: .utf8) {
+                        form.append(data, withName: key)
+                    }
+                }
+            }, to: url, method: request.method)
+            upload
+                .validate(statusCode: 200..<300)
+                .responseData { response in
+                    switch response.result {
+                    case .success(let data):
+                        single(.success(data))
+                    case .failure(let error):
+                        single(.failure(error))
+                    }
+                }
+            return Disposables.create { upload.cancel() }
+        }
+    }
+
     func uploadImage<T: Codable>(request: ApiRequest, imageData: Data?) -> Single<T> {
         guard let url = url(for: request.endPoint) else {
             return .error(APIError.apiError("Chat base URL is not configured"))

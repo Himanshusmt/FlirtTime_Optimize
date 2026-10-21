@@ -31,10 +31,11 @@ class ChatSyncService: ObservableObject {
     private let chatDataService: ChatDataService
 
     private let pageSize = 20
-    private let archivedPageSize = 30
+    private let archivedPageSize = 20
     private var isFetching = false
     private var isFetchingArchived = false
     private var nextPageCursor: String? = nil
+    private var nextPageNumber = 2
     private var lastSyncRequestTime = Date.distantPast
     private var lastSuccessfulSync: Date?
     private var lastSyncFailure: Date?
@@ -114,6 +115,7 @@ class ChatSyncService: ObservableObject {
             guard let self = self else { return }
             do {
                 let response = try await self.fetchConversations(
+                    page: self.nextPageNumber,
                     limit: self.pageSize,
                     before: self.nextPageCursor
                 )
@@ -131,7 +133,7 @@ class ChatSyncService: ObservableObject {
         }
     }
 
-    /// FE — GET `/api/v1/chat/conversations?limit=30&archived=true`
+    /// FlirtTime — GET `/api/v1/chats?page=1&limit=20` (archived tab).
     /// Loads archived inbox when the Archived tab is opened. Merges into Core Data
     /// without pruning the main (non-archived) inbox.
     func loadArchivedConversations() {
@@ -143,12 +145,13 @@ class ChatSyncService: ObservableObject {
 
         isFetchingArchived = true
         isLoadingArchived = true
-        AppLogger.debug("ChatSyncService: ▶ GET chat/conversations?limit=\(archivedPageSize)&archived=true")
+        AppLogger.debug("ChatSyncService: ▶ GET /api/v1/chats?page=1&limit=\(archivedPageSize)&archived=true")
 
         Task { [weak self] in
             guard let self else { return }
             do {
                 let response = try await self.fetchConversations(
+                    page: 1,
                     limit: self.archivedPageSize,
                     showArchived: true
                 )
@@ -215,6 +218,7 @@ class ChatSyncService: ObservableObject {
         isFetching = true
         isLoading = true
         nextPageCursor = nil
+        nextPageNumber = 2
         hasMorePages = true
         lastSyncRequestTime = Date()
 
@@ -269,6 +273,7 @@ class ChatSyncService: ObservableObject {
             guard let self = self else { return }
             do {
                 let response = try await self.fetchConversations(
+                    page: 1,
                     limit: self.pageSize,
                     lastSync: lastSync
                 )
@@ -282,6 +287,7 @@ class ChatSyncService: ObservableObject {
     // MARK: - API Calls (Async wrappers for RxSwift)
 
     private func fetchConversations(
+        page: Int = 1,
         limit: Int,
         search: String = "",
         showArchived: Bool = false,
@@ -291,7 +297,7 @@ class ChatSyncService: ObservableObject {
     ) async throws -> ChatMessageUserData {
         try await withCheckedThrowingContinuation { continuation in
             sessionManager.getConversations(
-                page: 1,
+                page: page,
                 limit: limit,
                 search: search,
                 showArchived: showArchived,
@@ -324,6 +330,12 @@ class ChatSyncService: ObservableObject {
 
         if apiChats.count < pageSize {
             hasMorePages = false
+        } else if isPagination {
+            nextPageNumber += 1
+            hasMorePages = true
+        } else {
+            nextPageNumber = 2
+            hasMorePages = true
         }
 
         if isPagination || isFullRefresh {

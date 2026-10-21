@@ -208,6 +208,91 @@ extension QuickMomentTrayItem {
     }
 }
 
+// MARK: - Add-new bubble (Profile + Chat list)
+
+/// Same “Add new” control as Profile Quick Moments: faded avatar, Punch plus, vibe caption.
+final class QuickMomentAddBubbleView: UIView {
+
+    static let bubbleSize: CGFloat = 70
+
+    private let circle = UIView()
+    private let avatar = UIImageView()
+    private let plus = UIImageView(
+        image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
+    )
+    private let titleLabel = UILabel.vibeLabel(.medium, 12, style: .caption1, color: AppColor.Punch)
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setUp()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setUp()
+    }
+
+    func configure(avatarPath: String?) {
+        avatar.loadImage(path: avatarPath, placeholder: UIImage(named: "ProfileBlur"))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: Self.bubbleSize + 4, height: 96)
+    }
+
+    private func setUp() {
+        clipsToBounds = false
+        isUserInteractionEnabled = false
+
+        let size = Self.bubbleSize
+        circle.backgroundColor = AppColor.Lavenderblush
+        circle.layer.cornerRadius = size / 2
+        circle.layer.borderWidth = 1.5
+        circle.layer.borderColor = AppColor.Punch.withAlphaComponent(0.35).cgColor
+        circle.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(circle)
+
+        avatar.contentMode = .scaleAspectFill
+        avatar.clipsToBounds = true
+        avatar.layer.cornerRadius = (size - 12) / 2
+        avatar.alpha = 0.55
+        avatar.image = UIImage(named: "ProfileBlur")
+        circle.addSubview(avatar)
+        avatar.pinEdges(to: circle, insets: UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6))
+
+        plus.tintColor = .white
+        plus.contentMode = .center
+        plus.backgroundColor = AppColor.Punch
+        plus.layer.cornerRadius = 12
+        plus.clipsToBounds = true
+        plus.layer.borderWidth = 2
+        plus.layer.borderColor = UIColor.white.cgColor
+        plus.translatesAutoresizingMaskIntoConstraints = false
+        circle.addSubview(plus)
+
+        titleLabel.text = "Add new"
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            circle.topAnchor.constraint(equalTo: topAnchor),
+            circle.centerXAnchor.constraint(equalTo: centerXAnchor),
+            circle.widthAnchor.constraint(equalToConstant: size),
+            circle.heightAnchor.constraint(equalToConstant: size),
+            plus.widthAnchor.constraint(equalToConstant: 24),
+            plus.heightAnchor.constraint(equalToConstant: 24),
+            plus.trailingAnchor.constraint(equalTo: circle.trailingAnchor, constant: 2),
+            plus.bottomAnchor.constraint(equalTo: circle.bottomAnchor, constant: 2),
+            titleLabel.topAnchor.constraint(equalTo: circle.bottomAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
+            widthAnchor.constraint(equalToConstant: size + 4)
+        ])
+    }
+}
+
 // MARK: - Voice waveform
 
 final class VoiceWaveformView: UIView {

@@ -87,6 +87,12 @@ final class ChatListNavigator: ObservableObject {
 
     var uikitPushHandler: ((ChatNavigationData) -> Void)?
     var onChatDetailPopped: (() -> Void)?
+    var onOpenCoinShop: (() -> Void)?
+    var onOpenNotifications: (() -> Void)?
+    var onAddQuickMoment: (() -> Void)?
+    var onOpenQuickMoment: ((QuickMomentTrayItem, Bool) -> Void)?
+    /// Same gallery avatar Profile uses for the Quick Moments “Add new” bubble.
+    @Published var ownAvatarPath: String?
 
     private(set) var currentNavigationData: ChatNavigationData?
     

@@ -79,7 +79,7 @@ extension ChatDetailViewModel {
                 ?? sessionManager
                 ?? Container.sharedContainer.resolve(SessionManager.self)
             let myId = getCurrentUserId()
-            _ = session?.blockUser(id: blockedUserId, userId: myId)
+            _ = session?.blockUser(id: blockedUserId, userId: myId, reason: "Inappropriate behavior")
                 .observe(on: MainScheduler.instance)
                 .subscribe(
                     onSuccess: { [weak self] _ in
@@ -450,7 +450,21 @@ extension ChatDetailViewModel {
     }
 
     func getReportReasons() {
-//        userListViewModel.getReportReasons()
+        // FlirtTime report reasons are the fixed API codes on `MomentsReportReason`.
+    }
+
+    /// FlirtTime — POST `/api/v1/users/{id}/report` with the selected reason + this thread.
+    func reportUser(reason: String, description: String?) {
+        let peerId = selectedUserChatID.isEmpty
+            ? (user?.userId ?? headerUserData?.userId ?? user?.id ?? "")
+            : selectedUserChatID
+        guard !peerId.isEmpty else { return }
+        userListViewModel.reportUser(
+            userID: peerId,
+            reason: reason,
+            description: description,
+            conversationId: selectedId
+        )
     }
 
     // MARK: - Message Info

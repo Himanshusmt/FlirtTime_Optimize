@@ -4117,8 +4117,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CHAT_BASE_URL = "";
 				CHAT_MEDIA_BASE_URL = "";
-				CHAT_SOCKET_PATH = /socket.io/;
-				CHAT_SOCKET_URL = "";
+				CHAT_SOCKET_PATH = /socket.io;
+				CHAT_SOCKET_URL = "https://flirttimeapi.walit.in";
 				CODE_SIGN_ENTITLEMENTS = FlirttimeNew/FlirttimeNew.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -4165,8 +4165,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CHAT_BASE_URL = "";
 				CHAT_MEDIA_BASE_URL = "";
-				CHAT_SOCKET_PATH = /socket.io/;
-				CHAT_SOCKET_URL = "";
+				CHAT_SOCKET_PATH = /socket.io;
+				CHAT_SOCKET_URL = "https://flirttimeapi.walit.in";
 				CODE_SIGN_ENTITLEMENTS = FlirttimeNew/FlirttimeNew.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

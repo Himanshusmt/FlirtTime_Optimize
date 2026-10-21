@@ -459,10 +459,16 @@ final class AppSessionManager {
                                                          parameters: params, encoding: URLEncoding.queryString))
     }
 
-    /// `reason` is one of the API codes: fake_profile, harassment, inappropriate_content, spam, scam, underage, other.
-    func reportUser(userId: String, reason: String, description: String? = nil) -> Single<Void> {
+    /// `reason` is one of the API codes: harassment, inappropriate_content, spam, scam, fake_profile, underage, other.
+    func reportUser(
+        userId: String,
+        reason: String,
+        description: String? = nil,
+        conversationId: String? = nil
+    ) -> Single<Void> {
         var params: [String: Any] = ["reason": reason]
         if let description, !description.isEmpty { params["description"] = description }
+        if let conversationId, !conversationId.isEmpty { params["conversationId"] = conversationId }
         return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .reportUser(userId: userId),
                                                              parameters: params))
             .map { _ in () }

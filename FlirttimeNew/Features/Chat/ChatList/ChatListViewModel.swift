@@ -30,6 +30,7 @@ class ChatListViewModel: ObservableObject {
     @Published var showNoInternetAlert = false
     /// Bumped when group ongoing-call registry changes — forces list row subtitle refresh.
     @Published private(set) var ongoingGroupCallRevision: Int = 0
+    @Published private(set) var quickMomentTray: QuickMomentTray?
     
     // MARK: - Computed Properties
 
@@ -73,6 +74,17 @@ class ChatListViewModel: ObservableObject {
             return id
         })
     }
+    var callChats: [ChatMessageRow] {
+        chatsSnapshot.filter { chat in
+            !chat.isArchived && Self.isCallLastMessage(chat)
+        }
+    }
+
+    static func isCallLastMessage(_ chat: ChatMessageRow) -> Bool {
+        let raw = chat.lastMessage?.messageType?.lowercased() ?? ""
+        return raw == "call" || raw.contains("call")
+    }
+
     var mutedChatIds: Set<String> {
         Set(chatsSnapshot.compactMap { chat in
             guard let id = chat.id, chat.settings?.isMuted == true else { return nil }
@@ -183,11 +195,24 @@ class ChatListViewModel: ObservableObject {
         ChatDataPreloader.shared.preloadRecentConversationMessages()
         ChatListSocketService.shared.requestOnlineUsers()
         subscribeInboxPresence()
+        AgoraCallService.shared.refreshActiveVideoCallFromREST()
+        refreshBlockedUsersFromAPI()
         if chatsSnapshot.contains(where: { ($0.unreadCount ?? 0) > 0 }) {
             NotificationCenter.default.post(name: .ChatHasUnreadMessages, object: nil)
         } else {
             NotificationCenter.default.post(name: .ChatUnreadCleared, object: nil)
         }
+        loadQuickMomentTray()
+    }
+
+    func loadQuickMomentTray() {
+        guard let appSession = Container.appContainer.resolve(AppSessionManager.self) else { return }
+        appSession.quickMomentsTray()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] tray in
+                self?.quickMomentTray = tray
+            }, onFailure: { _ in })
+            .disposed(by: disposeBag)
     }
 
     /// FE ConversationsPage: presence:get for all direct peers in the inbox.
@@ -204,6 +229,7 @@ class ChatListViewModel: ObservableObject {
                 return
             }
         chatSyncService.syncChats(loadPolicy: .always, forceRefresh: true)
+        loadQuickMomentTray()
         // After sync settles, recalculate badge from server-fresh unread counts.
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 2_000_000_000) // 2s — wait for sync to settle
@@ -256,8 +282,8 @@ class ChatListViewModel: ObservableObject {
         forceRefreshChats()
     }
 
-    /// New Chat → user tap: `POST /chat/conversations` `{ type: "direct", participantIds }` → conversation id.
-    /// Reuses an existing local direct chat when present (same as FollowersProfile open-chat path).
+    /// New Chat → user tap: `POST /api/v1/chats` `{ recipientId }` → conversation id.
+    /// Reuses an existing local direct chat when present.
     func createOrResolveDirectConversation(
         peerUserId: String,
         completion: @escaping (Result<String, Error>) -> Void
@@ -288,8 +314,8 @@ class ChatListViewModel: ObservableObject {
             return
         }
 
-        AppLogger.debug("[NewChat] POST chat/conversations type=direct participantIds=[\(peerId)]")
-        session.createChatConversation(participantIds: [peerId], type: "direct")
+        AppLogger.debug("[NewChat] POST /api/v1/chats recipientId=\(peerId)")
+        session.createChat(recipientId: peerId)
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] response in
@@ -344,7 +370,7 @@ class ChatListViewModel: ObservableObject {
         return formatter.string(from: Date())
     }
 
-    /// FE — GET `chat/conversations?limit=30&archived=true` when Archived tab opens.
+    /// FlirtTime — GET `/api/v1/chats?page=1&limit=20` when Archived tab opens.
     func loadArchivedChats() {
         guard checkInternetConnection() else { return }
         chatSyncService.loadArchivedConversations()
@@ -407,6 +433,7 @@ class ChatListViewModel: ObservableObject {
         } else {
             applyConversationSettings(chatId: chatId, settings: ["isArchived": false])
         }
+        ChatListSocketService.shared.emitArchiveConversation(conversationId: chatId, isArchived: isArchived)
     }
 
     func updateChatArchiveStatus(chatId: String, isArchived: Bool) {
@@ -428,6 +455,7 @@ class ChatListViewModel: ObservableObject {
         guard !conversationId.isEmpty else { return }
 
         chatDataService.removeChat(conversationId, deleteFromStore: true)
+        ChatListSocketService.shared.emitDeleteConversation(conversationId: conversationId, forEveryone: true)
 
         _ = sessionManager.deleteChatConversation(id: conversationId, scope: "everyone")
             .observe(on: MainScheduler.instance)
@@ -460,9 +488,13 @@ class ChatListViewModel: ObservableObject {
 
         let scope = forEveryone ? "everyone" : "me"
 
-        // Optimistic local remove
+        // Optimistic local remove + FlirtTime socket `conversation:delete`
         for conversationId in uniqueIds {
             chatDataService.removeChat(conversationId, deleteFromStore: true)
+            ChatListSocketService.shared.emitDeleteConversation(
+                conversationId: conversationId,
+                forEveryone: forEveryone
+            )
         }
 
         _ = sessionManager.deleteChatConversations(ids: uniqueIds, scope: scope)
@@ -574,7 +606,7 @@ class ChatListViewModel: ObservableObject {
         // FE blocks via users/{id}/block — server fans out `user:blocked`.
         if let peerId = peerUserId(for: chatId), !peerId.isEmpty {
             BlockedUsersManager.shared.blockUser(id: peerId)
-            _ = sessionManager.blockUser(id: peerId, userId: getCurrentUserId())
+            _ = sessionManager.blockUser(id: peerId, userId: getCurrentUserId(), reason: "Inappropriate behavior")
                 .subscribe(onFailure: { error in
                     AppLogger.debug("[Block] users/\(peerId)/block failed: \(error.localizedDescription)")
                 })
@@ -595,6 +627,25 @@ class ChatListViewModel: ObservableObject {
                 })
                 .disposed(by: disposeBag)
         }
+    }
+
+    /// FlirtTime — GET `/api/v1/users/blocked?page=1&limit=20`
+    /// Seeds `BlockedUsersManager` so inbox rows hide people the user already blocked.
+    private func refreshBlockedUsersFromAPI() {
+        guard !ChatMockSeeder.isMockMode else { return }
+        _ = sessionManager.getBlockedUsers(page: 1, limit: 20)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { page in
+                    for user in page.blockedUsers where !user.userId.isEmpty {
+                        BlockedUsersManager.shared.blockUser(id: user.userId)
+                    }
+                },
+                onFailure: { error in
+                    AppLogger.debug("ChatList: GET /api/v1/users/blocked failed: \(error.localizedDescription)")
+                }
+            )
+            .disposed(by: disposeBag)
     }
 
     private func peerUserId(for chatId: String) -> String? {
@@ -1236,10 +1287,33 @@ class ChatListViewModel: ObservableObject {
         applySettingsToSnapshot(chatId: chatId, settings: settings)
         chatDataService.updateChatSettings(conversationId: chatId, settings: settings)
 
-        // 2) REST — FE PATCH /chat/conversations/{id}/settings `{ isMuted?, isPinned?, ... }`
-        let payload = restSettingsPayload(from: settings)
-        AppLogger.debug("[Settings] ▶ PATCH chat/conversations/\(chatId)/settings \(payload)")
-        sessionManager.updateConversationSettings(conversationId: chatId, settings: payload)
+        // FlirtTime pin is its own REST call. Mute/archive stay on settings until those APIs exist.
+        if let isPinned = SocketAckParser.boolValue(from: settings["isPinned"]) {
+            AppLogger.debug("[Settings] ▶ POST /api/v1/chats/\(chatId)/pin isPinned=\(isPinned)")
+            sessionManager.pinConversation(conversationId: chatId, isPinned: isPinned)
+                .observe(on: MainScheduler.instance)
+                .subscribe(
+                    onSuccess: { [weak self] data in
+                        if let remotePinned = data.settings?.isPinned {
+                            self?.applySettingsToSnapshot(chatId: chatId, settings: ["isPinned": remotePinned])
+                            self?.chatDataService.updateChatSettings(conversationId: chatId, settings: ["isPinned": remotePinned])
+                        }
+                        AppLogger.debug("[Settings] ✅ Pinned conversation \(chatId) isPinned=\(isPinned)")
+                    },
+                    onFailure: { [weak self] error in
+                        AppLogger.debug("[Settings] ❌ pin failed: \(error.localizedDescription)")
+                        self?.handleError(error)
+                    }
+                )
+                .disposed(by: disposeBag)
+        }
+
+        var remaining = restSettingsPayload(from: settings)
+        remaining.removeValue(forKey: "isPinned")
+        guard !remaining.isEmpty else { return }
+
+        AppLogger.debug("[Settings] ▶ PATCH /api/v1/chats/\(chatId)/settings \(remaining)")
+        sessionManager.updateConversationSettings(conversationId: chatId, settings: remaining)
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] data in
@@ -1247,7 +1321,6 @@ class ChatListViewModel: ObservableObject {
                     if let remote = data.settings {
                         var merged: [String: Any] = [:]
                         if let v = remote.isMuted { merged["isMuted"] = v }
-                        if let v = remote.isPinned { merged["isPinned"] = v }
                         if let v = remote.isArchived { merged["isArchived"] = v }
                         if let v = remote.isBlocked { merged["isBlocked"] = v }
                         if let v = remote.isLocked { merged["isLocked"] = v }

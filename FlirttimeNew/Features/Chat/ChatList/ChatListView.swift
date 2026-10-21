@@ -57,6 +57,7 @@ struct ChatListView: View {
     @ObservedObject private var chatNotificationState = ChatNotificationState.shared
     @State private var searchText: String = ""
     @State private var selectedTab: ChatTab = .allChats
+    @State private var inboxSection: ChatInboxSection = .chats
     @State private var isMultiSelectMode: Bool = false
     @State private var selectedChats: Set<String> = []
     @State private var showMultiDeleteConfirmation: Bool = false
@@ -80,10 +81,30 @@ struct ChatListView: View {
             VStack(spacing: 0) {
                 headerView
                 if !isMultiSelectMode {
+                    ChatInboxSegmentedControl(selectedSection: $inboxSection)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 2)
+                        .padding(.bottom, 10)
                     SearchBar(searchText: $searchText)
-                        .padding(.bottom, 8)
+                    if inboxSection == .chats {
+                        ChatQuickMomentsStrip(
+                            tray: viewModel.quickMomentTray,
+                            ownPhotoURL: navigator.ownAvatarPath
+                                ?? UserDataManager.shared.userAvtarImage
+                                ?? UserDataManager.shared.appUser?.profilePicture,
+                            onlineUserIds: viewModel.onlineUserIds,
+                            onAdd: { navigator.onAddQuickMoment?() },
+                            onOpen: { item, isMine in navigator.onOpenQuickMoment?(item, isMine) }
+                        )
+                        .padding(.top, 8)
+                        .padding(.bottom, 10)
+                    }
                 }
-                chatListView
+                if inboxSection == .calls {
+                    ChatCallsDummyListView(searchText: searchText)
+                } else {
+                    chatListView
+                }
             }
         }
         .overlay(
@@ -166,7 +187,10 @@ struct ChatListView: View {
             if isMultiSelectMode {
                 multiSelectBar
             } else {
-                ChatListHeader()
+                ChatListHeader(
+                    onCoins: { navigator.onOpenCoinShop?() },
+                    onNotifications: { navigator.onOpenNotifications?() }
+                )
             }
         }
     }
@@ -184,27 +208,30 @@ struct ChatListView: View {
     
     private var chatListView: some View {
         Group {
-            let allChats = filteredPinnedChats + filteredChats
+            let allChats = (inboxSection == .chats ? filteredPinnedChats : []) + filteredChats
             if allChats.isEmpty && !viewModel.isLoading {
                 VStack(spacing: 12) {
                     SwiftUI.Image(ChatAssets.emptyState)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 160, height: 160)
-                    Text(ChatStrings.chat_noChatsYet.localizedString())
+                    Text(inboxSection == .calls
+                         ? ChatStrings.chat_noCallsYet.localizedString()
+                         : ChatStrings.chat_noChatsYet.localizedString())
                         .font(.chatMedium(size: 16))
                         .foregroundColor(.chatTextSecondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    if selectedTab == .allChats {
+                    if selectedTab == .allChats, inboxSection == .chats {
                         pinnedChatsSection
                     }
                     regularChatsSection
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .environment(\.defaultMinListHeaderHeight, 0)
                 .background(Color.clear)
                 .scrollDismissesKeyboard(.interactively)
                 // Clearance above floating tab bar (SwiftUI List ignores UIKit contentInset overrides).
@@ -234,13 +261,23 @@ struct ChatListView: View {
     }
     
     private var regularChatsSection: some View {
-        Section {
-            ForEach(filteredChats, id: \.id) { chat in
-                chatRow(chat: chat)
-            }
-        } header: {
-            if !filteredChats.isEmpty {
-                regularChatsHeader
+        Group {
+            if selectedTab == .allChats {
+                Section {
+                    ForEach(filteredChats, id: \.id) { chat in
+                        chatRow(chat: chat)
+                    }
+                }
+            } else {
+                Section {
+                    ForEach(filteredChats, id: \.id) { chat in
+                        chatRow(chat: chat)
+                    }
+                } header: {
+                    if !filteredChats.isEmpty {
+                        regularChatsHeader
+                    }
+                }
             }
         }
     }
@@ -266,10 +303,7 @@ struct ChatListView: View {
         Group {
             switch selectedTab {
             case .allChats:
-                Text(ChatStrings.chat_chats.localizedString())
-                    .font(.chatBold(size: 16))
-                    .foregroundColor(kTextBlack)
-                    .padding(.vertical, 4)
+                SwiftUI.EmptyView()
             case .groups:
                 Text(ChatStrings.chat_groups.localizedString())
                     .font(.chatBold(size: 16))
@@ -516,26 +550,31 @@ struct ChatListView: View {
                 chat.isArchived
             }
         }
-        
+
+        let searched: [ChatMessageRow]
         if searchText.isEmpty {
-            return base
+            searched = base
         } else {
-            return base.filter { chat in
+            searched = base.filter { chat in
                 let searchTerm = searchText.lowercased()
-                
+
                 // Search in group chat titles
                 if chat.isGroup {
                     return chat.title?.lowercased().contains(searchTerm) ?? false
-                } 
+                }
                 // Search in direct chat user details
                 else if let userDetails = chat.getUserDetails() {
                     return (userDetails.fullName?.lowercased().contains(searchTerm) ?? false) ||
                            (userDetails.userName?.lowercased().contains(searchTerm) ?? false)
                 }
-                
+
                 return false
             }
         }
+        if inboxSection == .calls {
+            return searched.filter(ChatListViewModel.isCallLastMessage)
+        }
+        return searched
     }
     
     private var filteredArchivedChats: [ChatMessageRow] {
@@ -678,6 +717,7 @@ struct ChatListView: View {
     @MainActor
     private func refreshChats() async {
         viewModel.forceRefreshChats()
+        viewModel.loadQuickMomentTray()
 
         let deadline = ContinuousClock.now + .seconds(15)
         while viewModel.isLoading, ContinuousClock.now < deadline {

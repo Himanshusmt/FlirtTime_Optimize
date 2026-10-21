@@ -8,6 +8,58 @@
 import Foundation
 
 
+/// Full-body wrapper for GET `/api/v1/chats` (`{ success, data }` or a bare list).
+struct ChatListAPIResponse: Codable {
+    let success: Bool?
+    let message: String?
+    let data: ChatMessageUserData?
+    let rows: [ChatMessageRow]?
+    let chats: [ChatMessageRow]?
+    let conversations: [ChatMessageRow]?
+
+    var resolved: ChatMessageUserData {
+        if let data, !(data.rows ?? []).isEmpty {
+            return data
+        }
+        let list = rows ?? chats ?? conversations ?? data?.rows ?? []
+        var payload = data ?? ChatMessageUserData(rows: list)
+        if payload.rows == nil || payload.rows?.isEmpty == true {
+            payload.rows = list
+        }
+        return payload
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case success, message, data, rows, chats, conversations
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        success = try c.decodeIfPresent(Bool.self, forKey: .success)
+        message = try c.decodeIfPresent(String.self, forKey: .message)
+        if let nested = try? c.decode(ChatMessageUserData.self, forKey: .data) {
+            data = nested
+        } else if let list = try? c.decode([ChatMessageRow].self, forKey: .data) {
+            data = ChatMessageUserData(rows: list)
+        } else {
+            data = nil
+        }
+        rows = try? c.decodeIfPresent([ChatMessageRow].self, forKey: .rows)
+        chats = try? c.decodeIfPresent([ChatMessageRow].self, forKey: .chats)
+        conversations = try? c.decodeIfPresent([ChatMessageRow].self, forKey: .conversations)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(success, forKey: .success)
+        try c.encodeIfPresent(message, forKey: .message)
+        try c.encodeIfPresent(data, forKey: .data)
+        try c.encodeIfPresent(rows, forKey: .rows)
+        try c.encodeIfPresent(chats, forKey: .chats)
+        try c.encodeIfPresent(conversations, forKey: .conversations)
+    }
+}
+
 struct ChatMessageUserData: DataClass, Codable {
     let count: Int?
     var rows: [ChatMessageRow]?
@@ -23,6 +75,23 @@ struct ChatMessageUserData: DataClass, Codable {
     var unblockedConversationIds: [String]?
     var limit: Int?
     var nextCursor: String?
+
+    init(rows: [ChatMessageRow] = [], count: Int? = nil, limit: Int? = nil, nextCursor: String? = nil) {
+        self.count = count ?? rows.count
+        self.rows = rows
+        self.serverTime = nil
+        self.deletedConversationIds = nil
+        self.pinnedConversationIds = nil
+        self.unpinnedConversationIds = nil
+        self.archivedConversationIds = nil
+        self.unarchivedConversationIds = nil
+        self.mutedConversationIds = nil
+        self.unmutedConversationIds = nil
+        self.blockedConversationIds = nil
+        self.unblockedConversationIds = nil
+        self.limit = limit
+        self.nextCursor = nextCursor
+    }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -37,12 +106,20 @@ struct ChatMessageUserData: DataClass, Codable {
         self.limit = try? container.decodeIfPresent(Int.self, forKey: .limit)
         self.nextCursor = try? container.decodeIfPresent(String.self, forKey: .nextCursor)
         
-        // Try to decode rows
-        do {
-            self.rows = try container.decodeIfPresent([ChatMessageRow].self, forKey: .rows)
-        } catch {
-            AppLogger.debug("ChatMessageUserData: failed to decode rows — \(error)")
-            self.rows = []
+        // FlirtTime: `chats` | `conversations` | OneVibe: `rows`
+        if let chats = try? container.decodeIfPresent([ChatMessageRow].self, forKey: .chats), !chats.isEmpty {
+            self.rows = chats
+        } else if let conversations = try? container.decodeIfPresent([ChatMessageRow].self, forKey: .conversations), !conversations.isEmpty {
+            self.rows = conversations
+        } else if let items = try? container.decodeIfPresent([ChatMessageRow].self, forKey: .items), !items.isEmpty {
+            self.rows = items
+        } else {
+            do {
+                self.rows = try container.decodeIfPresent([ChatMessageRow].self, forKey: .rows)
+            } catch {
+                AppLogger.debug("ChatMessageUserData: failed to decode rows — \(error)")
+                self.rows = []
+            }
         }
 
         // Try to decode delta fields
@@ -69,12 +146,50 @@ struct ChatMessageUserData: DataClass, Codable {
             self.blockedConversationIds = nil
             self.unblockedConversationIds = nil
         }
+
+        if let pinnedRows = try? container.decodeIfPresent([ChatMessageRow].self, forKey: .pinned),
+           !pinnedRows.isEmpty {
+            let pinnedIds = pinnedRows.compactMap { $0.id }.filter { !$0.isEmpty }
+            if pinnedConversationIds == nil || pinnedConversationIds?.isEmpty == true {
+                pinnedConversationIds = pinnedIds
+            }
+            var existing = Set((self.rows ?? []).compactMap(\.id))
+            var merged = self.rows ?? []
+            for row in pinnedRows {
+                guard let id = row.id, !id.isEmpty, !existing.contains(id) else { continue }
+                merged.append(row)
+                existing.insert(id)
+            }
+            self.rows = merged
+        }
         
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(count, forKey: .count)
+        try container.encodeIfPresent(rows, forKey: .rows)
+        try container.encodeIfPresent(serverTime, forKey: .serverTime)
+        try container.encodeIfPresent(deletedConversationIds, forKey: .deletedConversationIds)
+        try container.encodeIfPresent(pinnedConversationIds, forKey: .pinnedConversationIds)
+        try container.encodeIfPresent(unpinnedConversationIds, forKey: .unpinnedConversationIds)
+        try container.encodeIfPresent(archivedConversationIds, forKey: .archivedConversationIds)
+        try container.encodeIfPresent(unarchivedConversationIds, forKey: .unarchivedConversationIds)
+        try container.encodeIfPresent(mutedConversationIds, forKey: .mutedConversationIds)
+        try container.encodeIfPresent(unmutedConversationIds, forKey: .unmutedConversationIds)
+        try container.encodeIfPresent(blockedConversationIds, forKey: .blockedConversationIds)
+        try container.encodeIfPresent(unblockedConversationIds, forKey: .unblockedConversationIds)
+        try container.encodeIfPresent(limit, forKey: .limit)
+        try container.encodeIfPresent(nextCursor, forKey: .nextCursor)
     }
 
     private enum CodingKeys: String, CodingKey {
         case count
         case rows
+        case chats
+        case conversations
+        case items
+        case pinned
         case serverTime
         case deletedConversationIds
         case pinnedConversationIds
@@ -141,6 +256,18 @@ struct ConversationActiveCall: DataClass, Codable, Equatable {
     }
 }
 
+struct ConversationInterestTag: Codable {
+    let name: String?
+    let title: String?
+    let label: String?
+
+    var displayName: String? {
+        [name, title, label]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
+}
+
 struct ChatMessageRow: DataClass, Codable {
     // Core conversation properties from new API
     var id: String?
@@ -164,6 +291,8 @@ struct ChatMessageRow: DataClass, Codable {
     var peer: ConversationPeer?
     /// Direct-chat presence from GET conversations/{id} (nested or top-level online/lastSeen).
     var onlineStatus: OnlineStatus?
+    /// Shared interest names from GET `/api/v1/chats/{id}`.
+    var sharedInterests: [String]?
     /// Ongoing group call from list API — drives chat-list “Group call ongoing” + Join banner.
     var activeCall: ConversationActiveCall?
     /// True when the JSON included an active-call key (even if null) — used to clear ended calls.
@@ -189,19 +318,21 @@ struct ChatMessageRow: DataClass, Codable {
         self.myRole = nil
         self.peer = nil
         self.onlineStatus = nil
+        self.sharedInterests = nil
         self.activeCall = nil
         self.activeCallKeyPresent = false
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, type, lastMessageAt, avatar, avatarPath
+        case id, conversationId, title, type, lastMessageAt, avatar, avatarPath
         case participants, members, unreadCount, unread, unread_count, lastMessage, settings
         case isGroupParticipant, participantsCount
         case inviteCode, inviteLink, isInviteLinkEnabled, deletedAt
-        case peer, myRole, onlineStatus
+        case peer, participant, myRole, onlineStatus, sharedInterests, interests, commonInterests
         case online, lastSeen, lastSeenAt, status
         case lastMessagePreview, lastMessageType, lastMessageSenderId
         case lastMessageReceiptStatus, createdAt
+        case isPinned
         case activeCall, ongoingCall, currentCall, active_call
     }
     
@@ -209,6 +340,7 @@ struct ChatMessageRow: DataClass, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try container.decodeIfPresent(String.self, forKey: .id)
+            ?? container.decodeIfPresent(String.self, forKey: .conversationId)
         title = try container.decodeIfPresent(String.self, forKey: .title)
         type = try container.decodeIfPresent(String.self, forKey: .type)
         lastMessageAt = try container.decodeIfPresent(String.self, forKey: .lastMessageAt)
@@ -236,8 +368,24 @@ struct ChatMessageRow: DataClass, Codable {
         isInviteLinkEnabled = try container.decodeIfPresent(Bool.self, forKey: .isInviteLinkEnabled)
         deletedAt = try container.decodeIfPresent(String.self, forKey: .deletedAt)
         peer = try container.decodeIfPresent(ConversationPeer.self, forKey: .peer)
+            ?? container.decodeIfPresent(ConversationPeer.self, forKey: .participant)
         myRole = try container.decodeIfPresent(String.self, forKey: .myRole)
         onlineStatus = try container.decodeIfPresent(OnlineStatus.self, forKey: .onlineStatus)
+        if let names = try? container.decodeIfPresent([String].self, forKey: .sharedInterests) {
+            sharedInterests = names
+        } else if let names = try? container.decodeIfPresent([String].self, forKey: .commonInterests) {
+            sharedInterests = names
+        } else if let names = try? container.decodeIfPresent([String].self, forKey: .interests) {
+            sharedInterests = names
+        } else if let objects = try? container.decodeIfPresent([ConversationInterestTag].self, forKey: .sharedInterests) {
+            sharedInterests = objects.compactMap(\.displayName)
+        } else if let objects = try? container.decodeIfPresent([ConversationInterestTag].self, forKey: .commonInterests) {
+            sharedInterests = objects.compactMap(\.displayName)
+        } else if let objects = try? container.decodeIfPresent([ConversationInterestTag].self, forKey: .interests) {
+            sharedInterests = objects.compactMap(\.displayName)
+        } else {
+            sharedInterests = nil
+        }
         let activeCallKeys: [CodingKeys] = [.activeCall, .ongoingCall, .currentCall, .active_call]
         activeCallKeyPresent = activeCallKeys.contains { container.contains($0) }
         activeCall = try container.decodeIfPresent(ConversationActiveCall.self, forKey: .activeCall)
@@ -268,16 +416,35 @@ struct ChatMessageRow: DataClass, Codable {
             isGroupParticipant = deletedAt == nil
         }
 
-        // NEW list payload: flatten peer → participants so getUserDetails()/UI keep working
+        // FlirtTime list: flatten `participant` / `peer` so getUserDetails() and the nav title work.
         if (participants == nil || participants?.isEmpty == true), let peer {
             participants = [peer.asParticipant()]
             if (avatar ?? "").isEmpty {
                 avatar = peer.profilePicture
             }
             if (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let name = (peer.fullName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                title = name.isEmpty ? peer.username : name
+                title = peer.resolvedName.isEmpty ? nil : peer.resolvedName
             }
+            if (type ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                type = "direct"
+            }
+            if onlineStatus == nil, let isOnline = peer.isOnline {
+                onlineStatus = OnlineStatus(
+                    isOnline: isOnline,
+                    status: isOnline ? "online" : "offline"
+                )
+            }
+        }
+
+        if settings == nil || settings?.isPinned == nil,
+           let pinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) {
+            var next = settings ?? ConversationSettings()
+            next.isPinned = pinned
+            settings = next
+        }
+
+        if lastMessageAt == nil || lastMessageAt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+            lastMessageAt = lastMessage?.createdAt
         }
 
         // NEW list payload: lastMessagePreview / type / sender / receipt → lastMessage.
@@ -328,6 +495,7 @@ struct ChatMessageRow: DataClass, Codable {
         try container.encodeIfPresent(inviteLink, forKey: .inviteLink)
         try container.encodeIfPresent(isInviteLinkEnabled, forKey: .isInviteLinkEnabled)
         try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        try container.encodeIfPresent(sharedInterests, forKey: .sharedInterests)
         try container.encodeIfPresent(peer, forKey: .peer)
         try container.encodeIfPresent(onlineStatus, forKey: .onlineStatus)
         try container.encodeIfPresent(activeCall, forKey: .activeCall)
@@ -335,7 +503,8 @@ struct ChatMessageRow: DataClass, Codable {
     
     // Helper computed properties
     var otherParticipant: Participant? {
-        guard type == "direct" else { return nil }
+        let kind = (type ?? "direct").lowercased()
+        guard kind == "direct" || kind == "private" || kind.isEmpty else { return nil }
         let currentUserId = getCurrentUserId()
 
         // If we have a valid current user ID, filter normally
@@ -456,18 +625,58 @@ struct ChatMessageRow: DataClass, Codable {
     }
 }
 
-// MARK: - ConversationPeer (NEW chat/conversations list)
+// MARK: - ConversationPeer (NEW chat/conversations list + FlirtTime `participant`)
 struct ConversationPeer: Codable {
     let id: String?
     let username: String?
     let fullName: String?
     let profilePicture: String?
     let isVerified: Bool?
+    let isOnline: Bool?
+
+    var resolvedName: String {
+        let full = (fullName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !full.isEmpty { return full }
+        return (username ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, userId, username, userName, fullName, displayName
+        case profilePicture, profileImageUrl, profileImage
+        case isVerified, verified, isOnline
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(String.self, forKey: .id)
+            ?? c.decodeIfPresent(String.self, forKey: .userId)
+        username = try c.decodeIfPresent(String.self, forKey: .username)
+            ?? c.decodeIfPresent(String.self, forKey: .userName)
+        fullName = try c.decodeIfPresent(String.self, forKey: .fullName)
+            ?? c.decodeIfPresent(String.self, forKey: .displayName)
+        profilePicture = try c.decodeIfPresent(String.self, forKey: .profilePicture)
+            ?? c.decodeIfPresent(String.self, forKey: .profileImageUrl)
+            ?? c.decodeIfPresent(String.self, forKey: .profileImage)
+        isVerified = try c.decodeIfPresent(Bool.self, forKey: .isVerified)
+            ?? c.decodeIfPresent(Bool.self, forKey: .verified)
+        isOnline = try c.decodeIfPresent(Bool.self, forKey: .isOnline)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(id, forKey: .id)
+        try c.encodeIfPresent(username, forKey: .username)
+        try c.encodeIfPresent(fullName, forKey: .fullName)
+        try c.encodeIfPresent(profilePicture, forKey: .profilePicture)
+        try c.encodeIfPresent(isVerified, forKey: .isVerified)
+        try c.encodeIfPresent(isOnline, forKey: .isOnline)
+    }
 
     func asParticipant() -> Participant {
+        let name = resolvedName.isEmpty ? nil : resolvedName
         let detail = UserDetail(
-            userName: username,
-            fullName: fullName,
+            userName: username ?? name,
+            fullName: name,
             profilePicture: profilePicture,
             profilePictureDetails: profilePicture.map { ProfilePictureDetails(filePath: $0) }
         )
@@ -475,9 +684,10 @@ struct ConversationPeer: Codable {
             id: id,
             userId: id,
             userDetails: [detail],
+            isOnline: isOnline,
             verified: isVerified,
-            username: username,
-            fullName: fullName,
+            username: username ?? name,
+            fullName: name,
             profileImage: profilePicture
         )
         return Participant(userId: id, isActive: true, user: user, isVerified: isVerified == true)
@@ -494,7 +704,7 @@ struct ConversationLastMessage: Codable {
     var status: String? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case id, messageType, contentPreview, content, body, senderId, createdAt, status
+        case id, messageType, contentPreview, content, body, senderId, createdAt, sentAt, status
     }
 
     init(
@@ -527,6 +737,7 @@ struct ConversationLastMessage: Codable {
             ?? c.decodeIfPresent(String.self, forKey: .body)
         senderId = try c.decodeIfPresent(String.self, forKey: .senderId)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+            ?? c.decodeIfPresent(String.self, forKey: .sentAt)
         status = try c.decodeIfPresent(String.self, forKey: .status)
     }
 
@@ -612,7 +823,7 @@ struct Participant: Codable {
         case user
         case userProfileData
         // NEW flat ConversationMember fields
-        case username, userName, fullName, profilePicture, isVerified, verified
+        case username, userName, fullName, displayName, profilePicture, profileImageUrl, isVerified, verified
     }
 
     init(from decoder: Decoder) throws {
@@ -641,7 +852,9 @@ struct Participant: Codable {
         let flatUserName = try c.decodeIfPresent(String.self, forKey: .username)
             ?? c.decodeIfPresent(String.self, forKey: .userName)
         let flatFullName = try c.decodeIfPresent(String.self, forKey: .fullName)
+            ?? c.decodeIfPresent(String.self, forKey: .displayName)
         let flatPicture = try c.decodeIfPresent(String.self, forKey: .profilePicture)
+            ?? c.decodeIfPresent(String.self, forKey: .profileImageUrl)
         let flatVerified = try c.decodeIfPresent(Bool.self, forKey: .isVerified)
             ?? c.decodeIfPresent(Bool.self, forKey: .verified)
 
