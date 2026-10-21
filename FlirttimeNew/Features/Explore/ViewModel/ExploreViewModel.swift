@@ -14,6 +14,7 @@ final class ExploreViewModel {
 
     private(set) var items: [ExploreTab: [InteractionCard]] = [:]
     private(set) var errors: [ExploreTab: String] = [:]
+    private(set) var lockedTabs: [ExploreTab: Bool] = [:]
     @Published private(set) var counts: InteractionCounts?
     /// Fires on the main queue when a tab's cards change or its request fails.
     let tabDidUpdate = PassthroughSubject<ExploreTab, Never>()
@@ -34,6 +35,10 @@ final class ExploreViewModel {
 
     func cards(for tab: ExploreTab) -> [InteractionCard] {
         items[tab] ?? []
+    }
+
+    func isLocked(_ tab: ExploreTab) -> Bool {
+        lockedTabs[tab] ?? FreeTierLimitsStore.shared.isTabLocked(tab)
     }
 
     func load(_ tab: ExploreTab) {
@@ -90,6 +95,9 @@ final class ExploreViewModel {
                 self.nextCursor[tab] = page.nextCursor
                 self.hasMore[tab] = page.hasMore && page.nextCursor != nil
                 self.errors[tab] = nil
+                if let locked = page.isLocked {
+                    self.lockedTabs[tab] = locked
+                }
                 if isFirstPage {
                     self.items[tab] = page.items
                 } else {

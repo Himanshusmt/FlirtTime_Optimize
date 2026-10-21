@@ -23,10 +23,6 @@ class ExploreViewController: BaseViewController {
     var strSelectedLike:String?
     var aExploreViewModel = ExploreViewModel()
 
-    private var isSubscribed: Bool {
-        UserDataManager.shared.isUserSubscriptionDone == true
-    }
-
     @IBOutlet private weak var notificationButton: UIButton!
 
     override func viewDidLoad() {
@@ -44,6 +40,7 @@ class ExploreViewController: BaseViewController {
         super.viewWillAppear(animated)
         self.checkHideCustomButton(hide: false)
         self.scrollToTab(ExploreTab(interactionType: strSelectedLike) ?? .likes, animated: false)
+        FreeTierLimitsStore.shared.refresh()
         self.refreshUpsell()
         self.aExploreViewModel.loadCounts()
         NotificationBadgeStore.shared.refresh()
@@ -199,8 +196,8 @@ class ExploreViewController: BaseViewController {
     }
 
     private func refreshUpsell() {
-        pages[ExploreTab.likes.rawValue].setUpsell(text: isSubscribed ? nil : "See everyone who likes you and match instantly")
-        pages[ExploreTab.compliments.rawValue].setUpsell(text: isSubscribed ? nil : "Read your compliments and reply right away")
+        pages[ExploreTab.likes.rawValue].setUpsell(text: aExploreViewModel.isLocked(.likes) ? "See everyone who likes you and match instantly" : nil)
+        pages[ExploreTab.compliments.rawValue].setUpsell(text: aExploreViewModel.isLocked(.compliments) ? "Read your compliments and reply right away" : nil)
     }
 
     private func itemCount(for tab: ExploreTab) -> Int {
@@ -248,14 +245,14 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         switch tab {
         case .likes:
             subtitle = card.city
-            isLocked = !isSubscribed
+            isLocked = card.isBlurred ?? aExploreViewModel.isLocked(tab)
         case .youLiked, .matches:
             subtitle = card.city
-            isLocked = false
+            isLocked = card.isBlurred ?? false
         case .compliments:
             let message = card.message.map { "\u{201C}\($0)\u{201D}" }
             subtitle = [card.category, message].compactMap { $0 }.joined(separator: " \u{00B7} ")
-            isLocked = !isSubscribed
+            isLocked = card.isBlurred ?? aExploreViewModel.isLocked(tab)
         }
         let showsHeart = tab == .youLiked ? (card.isMatched == true || card.isSuperLike == true) : card.isSuperLike == true
         cell.configure(imagePath: card.photo, name: card.name, age: card.age,
@@ -278,10 +275,10 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
         guard let card = aExploreViewModel.cards(for: tab).item(at: indexPath.item) else { return }
 
         switch tab {
-        case .likes where !isSubscribed:
+        case .likes where aExploreViewModel.isLocked(tab):
             showSubscriptionPopUp(subscriptionPopUpType: .superLike)
             return
-        case .compliments where !isSubscribed:
+        case .compliments where aExploreViewModel.isLocked(tab):
             showSubscriptionPopUp(subscriptionPopUpType: .chat)
             return
         case .compliments:

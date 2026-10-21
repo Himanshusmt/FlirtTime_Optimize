@@ -197,8 +197,14 @@ final class ChatAPIClient {
         let base = try? JSONDecoder().decode(BaseResponse.self, from: data)
         let succeeded = base?.success ?? base?.status ?? (200..<300).contains(statusCode)
         guard succeeded else {
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let errorCode = json?["error"] as? String ?? json?["code"] as? String
             let message = base?.message?.trimmingCharacters(in: .whitespacesAndNewlines)
-            throw APIHTTPError(statusCode: statusCode, message: (message?.isEmpty == false ? message : nil) ?? "Something went wrong")
+            throw APIHTTPError(
+                statusCode: statusCode,
+                message: (message?.isEmpty == false ? message : nil) ?? "Something went wrong",
+                code: errorCode
+            )
         }
         let wrapped = try JSONDecoder().decode(BaseApiResponse<T>.self, from: data)
         if let payload = wrapped.data {

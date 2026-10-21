@@ -505,7 +505,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             return
         }
         let isMatched = userMatchesData?.matchedUserID != nil
-        if UserDataManager.shared.isUserSubscriptionDone == true || isMatched {
+        if FreeTierLimitsStore.shared.canStartChat(isMatched: isMatched) {
             openChat()
         } else {
             showSubscriptionPopUp(subscriptionPopUpType: .chat)

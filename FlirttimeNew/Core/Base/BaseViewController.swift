@@ -75,7 +75,7 @@ class BaseViewController: UIViewController {
 
     func showSubscriptionPopUp(isToChatView:Bool? = false, chatUserID:Int? = nil, isToHomeView:Bool? = false, subscriptionPopUpType: SubscriptionPopUpType?) {
         // Server `isSubscribed` is the source of truth — don't upsell Premium members.
-        guard UserDataManager.shared.isUserSubscriptionDone != true else { return }
+        guard !FreeTierLimitsStore.shared.isPremium else { return }
 
         let customView = SubscriptionPopUp(frame: CGRect(x: 0, y: 0, width: self.view.frame.width , height: self.view.frame.height))
         if isToHomeView == true {
@@ -160,5 +160,25 @@ class BaseViewController: UIViewController {
         let safariVC = SFSafariViewController(url: url)
         safariVC.modalPresentationStyle = .pageSheet
         present(safariVC, animated: true, completion: nil)
+    }
+}
+
+extension UIViewController {
+    func presentSubscriptionPopUp(_ type: SubscriptionPopUpType) {
+        guard !FreeTierLimitsStore.shared.isPremium else { return }
+        let customView = SubscriptionPopUp(frame: UIScreen.main.bounds)
+        customView.configurePopupView(subcriptionType: type)
+        UIApplication.shared.windows.first?.addSubview(customView)
+        customView.subsUpdateAction = { [weak self] in
+            let premiumVC = PremiumViewController(source: type)
+            if let navigationController = self?.navigationController {
+                navigationController.pushViewController(premiumVC, animated: true)
+            } else if let self {
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.isNavigationBarHidden = true
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+            }
+        }
     }
 }

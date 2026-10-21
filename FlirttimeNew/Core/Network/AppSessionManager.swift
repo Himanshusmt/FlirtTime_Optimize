@@ -391,6 +391,15 @@ final class AppSessionManager {
         return backendClient.load(request: AppApiRequest(method: .post, endPoint: .discoveryAction, parameters: params))
     }
 
+    /// Daily like quota, Super Like coins and Explore tab locks.
+    /// Backend registers this as `GET /users/:id/limits` (plain `/users/limits` is treated as an id).
+    func userLimits() -> Single<UserLimits> {
+        guard let userId = UserDataManager.shared.appUser?.id, !userId.isEmpty else {
+            return .error(APIHTTPError(statusCode: 0, message: "Missing user id for limits"))
+        }
+        return backendClient.load(request: AppApiRequest(method: .get, endPoint: .userLimits(userId: userId)))
+    }
+
     // MARK: - Interactions
 
     /// `type` is "likes" | "you_liked" | "matches" | "compliments"; pass the previous page's `nextCursor` for more.
@@ -826,6 +835,7 @@ final class AppSessionManager {
         AppTokenStore.shared.clear()
         UserDataManager.shared.removeUserData()
         CoinWallet.shared.update(0)
+        FreeTierLimitsStore.shared.refresh()
     }
 
     /// Decodes an auth response and stores its token.
@@ -839,6 +849,7 @@ final class AppSessionManager {
             if let user = auth.user { UserDataManager.shared.appUser = user }
             DeviceTokenManager.shared.registerIfNeeded(force: true)
             CoinWallet.shared.refresh()
+            FreeTierLimitsStore.shared.refresh()
             return auth
         }
     }

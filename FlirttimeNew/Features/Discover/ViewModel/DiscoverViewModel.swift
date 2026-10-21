@@ -259,6 +259,10 @@ final class DiscoverViewModel {
                  viaConnectSheet: Bool = false,
                  completion: @escaping (Result<MomentsActionOutcome, MomentsActionError>) -> Void) -> Bool {
         guard !actionInProgress else { return false }
+        if let blocked = FreeTierLimitsStore.shared.blockReason(for: action) {
+            DispatchQueue.main.async { completion(.failure(blocked)) }
+            return true
+        }
         actionInProgress = true
         remove(profileID: profile.id)
         MomentsAnalytics.track(action.analyticsEvent, profileID: profile.id)
@@ -278,25 +282,54 @@ final class DiscoverViewModel {
                 .map(\.didMatch)
         } else {
             request = sessionManager.discoveryAction(targetUserId: targetUserID, action: action.apiAction)
+                .do(onSuccess: { result in
+                    if let coins = result.remainingCoins {
+                        CoinWallet.shared.update(coins)
+                    }
+                })
                 .map { $0.isMatched == true }
         }
 
         request
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] isMatch in
+                if action == .interested || action == .superVibe {
+                    FreeTierLimitsStore.shared.refresh()
+                }
                 self?.finish(action, on: profile, reasons: reasons, reaction: reaction,
                              isMatch: isMatch, completion: completion)
             }, onFailure: { [weak self] error in
                 self?.actionInProgress = false
-                let statusCode = (error as? APIHTTPError)?.statusCode
-                if action == .superVibe, statusCode == 402 || statusCode == 403 {
-                    completion(.failure(.membershipRequired))
-                } else {
-                    completion(.failure(.network))
-                }
+                completion(.failure(Self.actionError(for: action, error: error)))
             })
             .disposed(by: disposeBag)
         return true
+    }
+
+    private static func actionError(for action: MomentsAction, error: Error) -> MomentsActionError {
+        if let quota = quotaError(for: action, error: error) { return quota }
+        let statusCode = (error as? APIHTTPError)?.statusCode ?? error.statusCode
+        if statusCode == 502 || statusCode == 503 || statusCode == 504 {
+            return .serverBusy
+        }
+        return .network
+    }
+
+    private static func quotaError(for action: MomentsAction, error: Error) -> MomentsActionError? {
+        if FreeTierErrorCode.isDailyLikeLimit(error) {
+            return .likeLimitReached
+        }
+        if FreeTierErrorCode.matches(error, FreeTierErrorCode.insufficientCoins) {
+            return .insufficientCoins
+        }
+        let statusCode = (error as? APIHTTPError)?.statusCode
+        if action == .interested, statusCode == 429 {
+            return .likeLimitReached
+        }
+        if action == .superVibe, statusCode == 402 || statusCode == 403 {
+            return .insufficientCoins
+        }
+        return nil
     }
 
     private func finish(_ action: MomentsAction,

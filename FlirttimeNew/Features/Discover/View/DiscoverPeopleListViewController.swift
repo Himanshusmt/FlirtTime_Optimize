@@ -202,6 +202,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: false)
         CoinWallet.shared.refresh()
+        FreeTierLimitsStore.shared.refresh()
         NotificationBadgeStore.shared.refresh()
     }
 
@@ -512,9 +513,16 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
             case .failure(.network):
                 MomentsHaptics.failed()
                 self.showActionFailure(action, profile: profile, reasons: reasons, reaction: reaction, fromConnectFlow: fromConnectFlow)
-            case .failure(.membershipRequired):
+            case .failure(.serverBusy):
+                MomentsHaptics.failed()
+                self.showActionFailure(action, profile: profile, reasons: reasons, reaction: reaction,
+                                       fromConnectFlow: fromConnectFlow, serverBusy: true)
+            case .failure(.membershipRequired), .failure(.insufficientCoins):
                 self.restore(profile, from: action)
-                self.showSubscriptionPopUp(subscriptionPopUpType: .superLike)
+                self.showQuotaPopup(.insufficientCoins)
+            case .failure(.likeLimitReached):
+                self.restore(profile, from: action)
+                self.showQuotaPopup(.likeLimitReached)
             }
         }
         if !started {
@@ -539,10 +547,14 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
 
     /// Never reports success for a failed action; the user either retries or keeps the profile for later.
     private func showActionFailure(_ action: MomentsAction, profile: MomentsProfile, reasons: [ConnectReason],
-                                   reaction: MomentsReaction?, fromConnectFlow: Bool) {
-        let alert = UIAlertController(title: "Couldn't update right now",
-                                      message: "Your \(action.displayName) for \(profile.displayName) wasn't sent.",
-                                      preferredStyle: .alert)
+                                   reaction: MomentsReaction?, fromConnectFlow: Bool, serverBusy: Bool = false) {
+        let alert = UIAlertController(
+            title: serverBusy ? "Server is busy" : "Couldn't update right now",
+            message: serverBusy
+                ? "Please try again in a moment. Your \(action.displayName) for \(profile.displayName) wasn't sent."
+                : "Your \(action.displayName) for \(profile.displayName) wasn't sent.",
+            preferredStyle: .alert
+        )
         alert.addAction(UIAlertAction(title: "Try Again", style: .default) { [weak self] _ in
             self?.send(action, for: profile, reasons: reasons, reaction: reaction, fromConnectFlow: fromConnectFlow)
         })
@@ -805,6 +817,23 @@ extension DiscoverPeopleListViewController: MomentsCardStackViewDelegate {
 
     func cardStackShouldBeginInteraction(_ stack: MomentsCardStackView) -> Bool {
         !viewModel.actionInProgress && presentedViewController == nil
+    }
+
+    func cardStack(_ stack: MomentsCardStackView, shouldCommit action: MomentsAction, for profile: MomentsProfile) -> Bool {
+        guard let blocked = FreeTierLimitsStore.shared.blockReason(for: action) else { return true }
+        showQuotaPopup(blocked)
+        return false
+    }
+
+    private func showQuotaPopup(_ error: MomentsActionError) {
+        switch error {
+        case .likeLimitReached:
+            showSubscriptionPopUp(subscriptionPopUpType: .unlimitedSwipes)
+        case .insufficientCoins, .membershipRequired:
+            showSubscriptionPopUp(subscriptionPopUpType: .superLike)
+        default:
+            break
+        }
     }
 
     func cardStack(_ stack: MomentsCardStackView, didBeginDragging profile: MomentsProfile) {

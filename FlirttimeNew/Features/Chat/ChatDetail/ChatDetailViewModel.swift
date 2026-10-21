@@ -223,6 +223,8 @@ final class ChatDetailViewModel: ObservableObject {
     @Published var channelFollowersCount: Int? = nil
 
     // MARK: Published UI State — overlays & alerts
+    let matchRequiredToChat = PassthroughSubject<Void, Never>()
+
     @Published var toastMessage: String?
     @Published var showDeleteMessageSheet: Bool = false
     @Published var selectedMessageForDelete: ConversationMessage?
@@ -2722,6 +2724,9 @@ final class ChatDetailViewModel: ObservableObject {
             } catch {
                 AppLogger.debug("Failed to create conversation: \(error)")
                 await MainActor.run {
+                    if FreeTierErrorCode.matches(error, FreeTierErrorCode.matchRequired) {
+                        self.matchRequiredToChat.send()
+                    }
                     self.finishEnsureConversation(success: false, primary: completion)
                 }
             }

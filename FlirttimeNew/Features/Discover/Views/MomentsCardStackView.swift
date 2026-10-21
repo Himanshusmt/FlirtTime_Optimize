@@ -13,6 +13,8 @@ protocol MomentsCardStackViewDelegate: AnyObject {
     func cardStackShouldBeginInteraction(_ stack: MomentsCardStackView) -> Bool
     func cardStack(_ stack: MomentsCardStackView, didBeginDragging profile: MomentsProfile)
     func cardStack(_ stack: MomentsCardStackView, didCancelDragging profile: MomentsProfile)
+    /// Return `false` to snap the card back (daily like / Super Like quota).
+    func cardStack(_ stack: MomentsCardStackView, shouldCommit action: MomentsAction, for profile: MomentsProfile) -> Bool
     /// The card has started leaving the screen; the next card is already active.
     func cardStack(_ stack: MomentsCardStackView, didCommit action: MomentsAction, for profile: MomentsProfile)
 }
@@ -157,6 +159,7 @@ final class MomentsCardStackView: UIView {
     func perform(_ action: MomentsAction) -> Bool {
         guard let card = topCard, !isTransitioning,
               delegate?.cardStackShouldBeginInteraction(self) ?? true else { return false }
+        guard delegate?.cardStack(self, shouldCommit: action, for: card.profile) ?? true else { return false }
         isTransitioning = true
         let nudge = direction(for: action)
         UIView.animate(withDuration: reduceMotion ? 0.1 : 0.18, delay: 0, options: .curveEaseOut) {
@@ -209,7 +212,11 @@ final class MomentsCardStackView: UIView {
         case .ended, .cancelled, .failed:
             let velocity = pan.velocity(in: self)
             if pan.state == .ended, let action = releaseAction(translation: translation, velocity: velocity) {
-                commit(action, card: card, velocity: velocity)
+                if delegate?.cardStack(self, shouldCommit: action, for: card.profile) ?? true {
+                    commit(action, card: card, velocity: velocity)
+                } else {
+                    cancelDrag(card)
+                }
             } else {
                 cancelDrag(card)
             }

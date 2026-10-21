@@ -99,8 +99,11 @@ extension ChatDetailViewModel {
             switch result {
             case .success(let serverMessage):
                 self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
-            case .failure:
+            case .failure(let error):
                 self.markMessageAsFailed(tempId: tempId)
+                if FreeTierErrorCode.matches(error, FreeTierErrorCode.matchRequired) {
+                    self.matchRequiredToChat.send()
+                }
             }
         }
 
@@ -218,8 +221,11 @@ extension ChatDetailViewModel {
             switch result {
             case .success(let serverMessage):
                 self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
-            case .failure:
+            case .failure(let error):
                 self.markMessageAsFailed(tempId: tempId)
+                if FreeTierErrorCode.matches(error, FreeTierErrorCode.matchRequired) {
+                    self.matchRequiredToChat.send()
+                }
             }
         }
 

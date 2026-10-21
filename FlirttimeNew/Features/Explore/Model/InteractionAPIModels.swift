@@ -15,12 +15,16 @@ struct InteractionPage: Codable {
     let items: [InteractionCard]
     let nextCursor: String?
     let hasMore: Bool
+    let isLocked: Bool?
+    let totalCount: Int?
 
     init(from decoder: Decoder) throws {
         if let array = try? [InteractionCard](from: decoder) {
             items = array
             nextCursor = nil
             hasMore = false
+            isLocked = nil
+            totalCount = nil
             return
         }
         let c = try decoder.container(keyedBy: QMKey.self)
@@ -29,6 +33,8 @@ struct InteractionPage: Codable {
         let pagination = c.first(InteractionPagination.self, "pagination", "meta", "pageInfo")
         nextCursor = c.string("nextCursor", "cursor", "next_cursor") ?? pagination?.nextCursor
         hasMore = c.bool("hasMore", "has_more") ?? pagination?.hasMore ?? (nextCursor != nil)
+        isLocked = c.bool("isLocked", "is_locked")
+        totalCount = c.int("totalCount", "total_count", "total")
     }
 }
 
@@ -64,6 +70,7 @@ struct InteractionCard: Codable {
     let momentPreview: String?
     var isRead: Bool?
     let createdAt: String?
+    let isBlurred: Bool?
 
     /// Items look like `{ "interactionId", "user": { ... }, "interaction": { "action", "isMatched", "createdAt", ... } }`.
     init(from decoder: Decoder) throws {
@@ -90,6 +97,7 @@ struct InteractionCard: Codable {
         momentPreview = detail?.momentPreview ?? root?.momentPreview
         isRead = detail?.isRead ?? root?.isRead
         createdAt = detail?.createdAt ?? root?.createdAt
+        isBlurred = person?.isBlurred ?? c.bool("isBlurred", "is_blurred") ?? flat?.isBlurred
     }
 }
 
@@ -127,6 +135,7 @@ private struct InteractionPerson: Codable {
     let photo: String?
     let isVerified: Bool?
     let isOnline: Bool?
+    let isBlurred: Bool?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
@@ -138,6 +147,7 @@ private struct InteractionPerson: Codable {
         photo = c.string("profilePhotoUrl", "profilePicture", "profilePhoto")
         isVerified = c.bool("isVerified", "isFaceVerified", "verified")
         isOnline = c.bool("isOnline", "online")
+        isBlurred = c.bool("isBlurred", "is_blurred")
     }
 }
 

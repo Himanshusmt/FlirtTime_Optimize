@@ -82,7 +82,7 @@ class LoginViewController: BaseViewController,Instantiable {
     }
     
     func setUI(){
-        scrollView.contentInsetAdjustmentBehavior = .never
+        scrollView.contentInsetAdjustmentBehavior = .never 
         self.phoneNumberTextField.delegate = self
         self.emailTextField.delegate = self
         self.wrongPhoneNumberPopUp.isHidden = true

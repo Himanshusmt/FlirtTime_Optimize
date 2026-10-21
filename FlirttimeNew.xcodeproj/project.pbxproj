@@ -704,6 +704,7 @@
 		E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888853078C1AA0026295C /* outgoing_ringback.caf */; };
 		E3FF37FA308232C1001EC8C2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E3FF37F9308232C0001EC8C2 /* GoogleService-Info.plist */; };
 		E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */; };
+		A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F1L1M1T000000000000001 /* FreeTierLimits.swift */; };
 		E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7045A9235ADAA76496ED259C /* MockDiscover.swift */; };
 		ECF3D5B9CE6A4717BE493145 /* OtherUserMomentCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */; };
 		F189E90288DF492E06A41554 /* PremiumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE289C6E8EF572061621B105 /* PremiumViewController.swift */; };
@@ -1402,6 +1403,7 @@
 		E3E888903078C1AA0026295C /* ChatDataModel_v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v3.xcdatamodel; sourceTree = "<group>"; };
 		E3FF37F9308232C0001EC8C2 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoveryAPIModels.swift; sourceTree = "<group>"; };
+		A2F1L1M1T000000000000001 /* FreeTierLimits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreeTierLimits.swift; sourceTree = "<group>"; };
 		E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppTokenStore.swift; sourceTree = "<group>"; };
 		E712EC1C8BC567E850631512 /* SubscriptionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModel.swift; sourceTree = "<group>"; };
 		EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppBackendClient.swift; sourceTree = "<group>"; };
@@ -1569,6 +1571,7 @@
 				63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */,
 				62486E210DA53E8F1B80FC17 /* MomentsProfile.swift */,
 				E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */,
+				A2F1L1M1T000000000000001 /* FreeTierLimits.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -4031,6 +4034,7 @@
 				AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */,
 				C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */,
 				E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */,
+				A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */,
 				9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */,
 				3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */,
 				371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */,

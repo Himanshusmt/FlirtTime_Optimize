@@ -7,6 +7,13 @@ import Kingfisher
 extension ChatDetailViewController {
 
     func bindViewModel() {
+        viewModel.matchRequiredToChat
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.presentSubscriptionPopUp(.chat)
+            }
+            .store(in: &cancellables)
+
         viewModel.$groupedMessages
             .receive(on: DispatchQueue.main)
             .sink { [weak self] groups in

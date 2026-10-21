@@ -14,7 +14,7 @@ struct AppErrorResponse: Decodable {
     let code: String?
 
     private enum CodingKeys: String, CodingKey {
-        case success, message, error
+        case success, message, error, code
     }
 
     init(from decoder: Decoder) throws {
@@ -22,7 +22,8 @@ struct AppErrorResponse: Decodable {
         success = try? container.decodeIfPresent(Bool.self, forKey: .success)
         message = try? container.decodeIfPresent(String.self, forKey: .message)
         error = try? container.decodeIfPresent([AppFieldError].self, forKey: .error)
-        code = try? container.decodeIfPresent(String.self, forKey: .error)
+        code = (try? container.decodeIfPresent(String.self, forKey: .code))
+            ?? (try? container.decodeIfPresent(String.self, forKey: .error))
     }
 
     /// Prefers the first field error ("phone is required") over a generic "Validation failed".

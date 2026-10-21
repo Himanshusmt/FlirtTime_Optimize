@@ -388,6 +388,20 @@ struct DiscoveryActionResult: Codable {
     let targetUserId: String?
     let isMatched: Bool?
     let matchId: String?
+    let coinsDeducted: Int?
+    let remainingCoins: Int?
+    let dailyQuota: LikeQuota?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        action = c.string("action")
+        targetUserId = c.string("targetUserId", "target_user_id")
+        isMatched = c.bool("isMatched", "is_matched")
+        matchId = c.string("matchId", "match_id")
+        coinsDeducted = c.int("coinsDeducted", "coins_deducted")
+        remainingCoins = c.int("remainingCoins", "remaining_coins")
+        dailyQuota = c.first(LikeQuota.self, "dailyQuota", "daily_quota", "likes")
+    }
 }
 
 // MARK: - Profile detail

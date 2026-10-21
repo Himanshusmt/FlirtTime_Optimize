@@ -316,8 +316,13 @@ enum MomentsTheme {
 
 enum MomentsActionError: Error {
     case network
+    case serverBusy
     /// Super Vibe needs a membership or coins under the existing business rules.
     case membershipRequired
+    /// Free user used today's likes.
+    case likeLimitReached
+    /// Free Super Like used and wallet is below `superLikes.costInCoins`.
+    case insufficientCoins
 }
 
 // MARK: - Interest catalog
