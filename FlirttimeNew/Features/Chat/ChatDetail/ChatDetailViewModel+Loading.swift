@@ -1053,7 +1053,11 @@ extension ChatDetailViewModel {
 
         guard let pinnedMessages else { return }
         // Product is one-pin-at-a-time — keep only the first server pin
-        let canonicalPinned = pinnedMessages.first
+        var flagged = pinnedMessages
+        for index in flagged.indices {
+            flagged[index].isPinned = true
+        }
+        let canonicalPinned = flagged.first
         let newPinnedIds: Set<String> = {
             guard let id = canonicalPinned?.id, !id.isEmpty else { return [] }
             return [id]
@@ -1117,12 +1121,9 @@ extension ChatDetailViewModel {
             if currentPinnedMessage?.id != pinned.id {
                 currentPinnedMessage = pinned
             }
-            return
-        }
-
-        // No in-memory pinned messages. If banner still points at a message we already
-        // cleared locally, hide it (don't wait for CoreData / API).
-        if let current = currentPinnedMessage {
+        } else if let current = currentPinnedMessage {
+            // No in-memory pinned messages. If banner still points at a message we already
+            // cleared locally, hide it (don't wait for CoreData / API).
             let livePinned = stateManager.messageById(current.id)?.isPinned == true
             let pendingUnpin = pendingPinUpdates[current.id] == false
             if !livePinned || pendingUnpin {
@@ -1131,24 +1132,7 @@ extension ChatDetailViewModel {
             }
         }
 
-        guard !isPinStateRestoredFromCache else { return }
-
-        Task { [weak self] in
-            guard let self else { return }
-            let pinned = try? await self.messageRepository.getPinnedMessage(for: self.selectedId)
-            await MainActor.run {
-                // Don't revive a banner we just unpinned
-                if let pinned, self.pendingPinUpdates[pinned.id] == false {
-                    return
-                }
-                if self.currentPinnedMessage == nil {
-                    self.currentPinnedMessage = pinned
-                }
-                if let pinned = pinned {
-                    self.prefetchPinnedMessageIntoMemory(pinned)
-                }
-            }
-        }
+        refreshPinnedMessageFromAPI()
     }
 
     @MainActor
@@ -1869,7 +1853,7 @@ extension ChatDetailViewModel {
             AppLogger.debug("[MarkRead] No peer messageId yet — REST read only for \(selectedId)")
         }
 
-        // FE also POSTs chat/conversations/{id}/read
+        // FlirtTime — POST /api/v1/chats/{id}/read
         if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
             _ = sessionManager.markConversationReadREST(
                 conversationId: selectedId,

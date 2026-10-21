@@ -265,13 +265,25 @@ struct RTLTextField: View {
     var fontSize: CGFloat = 14
     var isFocused: Binding<Bool>? = nil
     var onReturn: (() -> Void)? = nil
+    var placeholderColor: UIColor? = nil
+    var tintColor: UIColor? = nil
 
-    init(_ placeholder: String, text: Binding<String>, fontSize: CGFloat = 14, isFocused: Binding<Bool>? = nil, onReturn: (() -> Void)? = nil) {
+    init(
+        _ placeholder: String,
+        text: Binding<String>,
+        fontSize: CGFloat = 14,
+        isFocused: Binding<Bool>? = nil,
+        onReturn: (() -> Void)? = nil,
+        placeholderColor: UIColor? = nil,
+        tintColor: UIColor? = nil
+    ) {
         self.placeholder = placeholder
         self._text = text
         self.fontSize = fontSize
         self.isFocused = isFocused
         self.onReturn = onReturn
+        self.placeholderColor = placeholderColor
+        self.tintColor = tintColor
     }
 
     var body: some View {
@@ -280,9 +292,10 @@ struct RTLTextField: View {
             text: $text,
             font: UIFont(name: "Fredoka-Regular", size: fontSize) ?? UIFont.chat(size: fontSize),
             isFocused: isFocused,
-            onReturn: onReturn
+            onReturn: onReturn,
+            placeholderColor: placeholderColor,
+            tintColor: tintColor
         )
-//        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -292,44 +305,76 @@ private struct _RTLTextFieldRep: UIViewRepresentable {
     let font: UIFont
     let isFocused: Binding<Bool>?
     let onReturn: (() -> Void)?
+    let placeholderColor: UIColor?
+    let tintColor: UIColor?
 
     func makeUIView(context: Context) -> UITextField {
         let tf = UITextField()
         tf.delegate = context.coordinator
         tf.font = font
         tf.textColor = ChatTheme.textPrimary
-        tf.placeholder = placeholder
         tf.textAlignment = UIApplication.isRTL() ? .right : .left
-        tf.setContentHuggingPriority(.defaultLow, for: .horizontal)      // ← add this
-        tf.setContentCompressionResistancePriority(.defaultLow, for: .horizontal) // ← add this
+        tf.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        tf.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tf.setContentHuggingPriority(.required, for: .vertical)
         tf.setContentCompressionResistancePriority(.required, for: .vertical)
         tf.addTarget(context.coordinator, action: #selector(Coordinator.textChanged), for: .editingChanged)
+        applyChrome(tf)
         return tf
     }
 
     func updateUIView(_ tf: UITextField, context: Context) {
+        context.coordinator.isFocused = isFocused
         if tf.text != text { tf.text = text }
-        tf.placeholder = placeholder
         tf.textAlignment = UIApplication.isRTL() ? .right : .left
         tf.font = font
-        if let focused = isFocused, focused.wrappedValue {
+        applyChrome(tf)
+        if let focused = isFocused, focused.wrappedValue, !tf.isFirstResponder {
             tf.becomeFirstResponder()
         }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text, onReturn: onReturn) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, isFocused: isFocused, onReturn: onReturn)
+    }
+
+    private func applyChrome(_ tf: UITextField) {
+        tf.attributedPlaceholder = NSAttributedString(
+            string: placeholder,
+            attributes: [
+                .foregroundColor: placeholderColor ?? ChatTheme.textTertiary,
+                .font: font
+            ]
+        )
+        if let tintColor {
+            tf.tintColor = tintColor
+        }
+    }
 
     class Coordinator: NSObject, UITextFieldDelegate {
         var text: Binding<String>
+        var isFocused: Binding<Bool>?
         let onReturn: (() -> Void)?
 
-        init(text: Binding<String>, onReturn: (() -> Void)?) {
+        init(text: Binding<String>, isFocused: Binding<Bool>?, onReturn: (() -> Void)?) {
             self.text = text
+            self.isFocused = isFocused
             self.onReturn = onReturn
         }
 
         @objc func textChanged(_ tf: UITextField) { text.wrappedValue = tf.text ?? "" }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            if isFocused?.wrappedValue != true {
+                isFocused?.wrappedValue = true
+            }
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            if isFocused?.wrappedValue != false {
+                isFocused?.wrappedValue = false
+            }
+        }
 
         func textFieldShouldReturn(_ tf: UITextField) -> Bool {
             onReturn?()

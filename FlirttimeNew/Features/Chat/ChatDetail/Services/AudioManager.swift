@@ -242,24 +242,25 @@ final class AudioManager {
             return
         }
 
-        _ = sessionManager.uploadViaMediaUploadsSession(
+        _ = sessionManager.uploadChatAttachment(
             data: audioData,
-            purpose: "chat",
             kind: "audio",
             contentType: "audio/mp4",
             fileName: filename
         )
         .subscribe(
-            onSuccess: { [weak self] (mediaId: String) in
+            onSuccess: { [weak self] uploaded in
                 DispatchQueue.main.async {
                     guard let self, let ctx = self.context else { return }
                     ctx.isAudioUploading = false
                     var meta = metadata
-                    meta["mediaId"] = mediaId
+                    meta["mediaId"] = uploaded.key
+                    meta["cachedS3Key"] = uploaded.key
+                    if let publicUrl = uploaded.publicUrl { meta["mediaUrl"] = publicUrl }
                     self.finalizeAudioSend(
                         tempId: tempId,
-                        displayURL: mediaId,
-                        mediaId: mediaId,
+                        displayURL: uploaded.publicUrl ?? uploaded.key,
+                        mediaId: uploaded.key,
                         filename: filename,
                         filesize: filesize,
                         replyToId: replyToId,
@@ -364,7 +365,9 @@ final class AudioManager {
                 location: nil as [String: Any]?,
                 poll: nil as [String: Any]?,
                 clientMessageId: tempId,
-                replyToId: replyToId
+                replyToId: replyToId,
+                recipientIds: nil,
+                metadata: metadata
             ) { [weak self] result in
                 guard let self, let ctx = self.context else { return }
                 switch result {

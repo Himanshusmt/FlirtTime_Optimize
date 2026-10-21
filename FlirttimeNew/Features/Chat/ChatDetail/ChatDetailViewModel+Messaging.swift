@@ -21,7 +21,7 @@ extension ChatDetailViewModel {
 
         userStoppedTyping()
 
-        if selectedId.isEmpty && !isChannel {
+        if selectedId.isEmpty && !isChannel && selectedUserChatID.isEmpty {
             ensureConversationReady { [weak self] success in
                 guard let self = self else { return }
                 if success {
@@ -69,7 +69,7 @@ extension ChatDetailViewModel {
         let resolvedReplyToId = (replyToId?.isEmpty == false) ? replyToId : nil
 
         AppLogger.debug("""
-            [MESSAGE SEND] ▶ REST POST chat/messages conversationId=\(selectedId)
+            [MESSAGE SEND] ▶ REST POST /api/v1/chats/\(selectedId)/messages
               tempId        = \(tempId)
               body          = "\(text)"
               replyToId     = \(resolvedReplyToId ?? "nil")
@@ -85,19 +85,33 @@ extension ChatDetailViewModel {
             return
         }
 
+        let sendType = isContact ? "contact" : "text"
+        var contactMetadata: [String: Any]?
+        if isContact, let contactMeta {
+            contactMetadata = [
+                "name": contactMeta["contactName"] ?? contactMeta["name"] ?? "",
+                "phoneNumber": contactMeta["contactPhone"] ?? contactMeta["phoneNumber"] ?? "",
+                "email": contactMeta["email"] ?? ""
+            ]
+        }
         let started = messageService.sendViaREST(
             conversationId: selectedId,
-            type: "text",
+            type: sendType,
             body: text,
             mediaIds: nil,
             location: nil,
             poll: nil,
             clientMessageId: tempId,
-            replyToId: resolvedReplyToId
+            replyToId: resolvedReplyToId,
+            recipientIds: selectedId.isEmpty ? [selectedUserChatID] : nil,
+            metadata: contactMetadata
         ) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let serverMessage):
+                if self.selectedId.isEmpty, !serverMessage.conversationId.isEmpty {
+                    self.selectedId = serverMessage.conversationId
+                }
                 self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
             case .failure:
                 self.markMessageAsFailed(tempId: tempId)
@@ -729,8 +743,7 @@ extension ChatDetailViewModel {
         }
     }
 
-    /// FE `pinChatMessage` — PATCH `/chat/conversations/{id}/messages/{messageId}/pin` `{ pinned, pinDuration? }`
-    /// Also emits console `chat:message:pin` so room peers get `chat:message:pin:updated`.
+    /// FlirtTime — POST `/api/v1/chats/{id}/messages/{messageId}/pin` `{ isPinned, scope: "me" }`
     func pinMessage(messageId: String, isPinned: Bool, pinDuration: String?) {
         guard !messageId.isEmpty, !selectedId.isEmpty else { return }
         guard isValidServerMessageId(messageId) else {
@@ -757,14 +770,15 @@ extension ChatDetailViewModel {
         }
 
         AppLogger.debug(
-            "[Pin] ▶ PATCH conversations/\(selectedId)/messages/\(messageId)/pin pinned=\(isPinned) duration=\(pinDuration ?? "nil")"
+            "[Pin] ▶ POST /api/v1/chats/\(selectedId)/messages/\(messageId)/pin isPinned=\(isPinned) duration=\(pinDuration ?? "nil")"
         )
 
         session.pinChatMessage(
             conversationId: selectedId,
             messageId: messageId,
             pinned: isPinned,
-            pinDuration: isPinned ? pinDuration : nil
+            pinDuration: isPinned ? pinDuration : nil,
+            scope: isPinned ? "me" : nil
         )
             .observe(on: MainScheduler.instance)
             .subscribe(
@@ -902,27 +916,23 @@ extension ChatDetailViewModel {
         )
     }
 
-    /// FE `fetchPinnedMessage` — refresh banner from GET pinned-message
+    /// FlirtTime — GET `/api/v1/chats/{id}/messages/pinned?limit=30`
     func refreshPinnedMessageFromAPI() {
         guard !selectedId.isEmpty, !isChannel else { return }
         guard let session = userListViewModel.sessionManager
                 ?? sessionManager
                 ?? Container.sharedContainer.resolve(SessionManager.self) else { return }
 
-        session.fetchPinnedMessage(conversationId: selectedId)
+        session.fetchPinnedMessages(conversationId: selectedId, limit: 30)
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] pinned in
                     guard let self else { return }
-                    if let pinned {
-                        self.applyServerPinnedMessages([pinned])
-                    } else {
-                        // Clear pin flags + banner when server has none
-                        self.applyServerPinnedMessages([])
-                    }
+                    let visible = pinned.filter { self.pendingPinUpdates[$0.id] != false }
+                    self.applyServerPinnedMessages(visible)
                 },
                 onFailure: { error in
-                    AppLogger.debug("[Pin] fetchPinnedMessage failed: \(error.localizedDescription)")
+                    AppLogger.debug("[Pin] fetchPinnedMessages failed: \(error.localizedDescription)")
                 }
             )
             .disposed(by: disposeBag)

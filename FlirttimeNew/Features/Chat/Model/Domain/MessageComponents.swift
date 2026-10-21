@@ -387,6 +387,10 @@ struct ServerLocationSimple: Codable {
         case lat, lng, address
     }
 
+    private enum DecodeKeys: String, CodingKey {
+        case lat, lng, address, latitude, longitude, name
+    }
+
     init(lat: Double? = nil, lng: Double? = nil, address: String? = nil) {
         self.lat = lat
         self.lng = lng
@@ -394,11 +398,15 @@ struct ServerLocationSimple: Codable {
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: DecodeKeys.self)
 
         if let latVal = try? container.decodeIfPresent(Double.self, forKey: .lat) {
             lat = latVal
         } else if let latStr = try? container.decodeIfPresent(String.self, forKey: .lat), let d = Double(latStr) {
+            lat = d
+        } else if let latVal = try? container.decodeIfPresent(Double.self, forKey: .latitude) {
+            lat = latVal
+        } else if let latStr = try? container.decodeIfPresent(String.self, forKey: .latitude), let d = Double(latStr) {
             lat = d
         }
 
@@ -406,9 +414,21 @@ struct ServerLocationSimple: Codable {
             lng = lngVal
         } else if let lngStr = try? container.decodeIfPresent(String.self, forKey: .lng), let d = Double(lngStr) {
             lng = d
+        } else if let lngVal = try? container.decodeIfPresent(Double.self, forKey: .longitude) {
+            lng = lngVal
+        } else if let lngStr = try? container.decodeIfPresent(String.self, forKey: .longitude), let d = Double(lngStr) {
+            lng = d
         }
 
         address = try container.decodeIfPresent(String.self, forKey: .address)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(lat, forKey: .lat)
+        try container.encodeIfPresent(lng, forKey: .lng)
+        try container.encodeIfPresent(address, forKey: .address)
     }
 }
 

@@ -553,8 +553,10 @@ enum ConversationMapper {
         }
         guard let p = sorted.first else { return nil }
         if let full = p.user?.userDetails?.first?.fullName, !full.isEmpty { return full }
+        if let full = p.user?.fullName, !full.isEmpty { return full }
         if let full = p.userProfileData?.fullName, !full.isEmpty { return full }
         if let uname = p.user?.userDetails?.first?.userName, !uname.isEmpty { return uname }
+        if let uname = p.user?.username, !uname.isEmpty { return uname }
         if let uname = p.userProfileData?.userName, !uname.isEmpty { return uname }
         return nil
     }

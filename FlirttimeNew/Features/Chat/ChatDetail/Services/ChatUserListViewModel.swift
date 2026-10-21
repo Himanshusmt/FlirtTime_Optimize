@@ -49,9 +49,19 @@ class ChatUserListViewModel {
             .disposed(by: disposeBag)
     }
     
-    func reportUser(userID:String, reason:String){
-        _ = sessionManager?.reportuser(userID: userID, reason: reason)
-            .subscribe(onSuccess: { postResponse in
+    func reportUser(
+        userID: String,
+        reason: String,
+        description: String? = nil,
+        conversationId: String? = nil
+    ) {
+        _ = sessionManager?.reportuser(
+            userID: userID,
+            reason: reason,
+            description: description,
+            conversationId: conversationId
+        )
+            .subscribe(onSuccess: { _ in
                 self.delegate?.didReportChat()
             }, onFailure: { _ in
             })

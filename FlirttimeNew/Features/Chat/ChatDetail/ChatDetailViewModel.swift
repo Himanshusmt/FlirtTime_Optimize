@@ -201,6 +201,7 @@ final class ChatDetailViewModel: ObservableObject {
 
     let mentionManager = MentionManager()
     @Published var conversationAvatarURL: String? = nil
+    @Published var sharedInterests: [String] = []
 
     // MARK: Published UI State — input & composing
     @Published var replyingToMessage: ConversationMessage?
@@ -604,12 +605,11 @@ final class ChatDetailViewModel: ObservableObject {
         }
     }
 
-    /// FE `fetchConversation` — GET /chat/conversations/{id}
-    /// Loads `members` + `participantsCount` for subtitle, sender names, and group detail.
+    /// FlirtTime `GET /api/v1/chats/{id}` — header, peer, shared interests.
     private var isLoadingGroupDetail = false
     private var isLoadingDirectPresence = false
 
-    /// Direct chat: GET /chat/conversations/{id} → online / lastSeen → header subtitle
+    /// Direct chat: GET /api/v1/chats/{id} → header, peer, shared interests, lastSeen
     /// (both null → peer username).
     private func loadDirectConversationPresenceFromAPI() {
         guard isDirectChat, !selectedId.isEmpty else { return }
@@ -660,6 +660,10 @@ final class ChatDetailViewModel: ObservableObject {
                         chat.onlineStatus,
                         username: self.peerUsernameForPresenceFallback()
                     )
+                    let interests = (chat.sharedInterests ?? [])
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                    self.sharedInterests = interests
                 },
                 onFailure: { [weak self] error in
                     guard let self else { return }
@@ -2299,7 +2303,10 @@ final class ChatDetailViewModel: ObservableObject {
             guard let self else { return }
             let pinned = try? await self.messageRepository.getPinnedMessage(for: self.selectedId)
             await MainActor.run {
-                self.currentPinnedMessage = pinned
+                if self.currentPinnedMessage == nil {
+                    self.currentPinnedMessage = pinned
+                }
+                self.refreshPinnedMessageFromAPI()
             }
         }
     }
@@ -2692,7 +2699,7 @@ final class ChatDetailViewModel: ObservableObject {
                 return
             }
             do {
-                // POST /chat/conversations { type: "direct", participantIds }
+                // POST /api/v1/chats { recipientId }
                 let dict = try await self.createDirectConversationAsync(
                     session: session,
                     participantId: self.selectedUserChatID
@@ -2824,16 +2831,13 @@ final class ChatDetailViewModel: ObservableObject {
         return conversation
     }
 
-    /// `POST /chat/conversations` — `{ type: "direct", participantIds: [peer] }`
+    /// `POST /api/v1/chats` — `{ recipientId }`
     private func createDirectConversationAsync(
         session: SessionManager,
         participantId: String
     ) async throws -> [String: Any] {
         try await withCheckedThrowingContinuation { continuation in
-            session.createChatConversation(
-                participantIds: [participantId],
-                type: "direct"
-            )
+            session.createChat(recipientId: participantId)
             .subscribe(onSuccess: { dict in
                 continuation.resume(returning: dict)
             }, onFailure: { error in

@@ -325,6 +325,8 @@ final class AgoraCallService: NSObject {
         // Always restore persisted joinable group call (survives app kill).
         restoreRejoinableGroupCallIfNeeded()
 
+        refreshActiveVideoCallFromREST()
+
         guard !didStartListening else { return }
         didStartListening = true
 
@@ -418,13 +420,40 @@ final class AgoraCallService: NSObject {
 
     // MARK: - Public API
 
+    /// FlirtTime — GET /api/v1/calls/video/active (restore ringing/in-progress after reopen).
+    func refreshActiveVideoCallFromREST() {
+        guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else { return }
+        _ = sessionManager.getActiveVideoCall()
+            .subscribe(onSuccess: { [weak self] dict in
+                Task { @MainActor in
+                    self?.applyActiveVideoCallPayload(dict)
+                }
+            }, onFailure: { error in
+                AppLogger.debug("GET /api/v1/calls/video/active failed: \(error.localizedDescription)")
+            })
+    }
+
+    private func applyActiveVideoCallPayload(_ dict: [String: Any]) {
+        guard phase == .idle else { return }
+        let session = AgoraCallSession(dict: dict)
+        let call = session?.call
+        let callId = (call?.id ?? (dict["id"] as? String) ?? (dict["callId"] as? String) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !callId.isEmpty else { return }
+
+        if let call, call.callerId != meId, call.status == .ringing || call.status == nil {
+            handleIncoming(call)
+        }
+    }
+
     func startOutgoing(
         conversationId: String,
         type: AgoraCallType,
         isGroup: Bool = false,
         displayName: String? = nil,
         avatarURL: String? = nil,
-        groupMembers: [AgoraCallGridParticipant] = []
+        groupMembers: [AgoraCallGridParticipant] = [],
+        calleeId: String? = nil
     ) async throws {
         start()
         guard phase == .idle else { throw AgoraCallError.notIdle }
@@ -474,7 +503,11 @@ final class AgoraCallService: NSObject {
 
         do {
             let session = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<AgoraCallSession, Error>) in
-                AgoraCallSignaling.shared.startCall(conversationId: conversationId, type: type) { result in
+                AgoraCallSignaling.shared.startCall(
+                    conversationId: conversationId,
+                    type: type,
+                    calleeId: calleeId
+                ) { result in
                     cont.resume(with: result)
                 }
             }

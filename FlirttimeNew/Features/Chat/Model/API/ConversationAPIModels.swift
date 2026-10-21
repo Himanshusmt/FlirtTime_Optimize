@@ -111,10 +111,15 @@ struct ConversationMessagesResponse: Codable {
         success = try c.decodeIfPresent(Bool.self, forKey: .success)
         message = try c.decodeIfPresent(String.self, forKey: .message)
 
-        if let wrapper = try? c.decode(ConversationMessagesWrapper.self, forKey: .data) {
+        if let wrapper = try? c.decode(ConversationMessagesWrapper.self, forKey: .data),
+           !wrapper.data.messages.isEmpty {
+            data = wrapper
+        } else if let page = try? c.decode(ConversationMessagesData.self, forKey: .data),
+                  !page.messages.isEmpty {
+            data = ConversationMessagesWrapper(data: page)
+        } else if let wrapper = try? c.decode(ConversationMessagesWrapper.self, forKey: .data) {
             data = wrapper
         } else if let page = try? ConversationMessagesData(from: decoder) {
-            // Bare page at root (no success/data envelope)
             data = ConversationMessagesWrapper(data: page)
         } else {
             data = ConversationMessagesWrapper(data: .empty)
@@ -154,13 +159,19 @@ struct ConversationMessagesWrapper: Codable {
         message = try c.decodeIfPresent(String.self, forKey: .message)
 
         // OLD: `{ status, data: { messages } }`
-        if let nested = try? c.decode(ConversationMessagesData.self, forKey: .data) {
+        if let nested = try? c.decode(ConversationMessagesData.self, forKey: .data),
+           !nested.messages.isEmpty {
             data = nested
             return
         }
 
-        // NEW FE MessagesPage: `{ rows, nextCursor, limit }` (and aliases)
-        data = try ConversationMessagesData(from: decoder)
+        // FlirtTime: `{ conversationId, messages, pagination }`
+        if let page = try? ConversationMessagesData(from: decoder) {
+            data = page
+            return
+        }
+
+        data = .empty
     }
 
     func encode(to encoder: Encoder) throws {
@@ -176,6 +187,46 @@ struct ConversationPagination: Codable {
     let totalPages: Int?
     let pageSize: Int?
     let total: Int?
+    let hasMore: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case page, totalPages, pageSize, total, hasMore, limit
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        page = Self.intValue(from: c, key: .page)
+        totalPages = Self.intValue(from: c, key: .totalPages)
+        pageSize = Self.intValue(from: c, key: .pageSize) ?? Self.intValue(from: c, key: .limit)
+        total = Self.intValue(from: c, key: .total)
+        if let flag = try? c.decodeIfPresent(Bool.self, forKey: .hasMore) {
+            hasMore = flag
+        } else if let page, let totalPages {
+            hasMore = page < totalPages
+        } else {
+            hasMore = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(page, forKey: .page)
+        try c.encodeIfPresent(totalPages, forKey: .totalPages)
+        try c.encodeIfPresent(pageSize, forKey: .pageSize)
+        try c.encodeIfPresent(total, forKey: .total)
+        try c.encodeIfPresent(hasMore, forKey: .hasMore)
+    }
+
+    private static func intValue(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        key: CodingKeys
+    ) -> Int? {
+        if let value = try? container.decodeIfPresent(Int.self, forKey: key) { return value }
+        if let raw = try? container.decodeIfPresent(String.self, forKey: key) {
+            return Int(raw.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return nil
+    }
 }
 
 struct ConversationInfo: Codable {
@@ -191,7 +242,7 @@ struct ConversationInfo: Codable {
     let myRole: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, type, avatar, avatarPath, participants, members, settings, onlineStatus, myRole
+        case id, conversationId, title, type, avatar, avatarPath, participants, members, participant, settings, onlineStatus, myRole
         case userProfileData = "userProfileData"
         case online, lastSeen, lastSeenAt, status
     }
@@ -199,14 +250,29 @@ struct ConversationInfo: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(String.self, forKey: .id)
-        title = try c.decodeIfPresent(String.self, forKey: .title)
-        type = try c.decodeIfPresent(String.self, forKey: .type)
-        avatar = try c.decodeIfPresent(String.self, forKey: .avatar)
+            ?? c.decodeIfPresent(String.self, forKey: .conversationId)
+        var decodedTitle = try c.decodeIfPresent(String.self, forKey: .title)
+        var decodedType = try c.decodeIfPresent(String.self, forKey: .type)
+        var decodedAvatar = try c.decodeIfPresent(String.self, forKey: .avatar)
             ?? c.decodeIfPresent(String.self, forKey: .avatarPath)
         var decodedParticipants = try c.decodeIfPresent([ConversationParticipant].self, forKey: .participants)
         if decodedParticipants == nil || decodedParticipants?.isEmpty == true {
             decodedParticipants = try c.decodeIfPresent([ConversationParticipant].self, forKey: .members)
         }
+        if let peer = try c.decodeIfPresent(ConversationPeer.self, forKey: .participant) {
+            if (decodedTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                decodedTitle = peer.resolvedName.isEmpty ? nil : peer.resolvedName
+            }
+            if (decodedAvatar ?? "").isEmpty {
+                decodedAvatar = peer.profilePicture
+            }
+            if (decodedType ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                decodedType = "direct"
+            }
+        }
+        title = decodedTitle
+        type = decodedType
+        avatar = decodedAvatar
         participants = decodedParticipants
         settings = try c.decodeIfPresent(ConversationSettings.self, forKey: .settings)
         userProfileData = try c.decodeIfPresent(ChatUserProfileData.self, forKey: .userProfileData)
@@ -530,17 +596,23 @@ struct ConversationMessagesData: Codable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        count = try c.decodeIfPresent(Int.self, forKey: .count)
-        shareLink = try c.decodeIfPresent(String.self, forKey: .shareLink)
-        channelDetails = try c.decodeIfPresent(ChannelDetails.self, forKey: .channelDetails)
-        isFollowing = try c.decodeIfPresent(Bool.self, forKey: .isFollowing)
-        followersCount = try c.decodeIfPresent(Int.self, forKey: .followersCount)
-        userProfileData = try c.decodeIfPresent(ChatUserProfileData.self, forKey: .userProfileData)
-        pagination = try c.decodeIfPresent(ConversationPagination.self, forKey: .pagination)
-        conversation = try c.decodeIfPresent(ConversationInfo.self, forKey: .conversation)
-        participants = try c.decodeIfPresent([ChannelParticipant].self, forKey: .participants)
-        nextCursor = try c.decodeIfPresent(String.self, forKey: .nextCursor)
-        limit = try c.decodeIfPresent(Int.self, forKey: .limit)
+        count = try? c.decodeIfPresent(Int.self, forKey: .count)
+        shareLink = try? c.decodeIfPresent(String.self, forKey: .shareLink)
+        channelDetails = try? c.decodeIfPresent(ChannelDetails.self, forKey: .channelDetails)
+        isFollowing = try? c.decodeIfPresent(Bool.self, forKey: .isFollowing)
+        followersCount = try? c.decodeIfPresent(Int.self, forKey: .followersCount)
+        userProfileData = try? c.decodeIfPresent(ChatUserProfileData.self, forKey: .userProfileData)
+        pagination = try? c.decodeIfPresent(ConversationPagination.self, forKey: .pagination)
+        conversation = try? c.decodeIfPresent(ConversationInfo.self, forKey: .conversation)
+        participants = try? c.decodeIfPresent([ChannelParticipant].self, forKey: .participants)
+        nextCursor = try? c.decodeIfPresent(String.self, forKey: .nextCursor)
+        if let value = try? c.decodeIfPresent(Int.self, forKey: .limit) {
+            limit = value
+        } else if let raw = try? c.decodeIfPresent(String.self, forKey: .limit) {
+            limit = Int(raw)
+        } else {
+            limit = pagination?.pageSize
+        }
 
         // NEW `rows` | OLD `messages` — decode lossily so one bad item cannot blank the chat
         let fromMessages = Self.decodeMessagesLossy(from: c, forKey: .messages)
@@ -615,15 +687,32 @@ struct SendChatMessageAPIData: Codable {
         case message
     }
 
+    private enum DecodeKeys: String, CodingKey {
+        case message, results
+    }
+
     init(from decoder: Decoder) throws {
-        if let c = try? decoder.container(keyedBy: CodingKeys.self),
-           let msg = try c.decodeIfPresent(ConversationMessage.self, forKey: .message) {
-            message = msg
-            return
+        if let c = try? decoder.container(keyedBy: DecodeKeys.self) {
+            if let msg = try c.decodeIfPresent(ConversationMessage.self, forKey: .message) {
+                message = msg
+                return
+            }
+            if let results = try? c.decodeIfPresent([DirectChatSendResult].self, forKey: .results),
+               let msg = results.first(where: { ($0.status ?? "success").lowercased() != "failure" })?.message {
+                message = msg
+                return
+            }
         }
         // Some backends return the message object directly as `data`
         message = try? ConversationMessage(from: decoder)
     }
+}
+
+struct DirectChatSendResult: Codable {
+    let recipientId: String?
+    let conversationId: String?
+    let status: String?
+    let message: ConversationMessage?
 }
 
 /// NEW API — POST chat/channels/messages/delete response `data`
@@ -852,6 +941,40 @@ struct PinnedMessageAPIData: Codable {
         }
         message = try c.decodeIfPresent(ConversationMessage.self, forKey: .message)
             ?? (try? ConversationMessage(from: decoder))
+    }
+}
+
+/// FlirtTime — GET `/api/v1/chats/{id}/messages/pinned` `{ messages | pinnedMessages }`
+struct PinnedMessagesAPIData: Codable {
+    let messages: [ConversationMessage]
+
+    enum CodingKeys: String, CodingKey {
+        case messages
+    }
+
+    private enum DecodeKeys: String, CodingKey {
+        case messages, pinnedMessages, message
+    }
+
+    init(from decoder: Decoder) throws {
+        if let list = try? [ConversationMessage](from: decoder) {
+            messages = list
+            return
+        }
+        let c = try decoder.container(keyedBy: DecodeKeys.self)
+        if let list = try? c.decodeIfPresent([ConversationMessage].self, forKey: .messages), !list.isEmpty {
+            messages = list
+            return
+        }
+        if let list = try? c.decodeIfPresent([ConversationMessage].self, forKey: .pinnedMessages), !list.isEmpty {
+            messages = list
+            return
+        }
+        if let single = try? c.decodeIfPresent(ConversationMessage.self, forKey: .message) {
+            messages = [single]
+            return
+        }
+        messages = []
     }
 }
 

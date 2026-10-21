@@ -70,40 +70,15 @@ final class ProfileQuickMomentsView: UIView {
     // MARK: - Items
 
     private func addItem(avatarPath: String?) -> UIView {
-        let size = Self.bubbleSize
-        let circle = UIView()
-        circle.backgroundColor = AppColor.Lavenderblush
-        circle.layer.cornerRadius = size / 2
-        circle.layer.borderWidth = 1.5
-        circle.layer.borderColor = AppColor.Punch.withAlphaComponent(0.35).cgColor
+        let bubble = QuickMomentAddBubbleView()
+        bubble.configure(avatarPath: avatarPath)
 
-        let avatar = UIImageView()
-        avatar.contentMode = .scaleAspectFill
-        avatar.clipsToBounds = true
-        avatar.layer.cornerRadius = (size - 12) / 2
-        avatar.alpha = 0.55
-        avatar.loadImage(path: avatarPath, placeholder: UIImage(named: "ProfileBlur"))
-        circle.addSubview(avatar)
-        avatar.pinEdges(to: circle, insets: UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6))
-
-        let plus = UIImageView(image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold)))
-        plus.tintColor = .white
-        plus.contentMode = .center
-        plus.backgroundColor = AppColor.Punch
-        plus.layer.cornerRadius = 12
-        plus.layer.borderWidth = 2
-        plus.layer.borderColor = UIColor.white.cgColor
-        plus.translatesAutoresizingMaskIntoConstraints = false
-        circle.addSubview(plus)
-        NSLayoutConstraint.activate([
-            plus.widthAnchor.constraint(equalToConstant: 24),
-            plus.heightAnchor.constraint(equalToConstant: 24),
-            plus.trailingAnchor.constraint(equalTo: circle.trailingAnchor, constant: 2),
-            plus.bottomAnchor.constraint(equalTo: circle.bottomAnchor, constant: 2)
-        ])
-
-        let item = makeItem(circle: circle, title: "Add new", titleColor: AppColor.Punch)
+        let item = QuickMomentButton(type: .custom)
+        item.addSubview(bubble)
+        bubble.pinEdges(to: item)
         item.accessibilityLabel = "Add a moment"
+        item.accessibilityTraits = .button
+        item.isAccessibilityElement = true
         item.addAction(UIAction { [weak self] _ in self?.onAdd?() }, for: .touchUpInside)
         return item
     }

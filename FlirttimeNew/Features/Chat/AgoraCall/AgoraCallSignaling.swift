@@ -29,64 +29,14 @@ final class AgoraCallSignaling {
         ChatSocketManager.shared.ensureConnecting()
     }
 
-    /// Primary: socket `call:create`. Do not block on handshake — queued emit flushes on connect.
-    func startCall(conversationId: String, type: AgoraCallType, completion: @escaping (Result<AgoraCallSession, Error>) -> Void) {
-        warmSocketAndEmit()
-        if !ChatSocketManager.shared.isSocketConnected() {
-            AppLogger.killCall("startCall emit while socket connecting (India RTT path)")
-        }
-
-        var finished = false
-        var socketFailed = false
-        var restFailed = false
-        let finish: (Result<AgoraCallSession, Error>) -> Void = { result in
-            guard !finished else { return }
-            finished = true
-            completion(result)
-        }
-
-        startCallViaSocket(conversationId: conversationId, type: type) { [weak self] result in
-            switch result {
-            case .success:
-                finish(result)
-            case .failure(let error):
-                socketFailed = true
-                guard Self.isCallsRESTEnabled, let self else {
-                    finish(result)
-                    return
-                }
-                if restFailed {
-                    finish(result)
-                    return
-                }
-                AppLogger.debug("AgoraCallSignaling: socket create failed (\(error.localizedDescription)) — waiting/trying REST")
-                self.startCallViaREST(conversationId: conversationId, type: type) { rest in
-                    switch rest {
-                    case .success:
-                        finish(rest)
-                    case .failure:
-                        restFailed = true
-                        if socketFailed { finish(result) }
-                    }
-                }
-            }
-        }
-
-        if Self.isCallsRESTEnabled {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
-                guard let self, !finished else { return }
-                AppLogger.debug("AgoraCallSignaling: racing REST POST calls/ after 2.5s socket wait")
-                self.startCallViaREST(conversationId: conversationId, type: type) { rest in
-                    switch rest {
-                    case .success:
-                        finish(rest)
-                    case .failure:
-                        restFailed = true
-                        if socketFailed { finish(rest) }
-                    }
-                }
-            }
-        }
+    /// FlirtTime REST `POST /api/v1/calls/video/initiate`. Socket signaling comes later.
+    func startCall(
+        conversationId: String,
+        type: AgoraCallType,
+        calleeId: String? = nil,
+        completion: @escaping (Result<AgoraCallSession, Error>) -> Void
+    ) {
+        startCallViaREST(conversationId: conversationId, type: type, calleeId: calleeId, completion: completion)
     }
 
     private func startCallViaSocket(
@@ -107,7 +57,8 @@ final class AgoraCallSignaling {
 
     private func startCallViaREST(
         conversationId: String,
-        type: AgoraCallType,
+        type _: AgoraCallType,
+        calleeId: String?,
         completion: @escaping (Result<AgoraCallSession, Error>) -> Void
     ) {
         guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else {
@@ -117,15 +68,19 @@ final class AgoraCallSignaling {
             return
         }
 
-        _ = sessionManager.startAgoraCall(conversationId: conversationId, type: type.rawValue)
+        let peerId = (calleeId ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !peerId.isEmpty else {
+            DispatchQueue.main.async {
+                completion(.failure(AgoraCallError.failed("Unable to start call (missing callee)")))
+            }
+            return
+        }
+
+        _ = sessionManager.initiateVideoCall(calleeId: peerId, conversationId: conversationId)
             .subscribe(onSuccess: { dict in
-                if let session = AgoraCallSession(dict: dict) {
-                    DispatchQueue.main.async { completion(.success(session)) }
-                } else if let nested = dict["data"] as? [String: Any],
-                          let session = AgoraCallSession(dict: nested) {
+                if let session = Self.parseJoinSession(from: dict) {
                     DispatchQueue.main.async { completion(.success(session)) }
                 } else {
-                    // Wrap as { data: dict } already unwrapped by SessionManager — try full envelope.
                     DispatchQueue.main.async {
                         completion(.failure(AgoraCallError.failed("Invalid REST call session payload")))
                     }
@@ -133,7 +88,7 @@ final class AgoraCallSignaling {
             }, onFailure: { error in
                 DispatchQueue.main.async {
                     let message = error.localizedDescription
-                    CallInternationalDiagnostics.noteAPI(event: "POST calls/", success: false, detail: message)
+                    CallInternationalDiagnostics.noteAPI(event: "POST /calls/video/initiate", success: false, detail: message)
                     if AgoraCallError.isBusyMessage(message) {
                         completion(.failure(AgoraCallError.busy))
                     } else {
@@ -144,46 +99,27 @@ final class AgoraCallSignaling {
     }
 
     func acceptCall(callId: String, completion: @escaping (Result<AgoraCallSession, Error>) -> Void) {
-        // Don't wait 5–8s for India socket before Answer — queue the emit if still connecting.
-        var finished = false
-        let finish: (Result<AgoraCallSession, Error>) -> Void = { result in
-            guard !finished else { return }
-            finished = true
-            completion(result)
+        guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else {
+            DispatchQueue.main.async {
+                completion(.failure(AgoraCallError.failed("Unable to accept call (no session manager)")))
+            }
+            return
         }
 
-        acceptCallWithRetry(callId: callId, attempt: 1, maxAttempts: 2) { [weak self] result in
-            switch result {
-            case .success:
-                finish(result)
-            case .failure(let error):
-                guard Self.isCallsRESTEnabled, let self else {
-                    finish(result)
-                    return
-                }
-                AppLogger.killCall("acceptCall socket failed (\(error.localizedDescription)) — REST GET calls/\(callId)")
-                self.fetchJoinSessionViaREST(callId: callId) { rest in
-                    switch rest {
-                    case .success(let session) where session.hasJoinCredentials:
-                        finish(.success(session))
-                    default:
-                        finish(result)
+        _ = sessionManager.acceptVideoCall(callId: callId)
+            .subscribe(onSuccess: { dict in
+                if let session = Self.parseJoinSession(from: dict) {
+                    DispatchQueue.main.async { completion(.success(session)) }
+                } else {
+                    DispatchQueue.main.async {
+                        completion(.failure(AgoraCallError.failed("Invalid REST accept payload")))
                     }
                 }
-            }
-        }
-
-        if Self.isCallsRESTEnabled {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                guard let self, !finished else { return }
-                AppLogger.killCall("acceptCall racing REST GET calls/\(callId) after 2s")
-                self.fetchJoinSessionViaREST(callId: callId) { rest in
-                    if case .success(let session) = rest, session.hasJoinCredentials {
-                        finish(.success(session))
-                    }
+            }, onFailure: { error in
+                DispatchQueue.main.async {
+                    completion(.failure(error))
                 }
-            }
-        }
+            })
     }
 
     private func acceptCallWithRetry(
@@ -304,6 +240,14 @@ final class AgoraCallSignaling {
             attempt: 1,
             extra: extra
         )
+        if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
+            _ = sessionManager.rejectVideoCall(callId: callId)
+                .subscribe(onSuccess: { _ in
+                    AppLogger.killCall("REST reject OK callId=\(callId)")
+                }, onFailure: { error in
+                    AppLogger.killCall("REST reject failed: \(error.localizedDescription)")
+                })
+        }
     }
 
     /// Notify caller that the callee is already on another call.
@@ -337,6 +281,14 @@ final class AgoraCallSignaling {
             extra["status"] = "ended"
         }
         emitCallControl(event: AgoraCallSocketEvents.end, callId: callId, attempt: 1, extra: extra)
+        if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
+            _ = sessionManager.endVideoCall(callId: callId)
+                .subscribe(onSuccess: { _ in
+                    AppLogger.killCall("REST end OK callId=\(callId)")
+                }, onFailure: { error in
+                    AppLogger.killCall("REST end failed: \(error.localizedDescription)")
+                })
+        }
     }
 
     /// Leave an ongoing group call without ending it for everyone else.
@@ -445,8 +397,9 @@ final class AgoraCallSignaling {
         listen(AgoraCallSocketEvents.join) { data in
             guard let dict = Self.firstDict(data) else { return }
             if let success = dict["success"] as? Bool, !success { return }
-            guard let session = AgoraCallSession(dict: dict) else { return }
-            handler(session)
+            if let session = Self.parseJoinSession(from: dict) {
+                handler(session)
+            }
         }
     }
 

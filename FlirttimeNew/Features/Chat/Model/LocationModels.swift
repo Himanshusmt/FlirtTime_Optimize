@@ -250,22 +250,25 @@ extension ConversationMessage {
             return parsed
         }
 
-        // 2) Fallback to discrete lat/lon entries in metadata
-          if let metadata = metadata,
-              let latString = metadata["latitude"]?.value as? String,
-              let lonString = metadata["longitude"]?.value as? String,
-              let lat = Double(latString),
-              let lon = Double(lonString) {
-                let typeString = (metadata["locationType"]?.value as? String) ?? "static_location"
+        // 2) Discrete lat/lon in metadata — FlirtTime sends numbers; older payloads used strings
+        if let metadata = metadata,
+           let lat = Self.locationCoordinate(metadata["latitude"]?.value ?? metadata["lat"]?.value),
+           let lon = Self.locationCoordinate(metadata["longitude"]?.value ?? metadata["lng"]?.value) {
+            let typeString = (metadata["locationType"]?.value as? String) ?? "static_location"
             let type = LocationMessageType(rawValue: typeString) ?? .staticLocation
+            let address = (metadata["address"]?.value as? String)
+                ?? (metadata["name"]?.value as? String)
+            let durationValue = metadata["duration"]?.value
+            let duration = (durationValue as? Int)
+                ?? Int((durationValue as? String) ?? "")
             return LocationData(
                 id: id,
                 type: type,
                 latitude: lat,
                 longitude: lon,
-                address: metadata["address"]?.value as? String,
+                address: address,
                 timestamp: createdAt ?? "",
-                duration: Int((metadata["duration"]?.value as? String) ?? "0"),
+                duration: duration,
                 expiresAt: metadata["expiresAt"]?.value as? String,
                 isActive: (metadata["isActive"]?.value as? Bool) ?? false,
                 lastUpdate: metadata["lastUpdate"]?.value as? String
@@ -291,5 +294,15 @@ extension ConversationMessage {
         }
 
         return nil
+    }
+
+    fileprivate static func locationCoordinate(_ value: Any?) -> Double? {
+        switch value {
+        case let number as NSNumber: return number.doubleValue
+        case let value as Double: return value
+        case let value as Int: return Double(value)
+        case let value as String: return Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        default: return nil
+        }
     }
 }

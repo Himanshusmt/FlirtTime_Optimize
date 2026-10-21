@@ -597,12 +597,18 @@ extension ChatDetailViewModel {
     private func retryLocationMessage(tempId: String, message: ConversationMessage) {
         let contentText = message.content ?? "Location"
         var locationPayload: [String: Any]?
-        if let latStr = message.metadata?["latitude"]?.value as? String, let lat = Double(latStr),
-           let lngStr = message.metadata?["longitude"]?.value as? String, let lng = Double(lngStr) {
+        if let lat = ConversationMessage.coordinateValue(message.metadata?["latitude"]?.value ?? message.metadata?["lat"]?.value),
+           let lng = ConversationMessage.coordinateValue(message.metadata?["longitude"]?.value ?? message.metadata?["lng"]?.value) {
+            let address = (message.metadata?["address"]?.value as? String)
+                ?? (message.metadata?["name"]?.value as? String)
+                ?? ""
             locationPayload = [
                 "lat": lat,
                 "lng": lng,
-                "address": message.metadata?["address"]?.value as? String ?? ""
+                "latitude": lat,
+                "longitude": lng,
+                "name": address,
+                "address": address
             ]
         }
         let started = messageService.sendViaREST(

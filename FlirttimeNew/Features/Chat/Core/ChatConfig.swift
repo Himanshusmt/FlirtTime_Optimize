@@ -13,7 +13,12 @@ enum ChatConfig {
     static let refreshTokenKey = "flirttimeChatRefreshToken"
 
     static var baseURL: URL? {
-        URL(string: infoValue("ChatBaseURL"))
+        let configured = infoValue("ChatBaseURL")
+        if !configured.isEmpty, let url = URL(string: configured) {
+            return url
+        }
+        // Same FlirtTime host as Discover / Profile (`https://flirttimeapi.walit.in`).
+        return AppConfig.baseURL
     }
 
     static var publicWebHost: String {
@@ -21,12 +26,14 @@ enum ChatConfig {
     }
 
     static var socketURL: String {
-        infoValue("ChatSocketURL")
+        let configured = infoValue("ChatSocketURL")
+        if !configured.isEmpty { return configured }
+        return AppConfig.baseURL?.absoluteString ?? "https://flirttimeapi.walit.in"
     }
 
     static var socketPath: String {
         let path = infoValue("ChatSocketPath")
-        return path.isEmpty ? "/socket.io/" : path
+        return path.isEmpty ? "/socket.io" : path
     }
 
     /// Prefix for relative media keys returned by the chat API.
@@ -40,7 +47,7 @@ enum ChatConfig {
     }
 
     static var isConfigured: Bool {
-        baseURL != nil && !socketURL.isEmpty
+        baseURL != nil
     }
 
     static func profileShareUsername(from url: URL) -> String? {

@@ -341,20 +341,45 @@ extension ChatDetailViewController {
             preferredStyle: .actionSheet
         )
         sheet.view.tintColor = ChatTheme.primary
-        let reasons = ["Spam", "Inappropriate content", "Fake profile", "Harassment"]
-        for reason in reasons {
-            sheet.addAction(UIAlertAction(title: reason, style: .default) { [weak self] _ in
+        for reason in MomentsReportReason.allCases {
+            sheet.addAction(UIAlertAction(title: reason.title, style: .default) { [weak self] _ in
                 guard let self else { return }
-                let peerId = self.viewModel.selectedUserChatID
-                if !ChatMockSeeder.isMockMode, !peerId.isEmpty {
-                    self.viewModel.userListViewModel.reportUser(userID: peerId, reason: reason)
+                if reason == .other {
+                    self.presentReportDescription(for: reason)
+                } else {
+                    self.submitReport(reason: reason, description: reason.title)
                 }
-                GlobalToast.shared.show(ChatStrings.chat_report.localizedString() + " ✓")
             })
         }
         sheet.addAction(UIAlertAction(title: ChatStrings.chat_cancel.localizedString(), style: .cancel))
         anchorPopover(of: sheet)
         present(sheet, animated: true)
+    }
+
+    private func presentReportDescription(for reason: MomentsReportReason) {
+        let alert = UIAlertController(
+            title: reason.title,
+            message: "Tell us what happened",
+            preferredStyle: .alert
+        )
+        alert.view.tintColor = ChatTheme.primary
+        alert.addTextField { field in
+            field.placeholder = "Add a short description"
+            field.autocapitalizationType = .sentences
+        }
+        alert.addAction(UIAlertAction(title: ChatStrings.chat_cancel.localizedString(), style: .cancel))
+        alert.addAction(UIAlertAction(title: ChatStrings.chat_report.localizedString(), style: .destructive) { [weak self] _ in
+            let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+            self?.submitReport(reason: reason, description: text?.isEmpty == false ? text : reason.title)
+        })
+        present(alert, animated: true)
+    }
+
+    private func submitReport(reason: MomentsReportReason, description: String?) {
+        if !ChatMockSeeder.isMockMode {
+            viewModel.reportUser(reason: reason.rawValue, description: description)
+        }
+        GlobalToast.shared.show(ChatStrings.chat_report.localizedString() + " ✓")
     }
 
     private func confirmBlockUser() {
@@ -419,7 +444,8 @@ extension ChatDetailViewController {
         return ChatEmptyProfileCardView.Profile(
             name: name,
             avatarURL: peer.profilePicture,
-            distanceMiles: peer.distanceKm.map { Int(($0 * 0.621371).rounded()) }
+            distanceMiles: peer.distanceKm.map { Int(($0 * 0.621371).rounded()) },
+            interests: viewModel.sharedInterests
         )
     }
 }

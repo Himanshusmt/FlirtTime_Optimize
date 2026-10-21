@@ -601,6 +601,10 @@ struct MediaUploadSessionData: Codable {
     let key: String?                        // NEW API
     let publicUrl: String?                  // NEW API
     let expiresIn: Int?                     // NEW API
+    let expiresInSeconds: Int?
+    let imageKey: String?
+    let thumbnailUrl: String?
+    let headers: MediaUploadPutHeaders?
     let upload: MediaUploadPutInfo?         // NEW API — PUT target
     let media: MediaUploadMediaInfo?        // NEW API
     let reused: Bool?                       // NEW API
@@ -614,14 +618,26 @@ struct MediaUploadSessionData: Codable {
     let putUrl: String?                     // OLD/alias
     let fileUrl: String?                    // OLD/alias
     
-    /// Presigned PUT URL from `upload.url`
+    /// Presigned PUT URL from `upload.url` or FlirtTime `uploadUrl`
     var resolvedUploadUrl: String? {
         upload?.url ?? uploadUrl ?? url ?? putUrl
     }
     
-    /// Content-Type from upload.headers, fallback image/jpeg
+    /// Content-Type from top-level `headers` or `upload.headers`
     var resolvedContentType: String? {
-        upload?.headers?.contentType
+        headers?.contentType ?? upload?.headers?.contentType
+    }
+
+    var resolvedStorageKey: String? {
+        let candidates = [key, imageKey, media?.key]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return candidates.first { !$0.isEmpty }
+    }
+
+    var resolvedThumbnailUrl: String? {
+        let candidates = [thumbnailUrl, media?.thumbnailUrl]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return candidates.first { !$0.isEmpty }
     }
     
     var resolvedMediaId: String? {
@@ -648,6 +664,13 @@ struct MediaUploadSessionData: Codable {
     var resolvedPartSize: Int? {
         partSize ?? media?.partSize
     }
+}
+
+struct ChatPresignedUploadResult {
+    let key: String
+    let publicUrl: String?
+    let thumbnailUrl: String?
+    let contentType: String?
 }
 
 protocol DataClass: AutoEquatable { }

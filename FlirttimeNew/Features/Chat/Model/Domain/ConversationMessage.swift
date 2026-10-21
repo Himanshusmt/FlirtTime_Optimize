@@ -74,6 +74,7 @@ struct ConversationMessage: Codable {
         case replyTo
         case clientMessageId, clientMsgId
         case receiptStatus
+        case isMine, isRead, recipientId
     }
     
     init(from decoder: Decoder) throws {
@@ -88,9 +89,9 @@ struct ConversationMessage: Codable {
         // Soft-decode media/status/poll so one bad field cannot drop the whole page
         let decodedMedia = (try? container.decodeIfPresent([ConversationMedia].self, forKey: .media))
             ?? (try? container.decodeIfPresent([ConversationMedia].self, forKey: .medias))
-        media = decodedMedia.map { ConversationMedia.normalizeList($0) }
-        thumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
-            ?? media?.first?.thumbnail
+        var resolvedMedia = decodedMedia.map { ConversationMedia.normalizeList($0) }
+        var resolvedThumbnail = try container.decodeIfPresent(String.self, forKey: .thumbnail)
+            ?? resolvedMedia?.first?.thumbnail
         statuses = (try? container.decodeIfPresent([MessageStatus].self, forKey: .statuses)) ?? nil
         myStatus = (try? container.decodeIfPresent(MessageStatus.self, forKey: .myStatus)) ?? nil
         // NEW FE uses `receiptStatus`; older payloads use `status`
@@ -104,7 +105,10 @@ struct ConversationMessage: Codable {
         story = try? container.decodeIfPresent(ChatStory.self, forKey: .story)
         poll = try? container.decodeIfPresent(PollData.self, forKey: .poll)
         channelId = try container.decodeIfPresent(String.self, forKey: .channelId)
-        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+        sentAt = try container.decodeIfPresent(String.self, forKey: .sentAt)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+            ?? sentAt
+            ?? ""
         updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
         isEdited = try container.decodeIfPresent(Bool.self, forKey: .isEdited)
         isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted)
@@ -112,7 +116,6 @@ struct ConversationMessage: Codable {
         streamId = try container.decodeIfPresent(String.self, forKey: .streamId)
         seenAt = try container.decodeIfPresent(String.self, forKey: .seenAt)
         deliveredAt = try container.decodeIfPresent(String.self, forKey: .deliveredAt)
-        sentAt = try container.decodeIfPresent(String.self, forKey: .sentAt)
         isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned)
         isViewOnce = try container.decodeIfPresent(Bool.self, forKey: .isViewOnce)
         isViewed = try container.decodeIfPresent(Bool.self, forKey: .isViewed)
@@ -195,10 +198,55 @@ struct ConversationMessage: Codable {
 
         // Media messages: seed content from first media URL when body is empty (UI fallbacks)
         if (content ?? "").isEmpty,
-           let firstURL = media?.first?.url, !firstURL.isEmpty {
-            let kind = (messageType ?? type ?? media?.first?.type ?? "").lowercased()
+           let firstURL = resolvedMedia?.first?.url, !firstURL.isEmpty {
+            let kind = (messageType ?? type ?? resolvedMedia?.first?.type ?? "").lowercased()
             if ["image", "video", "audio", "voice"].contains(kind) {
                 content = firstURL
+            }
+        }
+
+        let isMine = try? container.decodeIfPresent(Bool.self, forKey: .isMine)
+        let isRead = try? container.decodeIfPresent(Bool.self, forKey: .isRead)
+        if isMine != nil || isRead != nil {
+            var meta = metadata ?? [:]
+            if let isMine { meta["isMine"] = AnyCodable(isMine) }
+            if let isRead { meta["isRead"] = AnyCodable(isRead) }
+            metadata = meta
+        }
+        if status == nil, isRead == true {
+            status = "read"
+            if seenAt == nil { seenAt = sentAt ?? createdAt }
+        } else if status == nil, isMine == true {
+            status = "sent"
+        }
+
+        // FlirtTime moment replies: metadata.mediaUrl is a relative S3 key.
+        let rawMediaURL = (metadata?["mediaUrl"]?.value as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if (resolvedMedia == nil || resolvedMedia?.isEmpty == true),
+           let rawURL = rawMediaURL, !rawURL.isEmpty {
+            let resolved = rawURL.hasPrefix("http://") || rawURL.hasPrefix("https://")
+                ? rawURL
+                : "\(ChatConfig.mediaBaseURL)/\(rawURL)"
+            let kind = (messageType ?? type ?? "").lowercased().contains("video") ? "video" : "image"
+            resolvedMedia = [ConversationMedia(url: resolved, type: kind, thumbnail: resolved)]
+            if (resolvedThumbnail ?? "").isEmpty {
+                resolvedThumbnail = resolved
+            }
+        }
+        media = resolvedMedia
+        thumbnail = resolvedThumbnail
+
+        if serverLocation?.lat == nil || serverLocation?.lng == nil {
+            let lat = Self.coordinateValue(metadata?["latitude"]?.value ?? metadata?["lat"]?.value)
+                ?? serverLocation?.lat
+            let lng = Self.coordinateValue(metadata?["longitude"]?.value ?? metadata?["lng"]?.value)
+                ?? serverLocation?.lng
+            if let lat, let lng {
+                let address = (metadata?["address"]?.value as? String)
+                    ?? (metadata?["name"]?.value as? String)
+                    ?? serverLocation?.address
+                serverLocation = ServerLocationSimple(lat: lat, lng: lng, address: address)
             }
         }
     }
@@ -472,7 +520,8 @@ struct ConversationMessage: Codable {
 
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: modifiedDictionary, options: [])
-            let conversationMessage = try JSONDecoder().decode(ConversationMessage.self, from: jsonData)
+            var conversationMessage = try JSONDecoder().decode(ConversationMessage.self, from: jsonData)
+            conversationMessage.hydrateLocationFromMetadata()
             return conversationMessage
         } catch {
             AppLogger.debug("Error creating ConversationMessage from dictionary: \(error)")
@@ -495,6 +544,29 @@ struct ConversationMessage: Codable {
         }
     }
     
+    mutating func hydrateLocationFromMetadata() {
+        if serverLocation?.lat != nil, serverLocation?.lng != nil { return }
+        let lat = Self.coordinateValue(metadata?["latitude"]?.value ?? metadata?["lat"]?.value)
+            ?? serverLocation?.lat
+        let lng = Self.coordinateValue(metadata?["longitude"]?.value ?? metadata?["lng"]?.value)
+            ?? serverLocation?.lng
+        guard let lat, let lng else { return }
+        let address = (metadata?["address"]?.value as? String)
+            ?? (metadata?["name"]?.value as? String)
+            ?? serverLocation?.address
+        serverLocation = ServerLocationSimple(lat: lat, lng: lng, address: address)
+    }
+
+    static func coordinateValue(_ value: Any?) -> Double? {
+        switch value {
+        case let number as NSNumber: return number.doubleValue
+        case let value as Double: return value
+        case let value as Int: return Double(value)
+        case let value as String: return Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        default: return nil
+        }
+    }
+
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [:]
 

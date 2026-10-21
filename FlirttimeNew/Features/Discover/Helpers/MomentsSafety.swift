@@ -20,23 +20,23 @@ enum MomentsVerificationInfo {
 
 /// Report reasons accepted by POST `users/:userId/report`; `rawValue` is the API code.
 enum MomentsReportReason: String, CaseIterable {
-    case fakeProfile = "fake_profile"
-    case inappropriateContent = "inappropriate_content"
     case harassment
+    case inappropriateContent = "inappropriate_content"
     case spam
     case scam
+    case fakeProfile = "fake_profile"
     case underage
     case other
 
     var title: String {
         switch self {
-        case .fakeProfile: return "Fake profile"
-        case .inappropriateContent: return "Inappropriate photos or content"
-        case .harassment: return "Harassment or hate speech"
+        case .harassment: return "Harassment"
+        case .inappropriateContent: return "Inappropriate content"
         case .spam: return "Spam"
         case .scam: return "Scam"
-        case .underage: return "Underage user"
-        case .other: return "Something else"
+        case .fakeProfile: return "Fake profile"
+        case .underage: return "Underage"
+        case .other: return "Other"
         }
     }
 }

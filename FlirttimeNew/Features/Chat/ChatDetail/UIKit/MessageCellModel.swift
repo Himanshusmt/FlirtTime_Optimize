@@ -20,7 +20,7 @@ enum MessageKind: Equatable, Hashable {
 
     static func kind(for message: ConversationMessage) -> MessageKind {
         switch rawKind(for: message) {
-        case .contact, .post, .vibe, .reel, .story, .poll, .location:
+        case .contact, .post, .vibe, .reel, .story, .poll:
             return .unknown
         case let kind:
             return kind
@@ -43,6 +43,9 @@ enum MessageKind: Equatable, Hashable {
         case "location": return .location
         case "system": return .system
         case "text": return .text
+        case "moment_reply":
+            if let media = message.media, !media.isEmpty { return .image }
+            return .text
         default: break
         }
 
@@ -192,7 +195,16 @@ struct MessageCellModel: Hashable {
         showingTranslation: Bool = false,
         groupParticipants: [GroupParticipant] = []
     ) -> MessageCellModel {
-        let isIncoming = message.senderId != currentUserId
+        let isIncoming: Bool = {
+            if let mine = message.metadata?["isMine"]?.value as? Bool {
+                return !mine
+            }
+            let sender = message.senderId ?? message.sender?.id ?? ""
+            if let currentUserId, !currentUserId.isEmpty, !sender.isEmpty {
+                return sender != currentUserId
+            }
+            return message.senderId != currentUserId
+        }()
         let kind = MessageKind.kind(for: message)
 //        let senderName = MessageCellModel.displayName(for: message.sender)
         let senderName = MessageCellModel.resolveSenderName(

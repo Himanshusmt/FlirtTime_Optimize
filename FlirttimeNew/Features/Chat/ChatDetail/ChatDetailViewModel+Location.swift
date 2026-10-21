@@ -12,7 +12,7 @@ extension ChatDetailViewModel {
             handleError(.userBlockedError, context: "sendLocation.blocked")
             return
         }
-        if selectedId.isEmpty {
+        if selectedId.isEmpty && selectedUserChatID.isEmpty {
             ensureConversationReady { [weak self] success in
                 guard let self else { return }
                 if success {
@@ -39,9 +39,19 @@ extension ChatDetailViewModel {
             "locationType": locationRequest.type.rawValue
         ]
         if let replyToId { metadata["reply_to_id"] = replyToId }
-        if !address.isEmpty { metadata["address"] = address }
+        if !address.isEmpty {
+            metadata["address"] = address
+            metadata["name"] = address
+        }
 
-        let locationPayload: [String: Any] = ["lat": lat, "lng": lng, "address": address]
+        let locationPayload: [String: Any] = [
+            "lat": lat,
+            "lng": lng,
+            "latitude": lat,
+            "longitude": lng,
+            "name": address,
+            "address": address
+        ]
         let contentText = locationRequest.comment.flatMap { $0.isEmpty ? nil : $0 }
             ?? ChatStrings.chat_locationContent.localizedString()
         let now = isoFormatter.string(from: Date())
@@ -90,11 +100,15 @@ extension ChatDetailViewModel {
             location: locationPayload,
             poll: nil,
             clientMessageId: tempId,
-            replyToId: replyToId
+            replyToId: replyToId,
+            recipientIds: selectedId.isEmpty ? [selectedUserChatID] : nil
         ) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let serverMessage):
+                if self.selectedId.isEmpty, !serverMessage.conversationId.isEmpty {
+                    self.selectedId = serverMessage.conversationId
+                }
                 self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
             case .failure:
                 self.markMessageAsFailed(tempId: tempId)
