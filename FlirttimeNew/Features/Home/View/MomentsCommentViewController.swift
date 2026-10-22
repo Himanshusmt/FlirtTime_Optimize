@@ -11,6 +11,10 @@ import IQKeyboardManagerSwift
 final class MomentsCommentViewController: BaseViewController {
 
     var onCommentsCountChanged: ((Int) -> Void)?
+    /// Called after the sheet is dismissed so the presenting Moments list can push the profile.
+    var onOpenUser: ((OtherUserProfileRouter.Seed) -> Void)?
+
+    private var isResolvingMention = false
 
     private let viewModel: MomentsCommentViewModel
     private var wasKeyboardManagerEnabled = true
@@ -544,6 +548,22 @@ final class MomentsCommentViewController: BaseViewController {
         present(alert, animated: true)
     }
 
+    private func openMention(_ username: String) {
+        guard !isResolvingMention else { return }
+        isResolvingMention = true
+        viewModel.resolveMentionedUser(username: username) { [weak self] result in
+            guard let self else { return }
+            self.isResolvingMention = false
+            switch result {
+            case .success(let seed):
+                let open = self.onOpenUser
+                self.dismiss(animated: true) { open?(seed) }
+            case .failure(let error):
+                self.aCustomToastView.show(message: error.message)
+            }
+        }
+    }
+
     private func deleteComment(id: String) {
         viewModel.deleteComment(id: id) { [weak self] result in
             guard let self else { return }
@@ -653,6 +673,7 @@ extension MomentsCommentViewController: UITableViewDataSource {
             guard let self, let cell, let current = self.tableView.indexPath(for: cell) else { return }
             self.toggleReplies(section: current.section)
         }
+        cell.onMention = { [weak self] username in self?.openMention(username) }
         return cell
     }
 }

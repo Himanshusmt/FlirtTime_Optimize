@@ -188,6 +188,11 @@ final class MomentsCommentThreadCell: UITableViewCell {
     var onReply: (() -> Void)?
     var onDelete: (() -> Void)?
     var onToggleReplies: (() -> Void)?
+    var onMention: ((String) -> Void)?
+
+    private static let mentionUsernameAttribute = NSAttributedString.Key("commentMentionUsername")
+    private static let mentionRegex: NSRegularExpression? =
+        try? NSRegularExpression(pattern: "(?<![\\w])@[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*")
 
     private static let rootAvatarSize: CGFloat = 36
     private static let replyAvatarSize: CGFloat = 28
@@ -227,6 +232,7 @@ final class MomentsCommentThreadCell: UITableViewCell {
         label.font = UIFont.fredoka(.regular, size: 14)
         label.textColor = AppColor.MineShaft
         label.numberOfLines = 0
+        label.isUserInteractionEnabled = true
         return label
     }()
 
@@ -296,6 +302,7 @@ final class MomentsCommentThreadCell: UITableViewCell {
         onReply = nil
         onDelete = nil
         onToggleReplies = nil
+        onMention = nil
         repliesSpinner.stopAnimating()
     }
 
@@ -363,6 +370,8 @@ final class MomentsCommentThreadCell: UITableViewCell {
             repliesToggleLine.heightAnchor.constraint(equalToConstant: 1),
             repliesToggleButton.heightAnchor.constraint(equalToConstant: 28)
         ])
+
+        bodyLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(bodyTapped(_:))))
     }
 
     /// `thread` is set for top-level comments to show the "View replies" toggle.
@@ -443,14 +452,52 @@ final class MomentsCommentThreadCell: UITableViewCell {
             .font: UIFont.fredoka(.regular, size: 14),
             .foregroundColor: AppColor.MineShaft
         ])
-        guard let regex = try? NSRegularExpression(pattern: "@\\S+") else { return attributed }
+        guard let regex = mentionRegex else { return attributed }
         let range = NSRange(text.startIndex..., in: text)
         for match in regex.matches(in: text, range: range) {
+            guard let matchRange = Range(match.range, in: text) else { continue }
+            let username = String(text[matchRange].dropFirst()).lowercased()
             attributed.addAttributes([
                 .font: UIFont.fredoka(.medium, size: 14),
-                .foregroundColor: AppColor.Punch
+                .foregroundColor: AppColor.Punch,
+                mentionUsernameAttribute: username
             ], range: match.range)
         }
         return attributed
+    }
+
+    @objc private func bodyTapped(_ gesture: UITapGestureRecognizer) {
+        guard let label = gesture.view as? UILabel,
+              let attributed = label.attributedText, attributed.length > 0 else { return }
+
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(size: label.bounds.size)
+        textContainer.lineFragmentPadding = 0
+        textContainer.maximumNumberOfLines = label.numberOfLines
+        textContainer.lineBreakMode = label.lineBreakMode
+        layoutManager.addTextContainer(textContainer)
+
+        let textStorage = NSTextStorage(attributedString: attributed)
+        textStorage.addLayoutManager(layoutManager)
+
+        let tapPoint = gesture.location(in: label)
+        var fraction: CGFloat = 0
+        let characterIndex = layoutManager.characterIndex(
+            for: tapPoint,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: &fraction
+        )
+        guard characterIndex < textStorage.length else { return }
+
+        let glyphIndex = layoutManager.glyphIndexForCharacter(at: characterIndex)
+        let glyphRect = layoutManager.boundingRect(
+            forGlyphRange: NSRange(location: glyphIndex, length: 1),
+            in: textContainer
+        )
+        guard glyphRect.insetBy(dx: -4, dy: -4).contains(tapPoint) else { return }
+
+        let attrs = textStorage.attributes(at: characterIndex, effectiveRange: nil)
+        guard let username = attrs[Self.mentionUsernameAttribute] as? String, !username.isEmpty else { return }
+        onMention?(username)
     }
 }

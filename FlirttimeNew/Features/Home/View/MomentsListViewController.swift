@@ -453,6 +453,9 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
             let row = self.viewModel.updateVibe(id: vibe.id) { $0.commentsCount = count }
             self.refreshCounts(at: row)
         }
+        commentViewController.onOpenUser = { [weak self] seed in
+            self?.openUser(from: seed)
+        }
         presentAsSheet(commentViewController, detents: [.medium(), .large()])
     }
 
@@ -516,6 +519,16 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
             location: author?.location,
             isVerified: author?.verified ?? false
         )
+        OtherUserProfileRouter.open(seed, from: self)
+    }
+
+    private func openUser(from seed: OtherUserProfileRouter.Seed) {
+        let currentId = MomentsAuthor.currentUser.userId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let tappedId = seed.userID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let currentId, !currentId.isEmpty, currentId == tappedId {
+            openOwnProfile()
+            return
+        }
         OtherUserProfileRouter.open(seed, from: self)
     }
 

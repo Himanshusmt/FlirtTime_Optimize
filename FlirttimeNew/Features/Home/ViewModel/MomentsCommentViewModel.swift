@@ -84,6 +84,71 @@ final class MomentsCommentViewModel {
         comment.isMine == true && !deletingIds.contains(comment.id)
     }
 
+    /// Resolves `@username` to a profile seed: thread authors first, then `users/search`.
+    func resolveMentionedUser(username: String,
+                              completion: @escaping (Result<OtherUserProfileRouter.Seed, MomentsError>) -> Void) {
+        let handle = Self.normalizedHandle(username)
+        guard !handle.isEmpty else {
+            completion(.failure(MomentsError(message: "User not found")))
+            return
+        }
+        if let author = mentionedAuthor(handle: handle),
+           let userId = author.userId?.trimmingCharacters(in: .whitespacesAndNewlines), !userId.isEmpty {
+            completion(.success(Self.seed(from: author)))
+            return
+        }
+        sessionManager.searchUsers(query: handle, page: 1, limit: 20)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { page in
+                let match = page.users.first { user in
+                    (user.username ?? "").caseInsensitiveCompare(handle) == .orderedSame
+                }
+                guard let match, let userId = match.userId?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !userId.isEmpty else {
+                    completion(.failure(MomentsError(message: "User not found")))
+                    return
+                }
+                completion(.success(OtherUserProfileRouter.Seed(
+                    userID: userId,
+                    name: match.displayName,
+                    avatar: match.profilePhoto,
+                    location: match.city,
+                    age: match.age,
+                    isVerified: match.isVerified ?? false,
+                    isOnline: match.isOnline ?? false
+                )))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to open profile")))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func mentionedAuthor(handle: String) -> MomentsAuthor? {
+        let authors = allComments.compactMap(\.author) + [currentUserAuthor]
+        return authors.first { author in
+            let userName = (author.userName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !userName.isEmpty, userName.caseInsensitiveCompare(handle) == .orderedSame {
+                return true
+            }
+            let stripped = author.displayName.replacingOccurrences(of: " ", with: "")
+            return !stripped.isEmpty && stripped.caseInsensitiveCompare(handle) == .orderedSame
+        }
+    }
+
+    private static func seed(from author: MomentsAuthor) -> OtherUserProfileRouter.Seed {
+        OtherUserProfileRouter.Seed(
+            userID: author.userId,
+            name: author.displayName,
+            avatar: author.profilePicture,
+            location: author.location,
+            isVerified: author.verified ?? false
+        )
+    }
+
+    private static func normalizedHandle(_ username: String) -> String {
+        username.trimmingCharacters(in: CharacterSet(charactersIn: "@").union(.whitespacesAndNewlines))
+    }
+
     func isLoadingReplies(section: Int) -> Bool {
         threads.indices.contains(section) && loadingRepliesIds.contains(threads[section].comment.id)
     }
