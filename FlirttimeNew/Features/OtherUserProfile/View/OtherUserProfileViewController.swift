@@ -658,12 +658,39 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
         let viewer = QuickMomentViewController(profile: profile, startIndex: playbackIndex, isOwnMoments: isOwnProfile)
 
-        if !isOwnProfile {
+        if isOwnProfile {
+            viewer.onShowActivity = { shownIndex, presenter in
+                guard stories.indices.contains(shownIndex) else { return }
+                let activity = QuickMomentActivityViewController(moment: stories[shownIndex])
+                activity.modalPresentationStyle = .pageSheet
+                if let sheet = activity.sheetPresentationController {
+                    sheet.detents = [.medium(), .large()]
+                    sheet.prefersGrabberVisible = true
+                }
+                presenter.present(activity, animated: true)
+            }
+            viewer.onDelete = { [weak self] shownIndex in
+                guard let self, stories.indices.contains(shownIndex) else { return }
+                self.viewModel.deleteQuickMoment(id: stories[shownIndex].id) { result in
+                    switch result {
+                    case .success:
+                        self.aCustomToastView.show(message: "Quick moment deleted")
+                    case .failure(let error):
+                        self.aCustomToastView.show(message: error.message)
+                    }
+                }
+            }
+        } else {
             var seen = Set<String>()
             viewer.onMomentShown = { [weak self] shownIndex in
                 guard let self, stories.indices.contains(shownIndex), !stories[shownIndex].hasViewed,
                       seen.insert(stories[shownIndex].id).inserted else { return }
                 self.viewModel.markQuickMomentViewed(id: stories[shownIndex].id)
+            }
+            viewer.onReport = { [weak self] _, _ in
+                guard let self, let details = self.details else { return }
+                MockDiscover.shared.report(userID: details.userID)
+                self.aCustomToastView.show(message: "Thanks for letting us know. We'll review this.")
             }
         }
         viewer.onDismiss = { [weak self] in

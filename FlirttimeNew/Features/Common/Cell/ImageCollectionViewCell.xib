@@ -113,10 +113,10 @@
                         </userDefinedRuntimeAttributes>
                     </view>
                     <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="U20-HB-lIZ">
-                        <rect key="frame" x="10" y="160" width="60" height="25"/>
+                        <rect key="frame" x="10" y="160" width="80" height="25"/>
                         <subviews>
                             <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="o1i-6H-f2F">
-                                <rect key="frame" x="0.0" y="0.0" width="60" height="25"/>
+                                <rect key="frame" x="0.0" y="0.0" width="80" height="25"/>
                                 <color key="backgroundColor" name="#000020"/>
                                 <userDefinedRuntimeAttributes>
                                     <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
@@ -125,12 +125,12 @@
                                 </userDefinedRuntimeAttributes>
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" pointerInteraction="YES" translatesAutoresizingMaskIntoConstraints="NO" id="YF8-Me-yNe">
-                                <rect key="frame" x="0.0" y="0.0" width="60" height="25"/>
+                                <rect key="frame" x="0.0" y="0.0" width="80" height="25"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="12"/>
                                 <color key="tintColor" name="#FFFFFF"/>
                                 <inset key="imageEdgeInsets" minX="-5" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                <state key="normal" title="Pofile"/>
+                                <state key="normal" title="Profile" image="EditProfile"/>
                                 <connections>
                                     <action selector="edit1stImageButtonTapped:" destination="gTV-IL-0wX" eventType="touchUpInside" id="2gX-M2-2YL"/>
                                 </connections>
@@ -141,7 +141,7 @@
                             <constraint firstAttribute="bottom" secondItem="YF8-Me-yNe" secondAttribute="bottom" id="7X2-0E-2XH"/>
                             <constraint firstItem="YF8-Me-yNe" firstAttribute="top" secondItem="U20-HB-lIZ" secondAttribute="top" id="BV8-hz-X2I"/>
                             <constraint firstItem="o1i-6H-f2F" firstAttribute="top" secondItem="U20-HB-lIZ" secondAttribute="top" id="CL0-s2-wCg"/>
-                            <constraint firstAttribute="width" constant="60" id="Fyr-49-Vs9"/>
+                            <constraint firstAttribute="width" constant="80" id="Fyr-49-Vs9"/>
                             <constraint firstItem="YF8-Me-yNe" firstAttribute="leading" secondItem="U20-HB-lIZ" secondAttribute="leading" id="O6Q-0h-Yb0"/>
                             <constraint firstAttribute="height" constant="25" id="OEb-Za-DFA"/>
                             <constraint firstItem="o1i-6H-f2F" firstAttribute="leading" secondItem="U20-HB-lIZ" secondAttribute="leading" id="Z1N-bj-bYr"/>
@@ -224,6 +224,7 @@
         </collectionViewCell>
     </objects>
     <resources>
+        <image name="EditProfile" width="21" height="20"/>
         <image name="ProfileTag" width="41" height="20"/>
         <image name="editImage" width="8" height="8"/>
         <image name="imageSelectPlaceHolder" width="100" height="100"/>

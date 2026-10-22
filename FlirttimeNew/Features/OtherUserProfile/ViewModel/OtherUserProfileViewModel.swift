@@ -178,6 +178,18 @@ class OtherUserProfileViewModel {
             .disposed(by: disposeBag)
     }
 
+    func deleteQuickMoment(id: String, completion: @escaping (Result<Void, MomentsError>) -> Void) {
+        sessionManager.deleteQuickMoment(momentId: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                self?.quickMoments.removeAll { $0.id == id }
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to delete quick moment")))
+            })
+            .disposed(by: disposeBag)
+    }
+
     /// The signed-in user's own moments, quick moments and voice intro (Edit Profile preview).
     func loadOwnProfile() {
         beginRequest()
