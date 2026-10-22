@@ -19,6 +19,8 @@ enum OtherUserProfileRouter {
         var age: Int? = nil
         var isVerified = false
         var isOnline = false
+        /// Already-loaded photo from the tapping cell, shown immediately so the profile does not flash a placeholder.
+        var previewImage: UIImage? = nil
     }
 
     /// The seed is shown straight away; backend (UUID) users then load the full profile from `users/:userId/profile`.
@@ -27,6 +29,7 @@ enum OtherUserProfileRouter {
         let profileVC: OtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
         profileVC.userDetailInfo = info
         profileVC.remoteUserID = remoteID(for: seed.userID)
+        profileVC.previewImage = seed.previewImage
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }
 

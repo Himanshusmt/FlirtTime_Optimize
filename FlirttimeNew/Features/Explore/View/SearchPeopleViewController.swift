@@ -37,6 +37,7 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         super.viewDidLoad()
         setBinding()
         setupSearchBar()
+        centerEmptyStateInRemainingSpace()
         updateSearchBarFocus(false)
         render()
     }
@@ -100,10 +101,29 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         searchBarView.layer.shadowRadius = 10
         searchBarView.layer.shadowOffset = CGSize(width: 0, height: 4)
         searchTextField.textColor = AppColor.MineShaft
+        searchTextField.textAlignment = .left
         searchTextField.attributedPlaceholder = NSAttributedString(
             string: searchTextField.placeholder ?? "Search by name or city",
             attributes: [.foregroundColor: AppColor.Boulder]
         )
+    }
+
+    /// Keeps the empty-state placeholder (icon + title + message) in the middle of the
+    /// space below the search bar, including when the keyboard is open.
+    private func centerEmptyStateInRemainingSpace() {
+        view.constraints
+            .filter { ($0.firstItem as? UIView) === emptyStateView && $0.firstAttribute == .centerY }
+            .forEach { $0.isActive = false }
+
+        let area = UILayoutGuide()
+        view.addLayoutGuide(area)
+        NSLayoutConstraint.activate([
+            area.topAnchor.constraint(equalTo: searchBarView.bottomAnchor),
+            area.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+            area.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            area.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            emptyStateView.centerYAnchor.constraint(equalTo: area.centerYAnchor)
+        ])
     }
 
     private func updateSearchBarFocus(_ focused: Bool) {
@@ -112,14 +132,15 @@ final class SearchPeopleViewController: BaseViewController, Instantiable {
         }
     }
 
-    private func openProfile(_ person: UserSearchResult) {
+    private func openProfile(_ person: UserSearchResult, previewImage: UIImage? = nil) {
         let seed = OtherUserProfileRouter.Seed(userID: person.userId,
                                                name: person.displayName,
                                                avatar: person.profilePhoto,
                                                location: person.city,
                                                age: person.age,
                                                isVerified: person.isVerified == true,
-                                               isOnline: person.isOnline == true)
+                                               isOnline: person.isOnline == true,
+                                               previewImage: previewImage)
         OtherUserProfileRouter.open(seed, from: self)
     }
 
@@ -180,7 +201,8 @@ extension SearchPeopleViewController: UICollectionViewDataSource, UICollectionVi
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         searchTextField.resignFirstResponder()
-        openProfile(people[indexPath.item])
+        let preview = (collectionView.cellForItem(at: indexPath) as? SearchPeopleCell)?.currentPhoto
+        openProfile(people[indexPath.item], previewImage: preview)
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {

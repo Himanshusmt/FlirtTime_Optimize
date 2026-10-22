@@ -292,7 +292,6 @@ final class MomentsCommentThreadCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        avatarImageView.image = nil
         onLike = nil
         onReply = nil
         onDelete = nil
@@ -385,19 +384,7 @@ final class MomentsCommentThreadCell: UITableViewCell {
         deleteButton.isHidden = !canDelete
 
         updateLike(isLiked: comment.isLiked ?? false, count: comment.likesCount ?? 0)
-
-        let replyCount = thread?.replyCount ?? 0
-        repliesToggleRow.isHidden = isReply || replyCount == 0
-        if let thread, replyCount > 0 {
-            let title = thread.isExpanded
-                ? "Hide replies"
-                : "View \(replyCount) \(replyCount == 1 ? "reply" : "replies")"
-            UIView.performWithoutAnimation {
-                repliesToggleButton.setTitle(title, for: .normal)
-                repliesToggleButton.layoutIfNeeded()
-            }
-            isLoadingReplies ? repliesSpinner.startAnimating() : repliesSpinner.stopAnimating()
-        }
+        updateRepliesToggle(thread: isReply ? nil : thread, isLoading: isLoadingReplies)
 
         accessibilityCustomActions = [
             UIAccessibilityCustomAction(name: comment.isLiked == true ? "Unlike comment" : "Like comment") { [weak self] _ in
@@ -412,6 +399,23 @@ final class MomentsCommentThreadCell: UITableViewCell {
             self?.onDelete?()
             return true
         }] : [])
+    }
+
+    func updateRepliesToggle(thread: MomentsCommentThread?, isLoading: Bool) {
+        let replyCount = thread?.replyCount ?? 0
+        repliesToggleRow.isHidden = thread == nil || replyCount == 0
+        guard let thread, replyCount > 0 else {
+            repliesSpinner.stopAnimating()
+            return
+        }
+        let title = thread.isExpanded
+            ? "Hide replies"
+            : "View \(replyCount) \(replyCount == 1 ? "reply" : "replies")"
+        UIView.performWithoutAnimation {
+            repliesToggleButton.setTitle(title, for: .normal)
+            repliesToggleButton.layoutIfNeeded()
+        }
+        isLoading ? repliesSpinner.startAnimating() : repliesSpinner.stopAnimating()
     }
 
     func updateLike(isLiked: Bool, count: Int) {

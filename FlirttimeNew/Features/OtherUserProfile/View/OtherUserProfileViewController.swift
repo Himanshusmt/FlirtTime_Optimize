@@ -44,6 +44,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     var userDetailInfo: UserDetailInfo?
     /// Backend UUID; when set, the profile is loaded from `users/:userId/profile`.
     var remoteUserID: String?
+    /// Photo already on the tapping cell, shown on cover/avatar before the network image lands.
+    var previewImage: UIImage?
 
     // MARK: - Header
 
@@ -108,6 +110,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private var voiceWaveform: VoiceWaveformView?
     private var gridLayoutWidth: CGFloat = 0
     private let refreshIndicator = ProfileRefreshIndicator()
+    private var displayedCoverPath: String?
+    private var displayedAvatarPath: String?
+    private var displayedPhotoPaths: [String] = []
+    /// Cover stretch is only for a user pull; attaching the refresh control would otherwise stretch it on first open.
+    private var canStretchCover = false
 
     /// "💞 3 in common" on the trailing side of the Interests title row, styled like a shared-interest chip.
     private lazy var commonInterestsBadge: UIButton = {
@@ -149,6 +156,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         momentsCollectionView.register(OtherUserSeeAllMomentsCell.self,
                                        forCellWithReuseIdentifier: OtherUserSeeAllMomentsCell.identifier)
         details = makeDetails()
+        lockHeaderImageSizes()
+        disableCollectionSelfSizing()
+        applyPreviewImages()
         configurePullToRefresh()
         setBinding()
         hideLoadingSections()
@@ -174,12 +184,36 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         backButton.isUserInteractionEnabled = true
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        canStretchCover = true
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        if momentsCollectionView.bounds.width != gridLayoutWidth {
-            gridLayoutWidth = momentsCollectionView.bounds.width
+        let width = momentsCollectionView.bounds.width
+        guard width > 1, width != gridLayoutWidth else { return }
+        gridLayoutWidth = width
+        UIView.performWithoutAnimation {
             momentsCollectionView.collectionViewLayout.invalidateLayout()
             photosCollectionView.collectionViewLayout.invalidateLayout()
+        }
+    }
+
+    /// Stops a large photo from expanding the cover/avatar to its pixel size before Auto Layout finishes.
+    private func lockHeaderImageSizes() {
+        [coverImageView, avatarImageView].forEach { imageView in
+            imageView.setContentHuggingPriority(.required, for: .vertical)
+            imageView.setContentHuggingPriority(.required, for: .horizontal)
+            imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+            imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        }
+    }
+
+    /// iOS self-sizes flow-layout cells from the image, which looks stretched until the next layout pass.
+    private func disableCollectionSelfSizing() {
+        [photosCollectionView, momentsCollectionView].forEach { collectionView in
+            (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.estimatedItemSize = .zero
         }
     }
 
@@ -241,8 +275,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     private func refreshBasicInfo() {
         guard let details else { return }
-        basicInfo = details.basicInfo(from: viewModel.aAttributesModel?.data ?? [])
-        aboutMeSectionView.isHidden = basicInfo.isEmpty
+        let next = details.basicInfo(from: viewModel.aAttributesModel?.data ?? [])
+        let wasHidden = aboutMeSectionView.isHidden
+        let unchanged = next.count == basicInfo.count
+            && zip(next, basicInfo).allSatisfy { $0.title == $1.title && $0.value == $1.value }
+        if unchanged, wasHidden == next.isEmpty { return }
+        basicInfo = next
+        aboutMeSectionView.isHidden = next.isEmpty
         basicInfoTableView.reloadData()
     }
 
@@ -255,7 +294,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         viewModel.$profile.receive(on: DispatchQueue.main).sink { [weak self] profile in
             guard let self, let profile, let remoteUserID = self.remoteUserID else { return }
             self.details = OtherUserProfileDetails(profile: profile, remoteUserID: remoteUserID, fallback: self.details)
-            self.showProfile()
+            self.applyProfile(reloadPhotos: false)
             self.refreshBasicInfo()
             self.configureActionBar()
             self.quickMomentsView.configure(
@@ -334,33 +373,84 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     }
 
-    private func showProfile() {
-        guard let details else { return }
+    private func applyPreviewImages() {
+        guard let previewImage else { return }
+        if coverImageView.image == nil { coverImageView.image = previewImage }
+        if avatarImageView.image == nil { avatarImageView.image = previewImage }
+    }
 
+    private func showProfile() {
+        applyProfile(reloadPhotos: true)
+    }
+
+    /// Updates header text and sections. Images and the photos grid are left alone when they have not changed.
+    private func applyProfile(reloadPhotos: Bool) {
+        guard let details else { return }
+        applyHeaderImages()
+        applyHeaderText()
+        applyPhotos(forceReload: reloadPhotos)
+        showInterests()
+    }
+
+    private func applyHeaderImages() {
+        guard let details else { return }
         let banner = details.banner?.isEmpty == false ? details.banner : details.avatar
-        coverImageView.loadImage(path: banner, placeholder: UIImage(named: "addCoverPhoto"))
-        avatarImageView.loadImage(path: details.avatar, placeholder: UIImage(named: "ProfileBlur"))
+        if displayedCoverPath != banner || coverImageView.image == nil {
+            coverImageView.loadImage(path: banner, placeholder: coverImageView.image ?? previewImage ?? UIImage(named: "addCoverPhoto"))
+            displayedCoverPath = banner
+        }
+        if displayedAvatarPath != details.avatar || avatarImageView.image == nil {
+            avatarImageView.loadImage(path: details.avatar, placeholder: avatarImageView.image ?? previewImage ?? UIImage(named: "ProfileBlur"))
+            displayedAvatarPath = details.avatar
+        }
         avatarImageView.accessibilityLabel = "\(details.name)'s profile photo"
+    }
+
+    private func applyHeaderText() {
+        guard let details else { return }
         onlineDotView.isHidden = !details.isOnline
         onlineStatusLabel.isHidden = !details.isOnline
 
-        nameLabel.text = details.nameAndAge
+        if nameLabel.text != details.nameAndAge {
+            nameLabel.text = details.nameAndAge
+        }
         verifiedImageView.isHidden = !details.isVerified
 
         let location = details.location?.trimmingCharacters(in: .whitespaces) ?? ""
-        locationLabel.text = "📍 \(location)"
+        let locationText = location.isEmpty ? nil : "📍 \(location)"
+        if locationLabel.text != locationText {
+            locationLabel.text = locationText
+        }
         locationLabel.isHidden = location.isEmpty
 
         let about = details.about?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        aboutLabel.text = "“\(about)”"
+        let aboutText = about.isEmpty ? nil : "“\(about)”"
+        if aboutLabel.text != aboutText {
+            aboutLabel.text = aboutText
+        }
         aboutLabel.isHidden = about.isEmpty
+    }
 
+    private func applyPhotos(forceReload: Bool) {
+        guard let details else { return }
+        let paths = details.photos.map { $0.image ?? "" }
         photosCountLabel.text = "\(details.photos.count)"
         photosCountLabel.accessibilityLabel = "\(details.photos.count) photos"
-        photosSectionView.isHidden = details.photos.isEmpty
-        photosCollectionView.reloadData()
 
-        showInterests()
+        let shouldShow = !details.photos.isEmpty
+        let wasHidden = photosSectionView.isHidden
+        guard forceReload || paths != displayedPhotoPaths || wasHidden != !shouldShow else { return }
+        displayedPhotoPaths = paths
+
+        if wasHidden, shouldShow {
+            photosSectionView.alpha = 0
+            photosSectionView.isHidden = false
+            photosCollectionView.reloadData()
+            UIView.animate(withDuration: 0.2) { self.photosSectionView.alpha = 1 }
+        } else {
+            photosSectionView.isHidden = !shouldShow
+            if shouldShow { photosCollectionView.reloadData() }
+        }
     }
 
     /// Interests shared with the signed-in user come first, in red, with their count beside the title.
@@ -654,8 +744,10 @@ extension OtherUserProfileViewController {
             scrollView.contentOffset.y = maxOffsetY
         }
         let pull = max(0, -scrollView.contentOffset.y)
-        stretchCover(by: pull)
-        refreshIndicator.update(pullDistance: pull)
+        if canStretchCover || scrollView.isDragging {
+            stretchCover(by: pull)
+            refreshIndicator.update(pullDistance: pull)
+        }
     }
 
     private func stretchCover(by stretch: CGFloat) {
@@ -700,20 +792,27 @@ extension OtherUserProfileViewController: UICollectionViewDataSource, UICollecti
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         guard let flow = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
         if collectionView === photosCollectionView {
-            let photoCount = CGFloat(details?.photos.count ?? 0)
-            if photoCount > Self.photosPerRow {
-                let spacing = flow.minimumLineSpacing * Self.photosPerRow
-                let width = floor((collectionView.bounds.width - flow.sectionInset.left - spacing - Self.photoPeekWidth) / Self.photosPerRow)
-                return CGSize(width: width, height: collectionView.bounds.height)
-            }
-            let insets = flow.sectionInset.left + flow.sectionInset.right
-            let spacing = flow.minimumLineSpacing * (Self.photosPerRow - 1)
-            let width = floor((collectionView.bounds.width - insets - spacing) / Self.photosPerRow)
-            return CGSize(width: width, height: min(collectionView.bounds.height, floor(width * Self.photoAspectRatio)))
+            return photoCellSize(in: collectionView, flow: flow)
         }
+        let availableWidth = collectionView.bounds.width > 1 ? collectionView.bounds.width : view.bounds.width
         let spacing = flow.minimumInteritemSpacing * (Self.momentsPerRow - 1)
-        let width = floor((collectionView.bounds.width - spacing) / Self.momentsPerRow)
+        let width = floor((availableWidth - spacing) / Self.momentsPerRow)
         return CGSize(width: width, height: width * 1.35)
+    }
+
+    private func photoCellSize(in collectionView: UICollectionView, flow: UICollectionViewFlowLayout) -> CGSize {
+        let availableWidth = collectionView.bounds.width > 1 ? collectionView.bounds.width : view.bounds.width
+        let availableHeight = collectionView.bounds.height > 1 ? collectionView.bounds.height : 230
+        let photoCount = CGFloat(details?.photos.count ?? 0)
+        if photoCount > Self.photosPerRow {
+            let spacing = flow.minimumLineSpacing * Self.photosPerRow
+            let width = floor((availableWidth - flow.sectionInset.left - spacing - Self.photoPeekWidth) / Self.photosPerRow)
+            return CGSize(width: max(width, 1), height: availableHeight)
+        }
+        let insets = flow.sectionInset.left + flow.sectionInset.right
+        let spacing = flow.minimumLineSpacing * (Self.photosPerRow - 1)
+        let width = floor((availableWidth - insets - spacing) / Self.photosPerRow)
+        return CGSize(width: max(width, 1), height: min(availableHeight, floor(max(width, 1) * Self.photoAspectRatio)))
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {

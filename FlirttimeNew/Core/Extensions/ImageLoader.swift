@@ -144,6 +144,10 @@ extension UIImageView {
     }
 
     func loadImage(with url: URL?, placeholder: UIImage? = nil, completion: ((UIImage?) -> Void)? = nil) {
+        if loadingURL == url, image != nil {
+            completion?(image)
+            return
+        }
         loadingURL = url
         guard let url else {
             image = placeholder
@@ -155,7 +159,7 @@ extension UIImageView {
             completion?(cached)
             return
         }
-        image = placeholder
+        image = image ?? placeholder
         ImageLoader.shared.load(url) { [weak self] loaded in
             guard let self, self.loadingURL == url else { return }
             if let loaded {

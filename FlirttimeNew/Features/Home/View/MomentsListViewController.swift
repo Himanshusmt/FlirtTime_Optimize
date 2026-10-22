@@ -2,7 +2,7 @@
 //  MomentsListViewController.swift
 //  FlirttimeNew
 //
-//  Moments tab: moment feed with FlirtTime's moment filter chips, like / comment / gift / share actions.
+//  Moments tab: moment feed with like / comment / gift / share actions.
 //
 
 import UIKit
@@ -29,6 +29,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     @IBOutlet private weak var headerContainerView: UIView!
     @IBOutlet private weak var logoImageView: UIImageView!
+    @IBOutlet private weak var addMomentButton: UIButton!
     @IBOutlet private weak var notificationButton: UIButton!
     @IBOutlet private weak var backButton: UIButton!
     @IBOutlet private weak var titleLabel: UILabel!
@@ -39,7 +40,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     @IBOutlet private weak var uploadProgressView: UIProgressView!
 
     @IBOutlet private weak var tableView: UITableView!
-    @IBOutlet private var filterChipButtons: [MomentsFilterChipButton]!
     @IBOutlet private weak var emptyStateLabel: UILabel!
 
     @IBOutlet private weak var scrollToTopButton: UIButton!
@@ -75,16 +75,6 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     private static let scrollToTopRevealRow = 3
 
     private var isScrollToTopVisible = false
-
-    /// FlirtTime's Moments filter row. Only "Add new moment" acts; the distance chips just select.
-    /// Raw values match the chip button tags in the storyboard.
-    private enum FeedFilter: Int {
-        case addMoment
-        case nearBy
-        case within25Km
-    }
-
-    private var selectedFilter: FeedFilter = .addMoment
 
     private let footerSpinner: UIActivityIndicatorView = {
         let spinner = UIActivityIndicatorView(style: .medium)
@@ -143,6 +133,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     private func setUI() {
         logoImageView.isHidden = scope.isPushed
+        addMomentButton.isHidden = scope.isPushed
         notificationButton.isHidden = scope.isPushed
         backButton.isHidden = !scope.isPushed
         titleLabel.isHidden = !scope.isPushed
@@ -165,12 +156,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         refreshControl.tintColor = AppColor.Punch
         refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
         tableView.refreshControl = refreshControl
-
-        if scope == .everyone {
-            filterChipButtons.forEach { $0.isSelected = $0.tag == selectedFilter.rawValue }
-        } else {
-            tableView.tableHeaderView = nil
-        }
+        tableView.tableHeaderView = nil
     }
 
     private var isOtherUserScope: Bool {
@@ -178,13 +164,8 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         return false
     }
 
-    @IBAction private func filterChipTapped(_ sender: MomentsFilterChipButton) {
-        guard let filter = FeedFilter(rawValue: sender.tag) else { return }
-        selectedFilter = filter
-        filterChipButtons.forEach { $0.isSelected = $0.tag == filter.rawValue }
-        if filter == .addMoment {
-            newVibeTapped()
-        }
+    @IBAction private func addMomentTapped(_ sender: UIButton) {
+        newVibeTapped()
     }
 
     private func updateEmptyState() {

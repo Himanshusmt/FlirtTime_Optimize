@@ -292,6 +292,18 @@
                                                 <constraint firstAttribute="height" constant="24" id="MLv-tc-002"/>
                                             </constraints>
                                         </imageView>
+                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-006" userLabel="Add Moment Button">
+                                            <rect key="frame" x="299" y="4" width="44" height="44"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="44" id="MLv-tc-017"/>
+                                                <constraint firstAttribute="height" constant="44" id="MLv-tc-018"/>
+                                            </constraints>
+                                            <accessibility key="accessibilityConfiguration" label="Add moment"/>
+                                            <state key="normal" image="PlusIcon"/>
+                                            <connections>
+                                                <action selector="addMomentTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-007"/>
+                                            </connections>
+                                        </button>
                                         <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-003" userLabel="Notification Button">
                                             <rect key="frame" x="343" y="4" width="44" height="44"/>
                                             <constraints>
@@ -341,6 +353,8 @@
                                         <constraint firstAttribute="trailing" secondItem="MLv-tb-003" secondAttribute="trailing" constant="6" id="MLv-tc-014"/>
                                         <constraint firstItem="MLv-tb-003" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-015"/>
                                         <constraint firstAttribute="height" constant="52" id="MLv-tc-016"/>
+                                        <constraint firstItem="MLv-tb-003" firstAttribute="leading" secondItem="MLv-tb-006" secondAttribute="trailing" id="MLv-tc-019"/>
+                                        <constraint firstItem="MLv-tb-006" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-020"/>
                                     </constraints>
                                 </view>
                                 <view hidden="YES" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-ub-001" userLabel="Uploading Bar">
@@ -462,6 +476,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="Mo1-v1-003"/>
                     <connections>
+                        <outlet property="addMomentButton" destination="MLv-tb-006" id="MLv-oc-021"/>
                         <outlet property="backButton" destination="MLv-tb-004" id="MLv-oc-003"/>
                         <outlet property="emptyStateLabel" destination="MLv-es-001" id="MLv-oc-004"/>
                         <outlet property="headerContainerView" destination="MLv-hc-101" id="MLv-oc-020"/>
@@ -475,9 +490,6 @@
                         <outlet property="uploadingBarHeightConstraint" destination="MLv-uc-009" id="MLv-oc-014"/>
                         <outlet property="uploadingBarView" destination="MLv-ub-001" id="MLv-oc-015"/>
                         <outlet property="uploadingPercentageLabel" destination="MLv-ub-006" id="MLv-oc-016"/>
-                        <outletCollection property="filterChipButtons" destination="MLv-hd-004" collectionClass="NSMutableArray" id="MLv-oc-017"/>
-                        <outletCollection property="filterChipButtons" destination="MLv-hd-005" collectionClass="NSMutableArray" id="MLv-oc-018"/>
-                        <outletCollection property="filterChipButtons" destination="MLv-hd-006" collectionClass="NSMutableArray" id="MLv-oc-019"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Mo1-v1-004" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

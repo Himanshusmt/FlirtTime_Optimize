@@ -38,6 +38,8 @@ final class SearchPeopleCell: UICollectionViewCell {
         photoImageView.image = nil
     }
 
+    var currentPhoto: UIImage? { photoImageView.image }
+
     func configure(with person: UserSearchResult) {
         photoImageView.loadImage(path: person.profilePhoto)
         let name = person.displayName

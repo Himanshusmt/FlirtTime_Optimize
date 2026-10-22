@@ -410,10 +410,10 @@
                             <constraint firstAttribute="trailing" secondItem="spp-cv-001" secondAttribute="trailing" id="spp-rc-017"/>
                             <constraint firstAttribute="bottom" secondItem="spp-cv-001" secondAttribute="bottom" id="spp-rc-018"/>
                             <constraint firstItem="spp-ev-001" firstAttribute="centerX" secondItem="spp-rv-001" secondAttribute="centerX" id="spp-rc-019"/>
-                            <constraint firstItem="spp-ev-001" firstAttribute="centerY" secondItem="spp-cv-001" secondAttribute="centerY" constant="-40" id="spp-rc-020"/>
+                            <constraint firstItem="spp-ev-001" firstAttribute="centerY" secondItem="spp-cv-001" secondAttribute="centerY" id="spp-rc-020"/>
                             <constraint firstItem="spp-ev-001" firstAttribute="leading" secondItem="spp-rv-001" secondAttribute="leading" constant="40" id="spp-rc-021"/>
                             <constraint firstItem="spp-ai-001" firstAttribute="centerX" secondItem="spp-rv-001" secondAttribute="centerX" id="spp-rc-022"/>
-                            <constraint firstItem="spp-ai-001" firstAttribute="centerY" secondItem="spp-cv-001" secondAttribute="centerY" constant="-40" id="spp-rc-023"/>
+                            <constraint firstItem="spp-ai-001" firstAttribute="centerY" secondItem="spp-cv-001" secondAttribute="centerY" id="spp-rc-023"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="spp-ni-001"/>

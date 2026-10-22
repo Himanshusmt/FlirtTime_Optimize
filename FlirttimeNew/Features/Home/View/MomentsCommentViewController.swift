@@ -431,7 +431,7 @@ final class MomentsCommentViewController: BaseViewController {
             guard let self else { return }
             // The section may have moved if comments changed while replies were loading.
             if let section = self.viewModel.threads.firstIndex(where: { $0.comment.id == commentId }) {
-                self.apply(.reload(section))
+                self.applyRepliesChange(section: section)
             } else {
                 self.tableView.reloadData()
             }
@@ -439,11 +439,52 @@ final class MomentsCommentViewController: BaseViewController {
                 self.aCustomToastView.show(message: error.message)
             }
         }
-        if viewModel.isLoadingReplies(section: section) {
+        if let section = viewModel.threads.firstIndex(where: { $0.comment.id == commentId }),
+           viewModel.isLoadingReplies(section: section) {
+            updateRepliesToggleCell(section: section)
+        }
+    }
+
+    /// Inserts or deletes reply rows so the parent comment (and its avatar) is not recreated.
+    private func applyRepliesChange(section: Int) {
+        updateRepliesToggleCell(section: section)
+        let tableRows = tableView.numberOfRows(inSection: section)
+        let modelRows = viewModel.numberOfRows(in: section)
+        guard tableView.numberOfSections == viewModel.threads.count,
+              section < tableView.numberOfSections,
+              view.window != nil else {
+            tableView.reloadData()
+            return
+        }
+        guard tableRows != modelRows else { return }
+
+        let othersMatch = (0..<viewModel.threads.count).allSatisfy { other in
+            other == section || tableView.numberOfRows(inSection: other) == viewModel.numberOfRows(in: other)
+        }
+        let canInsert = tableRows == 1 && modelRows > 1
+        let canDelete = modelRows == 1 && tableRows > 1
+        guard othersMatch, canInsert || canDelete else {
             UIView.performWithoutAnimation {
-                apply(.reload(section), animation: .none)
+                tableView.reloadSections(IndexSet(integer: section), with: .none)
+            }
+            return
+        }
+
+        let paths = (1..<(canInsert ? modelRows : tableRows)).map { IndexPath(row: $0, section: section) }
+        tableView.performBatchUpdates {
+            if canInsert {
+                tableView.insertRows(at: paths, with: .fade)
+            } else {
+                tableView.deleteRows(at: paths, with: .fade)
             }
         }
+    }
+
+    private func updateRepliesToggleCell(section: Int) {
+        guard viewModel.threads.indices.contains(section),
+              let cell = tableView.cellForRow(at: IndexPath(row: 0, section: section)) as? MomentsCommentThreadCell else { return }
+        cell.updateRepliesToggle(thread: viewModel.threads[section],
+                                 isLoading: viewModel.isLoadingReplies(section: section))
     }
 
     // MARK: - Table updates
