@@ -236,14 +236,15 @@ final class CardDetailViewController: BaseViewController {
         nameRow.alignment = .center
         if profile.isVerified {
             let verified = UIButton(type: .system)
-            verified.setImage(UIImage(systemName: "checkmark.seal.fill",
-                                      withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)), for: .normal)
-            verified.tintColor = UIColor(red: 0.36, green: 0.67, blue: 1, alpha: 1)
+            verified.setImage(UIImage(named: "verified")?.withRenderingMode(.alwaysOriginal), for: .normal)
+            verified.tintColor = .clear
             verified.accessibilityLabel = "Verified profile"
             verified.addAction(UIAction { [weak self] _ in
                 guard let self else { return }
                 MomentsVerificationInfo.present(for: self.profile, from: self)
             }, for: .touchUpInside)
+            verified.widthAnchor.constraint(equalToConstant: 18).isActive = true
+            verified.heightAnchor.constraint(equalToConstant: 18).isActive = true
             nameRow.addArrangedSubview(verified)
         }
         nameRow.addArrangedSubview(UIView())

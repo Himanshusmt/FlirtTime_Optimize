@@ -60,7 +60,7 @@ class UserInteractionCVC: UICollectionViewCell {
         lblName.adjustsFontSizeToFitWidth = true
         lblName.minimumScaleFactor = 0.8
 
-        imgVerify.image = UIImage(named: "verifyIcon")
+        imgVerify.image = UIImage(named: "verified")
         imgVerify.contentMode = .scaleAspectFit
         imgVerify.setContentHuggingPriority(.required, for: .horizontal)
         imgVerify.setContentCompressionResistancePriority(.required, for: .horizontal)

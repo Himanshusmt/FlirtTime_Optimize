@@ -42,7 +42,7 @@ class ProfileViewController: BaseViewController {
 
     // Identity
     private let nameLabel = UILabel.vibeLabel(.bold, 26, style: .title1, color: AppColor.AppBlack)
-    private let verifiedImageView = UIImageView(image: UIImage(named: "verifyIcon"))
+    private let verifiedImageView = UIImageView(image: UIImage(named: "verified"))
     private let locationLabel = UILabel.vibeLabel(.regular, 14, style: .subheadline, color: AppColor.DoveGray)
     private let aboutLabel = UILabel.vibeLabel(.regular, 15, style: .body, color: AppColor.MineShaft, lines: ProfileViewController.aboutCollapsedLines)
 

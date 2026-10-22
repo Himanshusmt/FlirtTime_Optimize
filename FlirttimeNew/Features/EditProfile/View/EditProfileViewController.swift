@@ -855,6 +855,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
                     let aOtherUserProfileViewController = OtherUserProfileViewController.instantiateFromStoryboard()
                     aOtherUserProfileViewController.isMyProfile = true
                     aOtherUserProfileViewController.userDetails = self.userDetailInfo
+                    aOtherUserProfileViewController.hidesBottomBarWhenPushed = true
                     self.navigationController?.pushViewController(aOtherUserProfileViewController, animated: true)
                 }
             }

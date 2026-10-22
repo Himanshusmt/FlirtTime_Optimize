@@ -30,6 +30,7 @@ enum OtherUserProfileRouter {
         profileVC.userDetailInfo = info
         profileVC.remoteUserID = remoteID(for: seed.userID)
         profileVC.previewImage = seed.previewImage
+        profileVC.hidesBottomBarWhenPushed = true
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }
 

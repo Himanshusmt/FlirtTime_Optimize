@@ -403,7 +403,10 @@ final class ChatDetailViewController: UIViewController {
         guard isLeavingChatScreen else { return }
 
         stopKeyboardTracking()
-        self.tabBarController?.tabBar.isHidden = false
+        let destinationHidesTabBar = navigationController?.viewControllers.last?.hidesBottomBarWhenPushed == true
+        if !destinationHidesTabBar {
+            tabBarController?.tabBar.isHidden = false
+        }
         saveDraft()
         dismissAttachmentPanel()
 

@@ -152,6 +152,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        hidesBottomBarWhenPushed = true
         contentStackView.setCustomSpacing(Self.headerToNameSpacing, after: headerView)
         momentsCollectionView.register(OtherUserSeeAllMomentsCell.self,
                                        forCellWithReuseIdentifier: OtherUserSeeAllMomentsCell.identifier)
@@ -176,10 +177,15 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         if let userID = details?.userID, VoiceIntroPlayer.shared.playingProfileID == userID {
             VoiceIntroPlayer.shared.stop()
         }
+        if isMovingFromParent {
+            tabBarController?.tabBar.isHidden = false
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        hidesBottomBarWhenPushed = true
+        tabBarController?.tabBar.isHidden = true
         checkHideCustomButton(hide: true)
         backButton.isUserInteractionEnabled = true
     }
@@ -215,6 +221,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         [photosCollectionView, momentsCollectionView].forEach { collectionView in
             (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.estimatedItemSize = .zero
         }
+        photosCollectionView.clipsToBounds = false
     }
 
     // MARK: - Data

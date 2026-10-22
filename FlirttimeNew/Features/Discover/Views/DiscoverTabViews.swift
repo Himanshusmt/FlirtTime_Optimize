@@ -495,8 +495,8 @@ final class DiscoverInterestsView: UIView {
         let nameRow = UIStackView(arrangedSubviews: [name])
         nameRow.spacing = 4
         if profile.isVerified {
-            let seal = UIImageView(image: UIImage(systemName: "checkmark.seal.fill"))
-            seal.tintColor = AppColor.DodgerBlue
+            let seal = UIImageView(image: UIImage(named: "verified"))
+            seal.tintColor = nil
             seal.contentMode = .scaleAspectFit
             seal.widthAnchor.constraint(equalToConstant: 14).isActive = true
             nameRow.addArrangedSubview(seal)

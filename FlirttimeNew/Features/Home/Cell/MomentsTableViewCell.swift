@@ -27,6 +27,7 @@ final class MomentsTableViewCell: UITableViewCell {
     private static let contentLeadingGap: CGFloat = 6
     private static let contentTrailing: CGFloat = 16
     private static let mediaHeight: CGFloat = 400
+    private static let mediaCornerRadius: CGFloat = 12
 
     /// Photo area of a feed row that is `rowWidth` wide. Add Moment crops photos to this shape.
     static func mediaSize(forRowWidth rowWidth: CGFloat) -> CGSize {
@@ -102,6 +103,17 @@ final class MomentsTableViewCell: UITableViewCell {
         return label
     }()
 
+    private let mediaCardView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOpacity = 0.1
+        view.layer.shadowRadius = 8
+        view.layer.shadowOffset = CGSize(width: 0, height: 3)
+        view.layer.masksToBounds = false
+        return view
+    }()
+
     private lazy var mediaCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
@@ -109,7 +121,7 @@ final class MomentsTableViewCell: UITableViewCell {
         layout.minimumInteritemSpacing = 0
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = AppColor.AthensGray
-        collectionView.layer.cornerRadius = 12
+        collectionView.layer.cornerRadius = MomentsTableViewCell.mediaCornerRadius
         collectionView.clipsToBounds = true
         collectionView.isPagingEnabled = true
         collectionView.showsHorizontalScrollIndicator = false
@@ -170,6 +182,8 @@ final class MomentsTableViewCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         backgroundColor = .clear
+        clipsToBounds = false
+        contentView.clipsToBounds = false
         setUI()
     }
 
@@ -196,6 +210,10 @@ final class MomentsTableViewCell: UITableViewCell {
             lastMediaWidth = width
             mediaCollectionView.collectionViewLayout.invalidateLayout()
         }
+        mediaCardView.layer.shadowPath = UIBezierPath(
+            roundedRect: mediaCardView.bounds,
+            cornerRadius: MomentsTableViewCell.mediaCornerRadius
+        ).cgPath
     }
 
     private func setUI() {
@@ -211,7 +229,16 @@ final class MomentsTableViewCell: UITableViewCell {
 
         rowActionStack.addArrangedSubview(rowActionSpacer)
 
-        let contentStack = UIStackView(arrangedSubviews: [headerStack, captionLabel, mediaCollectionView, rowActionStack])
+        mediaCardView.addSubview(mediaCollectionView)
+        mediaCollectionView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            mediaCollectionView.topAnchor.constraint(equalTo: mediaCardView.topAnchor),
+            mediaCollectionView.leadingAnchor.constraint(equalTo: mediaCardView.leadingAnchor),
+            mediaCollectionView.trailingAnchor.constraint(equalTo: mediaCardView.trailingAnchor),
+            mediaCollectionView.bottomAnchor.constraint(equalTo: mediaCardView.bottomAnchor)
+        ])
+
+        let contentStack = UIStackView(arrangedSubviews: [headerStack, captionLabel, mediaCardView, rowActionStack])
         contentStack.axis = .vertical
         contentStack.spacing = 8
         contentStack.setCustomSpacing(4, after: headerStack)
@@ -226,7 +253,7 @@ final class MomentsTableViewCell: UITableViewCell {
             contentView.addSubview($0)
         }
 
-        mediaHeightConstraint = mediaCollectionView.heightAnchor.constraint(equalToConstant: MomentsTableViewCell.mediaHeight)
+        mediaHeightConstraint = mediaCardView.heightAnchor.constraint(equalToConstant: MomentsTableViewCell.mediaHeight)
         let bottom = separatorView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         bottom.priority = .defaultHigh
 
@@ -302,6 +329,7 @@ final class MomentsTableViewCell: UITableViewCell {
         setCaptionExpanded(isCaptionExpanded)
 
         media = vibe.media ?? []
+        mediaCardView.isHidden = media.isEmpty
         mediaCollectionView.isHidden = media.isEmpty
         mediaHeightConstraint.constant = media.isEmpty ? 0 : MomentsTableViewCell.mediaHeight
         mediaCollectionView.reloadData()

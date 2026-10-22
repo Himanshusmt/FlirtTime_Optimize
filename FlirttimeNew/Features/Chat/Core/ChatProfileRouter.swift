@@ -28,6 +28,7 @@ enum ChatProfileRouter {
         profileVC.fromChatScreen = true
         profileVC.userDetailInfo = info
         profileVC.remoteUserID = remoteID
+        profileVC.hidesBottomBarWhenPushed = true
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }
 
