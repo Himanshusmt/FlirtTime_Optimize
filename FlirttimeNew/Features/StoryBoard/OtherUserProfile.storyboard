@@ -865,20 +865,20 @@
                                         </connections>
                                     </button>
                                     <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-sk-010" userLabel="Super Like Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="10" width="52" height="52"/>
+                                        <rect key="frame" x="0.0" y="6" width="60" height="60"/>
                                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <color key="tintColor" red="0.20000000000000001" green="0.55000000000000004" blue="0.94999999999999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <constraints>
-                                            <constraint firstAttribute="width" constant="52" id="oup-sk-011"/>
-                                            <constraint firstAttribute="height" constant="52" id="oup-sk-012"/>
+                                            <constraint firstAttribute="width" constant="60" id="oup-sk-011"/>
+                                            <constraint firstAttribute="height" constant="60" id="oup-sk-012"/>
                                         </constraints>
                                         <accessibility key="accessibilityConfiguration" label="Super like"/>
                                         <state key="normal" image="star.fill" catalog="system">
-                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20" weight="bold"/>
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="22" weight="bold"/>
                                         </state>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                <real key="value" value="26"/>
+                                                <real key="value" value="30"/>
                                             </userDefinedRuntimeAttribute>
                                             <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
                                                 <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -898,20 +898,20 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-lk-001" userLabel="Like Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
-                                        <rect key="frame" x="78" y="0.0" width="72" height="72"/>
+                                        <rect key="frame" x="78" y="6" width="60" height="60"/>
                                         <color key="backgroundColor" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
-                                            <constraint firstAttribute="width" constant="72" id="oup-lk-002"/>
-                                            <constraint firstAttribute="height" constant="72" id="oup-lk-003"/>
+                                            <constraint firstAttribute="width" constant="60" id="oup-lk-002"/>
+                                            <constraint firstAttribute="height" constant="60" id="oup-lk-003"/>
                                         </constraints>
                                         <accessibility key="accessibilityConfiguration" label="Like"/>
                                         <state key="normal" image="heart.fill" catalog="system">
-                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="28" weight="bold"/>
+                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="22" weight="bold"/>
                                         </state>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                <real key="value" value="36"/>
+                                                <real key="value" value="30"/>
                                             </userDefinedRuntimeAttribute>
                                             <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
                                                 <color key="value" red="0.85098039215686272" green="0.16862745098039217" blue="0.16862745098039217" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

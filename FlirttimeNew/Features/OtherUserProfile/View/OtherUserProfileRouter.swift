@@ -21,6 +21,8 @@ enum OtherUserProfileRouter {
         var isOnline = false
         /// Already-loaded photo from the tapping cell, shown immediately so the profile does not flash a placeholder.
         var previewImage: UIImage? = nil
+        /// `"like"` | `"super_like"` when opened from You Liked, before profile GET lands.
+        var myAction: String? = nil
     }
 
     /// The seed is shown straight away; backend (UUID) users then load the full profile from `users/:userId/profile`.
@@ -30,6 +32,7 @@ enum OtherUserProfileRouter {
         profileVC.userDetailInfo = info
         profileVC.remoteUserID = remoteID(for: seed.userID)
         profileVC.previewImage = seed.previewImage
+        profileVC.seededMyAction = seed.myAction
         profileVC.hidesBottomBarWhenPushed = true
         presenter.navigationController?.pushViewController(profileVC, animated: true)
     }

@@ -32,6 +32,8 @@ struct OtherUserProfileDetails {
     var aboutAnswers: [OtherUserAboutItem] = []
     /// True when both users have matched; drives the profile chat button.
     var isMatched: Bool = false
+    /// `"like"` | `"super_like"` | `"nope"` once the signed-in user has acted.
+    var myAction: String? = nil
 
     var nameAndAge: String {
         age.map { "\(name), \($0)" } ?? name
@@ -75,6 +77,13 @@ struct OtherUserProfileDetails {
             return (index ?? Int.max, info)
         }
         return rows.sorted { ($0.rank, $0.info.title) < ($1.rank, $1.info.title) }.map(\.info)
+    }
+
+    static func resolvedAction(_ raw: String?, hasLiked: Bool?, fallback: String?) -> String? {
+        let action = raw?.lowercased()
+        if action == "super_like" || action == "like" || action == "nope" { return action }
+        if hasLiked == true { return fallback == "super_like" ? "super_like" : "like" }
+        return fallback
     }
 
     /// "lookingFor" / "looking_for" → "Looking for"
@@ -176,6 +185,7 @@ extension OtherUserProfileDetails {
                   aboutAnswers: profile.moreAboutMe ?? fallback?.aboutAnswers ?? [],
                   isMatched: profile.isMatched == true
                     || ["matched", "accepted", "connected"].contains(profile.matchStatus?.lowercased() ?? "")
-                    || fallback?.isMatched == true)
+                    || fallback?.isMatched == true,
+                  myAction: Self.resolvedAction(profile.myAction, hasLiked: profile.hasLiked, fallback: fallback?.myAction))
     }
 }

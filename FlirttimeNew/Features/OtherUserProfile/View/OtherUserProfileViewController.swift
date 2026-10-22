@@ -46,6 +46,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     var remoteUserID: String?
     /// Photo already on the tapping cell, shown on cover/avatar before the network image lands.
     var previewImage: UIImage?
+    /// `"like"` | `"super_like"` from You Liked until profile GET confirms `myAction`.
+    var seededMyAction: String?
 
     // MARK: - Header
 
@@ -271,13 +273,18 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     private func makeDetails() -> OtherUserProfileDetails? {
+        var details: OtherUserProfileDetails?
         if isMyProfile, let info = userDetails?.userInfo {
-            return OtherUserProfileDetails(info: info)
+            details = OtherUserProfileDetails(info: info)
+        } else if fromExploreMatches == true, let match = userMatchesData {
+            details = OtherUserProfileDetails(match: match)
+        } else {
+            details = userDetailInfo.map(OtherUserProfileDetails.init(info:))
         }
-        if fromExploreMatches == true, let match = userMatchesData {
-            return OtherUserProfileDetails(match: match)
+        if details?.myAction == nil {
+            details?.myAction = seededMyAction
         }
-        return userDetailInfo.map(OtherUserProfileDetails.init(info:))
+        return details
     }
 
     private func refreshBasicInfo() {
@@ -324,7 +331,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         }.store(in: &cancellables)
 
         viewModel.$profileError.receive(on: DispatchQueue.main).sink { [weak self] error in
-            guard let self, let error else { return }
+            guard let self, let error, self.details?.name.isEmpty != false else { return }
             self.aCustomToastView.show(message: error)
         }.store(in: &cancellables)
 
@@ -365,7 +372,17 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             guard let self, let model else { return }
             if model.status == true {
                 self.aCustomToastView.show(message: model.message ?? "")
-                self.navigationController?.popViewController(animated: true)
+                let action = self.viewModel.completedDiscoveryAction
+                if action == "nope" {
+                    self.navigationController?.popViewController(animated: true)
+                } else if let action {
+                    self.details?.myAction = action
+                    self.seededMyAction = action
+                    if model.data?.is_match == true {
+                        self.details?.isMatched = true
+                    }
+                    self.configureActionBar()
+                }
             } else if UserDataManager.shared.isUserSubscriptionDone == true {
                 self.aDeleteCustomPopUp.show(message: model.message ?? "", button1Text: Constants.AlertButtons.ok, button2Text: "", hideButton2: true)
             } else {
@@ -545,10 +562,12 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         guard !isOwnProfile else { return }
 
         let isMatched = isMatchedWithUser
-        let onlySuperLike = fromExploreScreen == true && !isMatched && isShowSuperLikeView
-        dislikeButton.isHidden = onlySuperLike
-        likeButton.isHidden = isMatched || onlySuperLike
-        superLikeButton.isHidden = !onlySuperLike
+        let action = details?.myAction?.lowercased()
+        let hasSuperLiked = action == "super_like"
+        let hasLiked = action == "like" || hasSuperLiked
+        dislikeButton.isHidden = false
+        likeButton.isHidden = isMatched || hasLiked
+        superLikeButton.isHidden = isMatched || !hasLiked || hasSuperLiked
         chatButton.isHidden = !isMatched
     }
 

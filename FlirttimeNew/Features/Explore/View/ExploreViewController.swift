@@ -290,13 +290,18 @@ extension ExploreViewController: UICollectionViewDelegate, UICollectionViewDataS
     }
 
     private func openProfile(_ card: InteractionCard) {
-        let seed = OtherUserProfileRouter.Seed(userID: card.userId,
+        var seed = OtherUserProfileRouter.Seed(userID: card.userId,
                                                name: card.name,
                                                avatar: card.photo,
                                                location: card.city,
                                                age: card.age,
                                                isVerified: card.isVerified == true,
                                                isOnline: card.isOnline == true)
+        if selectedTab == .youLiked {
+            seed.myAction = card.isSuperLike == true ? "super_like" : "like"
+        } else if card.isSuperLike == true {
+            seed.myAction = "super_like"
+        }
         OtherUserProfileRouter.open(seed, from: self)
     }
 

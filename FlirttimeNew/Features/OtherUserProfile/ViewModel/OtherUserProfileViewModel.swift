@@ -18,6 +18,8 @@ class OtherUserProfileViewModel {
     @Published var aAttributesModel:AttributesModel?
 
     @Published var aUserActionModel:ActionData?
+    /// `"like"` | `"super_like"` | `"nope"` from the last successful discovery action.
+    @Published private(set) var completedDiscoveryAction: String?
     @Published var errorAction:String?
     @Published var errorState:Bool?
 
@@ -116,7 +118,10 @@ class OtherUserProfileViewModel {
                 guard let self else { return }
                 self.isLoadingProfile = false
                 if self.moments == nil { self.moments = [] }
-                self.profileError = error.localizedDescription
+                let status = (error as? APIHTTPError)?.statusCode
+                if status != 502 && status != 503 && status != 504 {
+                    self.profileError = parseError(error) ?? "Unable to load this profile"
+                }
                 self.endRequest()
             })
             .disposed(by: disposeBag)
@@ -146,7 +151,7 @@ class OtherUserProfileViewModel {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] data in
                 self?.myInterests = data.vibeInterests
-            })
+            }, onFailure: { _ in })
             .disposed(by: disposeBag)
     }
 
@@ -277,6 +282,7 @@ class OtherUserProfileViewModel {
                 if let coins = result.remainingCoins {
                     CoinWallet.shared.update(coins)
                 }
+                self.completedDiscoveryAction = action
                 self.aUserActionModel = ActionData(
                     status: true,
                     message: Self.successMessage(for: action, isMatched: result.isMatched == true),
