@@ -93,7 +93,7 @@ class EditProfileViewModel{
             errorMessage = "Keep at least 3 photos"
             return
         }
-        sessionManager.setGalleryPhotos(imageKeys: keys)
+        saveGalleryKeys(keys)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] in
                 self?.photoUUIDs[id] = nil
@@ -154,7 +154,7 @@ class EditProfileViewModel{
                 guard (3...6).contains(keys.count) else {
                     return .error(APIError.apiError("You must have between 3 and 6 photos"))
                 }
-                return self.sessionManager.setGalleryPhotos(imageKeys: keys).map { key }
+                return self.saveGalleryKeys(keys).map { key }
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] key in
@@ -195,6 +195,20 @@ class EditProfileViewModel{
             keys.append(key)
         }
         return keys
+    }
+
+    /// Backend PUT allows 3–5 keys. A 6th slot is the profile photo, saved separately.
+    private func saveGalleryKeys(_ keys: [String]) -> Single<Void> {
+        if keys.count <= 5 {
+            return sessionManager.setGalleryPhotos(imageKeys: keys)
+        }
+        let extras = Array(keys.dropFirst())
+        let primary = keys[0]
+        return sessionManager.setGalleryPhotos(imageKeys: extras)
+            .flatMap { [weak self] _ -> Single<Void> in
+                guard let self else { return .error(APIError.apiError("Unable to update photos. Please try again.")) }
+                return self.sessionManager.setProfilePhoto(imageKey: primary)
+            }
     }
 
     func getProfileImagePrimary(id:Int) {
