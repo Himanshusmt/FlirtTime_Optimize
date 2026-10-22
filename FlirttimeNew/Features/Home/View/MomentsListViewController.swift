@@ -75,6 +75,9 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     private static let scrollToTopRevealRow = 3
 
     private var isScrollToTopVisible = false
+    private var pendingFeedLoader: DispatchWorkItem?
+    private var isFeedLoaderVisible = false
+    private static let feedLoaderDelay: TimeInterval = 0.3
 
     private let footerSpinner: UIActivityIndicatorView = {
         let spinner = UIActivityIndicatorView(style: .medium)
@@ -267,12 +270,25 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     // MARK: - Data
 
     private func loadFeed(showLoader: Bool) {
+        pendingFeedLoader?.cancel()
+        isFeedLoaderVisible = false
         if showLoader {
-            aActivityIndicator.show()
+            let work = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                self.isFeedLoaderVisible = true
+                self.aActivityIndicator.show()
+            }
+            pendingFeedLoader = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.feedLoaderDelay, execute: work)
         }
         viewModel.loadFirstPage { [weak self] result in
             guard let self else { return }
-            self.aActivityIndicator.hide()
+            self.pendingFeedLoader?.cancel()
+            self.pendingFeedLoader = nil
+            if self.isFeedLoaderVisible {
+                self.aActivityIndicator.hide()
+                self.isFeedLoaderVisible = false
+            }
             self.refreshControl.endRefreshing()
             if case .failure(let error) = result {
                 self.aCustomToastView.show(message: error.message)
