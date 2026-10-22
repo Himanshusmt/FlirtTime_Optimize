@@ -17,6 +17,7 @@ class UserInteractionCVC: UICollectionViewCell {
     let lblSubtitle = UILabel()
     let lblDistance = UILabel()
     let superLikeImgView = UIImageView()
+    private let superLikeBadge = UIView()
 
     private let cardView = UIView()
     private let gradientLayer = CAGradientLayer()
@@ -97,14 +98,30 @@ class UserInteractionCVC: UICollectionViewCell {
 
         setUpOnlineBadge()
 
-        superLikeImgView.image = UIImage(named: "superLike")
-        superLikeImgView.contentMode = .scaleAspectFit
+        contentView.clipsToBounds = false
+        clipsToBounds = false
+
+        let star = UIImage(systemName: "star.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
+        superLikeImgView.image = star
+        superLikeImgView.tintColor = UIColor(red: 0.96, green: 0.65, blue: 0.14, alpha: 1)
+        superLikeImgView.contentMode = .center
         superLikeImgView.backgroundColor = .white
         superLikeImgView.layer.cornerRadius = 16
         superLikeImgView.clipsToBounds = true
+        superLikeImgView.layer.borderWidth = 0.5
+        superLikeImgView.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
         superLikeImgView.isHidden = true
         superLikeImgView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(superLikeImgView)
+
+        superLikeBadge.backgroundColor = .clear
+        superLikeBadge.isHidden = true
+        superLikeBadge.layer.shadowColor = UIColor.black.cgColor
+        superLikeBadge.layer.shadowOpacity = 0.35
+        superLikeBadge.layer.shadowRadius = 6
+        superLikeBadge.layer.shadowOffset = CGSize(width: 0, height: 2)
+        superLikeBadge.translatesAutoresizingMaskIntoConstraints = false
+        superLikeBadge.addSubview(superLikeImgView)
+        contentView.addSubview(superLikeBadge)
 
         NSLayoutConstraint.activate([
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -127,10 +144,15 @@ class UserInteractionCVC: UICollectionViewCell {
             infoStack.trailingAnchor.constraint(lessThanOrEqualTo: cardView.trailingAnchor, constant: -12),
             infoStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
 
-            superLikeImgView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
-            superLikeImgView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
-            superLikeImgView.widthAnchor.constraint(equalToConstant: 32),
-            superLikeImgView.heightAnchor.constraint(equalToConstant: 32)
+            superLikeBadge.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            superLikeBadge.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+            superLikeBadge.widthAnchor.constraint(equalToConstant: 32),
+            superLikeBadge.heightAnchor.constraint(equalToConstant: 32),
+
+            superLikeImgView.topAnchor.constraint(equalTo: superLikeBadge.topAnchor),
+            superLikeImgView.leadingAnchor.constraint(equalTo: superLikeBadge.leadingAnchor),
+            superLikeImgView.trailingAnchor.constraint(equalTo: superLikeBadge.trailingAnchor),
+            superLikeImgView.bottomAnchor.constraint(equalTo: superLikeBadge.bottomAnchor)
         ])
     }
 
@@ -173,6 +195,7 @@ class UserInteractionCVC: UICollectionViewCell {
         super.layoutSubviews()
         gradientLayer.frame = cardView.bounds
         layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: 18).cgPath
+        superLikeBadge.layer.shadowPath = UIBezierPath(ovalIn: superLikeBadge.bounds).cgPath
     }
 
     override var isHighlighted: Bool {
@@ -191,6 +214,7 @@ class UserInteractionCVC: UICollectionViewCell {
         lblDistance.text = nil
         distanceRow.isHidden = true
         superLikeImgView.isHidden = true
+        superLikeBadge.isHidden = true
         onlineBadge.isHidden = true
     }
 
@@ -209,6 +233,7 @@ class UserInteractionCVC: UICollectionViewCell {
         imgVerify.isHidden = !isVerified
         onlineBadge.isHidden = !isOnline || isLocked
         superLikeImgView.isHidden = !isSuperLike
+        superLikeBadge.isHidden = !isSuperLike
         if isLocked {
             applyBlur()
         } else {
