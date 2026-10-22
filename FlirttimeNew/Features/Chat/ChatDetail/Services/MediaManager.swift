@@ -32,6 +32,7 @@ protocol MediaManagerContext: AnyObject {
     func markMessageAsFailed(tempId: String)
     func scheduleFailureTimeout(for tempId: String)
     func resolvedDisplayName(for senderId: String) -> String
+    func replyPreviewSenderFields(for message: ConversationMessage) -> (id: String, userName: String, fullName: String)
     func ensureConversationReady(completion: @escaping (Bool) -> Void)
     func handleMessageListUpdate(_ newMessages: [ConversationMessage])
 }
@@ -683,20 +684,15 @@ final class MediaManager {
 
     private func replyData(for ctx: MediaManagerContext) -> [String: Any]? {
         guard let r = ctx.replyingToMessage else { return nil }
-        let senderId = r.sender?.id ?? r.senderId ?? ""
-        let resolvedName = ctx.resolvedDisplayName(for: senderId)
-        let fullName = r.sender?.fullName ?? r.sender?.userDetails?.dataValues?.fullName ?? (resolvedName.contains(" ") ? resolvedName : "")
-        let userName = r.sender?.userName ?? r.sender?.userDetails?.dataValues?.userName ?? (resolvedName.contains(" ") ? "" : resolvedName)
-        let resolvedFullName = fullName.isEmpty ? resolvedName : fullName
-        let resolvedUserName = userName.isEmpty ? resolvedName : userName
+        let fields = ctx.replyPreviewSenderFields(for: r)
         return [
             "id": r.id ?? "",
             "content": r.content ?? "",
             "type": r.messageType ?? r.type ?? "text",
             "sender": [
-                "id": senderId,
-                "userName": resolvedUserName,
-                "fullName": resolvedFullName
+                "id": fields.id,
+                "userName": fields.userName,
+                "fullName": fields.fullName
             ] as [String: Any]
         ] as [String: Any]
     }

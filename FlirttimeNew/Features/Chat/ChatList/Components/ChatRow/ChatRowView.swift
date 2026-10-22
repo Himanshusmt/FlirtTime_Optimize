@@ -110,17 +110,20 @@ struct ChatRowView: View {
     
     @ViewBuilder
     private var trailingSwipeActions: some View {
-        Button {
-            onDelete()
-        } label: {
-            SwiftUI.Image(ChatAssets.delete)
+        if !isArchived {
+            Button {
+                onDelete()
+            } label: {
+                SwiftUI.Image(uiImage: ChatRowSwipeIcons.delete)
+                    .renderingMode(.original)
+            }
+            .tint(.clear)
         }
-        .tint(.clear)
-        
+
         Button {
             onArchive()
         } label: {
-            SwiftUI.Image(isArchived ? ChatAssets.archive : ChatAssets.archive)
+            SwiftUI.Image(ChatAssets.archive)
         }
         .tint(.clear)
     }
@@ -153,6 +156,28 @@ struct ChatRowView: View {
             .tint(.clear)
         }
     }
+}
+
+private enum ChatRowSwipeIcons {
+    /// Same SF Symbol as the Calls swipe-delete, on the mute-style gray circle.
+    static let delete: UIImage = {
+        let size = CGSize(width: 47, height: 45)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            UIColor(red: 242 / 255, green: 242 / 255, blue: 242 / 255, alpha: 1).setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 22.5).fill()
+
+            let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold)
+            guard let icon = UIImage(systemName: "trash.fill", withConfiguration: config)?
+                .withTintColor(UIColor(red: 217 / 255, green: 43 / 255, blue: 43 / 255, alpha: 1), renderingMode: .alwaysOriginal)
+            else { return }
+            let origin = CGPoint(
+                x: (size.width - icon.size.width) / 2,
+                y: (size.height - icon.size.height) / 2
+            )
+            icon.draw(at: origin)
+        }
+    }()
 }
 
 extension View {

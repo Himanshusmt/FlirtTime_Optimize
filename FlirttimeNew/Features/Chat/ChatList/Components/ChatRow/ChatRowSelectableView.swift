@@ -109,30 +109,23 @@ private struct MessagePreview: View {
         }
     }
     
-    private var messageStatus: String {
-        chat.lastMessage?.status?.lowercased() ?? ""
-    }
-    
     private var readReceiptImage: String {
-
-        switch messageStatus {
-
-        case "sent":
-            return ChatAssets.tickSent
-
-        case "delivered":
+        switch chat.lastMessageDeliveryStatus {
+        case .delivered:
             return ChatAssets.tickDelivered
-
-        case "seen", "read":
+        case .read:
             return ChatAssets.tickRead
-
         default:
             return ChatAssets.tickSent
         }
     }
-    
-    
-    
+
+    private var readReceiptColor: Color {
+        chat.lastMessageDeliveryStatus == .read
+            ? .chatPrimary
+            : Color(uiColor: ChatTheme.tickPending)
+    }
+
     private var shouldShowReadReceipt: Bool {
         // Requires a real senderId matching current user — avoids nil==nil
         // showing a single tick on empty / newly opened conversations.
@@ -200,7 +193,7 @@ private struct MessagePreview: View {
                             .renderingMode(.template)
                             .resizable()
                             .frame(width: 16, height: 16)
-                            .foregroundColor(.chatPrimary)
+                            .foregroundColor(readReceiptColor)
                     }
 
                 Text(getMessagePreview(chat: chat))

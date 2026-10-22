@@ -30,9 +30,11 @@ final class MessageStatusManager: ObservableObject {
     // MARK: - Socket Event Names — https://socket.onevibe.walit.in/console
 
     enum StatusSocketEvent: String {
-        case markConversationMessagesSeen = "chat:message:seen" // NEW — OLD: mark-conversation-messages-seen
-        case markConversationMessagesSeenAck = "chat:message:seen:ack" // NEW — OLD: mark-conversation-messages-seen-ack
-        case conversationMessageStatusUpdate = "chat:message:status" // NEW — OLD: conversation-message-status-update
+        case markConversationMessagesSeen = "chat:mark_read"
+        case markConversationMessagesSeenAck = "chat:mark_read:ack"
+        case conversationMessageStatusUpdate = "chat:read_receipt"
+        case messageDelivered = "chat:message_delivered"
+        case deliveryReceipt = "chat:delivery_receipt"
     }
 
     // MARK: - Callback Types

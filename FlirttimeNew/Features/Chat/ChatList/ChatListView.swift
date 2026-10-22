@@ -62,6 +62,7 @@ struct ChatListView: View {
     @State private var selectedChats: Set<String> = []
     @State private var showMultiDeleteConfirmation: Bool = false
     @State private var showDeleteForEveryoneConfirmation: Bool = false
+    @State private var showDeleteAllCallsConfirmation: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     
     // Story data properties
@@ -86,6 +87,22 @@ struct ChatListView: View {
                         .padding(.top, 2)
                         .padding(.bottom, 10)
                     SearchBar(searchText: $searchText)
+                    if inboxSection == .calls, !viewModel.callHistory.isEmpty {
+                        HStack {
+                            Spacer()
+                            Button {
+                                showDeleteAllCallsConfirmation = true
+                            } label: {
+                                Text(ChatStrings.chat_deleteAll.localizedString())
+                                    .font(.chatMedium(size: 14))
+                                    .foregroundColor(Color.chatPrimary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+                    }
                     if inboxSection == .chats {
                         ChatQuickMomentsStrip(
                             tray: viewModel.quickMomentTray,
@@ -97,11 +114,15 @@ struct ChatListView: View {
                             onOpen: { item, isMine in navigator.onOpenQuickMoment?(item, isMine) }
                         )
                         .padding(.top, 8)
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 6)
+                        ChatTabsView(
+                            selectedTab: $selectedTab,
+                            showsArchived: hasArchivedChats
+                        )
                     }
                 }
                 if inboxSection == .calls {
-                    ChatCallsDummyListView(searchText: searchText)
+                    ChatCallsListView(viewModel: viewModel, searchText: searchText)
                 } else {
                     chatListView
                 }
@@ -113,8 +134,31 @@ struct ChatListView: View {
                 viewModel: viewModel
             )
         )
+        .onChange(of: inboxSection) { section in
+            if section == .calls {
+                viewModel.loadCallHistoryIfNeeded()
+            }
+        }
+        .onChange(of: selectedTab) { tab in
+            isMultiSelectMode = false
+            selectedChats.removeAll()
+            if tab == .archived {
+                viewModel.loadArchivedChats()
+            }
+        }
+        .onChange(of: hasArchivedChats) { hasArchived in
+            if !hasArchived, selectedTab == .archived {
+                selectedTab = .allChats
+            }
+        }
+        .onChange(of: viewModel.lastUnarchivedChatId) { _ in
+            selectedTab = .allChats
+        }
         .onAppear {
             viewModel.onAppear()
+            if inboxSection == .calls {
+                viewModel.loadCallHistoryIfNeeded()
+            }
             ChatNotificationState.shared.isInChatModule = true
             ChatNotificationState.shared.isChatListViewReady = true
 
@@ -179,6 +223,14 @@ struct ChatListView: View {
         } message: {
             Text(ChatStrings.chat_deleteForEveryoneDescription.localizedString())
         }
+        .alert(ChatStrings.chat_deleteAllCalls.localizedString(), isPresented: $showDeleteAllCallsConfirmation) {
+            Button(ChatStrings.chat_deleteAll.localizedString(), role: .destructive) {
+                viewModel.deleteAllCallHistory()
+            }
+            Button(ChatStrings.chat_cancel.localizedString(), role: .cancel) { }
+        } message: {
+            Text(ChatStrings.chat_deleteAllCallsConfirmation.localizedString())
+        }
         .applyRTLEnvironment()
     }
     
@@ -208,16 +260,17 @@ struct ChatListView: View {
     
     private var chatListView: some View {
         Group {
-            let allChats = (inboxSection == .chats ? filteredPinnedChats : []) + filteredChats
-            if allChats.isEmpty && !viewModel.isLoading {
+            let allChats = (inboxSection == .chats && selectedTab == .allChats ? filteredPinnedChats : []) + filteredChats
+            if allChats.isEmpty && selectedTab == .archived && viewModel.isLoadingArchived {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if allChats.isEmpty && !viewModel.isLoading {
                 VStack(spacing: 12) {
                     SwiftUI.Image(ChatAssets.emptyState)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 160, height: 160)
-                    Text(inboxSection == .calls
-                         ? ChatStrings.chat_noCallsYet.localizedString()
-                         : ChatStrings.chat_noChatsYet.localizedString())
+                    Text(emptyChatsTitle)
                         .font(.chatMedium(size: 16))
                         .foregroundColor(.chatTextSecondary)
                 }
@@ -232,6 +285,7 @@ struct ChatListView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .environment(\.defaultMinListHeaderHeight, 0)
+                .chatListSectionSpacing()
                 .background(Color.clear)
                 .scrollDismissesKeyboard(.interactively)
                 // Clearance above floating tab bar (SwiftUI List ignores UIKit contentInset overrides).
@@ -239,8 +293,13 @@ struct ChatListView: View {
                     Color.clear.frame(height: 80)
                 }
                 .refreshable {
-                    guard !viewModel.isLoading else { return }
-                    await refreshChats()
+                    if selectedTab == .archived {
+                        guard !viewModel.isLoadingArchived else { return }
+                        await refreshArchivedChats()
+                    } else {
+                        guard !viewModel.isLoading else { return }
+                        await refreshChats()
+                    }
                 }
             }
         }
@@ -261,63 +320,61 @@ struct ChatListView: View {
     }
     
     private var regularChatsSection: some View {
-        Group {
-            if selectedTab == .allChats {
-                Section {
-                    ForEach(filteredChats, id: \.id) { chat in
-                        chatRow(chat: chat)
-                    }
-                }
-            } else {
-                Section {
-                    ForEach(filteredChats, id: \.id) { chat in
-                        chatRow(chat: chat)
-                    }
-                } header: {
-                    if !filteredChats.isEmpty {
-                        regularChatsHeader
-                    }
-                }
+        Section {
+            ForEach(filteredChats, id: \.id) { chat in
+                chatRow(chat: chat)
+            }
+        } header: {
+            if selectedTab != .allChats, selectedTab != .archived, !filteredChats.isEmpty {
+                regularChatsHeader
             }
         }
     }
     
     private var pinnedChatsHeader: some View {
-        HStack {
-            HStack(spacing: 6) {
-                SwiftUI.Image(systemName: "bell.fill")
-                    .foregroundColor(kGray)
-                Text(ChatStrings.chat_pinnedChats.localizedString())
-                    .font(.chatRegular(size: 14))
-                    .foregroundColor(Color.chatTextTertiary)
-            }
-            .padding(.horizontal, 12)
-            
+        HStack(spacing: 6) {
+            SwiftUI.Image(systemName: "bell.fill")
+                .font(.system(size: 12))
+                .foregroundColor(kGray)
+            Text(ChatStrings.chat_pinnedChats.localizedString())
+                .font(.chatRegular(size: 14))
+                .foregroundColor(Color.chatTextTertiary)
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .padding(.top, 2)
+        .padding(.bottom, 0)
         .listRowInsets(EdgeInsets())
+        .textCase(nil)
     }
     
     private var regularChatsHeader: some View {
         Group {
             switch selectedTab {
             case .allChats:
-                SwiftUI.EmptyView()
+                sectionTitle(ChatStrings.chat_chats.localizedString())
             case .groups:
-                Text(ChatStrings.chat_groups.localizedString())
-                    .font(.chatBold(size: 16))
-                    .foregroundColor(kTextBlack)
-                    .padding(.vertical, 4)
+                sectionTitle(ChatStrings.chat_groups.localizedString())
             case .channel:
-                Text(ChatStrings.chat_channels.localizedString())
-                    .font(.chatBold(size: 16))
-                    .foregroundColor(kTextBlack)
-                    .padding(.vertical, 4)
+                sectionTitle(ChatStrings.chat_channels.localizedString())
             case .archived:
-                SwiftUI.EmptyView()
+                sectionTitle(ChatStrings.chat_archived.localizedString())
             }
         }
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.chatBold(size: 16))
+                .foregroundColor(kTextBlack)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, filteredPinnedChats.isEmpty ? 4 : 6)
+        .padding(.bottom, 0)
+        .listRowInsets(EdgeInsets())
+        .textCase(nil)
     }
     
     // MARK: - Chat Row Methods
@@ -425,19 +482,18 @@ struct ChatListView: View {
     
     private var multiSelectBar: some View {
         let unpinnedSelectedCount = selectedChats.filter { !viewModel.isPinned(chatId: $0) }.count
+        let pinnedSelectedCount = selectedChats.filter { viewModel.isPinned(chatId: $0) }.count
         let currentPinnedCount = viewModel.pinnedChatIds.count
-        let canPin = !selectedChatIsPinned && (currentPinnedCount + unpinnedSelectedCount <= 3)
+        let canPin = unpinnedSelectedCount > 0 && (currentPinnedCount + unpinnedSelectedCount <= 3)
         return MultiSelectActionBar(
             selectedCount: selectedChats.count,
             totalChatsCount: filteredChats.count + filteredPinnedChats.count,
-            hasPinnedChats: selectedChatIsPinned,
+            hasPinnedChats: pinnedSelectedCount > 0,
             canPinMoreChats: canPin,
             hasBlockedChats: selectedChatIsBlocked,
-            hasUnreadChats: selectedChatIsUnread,
-            hasMutedChats: selectedChatsHaveMuted,
-            hasUnmutedChats: selectedChatsHaveUnmuted,
             hasGroupChatsSelected: selectedChatsContainGroup,
             isSingleDirectChatSelected: isSingleDirectChatSelected,
+            isViewingArchived: selectedTab == .archived,
             onCancel: {
                 isMultiSelectMode = false
                 selectedChats.removeAll()
@@ -459,38 +515,6 @@ struct ChatListView: View {
             return false
         }
         return viewModel.isBlockedChat(chatId: chatId)
-    }
-    
-    private var selectedChatIsUnread: Bool {
-        // Check for multi-select - returns true if ANY selected chat is unread (actual or marked)
-        if selectedChats.count > 1 {
-            return selectedChats.contains { chatId in
-                let chat = viewModel.chats.first(where: { $0.id == chatId })
-                let hasUnreadCount = (chat?.unreadCount ?? 0) > 0
-                let isMarkedUnread = viewModel.isMarkedUnread(chatId: chatId)
-                return hasUnreadCount || isMarkedUnread
-            }
-        }
-        // Single selection check
-        guard let chatId = selectedChats.first else {
-            return false
-        }
-        let chat = viewModel.chats.first(where: { $0.id == chatId })
-        let hasUnreadCount = (chat?.unreadCount ?? 0) > 0
-        let isMarkedUnread = viewModel.isMarkedUnread(chatId: chatId)
-        return hasUnreadCount || isMarkedUnread
-    }
-
-    private var selectedChatsHaveMuted: Bool {
-        return selectedChats.contains { chatId in
-            viewModel.isMuted(chatId: chatId)
-        }
-    }
-    
-    private var selectedChatsHaveUnmuted: Bool {
-        return selectedChats.contains { chatId in
-            !viewModel.isMuted(chatId: chatId)
-        }
     }
     
     private var selectedChatsContainGroup: Bool {
@@ -546,9 +570,7 @@ struct ChatListView: View {
         case .channel:
             base = []
         case .archived:
-            base = viewModel.chats.filter { chat in
-                chat.isArchived
-            }
+            base = viewModel.archivedChats
         }
 
         let searched: [ChatMessageRow]
@@ -577,6 +599,19 @@ struct ChatListView: View {
         return searched
     }
     
+    private var hasArchivedChats: Bool {
+        !viewModel.archivedChats.isEmpty
+    }
+
+    private var emptyChatsTitle: String {
+        if selectedTab == .archived {
+            return ChatStrings.chat_noArchivedChats.localizedString()
+        }
+        return inboxSection == .calls
+            ? ChatStrings.chat_noCallsYet.localizedString()
+            : ChatStrings.chat_noChatsYet.localizedString()
+    }
+
     private var filteredArchivedChats: [ChatMessageRow] {
         let base = viewModel.chats.filter { chat in
             chat.isArchived
@@ -617,15 +652,15 @@ struct ChatListView: View {
         case .deleteForEveryone:
             showDeleteForEveryoneConfirmation = true
         case .archive:
-            let chatsToArchive = ids.compactMap { id in
-                viewModel.chats.first(where: { $0.id == id })
+            for id in ids {
+                viewModel.archiveChat(chatId: id, isArchived: true)
             }
-            
-            for chat in chatsToArchive {
-                let chatId = chat.id ?? ""
-                viewModel.updateChatArchiveStatus(chatId: chatId, isArchived: true)
+            selectedChats.removeAll()
+            isMultiSelectMode = false
+        case .unarchive:
+            for id in ids {
+                viewModel.archiveChat(chatId: id, isArchived: false)
             }
-            
             selectedChats.removeAll()
             isMultiSelectMode = false
         case .mute:
@@ -736,8 +771,16 @@ struct ChatListView: View {
     }
 }
 
-
-
+private extension View {
+    @ViewBuilder
+    func chatListSectionSpacing() -> some View {
+        if #available(iOS 17.0, *) {
+            self.listSectionSpacing(6)
+        } else {
+            self
+        }
+    }
+}
 
 final class NetworkMonitor: ObservableObject {
 

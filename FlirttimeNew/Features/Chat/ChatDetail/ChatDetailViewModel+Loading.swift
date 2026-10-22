@@ -142,6 +142,7 @@ extension ChatDetailViewModel {
         hasPreloadedCachedMessages = false
         hasInitialLoadStarted = false
         hasEmittedMarkSeen = false
+        lastAcknowledgedPeerMessageId = nil
 
         isInitialLoad = scrollToLatest ? messages.isEmpty : false
         initialScrollSettledAt = scrollToLatest ? nil : Date()
@@ -1838,70 +1839,60 @@ extension ChatDetailViewModel {
             return
         }
         guard !selectedId.isEmpty else { return }
-
-        hasEmittedMarkSeen = true
         socketService.emitJoinConversation(selectedId)
-
-        // Console requires messageId on chat:message:seen for sender chat:message:status fanout
-        let latestPeerMessageId = latestIncomingPeerMessageId()
-        if let latestPeerMessageId {
-            socketService.emitMarkMessagesSeen(
-                conversationId: selectedId,
-                messageId: latestPeerMessageId
-            )
-        } else {
-            AppLogger.debug("[MarkRead] No peer messageId yet — REST read only for \(selectedId)")
-        }
-
-        // FlirtTime — POST /api/v1/chats/{id}/read
-        if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
-            _ = sessionManager.markConversationReadREST(
-                conversationId: selectedId,
-                messageId: latestPeerMessageId
-            )
-                .subscribe(onSuccess: { _ in
-                    AppLogger.debug("[MarkRead] REST read OK for \(self.selectedId)")
-                }, onFailure: { error in
-                    AppLogger.debug("[MarkRead] REST read failed: \(error.localizedDescription)")
-                })
-        }
-
-        clearLocalUnreadAfterRead()
+        acknowledgeIncomingReceipts(messageId: latestIncomingPeerMessageId())
     }
 
-    /// FE ConversationThreadPage.onNew: when already in the thread and a peer message
-    /// arrives, emit console `chat:message:seen` + REST `/read` with that `messageId`
-    /// so the sender receives `chat:message:status { status: "seen" }`.
+    /// When already in the thread and a peer message arrives, emit `chat:message_delivered`
+    /// + `chat:mark_read` and REST `/delivery` + `/read` so the sender receives
+    /// `chat:delivery_receipt` then `chat:read_receipt`.
     func markReceivedMessageAsSeen(messageId: String?) {
         if isChannel {
             markChannelAsRead(messageId: messageId)
             return
         }
+        acknowledgeIncomingReceipts(messageId: messageId)
+    }
+
+    /// User B must emit both delivered and seen. Opening the chat after the message
+    /// arrived is the main path — previously we only emitted `chat:mark_read` and
+    /// often skipped it when messages were not loaded yet.
+    private func acknowledgeIncomingReceipts(messageId: String?) {
         guard !selectedId.isEmpty else { return }
 
-        hasEmittedMarkSeen = true
         let mid = (messageId?.isEmpty == false) ? messageId : latestIncomingPeerMessageId()
-        guard let mid, !mid.isEmpty else {
-            AppLogger.debug("[MarkRead] Skipped in-thread seen — missing messageId for \(selectedId)")
+        if let mid, !mid.isEmpty, lastAcknowledgedPeerMessageId == mid {
+            clearLocalUnreadAfterRead()
             return
         }
 
-        // Delivered (both) + seen (c2s) — sender ticks via chat:message:status / delivered push
-        socketService.emitMessageDelivered(conversationId: selectedId, messageId: mid)
-        socketService.emitMarkMessagesSeen(conversationId: selectedId, messageId: mid)
+        hasEmittedMarkSeen = true
+        if let mid, !mid.isEmpty {
+            lastAcknowledgedPeerMessageId = mid
+            socketService.emitMessageDelivered(conversationId: selectedId, messageId: mid)
+            socketService.emitMarkMessagesSeen(conversationId: selectedId, messageId: mid)
+            AppLogger.debug("[Receipts] emit delivered+seen conversationId=\(selectedId) messageId=\(mid)")
+        } else {
+            AppLogger.debug("[Receipts] No peer messageId yet — REST read only for \(selectedId)")
+        }
 
         if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
-            _ = sessionManager.markConversationDelivered(conversationId: selectedId, messageId: mid)
+            if let mid, !mid.isEmpty {
+                _ = sessionManager.markConversationDelivered(conversationId: selectedId, messageId: mid)
+                    .subscribe(onSuccess: { _ in
+                        AppLogger.debug("[Delivered] REST /delivery OK for \(self.selectedId) msg=\(mid)")
+                    }, onFailure: { error in
+                        AppLogger.debug("[Delivered] REST /delivery failed: \(error.localizedDescription)")
+                    })
+            }
+            _ = sessionManager.markConversationReadREST(
+                conversationId: selectedId,
+                messageId: mid
+            )
                 .subscribe(onSuccess: { _ in
-                    AppLogger.debug("[Delivered] in-thread REST OK for \(self.selectedId) msg=\(mid)")
+                    AppLogger.debug("[MarkRead] REST /read OK for \(self.selectedId)")
                 }, onFailure: { error in
-                    AppLogger.debug("[Delivered] in-thread REST failed: \(error.localizedDescription)")
-                })
-            _ = sessionManager.markConversationReadREST(conversationId: selectedId, messageId: mid)
-                .subscribe(onSuccess: { _ in
-                    AppLogger.debug("[MarkRead] in-thread REST read OK for \(self.selectedId) msg=\(mid)")
-                }, onFailure: { error in
-                    AppLogger.debug("[MarkRead] in-thread REST read failed: \(error.localizedDescription)")
+                    AppLogger.debug("[MarkRead] REST /read failed: \(error.localizedDescription)")
                 })
         }
 
@@ -1911,15 +1902,15 @@ extension ChatDetailViewModel {
     /// Newest inbound peer message id (for mark-seen / mark-delivered payloads).
     private func latestIncomingPeerMessageId() -> String? {
         let myId = getCurrentUserId()
-        return stateManager.getGroupedMessagesSnapshot()
-            .flatMap(\.messages)
-            .reversed()
-            .first(where: { msg in
-                if msg.isSystemMessage { return false }
-                let sender = msg.senderId ?? msg.sender?.id ?? ""
-                guard !sender.isEmpty, sender != myId else { return false }
-                return !msg.id.isEmpty
-            })?.id
+        let snapshot = stateManager.getGroupedMessagesSnapshot().flatMap(\.messages)
+        let pool = snapshot.isEmpty ? messages : snapshot
+        return pool.reversed().first(where: { msg in
+            if msg.isSystemMessage { return false }
+            if msg.isOptimisticTemporary { return false }
+            let sender = msg.senderId ?? msg.sender?.id ?? ""
+            guard !sender.isEmpty, sender != myId else { return false }
+            return !msg.id.isEmpty
+        })?.id
     }
 
     func markChannelAsRead(messageId: String? = nil) {
@@ -2010,17 +2001,10 @@ extension ChatDetailViewModel {
 
     private func emitMarkConversationMessagesSeen() {
         if isChannel, !channelId.isEmpty {
-            guard !hasEmittedMarkSeen else { return }
             markChannelAsRead(messageId: messages.last?.id)
             return
         }
-        guard !selectedId.isEmpty else { return }
-        guard !hasEmittedMarkSeen else { return }
-        hasEmittedMarkSeen = true
-        socketService.emitMarkMessagesSeen(
-            conversationId: selectedId,
-            messageId: latestIncomingPeerMessageId()
-        )
+        acknowledgeIncomingReceipts(messageId: latestIncomingPeerMessageId())
     }
 
     func restorePendingMessages() {

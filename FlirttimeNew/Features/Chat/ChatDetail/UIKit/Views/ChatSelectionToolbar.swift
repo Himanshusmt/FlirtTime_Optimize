@@ -155,6 +155,15 @@ final class ChatSelectionActionBar: UIView {
         deleteForMeContainer = nil
         deleteForEveryoneContainer = nil
 
+        let forward = makeActionItem(
+            icon: "arrowshape.turn.up.right",
+            title: ChatStrings.chat_forward.localizedString(),
+            color: ChatTheme.primary,
+            action: { [weak self] in self?.onForward?() }
+        )
+        forwardContainer = forward
+        stackView.addArrangedSubview(forward)
+        stackView.addArrangedSubview(makeVerticalSeparator())
 
         // Delete for me — DMs and channels (scope=me)
         let delMe = makeActionItem(

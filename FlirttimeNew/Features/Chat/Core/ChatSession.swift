@@ -845,19 +845,30 @@ final class SessionManager {
         return backendClient.loadModelData(request: apiRequest)
     }
 
-    /// Legacy — DELETE chat/messages/{id}?scope=me|everyone
-    func deleteMessage(id: String, scope: String = "me") -> Single<DataRequest> {
-        let normalizedScope = (scope == "everyone") ? "everyone" : "me"
+    /// DELETE `/api/v1/chats/{conversationId}/messages/{messageId}`
+    /// Body: `{ "deleteType": "me" | "everyone" }`
+    func deleteMessage(
+        conversationId: String,
+        messageId: String,
+        scope: String = "me"
+    ) -> Single<DataRequest> {
+        let deleteType = (scope == "everyone") ? "everyone" : "me"
         let apiRequest = ApiRequest(
             method: .delete,
-            endPoint: .deleteMessage(id, normalizedScope)
+            endPoint: .deleteMessage(conversationId: conversationId, messageId: messageId),
+            parameters: ["deleteType": deleteType],
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug(
+            "ChatAPI: DELETE /api/v1/chats/\(conversationId)/messages/\(messageId) deleteType=\(deleteType)"
         )
         return backendClient.loadDataRequest(request: apiRequest)
     }
 
-    /// NEW API — POST chat/messages/delete (FE / web parity)
-    /// Body: `{ messageIds: string[], scope: "me" | "everyone" }`
+    /// DELETE each message via `/api/v1/chats/{conversationId}/messages/{messageId}`.
+    /// Body: `{ "deleteType": "me" | "everyone" }`
     func deleteChatMessages(
+        conversationId: String,
         messageIds: [String],
         scope: String = "me"
     ) -> Single<Void> {
@@ -867,37 +878,37 @@ final class SessionManager {
                 .filter { !$0.isEmpty }
         ))
         guard !uniqueIds.isEmpty else { return .just(()) }
+        guard !conversationId.isEmpty else {
+            return .error(APIError.apiError("Missing conversation id"))
+        }
 
-        let normalizedScope = (scope == "everyone") ? "everyone" : "me"
-        let params: [String: Any] = [
-            "messageIds": uniqueIds,
-            "scope": normalizedScope
-        ]
-        let apiRequest = ApiRequest(
-            method: .post,
-            endPoint: .deleteChatMessages,
-            parameters: params,
-            encoding: JSONEncoding.default
-        )
-        return backendClient.loadDataRequest(request: apiRequest).map { _ in () }
+        return uniqueIds.reduce(Single.just(())) { [weak self] partial, messageId in
+            partial.flatMap { _ -> Single<Void> in
+                guard let self else { return .error(APIError.apiError("Session unavailable")) }
+                return self.deleteMessage(
+                    conversationId: conversationId,
+                    messageId: messageId,
+                    scope: scope
+                ).map { _ in () }
+            }
+        }
     }
 
-    /// NEW API — PATCH chat/messages/{id} (FE edit message)
-    /// Body: `{ body: String }` (optional `type` for parity with web)
+    /// PATCH `/api/v1/chats/{conversationId}/messages/{messageId}`
+    /// Body: `{ "content": "Edited message text here" }`
     func editChatMessage(
+        conversationId: String,
         messageId: String,
-        body: String,
-        type: String? = nil
+        content: String
     ) -> Single<ConversationMessage> {
-        var params: [String: Any] = ["body": body]
-        if let type, !type.isEmpty {
-            params["type"] = type
-        }
         let apiRequest = ApiRequest(
             method: .patch,
-            endPoint: .editChatMessage(messageId),
-            parameters: params,
+            endPoint: .editChatMessage(conversationId: conversationId, messageId: messageId),
+            parameters: ["content": content],
             encoding: JSONEncoding.default
+        )
+        AppLogger.debug(
+            "ChatAPI: PATCH /api/v1/chats/\(conversationId)/messages/\(messageId) content=\(content.prefix(40))"
         )
         return backendClient.loadChatData(request: apiRequest)
             .map { (data: SendChatMessageAPIData) -> ConversationMessage in
@@ -905,6 +916,129 @@ final class SessionManager {
                     throw APIError.apiError("editChatMessage: missing message in response")
                 }
                 return message
+            }
+            .catch { _ in
+                self.decodeSentMessage(request: apiRequest)
+            }
+    }
+
+    /// POST `/api/v1/chats/{conversationId}/messages/{messageId}/reply`
+    /// Body: `{ "content": "...", "messageType": "text" }`
+    func replyChatMessage(
+        conversationId: String,
+        messageId: String,
+        content: String,
+        messageType: String = "text",
+        clientMessageId: String? = nil
+    ) -> Single<ConversationMessage> {
+        var params: [String: Any] = [
+            "content": content,
+            "messageType": messageType
+        ]
+        if let clientMessageId, !clientMessageId.isEmpty {
+            params["clientMessageId"] = clientMessageId
+        }
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .replyChatMessage(conversationId: conversationId, messageId: messageId),
+            parameters: params,
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug(
+            "ChatAPI: POST /api/v1/chats/\(conversationId)/messages/\(messageId)/reply type=\(messageType)"
+        )
+        return backendClient.loadChatData(request: apiRequest)
+            .map { (data: SendChatMessageAPIData) -> ConversationMessage in
+                guard let message = data.message else {
+                    throw APIError.apiError("replyChatMessage: missing message in response")
+                }
+                return message
+            }
+            .catch { _ in
+                self.decodeSentMessage(request: apiRequest)
+            }
+    }
+
+    /// POST `/api/v1/chats/messages/forward`
+    /// Body: `{ messageIds, recipientIds, clientMessageId }`
+    func forwardChatMessages(
+        messageIds: [String],
+        recipientIds: [String],
+        clientMessageId: String
+    ) -> Single<[ConversationMessage]> {
+        let ids = Array(Set(messageIds.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
+        let peers = Array(Set(recipientIds.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
+        guard !ids.isEmpty else {
+            return .error(APIError.apiError("Missing message ids"))
+        }
+        guard !peers.isEmpty else {
+            return .error(APIError.apiError("Missing recipient ids"))
+        }
+
+        var params: [String: Any] = [
+            "messageIds": ids,
+            "recipientIds": peers
+        ]
+        let requestId = clientMessageId.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !requestId.isEmpty {
+            params["clientMessageId"] = requestId
+        }
+
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .forwardChatMessages,
+            parameters: params,
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug(
+            "ChatAPI: POST /api/v1/chats/messages/forward messages=\(ids.count) recipients=\(peers.count)"
+        )
+        return backendClient.loadDataRequest(request: apiRequest)
+            .map { response -> [ConversationMessage] in
+                let statusCode = response.response?.statusCode ?? 0
+                guard let data = response.data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    throw APIError.apiError("forwardChatMessages: empty response")
+                }
+                let explicitFailure = (json["success"] != nil || json["status"] != nil)
+                    && SocketAckParser.isSuccess(json) == false
+                if explicitFailure || (statusCode != 0 && !(200..<300).contains(statusCode)) {
+                    let message = (json["message"] as? String)
+                        ?? ((json["error"] as? [String: Any])?["message"] as? String)
+                        ?? "Failed to forward message"
+                    throw APIError.apiError(message)
+                }
+                return ForwardChatMessagesAPIData.messages(from: json)
+            }
+    }
+
+    /// GET `/api/v1/chats/forward/recipients?page=1&limit=20&search=`
+    func getForwardRecipients(
+        search: String = "",
+        page: Int = 1,
+        limit: Int = ChatConstants.Pagination.forwardConversationsPageSize
+    ) -> Single<ForwardRecipientsAPIData> {
+        let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        var params: [String: Any] = [
+            "page": max(page, 1),
+            "limit": limit
+        ]
+        if !trimmed.isEmpty {
+            params["search"] = trimmed
+        }
+        let apiRequest = ApiRequest(
+            method: .get,
+            endPoint: .getForwardRecipients,
+            parameters: params,
+            encoding: URLEncoding.queryString
+        )
+        AppLogger.debug(
+            "ChatAPI: GET /api/v1/chats/forward/recipients page=\(page) limit=\(limit) search=\(trimmed)"
+        )
+        return backendClient.loadModelData(request: apiRequest)
+            .map { (response: ForwardRecipientsAPIResponse) in response.resolved }
+            .catch { _ in
+                self.backendClient.load(request: apiRequest)
             }
     }
 
@@ -924,16 +1058,17 @@ final class SessionManager {
         return backendClient.loadChatData(request: apiRequest)
     }
 
-    /// NEW API — POST chat/messages/{id}/react
-    /// Body: `{ emoji: String }` (toggle — same emoji again removes)
+    /// POST `/api/v1/chats/{conversationId}/messages/{messageId}/reactions`
+    /// Body: `{ emoji: String }` (add / change / toggle — same emoji again removes)
     func reactChatMessage(
+        conversationId: String,
         messageId: String,
         emoji: String
     ) -> Single<ConversationMessage> {
         let params: [String: Any] = ["emoji": emoji]
         let apiRequest = ApiRequest(
             method: .post,
-            endPoint: .reactChatMessage(messageId),
+            endPoint: .reactChatMessage(conversationId: conversationId, messageId: messageId),
             parameters: params,
             encoding: JSONEncoding.default
         )
@@ -1266,24 +1401,50 @@ final class SessionManager {
             }
     }
 
-    /// FlirtTime — POST /api/v1/chats/{id}/pin `{ isPinned: true|false }`
+    /// PATCH `/api/v1/chats/{id}/pin` `{ isPinned: true|false }`
     func pinConversation(conversationId: String, isPinned: Bool) -> Single<UpdateConversationSettingsAPIData> {
         let params: [String: Any] = ["isPinned": isPinned]
         let apiRequest = ApiRequest(
-            method: .post,
+            method: .patch,
             endPoint: .pinConversation(conversationId),
             parameters: params,
             encoding: JSONEncoding.default
         )
+        AppLogger.debug("ChatAPI: PATCH /api/v1/chats/\(conversationId)/pin isPinned=\(isPinned)")
         return backendClient.loadChatData(request: apiRequest)
-            .map { (data: UpdateConversationSettingsAPIData) in data }
-            .catch { _ in
-                Single.just(
-                    UpdateConversationSettingsAPIData(
-                        settings: ConversationSettings(isPinned: isPinned)
-                    )
-                )
-            }
+    }
+
+    /// PATCH `{ isArchived: true|false }` — documented path first, then `/api/v1/chats/{id}/archive`.
+    func archiveConversation(conversationId: String, isArchived: Bool) -> Single<UpdateConversationSettingsAPIData> {
+        archiveConversationRequest(
+            conversationId: conversationId,
+            isArchived: isArchived,
+            endPoint: .archiveConversationAlt(conversationId)
+        )
+        .catch { error in
+            AppLogger.debug("ChatAPI: archive /chats path failed (\(error.localizedDescription)) — retry documented conversations path")
+            return self.archiveConversationRequest(
+                conversationId: conversationId,
+                isArchived: isArchived,
+                endPoint: .archiveConversation(conversationId)
+            )
+        }
+    }
+
+    private func archiveConversationRequest(
+        conversationId: String,
+        isArchived: Bool,
+        endPoint: EndPoint
+    ) -> Single<UpdateConversationSettingsAPIData> {
+        let params: [String: Any] = ["isArchived": isArchived]
+        let apiRequest = ApiRequest(
+            method: .patch,
+            endPoint: endPoint,
+            parameters: params,
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug("ChatAPI: PATCH \(endPoint.description) isArchived=\(isArchived)")
+        return backendClient.loadChatData(request: apiRequest)
     }
 
     /// NEW API — POST chat/conversations/{id}/unread
@@ -1297,7 +1458,7 @@ final class SessionManager {
         return backendClient.loadChatData(request: apiRequest)
     }
 
-    /// NEW API — POST chat/conversations/{id}/delivered (FE markConversationDelivered)
+    /// FlirtTime — POST /api/v1/chats/{id}/delivery
     func markConversationDelivered(conversationId: String, messageId: String? = nil) -> Single<DataRequest> {
         var params: [String: Any] = [:]
         if let messageId, !messageId.isEmpty { params["messageId"] = messageId }
@@ -1348,61 +1509,42 @@ final class SessionManager {
         return backendClient.loadChatData(request: apiRequest)
     }
 
-    /// OLD name — now maps to NEW `DELETE chat/conversations/{id}?scope=me`
+    /// DELETE `/api/v1/chats/{id}` with `{ "deleteType": "me" }`.
     func deleteChat(id: String) -> Single<DataRequest> {
         let apiRequest = ApiRequest(
             method: .delete,
-            endPoint: .deleteChatConversation(id, "me"),
-            parameters: [:],
-            encoding: URLEncoding.queryString
-        )
-        return backendClient.loadDataRequest(request: apiRequest)
-    }
-
-    /// NEW API — DELETE `chat/conversations/{id}?scope=me|everyone`
-    /// `scope=me` hides for you only; `scope=everyone` destroys for all participants.
-    func deleteChatConversation(id: String, scope: String = "me") -> Single<Void> {
-        let normalizedScope = (scope == "everyone") ? "everyone" : "me"
-        let apiRequest = ApiRequest(
-            method: .delete,
-            endPoint: .deleteChatConversation(id, normalizedScope),
-            parameters: [:],
-            encoding: URLEncoding.queryString
-        )
-        return backendClient.loadDataRequest(request: apiRequest).map { _ in () }
-    }
-
-    /// NEW API — bulk delete: pass `ids` array + `scope` flag.
-    /// Single id → `DELETE chat/conversations/{id}?scope=…`
-    /// Multiple ids → `DELETE chat/conversations` with body `{ id: [...], scope }`
-    func deleteChatConversations(ids: [String], scope: String = "me") -> Single<Void> {
-        let normalizedScope = (scope == "everyone") ? "everyone" : "me"
-        let uniqueIds = Array(Set(ids.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
-        guard !uniqueIds.isEmpty else { return .just(()) }
-
-        if uniqueIds.count == 1 {
-            return deleteChatConversation(id: uniqueIds[0], scope: normalizedScope)
-        }
-
-        let params: [String: Any] = [
-            "id": uniqueIds,
-            "scope": normalizedScope
-        ]
-        let apiRequest = ApiRequest(
-            method: .delete,
-            endPoint: .deleteChatConversationsBulk,
-            parameters: params,
+            endPoint: .deleteChatConversation(id),
+            parameters: ["deleteType": "me"],
             encoding: JSONEncoding.default
         )
         return backendClient.loadDataRequest(request: apiRequest)
-            .map { _ in () }
-            .catch { [weak self] _ -> Single<Void> in
-                // Fallback: OpenAPI documents per-id delete — apply same scope flag to each
+    }
+
+    /// DELETE `/api/v1/chats/{id}`
+    /// Body: `{ "deleteType": "me" | "everyone" }`
+    func deleteChatConversation(id: String, scope: String = "me") -> Single<Void> {
+        let deleteType = (scope == "everyone") ? "everyone" : "me"
+        let apiRequest = ApiRequest(
+            method: .delete,
+            endPoint: .deleteChatConversation(id),
+            parameters: ["deleteType": deleteType],
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug("ChatAPI: DELETE /api/v1/chats/\(id) deleteType=\(deleteType)")
+        return backendClient.loadDataRequest(request: apiRequest).map { _ in () }
+    }
+
+    /// DELETE each conversation via `/api/v1/chats/{id}` with `{ "deleteType": ... }`.
+    func deleteChatConversations(ids: [String], scope: String = "me") -> Single<Void> {
+        let uniqueIds = Array(Set(ids.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
+        guard !uniqueIds.isEmpty else { return .just(()) }
+
+        return uniqueIds.reduce(Single.just(())) { [weak self] partial, conversationId in
+            partial.flatMap { _ -> Single<Void> in
                 guard let self else { return .error(APIError.apiError("Session unavailable")) }
-                return uniqueIds.reduce(Single.just(())) { partial, id in
-                    partial.flatMap { self.deleteChatConversation(id: id, scope: normalizedScope) }
-                }
+                return self.deleteChatConversation(id: conversationId, scope: scope)
             }
+        }
     }
 
     /// FlirtTime — POST /api/v1/chats `{ recipientId }`
@@ -1413,6 +1555,103 @@ final class SessionManager {
             title: title.isEmpty ? nil : title,
             avatarPath: groupAvatar.isEmpty ? nil : groupAvatar
         )
+    }
+
+    /// GET `/api/v1/calls?page=1&limit=20`
+    func getCallHistory(page: Int = 1, limit: Int = 20) -> Single<CallHistoryPage> {
+        let safePage = max(page, 1)
+        let safeLimit = max(limit, 1)
+        let params: [String: Any] = [
+            "page": "\(safePage)",
+            "limit": "\(safeLimit)"
+        ]
+        let apiRequest = ApiRequest(
+            method: .get,
+            endPoint: .getCallHistory,
+            parameters: params,
+            encoding: URLEncoding.queryString
+        )
+        AppLogger.debug("ChatAPI: GET /api/v1/calls?page=\(safePage)&limit=\(safeLimit)")
+        return backendClient.loadDataRequest(request: apiRequest).map { response in
+            Self.parseCallHistory(data: response.data, page: safePage, limit: safeLimit)
+        }
+    }
+
+    /// DELETE `/api/v1/calls/{id}`
+    func deleteCallHistoryItem(id: String) -> Single<Void> {
+        let apiRequest = ApiRequest(method: .delete, endPoint: .deleteCallHistoryItem(id))
+        AppLogger.debug("ChatAPI: DELETE /api/v1/calls/\(id)")
+        return backendClient.loadDataRequest(request: apiRequest).map { _ in () }
+    }
+
+    /// DELETE `/api/v1/calls`
+    func deleteAllCallHistory() -> Single<Void> {
+        let apiRequest = ApiRequest(method: .delete, endPoint: .deleteAllCallHistory)
+        AppLogger.debug("ChatAPI: DELETE /api/v1/calls")
+        return backendClient.loadDataRequest(request: apiRequest).map { _ in () }
+    }
+
+    private static func parseCallHistory(data: Data?, page: Int, limit: Int) -> CallHistoryPage {
+        guard let data, !data.isEmpty,
+              let json = try? JSONSerialization.jsonObject(with: data) else {
+            return CallHistoryPage(calls: [], page: page, hasMore: false)
+        }
+
+        let root = json as? [String: Any]
+        let payload: Any
+        if let dataObject = root?["data"] {
+            payload = dataObject
+        } else {
+            payload = json
+        }
+
+        var rawItems: [[String: Any]] = []
+        var pagination: [String: Any] = [:]
+        if let array = payload as? [[String: Any]] {
+            rawItems = array
+        } else if let dict = payload as? [String: Any] {
+            pagination = dict
+            let candidates = [dict["calls"], dict["items"], dict["history"], dict["results"], dict["rows"]]
+            for candidate in candidates {
+                if let array = candidate as? [[String: Any]] {
+                    rawItems = array
+                    break
+                }
+            }
+            if let nested = dict["pagination"] as? [String: Any] {
+                pagination.merge(nested) { current, _ in current }
+            }
+        }
+
+        let decoder = JSONDecoder()
+        let calls: [AgoraCallDto] = rawItems.compactMap { item in
+            guard let itemData = try? JSONSerialization.data(withJSONObject: item) else { return nil }
+            return try? decoder.decode(AgoraCallDto.self, from: itemData)
+        }.filter { !$0.id.isEmpty }
+
+        let currentPage = intValue(pagination["page"]) ?? page
+        let pageSize = intValue(pagination["limit"]) ?? intValue(pagination["pageSize"]) ?? limit
+        let total = intValue(pagination["total"])
+        let totalPages = intValue(pagination["totalPages"])
+        let hasMore: Bool
+        if let flag = pagination["hasMore"] as? Bool {
+            hasMore = flag
+        } else if let totalPages {
+            hasMore = currentPage < totalPages
+        } else if let total, pageSize > 0 {
+            hasMore = currentPage * pageSize < total
+        } else {
+            hasMore = rawItems.count >= pageSize
+        }
+
+        return CallHistoryPage(calls: calls, page: currentPage, hasMore: hasMore)
+    }
+
+    private static func intValue(_ value: Any?) -> Int? {
+        if let i = value as? Int { return i }
+        if let n = value as? NSNumber { return n.intValue }
+        if let s = value as? String { return Int(s) }
+        return nil
     }
 
     /// FlirtTime — POST /api/v1/calls/video/initiate `{ calleeId, conversationId }`

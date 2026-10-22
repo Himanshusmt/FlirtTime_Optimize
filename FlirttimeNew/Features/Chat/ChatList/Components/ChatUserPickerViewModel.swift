@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import Swinject
+import RxSwift
 
 struct SelectableUser: Identifiable, Hashable {
     let id: String
@@ -217,6 +218,136 @@ final class ChatUserPickerViewModel: ObservableObject {
     private func getGroupCandidatesAsync(search: String, page: Int, limit: Int) async throws -> PaginatedUsersResponse {
         try await withCheckedThrowingContinuation { continuation in
             sessionManager.getGroupCandidates(search: search, page: page, limit: limit)
+                .subscribe(onSuccess: { response in
+                    continuation.resume(returning: response)
+                }, onFailure: { error in
+                    continuation.resume(throwing: error)
+                })
+        }
+    }
+}
+
+// MARK: - Forward Recipients
+
+@MainActor
+final class ForwardRecipientPickerViewModel: ObservableObject {
+    @Published var users: [SelectableUser] = []
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String? = nil
+
+    private let sessionManager: SessionManager = Container.sharedContainer.require(SessionManager.self)
+    private let pageSize = ChatConstants.Pagination.forwardConversationsPageSize
+
+    private var currentPage = 1
+    private var hasMorePages = true
+    private var isFetchingData = false
+    private var currentSearchText = ""
+    private var searchDebounceTask: Task<Void, Never>?
+    private var fetchTask: Task<Void, Never>?
+    private var loadedIds: Set<String> = []
+
+    func reload(search: String?) {
+        currentSearchText = search?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        currentPage = 1
+        hasMorePages = true
+        loadedIds.removeAll()
+        users.removeAll()
+        fetch(reset: true, showLoading: true)
+    }
+
+    func search(text: String) {
+        currentSearchText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchDebounceTask?.cancel()
+        searchDebounceTask = Task { [weak self] in
+            guard let self else { return }
+            let delay = UInt64(ChatConstants.Timing.searchDebounce * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return }
+            self.currentPage = 1
+            self.hasMorePages = true
+            self.fetch(reset: true, showLoading: self.users.isEmpty)
+        }
+    }
+
+    func loadMoreIfNeeded(currentItem: SelectableUser?) {
+        guard let currentItem, !isFetchingData, hasMorePages else { return }
+        guard let index = users.firstIndex(where: { $0.id == currentItem.id }) else { return }
+        if index >= users.count - 5 {
+            fetch(reset: false, showLoading: false)
+        }
+    }
+
+    private func fetch(reset: Bool, showLoading: Bool) {
+        guard hasMorePages || reset else { return }
+        if isFetchingData && !reset { return }
+
+        fetchTask?.cancel()
+        isFetchingData = true
+        if showLoading {
+            isLoading = true
+        }
+
+        fetchTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let response = try await self.fetchPage(
+                    search: self.currentSearchText,
+                    page: reset ? 1 : self.currentPage,
+                    limit: self.pageSize
+                )
+                guard !Task.isCancelled else { return }
+
+                let mapped = response.recipients.compactMap { recipient -> SelectableUser? in
+                    let id = recipient.id.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !id.isEmpty else { return nil }
+                    return SelectableUser(
+                        id: id,
+                        name: recipient.name,
+                        username: recipient.username,
+                        avatarURL: recipient.avatarURL
+                    )
+                }
+
+                if reset {
+                    self.loadedIds.removeAll()
+                    self.users.removeAll()
+                    self.currentPage = 1
+                }
+
+                var appended: [SelectableUser] = []
+                for user in mapped where self.loadedIds.insert(user.id).inserted {
+                    appended.append(user)
+                }
+                self.users.append(contentsOf: appended)
+
+                if let hasMore = response.hasMore {
+                    self.hasMorePages = hasMore
+                } else if let total = response.total {
+                    self.hasMorePages = self.users.count < total
+                } else {
+                    self.hasMorePages = mapped.count >= self.pageSize
+                }
+                if reset {
+                    self.currentPage = 2
+                } else if !mapped.isEmpty {
+                    self.currentPage += 1
+                }
+                self.errorMessage = nil
+            } catch {
+                if !Task.isCancelled {
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+
+            guard !Task.isCancelled else { return }
+            self.isFetchingData = false
+            self.isLoading = false
+        }
+    }
+
+    private func fetchPage(search: String, page: Int, limit: Int) async throws -> ForwardRecipientsAPIData {
+        try await withCheckedThrowingContinuation { continuation in
+            sessionManager.getForwardRecipients(search: search, page: page, limit: limit)
                 .subscribe(onSuccess: { response in
                     continuation.resume(returning: response)
                 }, onFailure: { error in

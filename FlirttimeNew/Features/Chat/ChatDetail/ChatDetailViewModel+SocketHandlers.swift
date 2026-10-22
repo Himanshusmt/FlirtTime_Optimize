@@ -9,7 +9,8 @@ extension ChatDetailViewModel {
 
     // MARK: - New Socket Message
 
-    func handleNewSocketMessage(_ message: ConversationMessage) {
+    func handleNewSocketMessage(_ rawMessage: ConversationMessage) {
+        let message = enrichReplyPreview(rawMessage)
         let msgId = message.id
         let clientTempId = (message.metadata?["clientTempId"]?.value as? String) ?? "none"
         AppLogger.debug("[MsgFlow] get-latest → id=\(msgId) clientTempId=\(clientTempId) type=\(message.messageType ?? message.type ?? "??")")
@@ -55,8 +56,12 @@ extension ChatDetailViewModel {
                 merged.reactions = existingReactions
             }
 
-            if merged.replyToId == nil, let existingReply = existing.replyToId {
-                merged.replyToId = existingReply
+            if let existingReply = existing.replyToId {
+                if merged.replyToId == nil {
+                    merged.replyToId = existingReply
+                } else {
+                    merged.replyToId = merged.replyToId?.mergingMissingSender(from: existingReply)
+                }
             }
 
             if merged.isEdited != true, existing.isEdited == true {
@@ -141,13 +146,14 @@ extension ChatDetailViewModel {
 
     // MARK: - Message Acknowledgment
 
-    func handleMessageAcknowledgment(_ acknowledgedMessage: ConversationMessage) {
+    func handleMessageAcknowledgment(_ rawAcknowledgedMessage: ConversationMessage) {
         // Guard: reaction fanouts must never go through insert/replace ack path
-        if acknowledgedMessage.isReactionOnlyPayload {
-            applyServerReactionUpdate(messageId: acknowledgedMessage.id, serverMessage: acknowledgedMessage)
+        if rawAcknowledgedMessage.isReactionOnlyPayload {
+            applyServerReactionUpdate(messageId: rawAcknowledgedMessage.id, serverMessage: rawAcknowledgedMessage)
             return
         }
 
+        let acknowledgedMessage = enrichReplyPreview(rawAcknowledgedMessage)
         let msgId = acknowledgedMessage.id
         let clientTempId = (acknowledgedMessage.metadata?["clientTempId"]?.value as? String) ?? "none"
         AppLogger.debug("[MsgFlow] msg-ack → id=\(msgId.prefix(8)) clientTempId=\(clientTempId) type=\(acknowledgedMessage.messageType ?? acknowledgedMessage.type ?? "??")")
@@ -253,8 +259,12 @@ extension ChatDetailViewModel {
                 merged = rebuilt
             }
 
-            if merged.replyToId == nil, let existingReply = existing.replyToId {
-                merged.replyToId = existingReply
+            if let existingReply = existing.replyToId {
+                if merged.replyToId == nil {
+                    merged.replyToId = existingReply
+                } else {
+                    merged.replyToId = merged.replyToId?.mergingMissingSender(from: existingReply)
+                }
             }
 
             if merged.isEdited != true, existing.isEdited == true {
@@ -422,7 +432,11 @@ extension ChatDetailViewModel {
         let belongsHere = isChannel
             ? (editedMessage.conversationId == channelId || editedMessage.channelId == channelId)
             : (editedMessage.conversationId == selectedId)
-        guard belongsHere else { return }
+        if !editedMessage.conversationId.isEmpty {
+            guard belongsHere else { return }
+        } else {
+            guard stateManager.messageById(editedMessage.id) != nil else { return }
+        }
 
         let messageId = editedMessage.id
         guard !messageId.isEmpty else { return }
@@ -435,8 +449,12 @@ extension ChatDetailViewModel {
                 merged.reactions = existingReactions
             }
 
-            if merged.replyToId == nil, let existingReply = existing.replyToId {
-                merged.replyToId = existingReply
+            if let existingReply = existing.replyToId {
+                if merged.replyToId == nil {
+                    merged.replyToId = existingReply
+                } else {
+                    merged.replyToId = merged.replyToId?.mergingMissingSender(from: existingReply)
+                }
             }
 
             let existingDelivery = existing.deliveryStatus

@@ -13,9 +13,9 @@ protocol ChatMessageServiceProtocol {
     // Async/await methods (primary API)
     func sendTextMessageAsync(_ text: String, conversationId: String, replyToId: String?) async throws -> Bool
     func sendMediaMessageAsync(mediaPath: String, messageType: String, conversationId: String, filename: String?, filesize: String?, clientTempId: String, metadata: [String: Any]?) async throws -> Bool
-    func deleteMessageAsync(messageId: String) async throws
-    func deleteMessageAsync(messageId: String, scope: String) async throws
-    func deleteMessagesAsync(messageIds: [String], scope: String) async throws
+    func deleteMessageAsync(conversationId: String, messageId: String) async throws
+    func deleteMessageAsync(conversationId: String, messageId: String, scope: String) async throws
+    func deleteMessagesAsync(conversationId: String, messageIds: [String], scope: String) async throws
     func loadMessagesAsync(conversationId: String, page: Int, limit: Int) async throws -> ConversationMessagesResponse
     func loadChannelMessagesAsync(channelId: String, page: Int, limit: Int) async throws -> ConversationMessagesResponse
     func loadChannelMessagesBeforeAsync(channelId: String, beforeDate: Date, page: Int, limit: Int) async throws -> ConversationMessagesResponse
@@ -25,9 +25,9 @@ protocol ChatMessageServiceProtocol {
     // Combine publishers (for backward compatibility)
     func sendTextMessage(_ text: String, conversationId: String, replyToId: String?) -> AnyPublisher<Bool, Error>
     func sendMediaMessage(mediaPath: String, messageType: String, conversationId: String, filename: String?, filesize: String?, clientTempId: String, metadata: [String: Any]?) -> AnyPublisher<Bool, Error>
-    func deleteMessage(messageId: String) -> AnyPublisher<Void, Error>
-    func deleteMessage(messageId: String, scope: String) -> AnyPublisher<Void, Error>
-    func deleteMessages(messageIds: [String], scope: String) -> AnyPublisher<Void, Error>
+    func deleteMessage(conversationId: String, messageId: String) -> AnyPublisher<Void, Error>
+    func deleteMessage(conversationId: String, messageId: String, scope: String) -> AnyPublisher<Void, Error>
+    func deleteMessages(conversationId: String, messageIds: [String], scope: String) -> AnyPublisher<Void, Error>
     func loadMessages(conversationId: String, page: Int, limit: Int) -> AnyPublisher<ConversationMessagesResponse, Error>
     func loadChannelMessages(channelId: String, page: Int, limit: Int) -> AnyPublisher<ConversationMessagesResponse, Error>
     func loadChannelMessagesBefore(channelId: String, beforeDate: Date, page: Int, limit: Int) -> AnyPublisher<ConversationMessagesResponse, Error>
@@ -181,18 +181,23 @@ class ChatMessageService: ChatMessageServiceProtocol {
         }
     }
     
-    func deleteMessageAsync(messageId: String) async throws {
-        try await deleteMessagesAsync(messageIds: [messageId], scope: "me")
+    func deleteMessageAsync(conversationId: String, messageId: String) async throws {
+        try await deleteMessagesAsync(conversationId: conversationId, messageIds: [messageId], scope: "me")
     }
 
-    func deleteMessageAsync(messageId: String, scope: String) async throws {
-        try await deleteMessagesAsync(messageIds: [messageId], scope: scope)
+    func deleteMessageAsync(conversationId: String, messageId: String, scope: String) async throws {
+        try await deleteMessagesAsync(conversationId: conversationId, messageIds: [messageId], scope: scope)
     }
 
-    /// POST `chat/messages/delete` — `{ messageIds, scope: "me"|"everyone" }`
-    func deleteMessagesAsync(messageIds: [String], scope: String) async throws {
+    /// DELETE `/api/v1/chats/{conversationId}/messages/{messageId}`
+    /// Body: `{ "deleteType": "me"|"everyone" }`
+    func deleteMessagesAsync(conversationId: String, messageIds: [String], scope: String) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            sessionManager.deleteChatMessages(messageIds: messageIds, scope: scope)
+            sessionManager.deleteChatMessages(
+                conversationId: conversationId,
+                messageIds: messageIds,
+                scope: scope
+            )
                 .subscribe(onSuccess: {
                     continuation.resume()
                 }, onFailure: { error in
@@ -326,20 +331,25 @@ class ChatMessageService: ChatMessageServiceProtocol {
         .eraseToAnyPublisher()
     }
 
-    func deleteMessage(messageId: String) -> AnyPublisher<Void, Error> {
-        deleteMessages(messageIds: [messageId], scope: "me")
+    func deleteMessage(conversationId: String, messageId: String) -> AnyPublisher<Void, Error> {
+        deleteMessages(conversationId: conversationId, messageIds: [messageId], scope: "me")
     }
 
-    func deleteMessage(messageId: String, scope: String) -> AnyPublisher<Void, Error> {
-        deleteMessages(messageIds: [messageId], scope: scope)
+    func deleteMessage(conversationId: String, messageId: String, scope: String) -> AnyPublisher<Void, Error> {
+        deleteMessages(conversationId: conversationId, messageIds: [messageId], scope: scope)
     }
 
-    /// POST `chat/messages/delete` — `{ messageIds, scope: "me"|"everyone" }`
-    func deleteMessages(messageIds: [String], scope: String) -> AnyPublisher<Void, Error> {
+    /// DELETE `/api/v1/chats/{conversationId}/messages/{messageId}`
+    /// Body: `{ "deleteType": "me"|"everyone" }`
+    func deleteMessages(conversationId: String, messageIds: [String], scope: String) -> AnyPublisher<Void, Error> {
         Future<Void, Error> { promise in
             Task {
                 do {
-                    try await self.deleteMessagesAsync(messageIds: messageIds, scope: scope)
+                    try await self.deleteMessagesAsync(
+                        conversationId: conversationId,
+                        messageIds: messageIds,
+                        scope: scope
+                    )
                     promise(.success(()))
                 } catch {
                     promise(.failure(error))
@@ -468,23 +478,41 @@ class ChatMessageService: ChatMessageServiceProtocol {
         }
 
         let resolvedType = type.isEmpty ? "text" : type
+        let parentMessageId = replyToId?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let isTextReply = !conversationId.isEmpty
+            && !parentMessageId.isEmpty
+            && resolvedType.lowercased() == "text"
+            && !(body ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
         if conversationId.isEmpty {
             AppLogger.debug("[sendViaREST] ▶ POST /api/v1/chat/messages type=\(resolvedType) recipients=\(peers.count) clientMessageId=\(clientMessageId ?? "nil")")
+        } else if isTextReply {
+            AppLogger.debug("[sendViaREST] ▶ POST /api/v1/chats/\(conversationId)/messages/\(parentMessageId)/reply clientMessageId=\(clientMessageId ?? "nil")")
         } else {
             AppLogger.debug("[sendViaREST] ▶ POST /api/v1/chats/\(conversationId)/messages type=\(resolvedType) replyToId=\(replyToId ?? "nil") clientMessageId=\(clientMessageId ?? "nil")")
         }
 
         if !conversationId.isEmpty {
-            emitSendMessage(
-                conversationId: conversationId,
-                type: resolvedType,
-                body: body,
-                mediaIds: mediaIds,
-                location: location,
-                clientMessageId: clientMessageId,
-                replyToId: replyToId,
-                metadata: metadata
-            )
+            if isTextReply {
+                emitReplyMessage(
+                    conversationId: conversationId,
+                    parentMessageId: parentMessageId,
+                    content: body ?? "",
+                    messageType: resolvedType,
+                    clientMessageId: clientMessageId
+                )
+            } else {
+                emitSendMessage(
+                    conversationId: conversationId,
+                    type: resolvedType,
+                    body: body,
+                    mediaIds: mediaIds,
+                    location: location,
+                    clientMessageId: clientMessageId,
+                    replyToId: replyToId,
+                    metadata: metadata
+                )
+            }
         }
 
         let send: Single<ConversationMessage>
@@ -495,6 +523,14 @@ class ChatMessageService: ChatMessageServiceProtocol {
                 content: body ?? mediaIds?.first,
                 location: location,
                 metadata: metadata,
+                clientMessageId: clientMessageId
+            )
+        } else if isTextReply {
+            send = sessionManager.replyChatMessage(
+                conversationId: conversationId,
+                messageId: parentMessageId,
+                content: body ?? "",
+                messageType: resolvedType,
                 clientMessageId: clientMessageId
             )
         } else {
@@ -596,6 +632,27 @@ class ChatMessageService: ChatMessageServiceProtocol {
         )
         AppLogger.debug("[sendViaREST] emit chat:send_message conversationId=\(conversationId) type=\(type)")
         ChatSocketManager.shared.emitMessage(SocketEvent.sendConversationMessage.rawValue, withData: [payload])
+    }
+
+    /// Emit `chat:reply_message` for a text reply on a parent message.
+    private func emitReplyMessage(
+        conversationId: String,
+        parentMessageId: String,
+        content: String,
+        messageType: String,
+        clientMessageId: String?
+    ) {
+        var payload: [String: Any] = [
+            "conversationId": conversationId,
+            "messageId": parentMessageId,
+            "content": content,
+            "messageType": messageType
+        ]
+        if let clientMessageId, !clientMessageId.isEmpty {
+            payload["clientMessageId"] = clientMessageId
+        }
+        AppLogger.debug("[sendViaREST] emit \(SocketEvent.replyMessage.rawValue) conversationId=\(conversationId) parent=\(parentMessageId)")
+        ChatSocketManager.shared.emitMessage(SocketEvent.replyMessage.rawValue, withData: [payload])
     }
 
     static func emitImageSendMessage(

@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum MultiSelectAction: Hashable {
-    case markUnread, markAsRead, archive, label, mute, unmute, lock, block, unblock, pin, delete, deleteForEveryone, unpin, selectAll, deselectAll
+    case markUnread, markAsRead, archive, unarchive, label, mute, unmute, lock, block, unblock, pin, delete, deleteForEveryone, unpin, selectAll, deselectAll
 }
 
 struct MultiSelectActionBar: View {
@@ -17,11 +17,9 @@ struct MultiSelectActionBar: View {
     let hasPinnedChats: Bool
     let canPinMoreChats: Bool
     let hasBlockedChats: Bool
-    let hasUnreadChats: Bool
-    let hasMutedChats: Bool
-    let hasUnmutedChats: Bool
     let hasGroupChatsSelected: Bool
     let isSingleDirectChatSelected: Bool
+    var isViewingArchived: Bool = false
     var onCancel: () -> Void
     var onAction: (MultiSelectAction) -> Void
 
@@ -92,36 +90,21 @@ struct MultiSelectActionBar: View {
     private var menuActions: [MultiSelectAction] {
         var actions: [MultiSelectAction] = []
 
-        if hasUnreadChats {
-            actions.append(.markAsRead)
-        } else {
-            actions.append(.markUnread)
-        }
-
-        if hasUnmutedChats {
-            actions.append(.mute)
-        } else {
-            actions.append(.unmute)
-        }
-
-        actions.append(.archive)
+        actions.append(isViewingArchived ? .unarchive : .archive)
 
         if hasPinnedChats {
             actions.append(.unpin)
-        } else if canPinMoreChats {
+        }
+        if canPinMoreChats {
             actions.append(.pin)
         }
-        // else: pinning would exceed limit — show neither pin nor unpin
 
         if hasGroupChatsSelected {
-            if selectedCount == 1 { actions.append(.label) }
             actions.append(.delete)
         } else if hasBlockedChats {
-            if selectedCount == 1 { actions.append(.label) }
             actions.append(contentsOf: [.unblock, .delete])
             if isSingleDirectChatSelected { actions.append(.deleteForEveryone) }
         } else {
-            if selectedCount == 1 { actions.append(.label) }
             actions.append(contentsOf: [.block, .delete])
             if isSingleDirectChatSelected { actions.append(.deleteForEveryone) }
         }
@@ -142,6 +125,8 @@ struct MultiSelectActionBar: View {
             Label(ChatStrings.chat_markAsRead.localizedString(), image: ChatAssets.read)
         case .archive:
             Label(ChatStrings.chat_archive.localizedString(), image: ChatAssets.archive)
+        case .unarchive:
+            Label(ChatStrings.chat_unarchive.localizedString(), image: ChatAssets.archive)
         case .mute:
             Label(ChatStrings.chat_mute.localizedString(), image: ChatAssets.mute)
         case .unmute:

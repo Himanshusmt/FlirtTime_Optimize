@@ -24,6 +24,8 @@ class ChatDataService: ObservableObject {
     private var lastUnreadCountedMessageId: [String: String] = [:]
     private let frcManager = ChatListFRCManager()
     private var frcCancellable: AnyCancellable?
+    /// Conversation ids that must survive inbox prune after unarchive.
+    private var pruneProtectedUntil: [String: Date] = [:]
 
     private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -530,11 +532,22 @@ class ChatDataService: ObservableObject {
     }
 
     func pruneStaleConversations(keepingIds ids: Set<String>) async {
+        let now = Date()
+        pruneProtectedUntil = pruneProtectedUntil.filter { $0.value > now }
+        let protectedIds = Set(pruneProtectedUntil.keys)
         do {
-            try await conversationRepository.deleteConversations(notIn: ids)
+            try await conversationRepository.deleteConversations(notIn: ids.union(protectedIds))
         } catch {
             AppLogger.debug("ChatDataService: Failed to prune stale conversations: \(error)")
         }
+    }
+
+    /// Keep a just-unarchived chat through the next inbox prune. Main GET /chats
+    /// often omits it for a beat, and prune was deleting it as if the user had
+    /// removed the conversation.
+    func protectFromInboxPrune(conversationId: String, duration: TimeInterval = 90) {
+        guard !conversationId.isEmpty else { return }
+        pruneProtectedUntil[conversationId] = Date().addingTimeInterval(duration)
     }
 
     private func saveConversationToDatabase(_ chat: ChatMessageRow) {

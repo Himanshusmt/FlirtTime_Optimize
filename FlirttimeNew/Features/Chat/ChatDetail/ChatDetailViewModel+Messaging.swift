@@ -68,14 +68,20 @@ extension ChatDetailViewModel {
         let replyToId = replyingToMessage?.id.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedReplyToId = (replyToId?.isEmpty == false) ? replyToId : nil
 
-        AppLogger.debug("""
-            [MESSAGE SEND] ▶ REST POST /api/v1/chats/\(selectedId)/messages
-              tempId        = \(tempId)
-              body          = "\(text)"
-              replyToId     = \(resolvedReplyToId ?? "nil")
-              optimistic mentions (bubble) = \(mentions)
-              socket mentions (payload)    = \(socketMentions)
-            """)
+        if let resolvedReplyToId {
+            AppLogger.debug("""
+                [MESSAGE SEND] ▶ REST POST /api/v1/chats/\(selectedId)/messages/\(resolvedReplyToId)/reply
+                  tempId        = \(tempId)
+                  body          = "\(text)"
+                  replyToId     = \(resolvedReplyToId)
+                """)
+        } else {
+            AppLogger.debug("""
+                [MESSAGE SEND] ▶ REST POST /api/v1/chats/\(selectedId)/messages
+                  tempId        = \(tempId)
+                  body          = "\(text)"
+                """)
+        }
 
         if ChatMockSeeder.isMockMode {
             let sentMessage = ChatMockSeeder.sentCopy(of: tempMessage)
@@ -186,20 +192,15 @@ extension ChatDetailViewModel {
         ]
 
         if let r = replyingToMessage {
-            let senderId = r.sender?.id ?? r.senderId ?? ""
-            let resolved = resolvedDisplayName(for: senderId)
-            let senderFullName = [r.sender?.fullName, resolved]
-                .first(where: { !($0 ?? "").isEmpty }) ?? ""
-            let senderUserName = [r.sender?.userName, resolved]
-                .first(where: { !($0 ?? "").isEmpty }) ?? ""
+            let fields = replyPreviewSenderFields(for: r)
             messageDict["replyToId"] = [
                 "id": r.id,
                 "content": r.content ?? "",
                 "type": r.messageType ?? r.type ?? "text",
                 "sender": [
-                    "id": senderId,
-                    "userName": senderUserName,
-                    "fullName": senderFullName
+                    "id": fields.id,
+                    "userName": fields.userName,
+                    "fullName": fields.fullName
                 ]
             ] as [String: Any]
         }
@@ -381,7 +382,7 @@ extension ChatDetailViewModel {
 
     // MARK: - Edit / Delete
 
-    /// FE edit — PATCH `/api/v1/chat/messages/{id}` with `{ body }` (optional `type`)
+    /// PATCH `/api/v1/chats/{conversationId}/messages/{messageId}` `{ content }`
     func editMessage(messageId: String, newContent: String) {
         guard !newContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             AppLogger.debug("Cannot edit message with empty content")
@@ -397,8 +398,8 @@ extension ChatDetailViewModel {
 
         let trimmed = newContent.trimmingCharacters(in: .whitespacesAndNewlines)
         let previousSnapshot = stateManager.messageById(messageId)
+        let conversationId = selectedId
 
-        // Optimistic UI
         applyEditedContentLocally(messageId: messageId, content: trimmed)
         editingMessage = nil
 
@@ -409,17 +410,18 @@ extension ChatDetailViewModel {
             return
         }
 
-        let msgType = previousSnapshot?.messageType ?? previousSnapshot?.type
-        AppLogger.debug("[Edit] ▶ PATCH chat/messages/\(messageId) body=\(trimmed.prefix(40))")
+        emitEditMessageSocket(conversationId: conversationId, messageId: messageId, content: trimmed)
+        AppLogger.debug("[Edit] ▶ PATCH /api/v1/chats/\(conversationId)/messages/\(messageId)")
 
-        session.editChatMessage(messageId: messageId, body: trimmed, type: msgType)
+        session.editChatMessage(conversationId: conversationId, messageId: messageId, content: trimmed)
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] updated in
                     self?.handleEditChatMessageREST(updated, fallbackContent: trimmed)
                 },
                 onFailure: { [weak self] error in
-                    AppLogger.debug("[Edit] ❌ \(error.localizedDescription)")
+                    AppLogger.debug("[Edit] ❌ \(error.localizedDescription) — socket fallback")
+                    self?.emitEditMessageSocket(conversationId: conversationId, messageId: messageId, content: trimmed)
                     if let previous = previousSnapshot {
                         self?.stateManager.updateMessage(previous)
                         let groups = self?.stateManager.getGroupedMessagesSnapshot() ?? []
@@ -430,6 +432,17 @@ extension ChatDetailViewModel {
                 }
             )
             .disposed(by: disposeBag)
+    }
+
+    func emitEditMessageSocket(conversationId: String, messageId: String, content: String) {
+        guard !conversationId.isEmpty, !messageId.isEmpty else { return }
+        let payload: [String: Any] = [
+            "conversationId": conversationId,
+            "messageId": messageId,
+            "content": content
+        ]
+        ChatSocketManager.shared.emitMessage(SocketEvent.editMessage.rawValue, withData: [payload])
+        AppLogger.debug("[Edit] ▶ socket \(SocketEvent.editMessage.rawValue) id=\(messageId)")
     }
 
     func applyEditedContentLocally(messageId: String, content: String) {
@@ -494,8 +507,7 @@ extension ChatDetailViewModel {
         editMessage(messageId: messageId, newContent: newText)
     }
 
-    /// FE — POST `/chat/messages/delete` `{ messageIds, scope: "me" }`
-    /// Channels — POST `/chat/channels/messages/delete` `{ messageIds, scope: "me" }`
+    /// DELETE `/api/v1/chats/{conversationId}/messages/{messageId}` `{ deleteType: "me" }`
     func deleteMessageForMe(messageId: String) {
         dismissDeleteSheet()
 
@@ -529,24 +541,24 @@ extension ChatDetailViewModel {
             return
         }
 
-        AppLogger.debug("[Delete] ▶ POST chat/messages/delete messageIds=1 scope=me id=\(apiId)")
-        messageService.deleteMessages(messageIds: [apiId], scope: "me")
+        AppLogger.debug("[Delete] ▶ DELETE /api/v1/chats/\(selectedId)/messages/\(apiId) deleteType=me")
+        messageService.deleteMessages(conversationId: selectedId, messageIds: [apiId], scope: "me")
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     if case .failure(let error) = completion {
-                        AppLogger.debug("[Delete] scope=me failed: \(error.localizedDescription) — socket fallback")
+                        AppLogger.debug("[Delete] deleteType=me failed: \(error.localizedDescription) — socket fallback")
                         self?.emitDeleteMessagesSocket(messageIds: [apiId], forEveryone: false)
                     }
                 },
                 receiveValue: { _ in
-                    AppLogger.debug("[Delete] ✅ scope=me id=\(apiId)")
+                    AppLogger.debug("[Delete] ✅ deleteType=me id=\(apiId)")
                 }
             )
             .store(in: &cancellables)
     }
 
-    /// FE — POST `/chat/messages/delete` `{ messageIds, scope: "everyone" }`
+    /// DELETE `/api/v1/chats/{conversationId}/messages/{messageId}` `{ deleteType: "everyone" }`
     func deleteMessageForEveryone(messageId: String) {
         dismissDeleteSheet()
 
@@ -602,18 +614,18 @@ extension ChatDetailViewModel {
             return
         }
 
-        AppLogger.debug("[Delete] ▶ POST chat/messages/delete messageIds=1 scope=everyone id=\(apiId)")
-        messageService.deleteMessages(messageIds: [apiId], scope: "everyone")
+        AppLogger.debug("[Delete] ▶ DELETE /api/v1/chats/\(selectedId)/messages/\(apiId) deleteType=everyone")
+        messageService.deleteMessages(conversationId: selectedId, messageIds: [apiId], scope: "everyone")
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     if case .failure(let error) = completion {
-                        AppLogger.debug("[Delete] scope=everyone failed: \(error.localizedDescription) — socket fallback")
+                        AppLogger.debug("[Delete] deleteType=everyone failed: \(error.localizedDescription) — socket fallback")
                         self?.emitDeleteMessagesSocket(messageIds: [apiId], forEveryone: true)
                     }
                 },
                 receiveValue: { _ in
-                    AppLogger.debug("[Delete] ✅ scope=everyone id=\(apiId)")
+                    AppLogger.debug("[Delete] ✅ deleteType=everyone id=\(apiId)")
                 }
             )
             .store(in: &cancellables)
@@ -946,8 +958,8 @@ extension ChatDetailViewModel {
 
     // MARK: - Reactions
 
-    /// FE — POST `/api/v1/chat/messages/{id}/react` `{ emoji }`
-    /// Optimistic local toggle, then REST. Realtime fanout via `chat:message:reacted` / ack sockets.
+    /// POST `/api/v1/chats/{conversationId}/messages/{messageId}/reactions` `{ emoji }`
+    /// Optimistic local toggle, then REST. Instant fanout via `message:reaction:updated`.
     func reactToMessage(messageId: String, emoji: String) {
         guard !selectedId.isEmpty else {
             AppLogger.debug("reactToMessage: conversationId empty")
@@ -964,8 +976,8 @@ extension ChatDetailViewModel {
             return
         }
 
-        AppLogger.debug("[React] ▶ POST chat/messages/\(messageId)/react emoji=\(emoji)")
-        session.reactChatMessage(messageId: messageId, emoji: emoji)
+        AppLogger.debug("[React] ▶ POST chats/\(selectedId)/messages/\(messageId)/reactions emoji=\(emoji)")
+        session.reactChatMessage(conversationId: selectedId, messageId: messageId, emoji: emoji)
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] updated in
@@ -975,7 +987,7 @@ extension ChatDetailViewModel {
                 },
                 onFailure: { [weak self] error in
                     AppLogger.debug("[React] ❌ \(error.localizedDescription)")
-                    // Keep optimistic state; socket ack / messageReacted may still reconcile.
+                    // Keep optimistic state; `message:reaction:updated` may still reconcile.
                     self?.showToastMessage(error.localizedDescription)
                 }
             )
@@ -1014,7 +1026,7 @@ extension ChatDetailViewModel {
         messageSyncCoordinator.persist(messages: [msg])
     }
 
-    /// Merge server reaction payload onto the local message (REST or `chat:message:reacted`).
+    /// Merge server reaction payload onto the local message (REST or `message:reaction:updated`).
     /// Never inserts a new row — reaction fanouts are often partial and would create empty cells.
     func applyServerReactionUpdate(messageId: String, serverMessage: ConversationMessage) {
         let id = serverMessage.id.isEmpty ? messageId : serverMessage.id
@@ -1039,7 +1051,8 @@ extension ChatDetailViewModel {
             existing.reactions = ConversationMessage.applyingReactionDelta(
                 existing.reactions ?? [],
                 emoji: emoji,
-                userId: userId
+                userId: userId,
+                action: serverMessage.metadata?["_reactionDeltaAction"]?.value as? String
             )
         } else {
             AppLogger.debug("[Reacted] No reactions/delta for \(id.prefix(8)) — skip")
@@ -1075,20 +1088,15 @@ extension ChatDetailViewModel {
             "status": "sending"
         ]
         if let r = replyTo {
-            let senderId = r.sender?.id ?? r.senderId ?? ""
-            let resolved = resolvedDisplayName(for: senderId)
-            let senderFullName = [r.sender?.fullName, resolved]
-                .first(where: { !($0 ?? "").isEmpty }) ?? ""
-            let senderUserName = [r.sender?.userName, resolved]
-                .first(where: { !($0 ?? "").isEmpty }) ?? ""
+            let fields = replyPreviewSenderFields(for: r)
             messageDict["replyToId"] = [
                 "id": r.id,
                 "content": r.content ?? "",
                 "type": r.messageType ?? r.type ?? "text",
                 "sender": [
-                    "id": senderId,
-                    "userName": senderUserName,
-                    "fullName": senderFullName
+                    "id": fields.id,
+                    "userName": fields.userName,
+                    "fullName": fields.fullName
                 ] as [String: Any],
                 "thumbnail": r.thumbnail ?? r.media?.first?.thumbnail ?? r.media?.first?.url ?? ""
             ] as [String: Any]
@@ -1102,10 +1110,56 @@ extension ChatDetailViewModel {
 
     // MARK: - Forward Message
 
-    /// FE `forwardChatMessages` — POST `/api/v1/chat/messages/forward`
-    /// Payload: `{ messageIds, targetConversationIds }` (picker returns conversation ids).
+    /// POST `/api/v1/chats/messages/forward` `{ messageIds, recipientIds, clientMessageId }`.
+    /// Socket `chat:forward_message` is the fallback when REST fails.
     func forwardMessage(messageIds: [String], receiverIds: [String]) {
-        AppLogger.debug("Forwarding is not supported in FlirtTime chat")
+        let ids = Array(Set(
+            messageIds.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        ))
+        let recipients = Array(Set(
+            receiverIds.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        ))
+        guard !ids.isEmpty, !recipients.isEmpty else {
+            showToastMessage(ChatStrings.chat_errorForwardFailed.localizedString())
+            return
+        }
+
+        let clientMessageId = UUID().uuidString
+        AppLogger.debug(
+            "[Forward] ▶ POST /api/v1/chats/messages/forward messages=\(ids.count) recipients=\(recipients.count)"
+        )
+
+        guard let sessionManager else {
+            emitForwardMessageSocket(messageIds: ids, recipientIds: recipients, clientMessageId: clientMessageId)
+            return
+        }
+
+        sessionManager.forwardChatMessages(
+            messageIds: ids,
+            recipientIds: recipients,
+            clientMessageId: clientMessageId
+        )
+        .observe(on: MainScheduler.instance)
+        .subscribe(onSuccess: { [weak self] messages in
+            AppLogger.debug("[Forward] ✅ REST forwarded count=\(messages.count)")
+            self?.handleForwardMessagesREST(messages)
+        }, onFailure: { [weak self] error in
+            AppLogger.debug("[Forward] REST failed: \(error.localizedDescription) — socket fallback")
+            self?.emitForwardMessageSocket(
+                messageIds: ids,
+                recipientIds: recipients,
+                clientMessageId: clientMessageId
+            )
+        })
+        .disposed(by: disposeBag)
+    }
+
+    func emitForwardMessageSocket(messageIds: [String], recipientIds: [String], clientMessageId: String) {
+        socketService.forwardMessage(
+            messageIds: messageIds,
+            recipientIds: recipientIds,
+            clientMessageId: clientMessageId
+        )
     }
 }
 

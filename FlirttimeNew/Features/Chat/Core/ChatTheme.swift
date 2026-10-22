@@ -34,6 +34,8 @@ enum ChatTheme {
     static let replyAccent = AppColor.Carnation
     static let timeOutgoing = AppColor.Punch
     static let timeIncoming = AppColor.SilverChalice
+    /// Sent / delivered ticks — light gray single or double check.
+    static let tickPending = AppColor.SilverChalice
     static let datePill = AppColor.AthensGray
     static let datePillText = AppColor.DoveGray
 

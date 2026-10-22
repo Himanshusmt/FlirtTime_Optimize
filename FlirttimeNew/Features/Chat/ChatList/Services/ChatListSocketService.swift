@@ -68,9 +68,14 @@ class ChatListSocketService: ObservableObject {
         _conversationCreatedSubject.eraseToAnyPublisher()
     }
 
-    /// NEW — `chat:inbox:refresh` soft signal (re-fetch inbox). FE: scheduleRefresh().
+    /// NEW — `chat:inbox:refresh` / `conversation:updated` soft signal (re-fetch inbox).
     var inboxRefreshNeeded: AnyPublisher<String?, Never> {
         _inboxRefreshSubject.eraseToAnyPublisher()
+    }
+
+    /// FlirtTime `conversation:unread_updated` — `{ conversationId, unreadCount }`.
+    var unreadCountUpdated: AnyPublisher<(conversationId: String, unreadCount: Int), Never> {
+        _unreadCountSubject.eraseToAnyPublisher()
     }
 
     /// NEW — `chat:member:added` (conversationId, userIds).
@@ -96,6 +101,7 @@ class ChatListSocketService: ObservableObject {
     private let _conversationDeletedSubject = PassthroughSubject<String, Never>()
     private let _conversationCreatedSubject = PassthroughSubject<ChatMessageRow, Never>()
     private let _inboxRefreshSubject     = PassthroughSubject<String?, Never>()
+    private let _unreadCountSubject      = PassthroughSubject<(conversationId: String, unreadCount: Int), Never>()
     private let _memberAddedSubject      = PassthroughSubject<(conversationId: String, userIds: [String]), Never>()
     private let _settingsUpdatedSubject  = PassthroughSubject<(String, [String: Any]), Never>()
     private let _userStatusSubject       = PassthroughSubject<(userId: String, isOnline: Bool), Never>()
@@ -126,6 +132,7 @@ class ChatListSocketService: ObservableObject {
         setupUserBlockListeners()
         setupNewMessageListener()
         setupInboxRefreshListener()
+        setupConversationUnreadListener()
         setupGlobalOutgoingMessageAckListener()
         setupDeleteConversationListener()
         setupDeleteConversationPushListener()
@@ -271,12 +278,60 @@ class ChatListSocketService: ObservableObject {
         listen(SocketEvent.conversationSettingsUpdated.rawValue) { [weak self] data in
             self?.handleConversationSettingsPayload(data)
         }
+        listen(SocketEvent.conversationPinUpdated.rawValue) { [weak self] data in
+            self?.handleConversationPinUpdated(data)
+        }
     }
 
     /// FlirtTime — `conversation:archived` keeps archive/unarchive in sync across devices.
     private func setupConversationArchivedListener() {
         listen(SocketEvent.conversationArchived.rawValue) { [weak self] data in
-            self?.handleConversationSettingsPayload(data)
+            AppLogger.debug("[Archive] received conversation:archived")
+            self?.handleConversationArchived(data)
+        }
+    }
+
+    private func handleConversationArchived(_ data: [Any]) {
+        guard let dataDict = data.first as? [String: Any] else { return }
+        let body = (dataDict["data"] as? [String: Any]) ?? dataDict
+        let nestedConversation = (body["conversation"] as? [String: Any])
+            ?? (dataDict["conversation"] as? [String: Any])
+        let nestedSettings = (body["settings"] as? [String: Any])
+            ?? (nestedConversation?["settings"] as? [String: Any])
+
+        if let parsed = SocketAckParser.conversationSettings(from: body) {
+            var settings = parsed.settings
+            if settings["isArchived"] == nil,
+               let archived = SocketAckParser.boolValue(from: nestedSettings?["isArchived"])
+                ?? SocketAckParser.boolValue(from: body["isArchived"])
+                ?? SocketAckParser.boolValue(from: body["archived"]) {
+                settings["isArchived"] = archived
+            }
+            if settings["isArchived"] != nil {
+                Task { @MainActor in
+                    self._settingsUpdatedSubject.send((parsed.conversationId, settings))
+                }
+                return
+            }
+        }
+
+        let conversationId = SocketAckParser.stringValue(from: body["conversationId"])
+            ?? SocketAckParser.stringValue(from: body["conversation_id"])
+            ?? SocketAckParser.stringValue(from: body["id"])
+            ?? SocketAckParser.stringValue(from: nestedConversation?["id"])
+            ?? SocketAckParser.stringValue(from: nestedConversation?["conversationId"])
+            ?? ""
+        guard !conversationId.isEmpty else { return }
+
+        let archived = SocketAckParser.boolValue(from: body["isArchived"])
+            ?? SocketAckParser.boolValue(from: body["archived"])
+            ?? SocketAckParser.boolValue(from: nestedSettings?["isArchived"])
+            ?? SocketAckParser.boolValue(from: nestedConversation?["isArchived"])
+        guard let archived else { return }
+
+        AppLogger.debug("[Archive] conversation:archived id=\(conversationId) isArchived=\(archived)")
+        Task { @MainActor in
+            self._settingsUpdatedSubject.send((conversationId, ["isArchived": archived]))
         }
     }
 
@@ -299,6 +354,39 @@ class ChatListSocketService: ObservableObject {
             Task { @MainActor in
                 self._settingsUpdatedSubject.send((conversationId, ["isArchived": archived]))
             }
+        }
+        if let pinned = SocketAckParser.boolValue(from: body["isPinned"])
+            ?? SocketAckParser.boolValue(from: body["pinned"]) {
+            Task { @MainActor in
+                self._settingsUpdatedSubject.send((conversationId, ["isPinned": pinned]))
+            }
+        }
+    }
+
+    private func handleConversationPinUpdated(_ data: [Any]) {
+        guard let dataDict = data.first as? [String: Any] else { return }
+        let body = (dataDict["data"] as? [String: Any]) ?? dataDict
+        if let parsed = SocketAckParser.conversationSettings(from: body),
+           parsed.settings["isPinned"] != nil || parsed.settings["pinned"] != nil {
+            var settings = parsed.settings
+            if settings["isPinned"] == nil, let pinned = settings["pinned"] {
+                settings["isPinned"] = pinned
+            }
+            Task { @MainActor in
+                self._settingsUpdatedSubject.send((parsed.conversationId, settings))
+            }
+            return
+        }
+
+        let conversationId = (body["conversationId"] as? String)
+            ?? (body["conversation_id"] as? String)
+            ?? (body["id"] as? String)
+            ?? ""
+        guard !conversationId.isEmpty,
+              let pinned = SocketAckParser.boolValue(from: body["isPinned"])
+                ?? SocketAckParser.boolValue(from: body["pinned"]) else { return }
+        Task { @MainActor in
+            self._settingsUpdatedSubject.send((conversationId, ["isPinned": pinned]))
         }
     }
 
@@ -346,14 +434,12 @@ class ChatListSocketService: ObservableObject {
     }
     
     private func setupNewMessageListener() {
-        listen(SocketEvent.getMessage.rawValue) { [weak self] data in
+        let ingest: ([String: Any]) -> Void = { [weak self] messageData in
             guard let self,
-                  let raw = data.first as? [String: Any] else { return }
-            let messageData = (raw["data"] as? [String: Any]) ?? raw
-            guard let message = ConversationMessage.fromDictionary(messageData) else { return }
+                  let message = ConversationMessage.fromDictionary(messageData) else { return }
             let conversationId = message.conversationId
             guard !conversationId.isEmpty else { return }
-            AppLogger.debug("[GlobalIngestion] get-message conversation=\(conversationId) id=\(message.id)")
+            AppLogger.debug("[GlobalIngestion] incoming message conversation=\(conversationId) id=\(message.id)")
             let event = IncomingMessageEvent(conversationId: conversationId, message: message, rawData: messageData)
             Task { @MainActor in
                 self._messageReceivedSubject.send(event)
@@ -361,9 +447,48 @@ class ChatListSocketService: ObservableObject {
             Task { [weak self] in await self?.ingestIncomingMessage(message) }
             Self.markDeliveredIfNeeded(message: message)
         }
+        listen(SocketEvent.getMessage.rawValue) { data in
+            guard let raw = data.first as? [String: Any] else { return }
+            ingest((raw["data"] as? [String: Any]) ?? raw)
+        }
+        listen(SocketEvent.messageForwarded.rawValue) { [weak self] data in
+            let root = (data.first as? [String: Any]) ?? [:]
+            let messages = ForwardChatMessagesAPIData.messages(from: root)
+            if !messages.isEmpty {
+                for message in messages {
+                    let conversationId = message.conversationId
+                    guard !conversationId.isEmpty else { continue }
+                    AppLogger.debug("[GlobalIngestion] forwarded message conversation=\(conversationId) id=\(message.id)")
+                    let event = IncomingMessageEvent(
+                        conversationId: conversationId,
+                        message: message,
+                        rawData: root
+                    )
+                    Task { @MainActor in
+                        self?._messageReceivedSubject.send(event)
+                    }
+                    Task { [weak self] in await self?.ingestIncomingMessage(message) }
+                    Self.markDeliveredIfNeeded(message: message)
+                }
+                return
+            }
+            guard let raw = data.first as? [String: Any] else { return }
+            ingest((raw["data"] as? [String: Any]) ?? raw)
+        }
+        for eventName in SocketEvent.replyMessageListenEvents {
+            listen(eventName) { data in
+                guard let raw = data.first as? [String: Any] else { return }
+                let body = (raw["data"] as? [String: Any]) ?? raw
+                let messageData = (body["message"] as? [String: Any]) ?? body
+                let hasIdentity = messageData["id"] != nil
+                    && (messageData["sender"] != nil || messageData["senderId"] != nil)
+                guard hasIdentity else { return }
+                ingest(messageData)
+            }
+        }
     }
 
-    /// FE auth-context: on message:new not from self → POST .../delivered + socket delivered
+    /// FlirtTime: on `chat:message_received` not from self → POST .../delivery + emit `chat:message_delivered`
     private static func markDeliveredIfNeeded(message: ConversationMessage) {
         let myId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
         let senderId = message.senderId ?? message.sender?.id ?? ""
@@ -371,7 +496,6 @@ class ChatListSocketService: ObservableObject {
         let conversationId = message.conversationId
         guard !conversationId.isEmpty, !message.id.isEmpty else { return }
 
-        // Console: client may emit chat:message:delivered so sender ticks update live
         ChatSocketManager.shared.emitMessage(
             SocketEvent.messageDelivered.rawValue,
             withData: [[
@@ -383,46 +507,93 @@ class ChatListSocketService: ObservableObject {
         guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else { return }
         _ = sessionManager.markConversationDelivered(conversationId: conversationId, messageId: message.id)
             .subscribe(onSuccess: { _ in
-                AppLogger.debug("[Delivered] REST ack for \(message.id) in \(conversationId)")
+                AppLogger.debug("[Delivered] REST /delivery ack for \(message.id) in \(conversationId)")
             }, onFailure: { error in
-                AppLogger.debug("[Delivered] REST failed: \(error.localizedDescription)")
+                AppLogger.debug("[Delivered] REST /delivery failed: \(error.localizedDescription)")
             })
     }
 
-    /// NEW API — `chat:inbox:refresh` (s2c).
-    /// Soft signal to re-fetch inbox when a group is created / ordering changes.
-    /// FE: `s.on(INBOX_REFRESH, scheduleRefresh)`.
+    /// FlirtTime `conversation:updated` + legacy `chat:inbox:refresh`.
     private func setupInboxRefreshListener() {
-        listen(SocketEvent.messageUpdated.rawValue) { [weak self] data in
-            guard let self else { return }
-            let payload = data.first as? [String: Any] ?? [:]
-            let reason = payload["reason"] as? String
-
-            // Legacy shape (old get-latest-conversation-message) — still ingest if present.
-            if let status = payload["status"] as? Bool, status == true,
-               let messageData = payload["data"] as? [String: Any],
-               let message = ConversationMessage.fromDictionary(messageData) {
-                let conversationId = message.conversationId
-                guard !conversationId.isEmpty else { return }
-                AppLogger.debug("[InboxRefresh] legacy message payload conversation=\(conversationId)")
-                let event = IncomingMessageEvent(conversationId: conversationId, message: message, rawData: messageData)
-                Task { @MainActor in
-                    self._messageReceivedSubject.send(event)
-                }
-                Task { [weak self] in await self?.ingestIncomingMessage(message) }
-                return
+        for eventName in SocketEvent.inboxRefreshListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleInboxRefreshEvent(data: data, source: eventName)
             }
+        }
+    }
 
-            // NEW shape: `{ reason: "message_new" | "conversation_created" | ... , conversationId? }`
-            let conversationId = payload["conversationId"] as? String
-                ?? (payload["data"] as? [String: Any])?["conversationId"] as? String
-            AppLogger.debug("[InboxRefresh] chat:inbox:refresh reason=\(reason ?? "nil") conversationId=\(conversationId ?? "nil") — requesting inbox sync")
+    private func handleInboxRefreshEvent(data: [Any], source: String) {
+        let payload = data.first as? [String: Any] ?? [:]
+        let reason = payload["reason"] as? String ?? source
+
+        if let status = payload["status"] as? Bool, status == true,
+           let messageData = payload["data"] as? [String: Any],
+           let message = ConversationMessage.fromDictionary(messageData) {
+            let conversationId = message.conversationId
+            guard !conversationId.isEmpty else { return }
+            AppLogger.debug("[InboxRefresh] legacy message payload conversation=\(conversationId)")
+            let event = IncomingMessageEvent(conversationId: conversationId, message: message, rawData: messageData)
             Task { @MainActor in
-                if let conversationId, !conversationId.isEmpty {
-                    ChatSocketManager.shared.joinConversationRoom(conversationId)
-                }
-                self._inboxRefreshSubject.send(reason)
+                self._messageReceivedSubject.send(event)
             }
+            Task { [weak self] in await self?.ingestIncomingMessage(message) }
+            return
+        }
+
+        let nested = payload["data"] as? [String: Any]
+        let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: nested?["conversationId"])
+            ?? SocketAckParser.stringValue(from: payload["id"])
+            ?? SocketAckParser.stringValue(from: nested?["id"])
+        AppLogger.debug("[InboxRefresh] \(source) reason=\(reason) conversationId=\(conversationId ?? "nil") — requesting inbox sync")
+        Task { @MainActor in
+            if let conversationId, !conversationId.isEmpty {
+                ChatSocketManager.shared.joinConversationRoom(conversationId)
+                if let unread = (payload["unreadCount"] as? Int)
+                    ?? (payload["unread"] as? Int)
+                    ?? (payload["unreadCount"] as? NSNumber)?.intValue {
+                    let applied = ChatNotificationState.shared.isViewingConversation(conversationId) ? 0 : max(0, unread)
+                    self._unreadCountSubject.send((conversationId, applied))
+                }
+            }
+            self._inboxRefreshSubject.send(reason)
+        }
+    }
+
+    /// FlirtTime `conversation:unread_updated` — `{ conversationId, unreadCount }`.
+    private func setupConversationUnreadListener() {
+        listen(SocketEvent.conversationUnreadUpdated.rawValue) { [weak self] data in
+            self?.handleConversationUnreadUpdated(data: data)
+        }
+    }
+
+    private func handleConversationUnreadUpdated(data: [Any]) {
+        let root: [String: Any]
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let arr = data.first as? [Any], let dict = arr.first as? [String: Any] {
+            root = dict
+        } else {
+            return
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: root["conversationId"])
+            ?? ""
+        guard !conversationId.isEmpty else { return }
+
+        let unread = SocketAckParser.stringValue(from: payload["unreadCount"] ?? payload["unread"] ?? payload["unread_count"])
+            .flatMap { Int($0) }
+            ?? (payload["unreadCount"] as? Int)
+            ?? (payload["unread"] as? Int)
+            ?? (root["unreadCount"] as? Int)
+            ?? (payload["unreadCount"] as? NSNumber)?.intValue
+        guard let unread else { return }
+
+        let applied = ChatNotificationState.shared.isViewingConversation(conversationId) ? 0 : max(0, unread)
+        AppLogger.debug("[Unread] conversation:unread_updated conversationId=\(conversationId) unread=\(applied)")
+        Task { @MainActor in
+            self._unreadCountSubject.send((conversationId, applied))
         }
     }
 
@@ -804,20 +975,29 @@ class ChatListSocketService: ObservableObject {
     }
     
     private func parseDeletedConversationId(from data: [Any]) -> String? {
+        func conversationId(in dict: [String: Any]) -> String? {
+            let body = (dict["data"] as? [String: Any]) ?? dict
+            if let id = body["conversationId"] as? String, !id.isEmpty { return id }
+            if let id = body["conversation_id"] as? String, !id.isEmpty { return id }
+            if let id = body["id"] as? String, !id.isEmpty { return id }
+            if let id = dict["conversationId"] as? String, !id.isEmpty { return id }
+            return nil
+        }
+
         if let dataArray = data.first as? [Any], dataArray.count >= 2 {
             if let ackData = dataArray[1] as? [String: Any],
-               let conversationId = ackData["conversationId"] as? String {
+               let conversationId = conversationId(in: ackData) {
                 return conversationId
-            } else if let conversationId = dataArray[1] as? String {
+            } else if let conversationId = dataArray[1] as? String, !conversationId.isEmpty {
                 return conversationId
             }
         } else if let responseDict = data.first as? [String: Any],
-                  let conversationId = responseDict["conversationId"] as? String {
+                  let conversationId = conversationId(in: responseDict) {
             return conversationId
-        } else if let conversationId = data.first as? String {
+        } else if let conversationId = data.first as? String, !conversationId.isEmpty {
             return conversationId
         }
-        
+
         return nil
     }
     
@@ -836,15 +1016,31 @@ class ChatListSocketService: ObservableObject {
     // MARK: - Global Background Listeners
 
     private func setupGlobalMessageEditedListener() {
-        listen(SocketEvent.messageEdited.rawValue) { data in
-            guard let responseData = data.first as? [String: Any] else { return }
-            let messageData: [String: Any]?
-            if let nested = responseData["data"] as? [String: Any] { messageData = nested }
-            else if responseData["id"] != nil { messageData = responseData }
-            else { messageData = nil }
-            guard let validData = messageData,
-                  let message = ConversationMessage.fromDictionary(validData) else { return }
-            Task { try? await MessageRepository().updateMessage(message) }
+        for eventName in SocketEvent.messageEditedListenEvents {
+            listen(eventName) { data in
+                guard let responseData = data.first as? [String: Any] else { return }
+                let nested = (responseData["data"] as? [String: Any]) ?? responseData
+                let messageData = (nested["message"] as? [String: Any]) ?? nested
+                if let message = ConversationMessage.fromDictionary(messageData) {
+                    Task { try? await MessageRepository().updateMessage(message) }
+                    return
+                }
+                let messageId = (messageData["messageId"] as? String)
+                    ?? (messageData["id"] as? String)
+                    ?? ""
+                let conversationId = (messageData["conversationId"] as? String) ?? ""
+                let content = (messageData["content"] as? String)
+                    ?? (messageData["body"] as? String)
+                    ?? ""
+                guard !messageId.isEmpty else { return }
+                let partial = ConversationMessage(
+                    id: messageId,
+                    conversationId: conversationId,
+                    content: content,
+                    isEdited: true
+                )
+                Task { try? await MessageRepository().updateMessage(partial) }
+            }
         }
     }
 
@@ -852,12 +1048,12 @@ class ChatListSocketService: ObservableObject {
         let handler: ([Any]) -> Void = { [weak self] data in
             self?.handleGlobalMessageReacted(data: data)
         }
-        // Android CHAT_MESSAGE_REACTED + emitter ack
-        listen(SocketEvent.messageReacted.rawValue, handler: handler)
-        listen(SocketEvent.reactToMessageAck.rawValue, handler: handler)
+        for eventName in SocketEvent.messageReactionUpdatedListenEvents {
+            listen(eventName, handler: handler)
+        }
     }
 
-    /// Persist `chat:message:reacted` onto existing Core Data message (merge-only).
+    /// Persist `message:reaction:updated` onto existing Core Data message (merge-only).
     private func handleGlobalMessageReacted(data: [Any]) {
         guard let responseData = data.first as? [String: Any] else { return }
         let isExplicitFailure: Bool = {
@@ -873,10 +1069,14 @@ class ChatListSocketService: ObservableObject {
            let delta = ConversationMessage.reactionDelta(from: responseData) {
             var dict: [String: Any] = ["id": delta.messageId]
             if let cid = delta.conversationId { dict["conversationId"] = cid }
-            dict["metadata"] = [
+            var metadata: [String: Any] = [
                 "_reactionDeltaEmoji": delta.emoji,
                 "_reactionDeltaUserId": delta.userId
             ]
+            if let action = delta.action, !action.isEmpty {
+                metadata["_reactionDeltaAction"] = action
+            }
+            dict["metadata"] = metadata
             reactionUpdate = ConversationMessage.fromDictionary(dict) ?? reactionUpdate
         }
 
@@ -895,7 +1095,8 @@ class ChatListSocketService: ObservableObject {
                     ConversationMessage.applyingReactionDelta(
                         existing.reactions ?? [],
                         emoji: emoji,
-                        userId: userId
+                        userId: userId,
+                        action: reactionUpdate.metadata?["_reactionDeltaAction"]?.value as? String
                     )
                 )
             } else {
@@ -922,146 +1123,163 @@ class ChatListSocketService: ObservableObject {
     }
 
     private func setupGlobalMessageDeletedListener() {
-        listen(SocketEvent.messageDeleted.rawValue) { data in
-            guard let responseData = data.first as? [String: Any] else { return }
-            let validData = (responseData["data"] as? [String: Any]) ?? responseData
-
-            // FE: `{ conversationId, messageId, scope, actorId }` — peers only care about everyone.
-            let scope = (
-                (validData["scope"] as? String)
-                ?? (responseData["scope"] as? String)
-                ?? "everyone"
-            ).lowercased()
-            guard scope == "everyone" else { return }
-
-            let conversationId = validData["conversationId"] as? String
-                ?? responseData["conversationId"] as? String
-                ?? ""
-
-            var deletedIds: [String] = []
-            if let ids = validData["deletedIds"] as? [String] {
-                deletedIds = ids.filter { !$0.isEmpty }
-            } else if let ids = validData["deletedIds"] as? [Any] {
-                deletedIds = ids.compactMap { $0 as? String }.filter { !$0.isEmpty }
-            } else if let ids = validData["messageIds"] as? [String] {
-                deletedIds = ids.filter { !$0.isEmpty }
-            } else if let messageId = (validData["messageId"] as? String)
-                ?? (validData["id"] as? String)
-                ?? (responseData["messageId"] as? String),
-                !messageId.isEmpty {
-                deletedIds = [messageId]
+        for eventName in SocketEvent.messageDeletedListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleGlobalMessageDeleted(data)
             }
+        }
+    }
 
-            guard !deletedIds.isEmpty else { return }
+    private func handleGlobalMessageDeleted(_ data: [Any]) {
+        guard let responseData = data.first as? [String: Any] else { return }
+        let validData = (responseData["data"] as? [String: Any]) ?? responseData
 
-            let deletedContent = ChatStrings.chat_messageDeleted.localizedString()
-            AppLogger.debug(
-                "[MessageDeleted] global scope=everyone conversation=\(conversationId) ids=\(deletedIds.count)"
+        // `{ conversationId, messageId, deleteType, actorId }` — peers only care about everyone.
+        let deleteType = SocketAckParser.deleteType(from: validData)
+        guard deleteType == "everyone" else { return }
+
+        let conversationId = validData["conversationId"] as? String
+            ?? responseData["conversationId"] as? String
+            ?? ""
+
+        var deletedIds: [String] = []
+        if let ids = validData["deletedIds"] as? [String] {
+            deletedIds = ids.filter { !$0.isEmpty }
+        } else if let ids = validData["deletedIds"] as? [Any] {
+            deletedIds = ids.compactMap { $0 as? String }.filter { !$0.isEmpty }
+        } else if let ids = validData["messageIds"] as? [String] {
+            deletedIds = ids.filter { !$0.isEmpty }
+        } else if let messageId = (validData["messageId"] as? String)
+            ?? (validData["id"] as? String)
+            ?? (responseData["messageId"] as? String),
+            !messageId.isEmpty {
+            deletedIds = [messageId]
+        }
+
+        guard !deletedIds.isEmpty else { return }
+
+        let deletedContent = ChatStrings.chat_messageDeleted.localizedString()
+        AppLogger.debug(
+            "[MessageDeleted] global deleteType=everyone conversation=\(conversationId) ids=\(deletedIds.count)"
+        )
+
+        Task {
+            let repository = MessageRepository()
+            try? await repository.markMessagesDeletedForEveryone(
+                ids: deletedIds,
+                conversationId: conversationId.isEmpty ? nil : conversationId,
+                deletedContent: deletedContent
             )
+        }
 
-            Task {
-                let repository = MessageRepository()
-                try? await repository.markMessagesDeletedForEveryone(
-                    ids: deletedIds,
-                    conversationId: conversationId.isEmpty ? nil : conversationId,
+        Task { @MainActor in
+            if !conversationId.isEmpty {
+                ChatDataPreloader.shared.markMessagesDeletedForEveryone(
+                    conversationId: conversationId,
+                    messageIds: deletedIds,
                     deletedContent: deletedContent
                 )
             }
+        }
 
-            // Update preload on main so reopen does not restore original bodies.
-            Task { @MainActor in
-                if !conversationId.isEmpty {
-                    ChatDataPreloader.shared.markMessagesDeletedForEveryone(
-                        conversationId: conversationId,
-                        messageIds: deletedIds,
-                        deletedContent: deletedContent
-                    )
-                }
-            }
-
-            if !conversationId.isEmpty {
-                for deletedId in deletedIds {
-                    NotificationCenter.default.post(
-                        name: .ChatLastMessageDeleted,
-                        object: nil,
-                        userInfo: ["conversationId": conversationId, "messageId": deletedId]
-                    )
-                }
+        if !conversationId.isEmpty {
+            for deletedId in deletedIds {
+                NotificationCenter.default.post(
+                    name: .ChatLastMessageDeleted,
+                    object: nil,
+                    userInfo: ["conversationId": conversationId, "messageId": deletedId]
+                )
             }
         }
     }
 
     private func setupGlobalMessageStatusUpdateListener() {
-        listen(SocketEvent.conversationMessageStatusUpdate.rawValue) { [weak self] data in
-            guard let root = data.first as? [String: Any] else { return }
-            let payload = (root["data"] as? [String: Any]) ?? root
-            let statusString = (payload["status"] as? String)
-                ?? (payload["receiptStatus"] as? String)
-                ?? (root["status"] as? String)
-                ?? ""
-            guard !statusString.isEmpty else { return }
-
-            var messageIds: [String] = []
-            if let mid = payload["messageId"] as? String, !mid.isEmpty {
-                messageIds = [mid]
-            } else if let mid = root["messageId"] as? String, !mid.isEmpty {
-                messageIds = [mid]
-            } else if let ids = payload["messageIds"] as? [String] {
-                messageIds = ids.filter { !$0.isEmpty }
-            } else if let ids = root["messageIds"] as? [String] {
-                messageIds = ids.filter { !$0.isEmpty }
+        for eventName in SocketEvent.readReceiptListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleGlobalReadReceipt(data: data)
             }
-            guard !messageIds.isEmpty else { return }
+        }
+    }
 
-            let conversationId = (payload["conversationId"] as? String)
-                ?? (root["conversationId"] as? String)
-                ?? ""
-            let deliveredTo = payload["deliveredTo"] as? [String] ?? []
-            let seenBy = (payload["seenBy"] as? String)
-                ?? (payload["readerId"] as? String)
+    private func handleGlobalReadReceipt(data: [Any]) {
+        let root: [String: Any]
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let arr = data.first as? [Any], let dict = arr.first as? [String: Any] {
+            root = dict
+        } else {
+            return
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        let statusString = SocketAckParser.deliveryStatusString(
+            from: payload["status"] ?? payload["receiptStatus"] ?? root["status"],
+            default: "seen"
+        )
+        applyGlobalReceiptPayload(root: root, payload: payload, statusString: statusString)
+    }
 
-            // Emit typed publisher for any subscriber (chat list, chat detail, etc.)
-            let statusEvent = MessageStatusEvent(
-                conversationId: conversationId,
-                messageIds: messageIds,
-                status: statusString,
-                deliveredTo: deliveredTo,
-                seenBy: seenBy
-            )
-            Task { @MainActor in self?._messageStatusSubject.send(statusEvent) }
+    private func applyGlobalReceiptPayload(root: [String: Any], payload: [String: Any], statusString: String) {
+        var messageIds: [String] = []
+        if let mid = SocketAckParser.stringValue(from: payload["messageId"]) {
+            messageIds = [mid]
+        } else if let mid = SocketAckParser.stringValue(from: root["messageId"]) {
+            messageIds = [mid]
+        } else if let mid = SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["id"]) {
+            messageIds = [mid]
+        } else if let ids = payload["messageIds"] as? [String] {
+            messageIds = ids.filter { !$0.isEmpty }
+        } else if let ids = root["messageIds"] as? [String] {
+            messageIds = ids.filter { !$0.isEmpty }
+        }
 
-            // Also update CoreData for persistence
-            let newStatus = MessageDeliveryStatus.from(statusString)
-            guard newStatus != .unknown else { return }
+        let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: root["conversationId"])
+            ?? ""
+        guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
-            let repo = MessageRepository()
-            Task {
-                for messageId in messageIds {
-                    guard let existing = try? await repo.getMessage(id: messageId) else { continue }
+        let deliveredTo = payload["deliveredTo"] as? [String] ?? []
+        let seenBy = (payload["seenBy"] as? String)
+            ?? (payload["readerId"] as? String)
 
-                    let currentStatus = MessageDeliveryStatus.from(
-                        status: existing.status,
-                        sentAt: existing.sentAt,
-                        deliveredAt: existing.deliveredAt,
-                        seenAt: existing.seenAt
+        let statusEvent = MessageStatusEvent(
+            conversationId: conversationId,
+            messageIds: messageIds,
+            status: statusString,
+            deliveredTo: deliveredTo,
+            seenBy: seenBy
+        )
+        Task { @MainActor in self._messageStatusSubject.send(statusEvent) }
+
+        let newStatus = MessageDeliveryStatus.from(statusString)
+        guard newStatus != .unknown, !messageIds.isEmpty else { return }
+
+        let repo = MessageRepository()
+        Task {
+            for messageId in messageIds {
+                guard let existing = try? await repo.getMessage(id: messageId) else { continue }
+
+                let currentStatus = MessageDeliveryStatus.from(
+                    status: existing.status,
+                    sentAt: existing.sentAt,
+                    deliveredAt: existing.deliveredAt,
+                    seenAt: existing.seenAt
+                )
+                guard newStatus > currentStatus else { continue }
+
+                let updated = existing.withStatus(newStatus)
+                try? await repo.saveMessages([updated], conversationId: existing.conversationId)
+
+                let convId = existing.conversationId ?? ""
+                if !convId.isEmpty {
+                    await ConversationRepository().updateLastMessageStatusIfLatest(
+                        conversationId: convId,
+                        messageId: messageId,
+                        status: updated.status ?? statusString
                     )
-                    guard newStatus > currentStatus else { continue }
-
-                    let updated = existing.withStatus(newStatus)
-                    try? await repo.saveMessages([updated], conversationId: existing.conversationId)
-
-                    let convId = existing.conversationId ?? ""
-                    if !convId.isEmpty {
-                        await ConversationRepository().updateLastMessageStatusIfLatest(
-                            conversationId: convId,
-                            messageId: messageId,
-                            status: updated.status ?? statusString
-                        )
-                        await MainActor.run {
-                            if let cached = ChatDataPreloader.shared.getPreloadedMessages(for: convId) {
-                                let refreshed = cached.map { $0.id == messageId ? updated : $0 }
-                                ChatDataPreloader.shared.setPreloadedMessages(for: convId, messages: refreshed)
-                            }
+                    await MainActor.run {
+                        if let cached = ChatDataPreloader.shared.getPreloadedMessages(for: convId) {
+                            let refreshed = cached.map { $0.id == messageId ? updated : $0 }
+                            ChatDataPreloader.shared.setPreloadedMessages(for: convId, messages: refreshed)
                         }
                     }
                 }
@@ -1069,55 +1287,60 @@ class ChatListSocketService: ObservableObject {
         }
     }
 
-    /// FE: chat:message:delivered / chat:message:status → update ticks for own messages.
-    /// Note: chat:message:seen is c2s-only per console; sender ticks come from status.
+    /// FlirtTime: `chat:delivery_receipt` / `chat:message_delivered` → inbox ticks.
+    /// Seen ticks come from `setupGlobalMessageStatusUpdateListener` (`chat:read_receipt`).
     private func setupDeliveredAndSeenListeners() {
-        listen(SocketEvent.messageDelivered.rawValue) { [weak self] data in
-            self?.handleReceiptEvent(data: data, status: "delivered")
-        }
-        listen(SocketEvent.conversationMessageStatusUpdate.rawValue) { [weak self] data in
-            guard let root = data.first as? [String: Any] else { return }
-            let payload = (root["data"] as? [String: Any]) ?? root
-            let status = (payload["status"] as? String)
-                ?? (payload["receiptStatus"] as? String)
-                ?? ""
-            guard !status.isEmpty else { return }
-            self?.handleReceiptEvent(data: data, status: status)
+        for eventName in SocketEvent.deliveryReceiptListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleReceiptEvent(data: data, status: "delivered")
+            }
         }
     }
 
     private func handleReceiptEvent(data: [Any], status: String) {
-        guard let root = data.first as? [String: Any] else { return }
+        let root: [String: Any]
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let arr = data.first as? [Any], let dict = arr.first as? [String: Any] {
+            root = dict
+        } else {
+            return
+        }
         let payload = (root["data"] as? [String: Any]) ?? root
-        let conversationId = (payload["conversationId"] as? String)
-            ?? (root["conversationId"] as? String)
+        let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: payload["conversation_id"])
+            ?? SocketAckParser.stringValue(from: root["conversationId"])
+            ?? SocketAckParser.stringValue(from: root["conversation_id"])
+            ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversationId"])
             ?? ""
-        guard !conversationId.isEmpty else { return }
 
         let myId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
         let actorId: String = {
             if status == "delivered" {
-                return (payload["delivererId"] as? String) ?? ""
+                return SocketAckParser.stringValue(from: payload["delivererId"]) ?? ""
             }
-            return (payload["readerId"] as? String)
-                ?? (payload["seenBy"] as? String)
+            return SocketAckParser.stringValue(from: payload["readerId"])
+                ?? SocketAckParser.stringValue(from: payload["seenBy"])
                 ?? ""
         }()
         if !myId.isEmpty, !actorId.isEmpty, actorId == myId { return }
 
         var messageIds: [String] = []
-        if let mid = payload["messageId"] as? String, !mid.isEmpty {
+        if let mid = SocketAckParser.stringValue(from: payload["messageId"]) {
             messageIds = [mid]
         } else if let ids = payload["messageIds"] as? [String] {
             messageIds = ids.filter { !$0.isEmpty }
+        } else if let mid = SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["id"]) {
+            messageIds = [mid]
         }
+        guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
         let statusEvent = MessageStatusEvent(
             conversationId: conversationId,
             messageIds: messageIds,
             status: status,
             deliveredTo: [],
-            seenBy: status == "seen" ? (actorId.isEmpty ? nil : actorId) : nil
+            seenBy: (status == "seen" || status == "read") ? (actorId.isEmpty ? nil : actorId) : nil
         )
         Task { @MainActor in self._messageStatusSubject.send(statusEvent) }
 
@@ -1150,6 +1373,14 @@ class ChatListSocketService: ObservableObject {
                 guard newStatus > currentStatus else { continue }
                 let updated = existing.withStatus(newStatus)
                 try? await repo.saveMessages([updated], conversationId: existing.conversationId)
+                let convId = existing.conversationId ?? conversationId
+                if !convId.isEmpty {
+                    await ConversationRepository().updateLastMessageStatusIfLatest(
+                        conversationId: convId,
+                        messageId: messageId,
+                        status: updated.status ?? status
+                    )
+                }
             }
             await MainActor.run {
                 NotificationCenter.default.post(

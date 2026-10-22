@@ -11,7 +11,7 @@ extension NSNotification.Name {
     static let ChatUnreadCleared = NSNotification.Name("ChatUnreadCleared")
     static let ChatBlockStatusChanged = NSNotification.Name("ChatBlockStatusChanged")
     static let ChatLastMessageDeleted = NSNotification.Name("ChatLastMessageDeleted")
-    /// Android `CHAT_MESSAGE_REACTED` / socket `chat:message:reacted`
+    /// Socket `message:reaction:updated` (and legacy `chat:message:reacted`)
     static let ChatMessageReacted = NSNotification.Name("ChatMessageReacted")
 }
 

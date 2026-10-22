@@ -51,6 +51,7 @@ enum ChatAssets {
     static let mute = "muteIcon"
     static let unmute = "UnmuteIcon"
     static let delete = "chatDelete"
+    static let deleteFilled = "chatDeleteIcon"
     static let block = "blockUserIcon"
     static let report = "reportIcon"
     static let clearChat = "clearChat"

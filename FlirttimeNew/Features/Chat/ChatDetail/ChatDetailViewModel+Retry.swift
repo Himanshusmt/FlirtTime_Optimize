@@ -435,6 +435,16 @@ extension ChatDetailViewModel {
             }
         }
 
+        if let tempReply = tempMessageMapping[tempId]?.replyToId {
+            if updatedServerMessage.replyToId == nil {
+                updatedServerMessage.replyToId = tempReply
+            } else {
+                updatedServerMessage.replyToId = updatedServerMessage.replyToId?
+                    .mergingMissingSender(from: tempReply)
+            }
+        }
+        updatedServerMessage = enrichReplyPreview(updatedServerMessage)
+
         tempMessageMapping.removeValue(forKey: tempId)
         messageRetryAttempts.removeValue(forKey: tempId)
         activeMediaUploads.remove(tempId)

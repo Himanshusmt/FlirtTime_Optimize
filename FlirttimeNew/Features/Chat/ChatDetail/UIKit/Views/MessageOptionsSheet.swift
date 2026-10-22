@@ -161,9 +161,6 @@ final class MessageOptionsSheet: UIView {
     func configure(
         message: ConversationMessage,
         displayContent: String = "",
-        canCopy: Bool,
-        canTranslate: Bool,
-        translateTitle: String?,
         canEdit: Bool,
         canDelete: Bool,
         canDeleteForEveryone: Bool,
@@ -171,17 +168,13 @@ final class MessageOptionsSheet: UIView {
         canForward: Bool,
         canReply: Bool,
         canRetry: Bool = false,
-        canMessageInfo: Bool = false,
         isPinned: Bool,
         onReact: @escaping (String) -> Void,
-        onCopy: @escaping () -> Void,
         onReply: @escaping () -> Void,
         onForward: @escaping () -> Void,
         onSelect: @escaping () -> Void,
-        onTranslate: @escaping () -> Void,
         onEdit: @escaping () -> Void,
         onPin: @escaping () -> Void,
-        onMessageInfo: @escaping () -> Void,
         onRetry: @escaping () -> Void = {},
         onDeleteForMe: @escaping () -> Void,
         onDeleteForEveryone: @escaping () -> Void,
@@ -252,7 +245,7 @@ final class MessageOptionsSheet: UIView {
         addSpacer(height: 12)
 
         // Pending/failed messages show a minimal sheet (only delete + retry)
-        let isMinimal = !canCopy && !canReply && !canForward && !canEdit && !canPin && !canTranslate
+        let isMinimal = !canReply && !canForward && !canEdit && !canPin
 
         // Reactions section — hidden for pending/failed messages
         if !isMinimal {
@@ -336,13 +329,6 @@ final class MessageOptionsSheet: UIView {
         actionWrapper.spacing = 0
         actionWrapper.alignment = .fill
 
-        if canCopy {
-            actionWrapper.addArrangedSubview(makeActionRow(
-                title: ChatStrings.chat_copy.localizedString(),
-                systemImage: "doc.on.doc",
-                isDestructive: false
-            ) { onCopy(); self.dismiss() })
-        }
         if canReply {
             actionWrapper.addArrangedSubview(makeActionRow(
                 title: ChatStrings.chat_reply.localizedString(),
@@ -350,18 +336,13 @@ final class MessageOptionsSheet: UIView {
                 isDestructive: false
             ) { onReply(); self.dismiss() })
         }
-        
-        if canMessageInfo {
+        if canForward {
             actionWrapper.addArrangedSubview(makeActionRow(
-                title: ChatStrings.chat_messageInfo.localizedString(),
-                systemImage: "info.circle",
+                title: ChatStrings.chat_forward.localizedString(),
+                systemImage: "arrowshape.turn.up.right",
                 isDestructive: false
-            ) {
-                onMessageInfo()
-                self.dismiss()
-            })
+            ) { onForward(); self.dismiss() })
         }
-        
         
         if canEdit {
             actionWrapper.addArrangedSubview(makeActionRow(
@@ -385,13 +366,6 @@ final class MessageOptionsSheet: UIView {
                 systemImage: "checkmark.circle",
                 isDestructive: false
             ) { onSelect(); self.dismiss() })
-        }
-        if canTranslate {
-            actionWrapper.addArrangedSubview(makeActionRow(
-                title: translateTitle ?? ChatStrings.chat_translate.localizedString(),
-                systemImage: "character.bubble",
-                isDestructive: false
-            ) { onTranslate(); self.dismiss() })
         }
         if canRetry {
             actionWrapper.addArrangedSubview(makeActionRow(

@@ -13,11 +13,20 @@ final class ChatActionsHandler: ObservableObject {
     @Published var selectedChatForAction: ChatMessageRow?
     @Published var showDeleteForEveryoneConfirmation = false
     @Published var deleteForEveryoneChat: ChatMessageRow?
+    /// List swipe can fire Delete when an unarchived row is removed. Ignore that.
+    private var suppressActionsUntil: Date?
 
     func showAction(_ action: ChatAction, for chat: ChatMessageRow) {
+        if let until = suppressActionsUntil, Date() < until, action == .delete {
+            return
+        }
         selectedChatForAction = chat
         confirmationAction = action
         showConfirmation = true
+    }
+
+    func suppressFollowUpActions(for interval: TimeInterval = 1.0) {
+        suppressActionsUntil = Date().addingTimeInterval(interval)
     }
 
     func hideConfirmation() {
@@ -48,7 +57,7 @@ struct ChatActionOverlay: View {
                 ConfirmationModal.deleteChatForEveryone(
                     userName: getChatName(chat),
                     onDelete: {
-                        // DELETE /api/v1/chat/conversations/{id}?scope=everyone
+                        // DELETE /api/v1/chats/{id} { deleteType: "everyone" }
                         handleDeleteChat(chat: chat, forEveryone: true)
                         actionsHandler.hideDeleteForEveryone()
                     },
@@ -60,14 +69,28 @@ struct ChatActionOverlay: View {
 
                 switch action {
                 case .archive:
-                    ConfirmationModal.archiveChat(
-                        chatName: getChatName(chat),
-                        onArchive: {
-                            viewModel.archiveChat(chatId: chat.id ?? "", isArchived: true)
-                            actionsHandler.hideConfirmation()
-                        },
-                        onDismiss: { actionsHandler.hideConfirmation() }
-                    )
+                    let chatId = chat.id ?? ""
+                    let isArchived = viewModel.isArchived(chatId: chatId) || chat.isArchived
+                    if isArchived {
+                        ConfirmationModal.unarchiveChat(
+                            chatName: getChatName(chat),
+                            onUnarchive: {
+                                actionsHandler.suppressFollowUpActions()
+                                viewModel.archiveChat(chatId: chatId, isArchived: false)
+                                actionsHandler.hideConfirmation()
+                            },
+                            onDismiss: { actionsHandler.hideConfirmation() }
+                        )
+                    } else {
+                        ConfirmationModal.archiveChat(
+                            chatName: getChatName(chat),
+                            onArchive: {
+                                viewModel.archiveChat(chatId: chatId, isArchived: true)
+                                actionsHandler.hideConfirmation()
+                            },
+                            onDismiss: { actionsHandler.hideConfirmation() }
+                        )
+                    }
                 case .mute:
                     ConfirmationModal.muteChat(
                         chatName: getChatName(chat),
@@ -109,13 +132,11 @@ struct ChatActionOverlay: View {
                         ConfirmationModal.deleteChat(
                             chatName: getChatName(chat),
                             onDelete: {
-                                // DELETE .../conversations/{id}?scope=me
                                 handleDeleteChat(chat: chat, forEveryone: false)
                                 actionsHandler.hideConfirmation()
                             },
                             onDeleteForEveryone: {
                                 actionsHandler.hideConfirmation()
-                                // Confirm → DELETE .../conversations/{id}?scope=everyone
                                 actionsHandler.showDeleteForEveryone(for: chat)
                             },
                             onDismiss: { actionsHandler.hideConfirmation() }

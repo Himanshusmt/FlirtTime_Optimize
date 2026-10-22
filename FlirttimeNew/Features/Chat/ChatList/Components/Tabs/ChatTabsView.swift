@@ -74,37 +74,117 @@ struct ChatInboxSegmentedControl: View {
     }
 }
 
-// MARK: - Dummy Calls UI
+// MARK: - Call History UI
 
-struct DummyCallItem: Identifiable {
-    enum Direction { case incoming, outgoing, missed }
-    enum Media { case audio, video }
+struct CallHistoryItem: Identifiable, Equatable {
+    enum Direction: Equatable { case incoming, outgoing, missed }
+    enum Media: Equatable { case audio, video }
 
     let id: String
+    let conversationId: String
+    let peerId: String
     let name: String
+    let avatarURL: String?
     let initials: String
     let direction: Direction
     let media: Media
+    let isGroup: Bool
     let time: String
     let duration: String?
+
+    init(call: AgoraCallDto, currentUserId: String) {
+        id = call.id
+        conversationId = call.conversationId
+        isGroup = call.resolvedIsGroup
+        media = call.type == .video ? .video : .audio
+
+        let meId = currentUserId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiDirection = (call.direction ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let isOutgoing = apiDirection == "outgoing" || (!meId.isEmpty && call.callerId == meId)
+        let peer = call.peer(relativeTo: meId)
+        peerId = {
+            if let peer, !peer.id.isEmpty { return peer.id }
+            if isOutgoing { return call.calleeId }
+            return call.callerId
+        }()
+        name = call.displayTitle(relativeTo: meId)
+        avatarURL = peer?.profilePicture
+        initials = CallHistoryItem.initials(from: name)
+
+        if apiDirection == "missed" || call.status == .missed {
+            direction = .missed
+        } else if !isOutgoing, call.status == .declined || call.status == .rejected || call.status == .busy {
+            direction = .missed
+        } else if apiDirection == "incoming" {
+            direction = .incoming
+        } else {
+            direction = isOutgoing ? .outgoing : .incoming
+        }
+
+        let timestamp = call.startedAt ?? call.createdAt ?? call.endedAt
+        time = CallHistoryItem.relativeTime(from: timestamp)
+        duration = CallHistoryItem.durationLabel(call: call)
+    }
+
+    private static func initials(from name: String) -> String {
+        let parts = name.split(separator: " ").prefix(2)
+        let letters = parts.compactMap { $0.first }.map(String.init)
+        return letters.joined().uppercased()
+    }
+
+    private static func relativeTime(from raw: String?) -> String {
+        guard let date = parseDate(raw) else { return "" }
+        return date.timeAgoDisplay()
+    }
+
+    private static func durationLabel(call: AgoraCallDto) -> String? {
+        if let seconds = call.duration, seconds > 0 {
+            return formatDuration(seconds)
+        }
+        if let start = parseDate(call.startedAt), let end = parseDate(call.endedAt) {
+            let seconds = end.timeIntervalSince(start)
+            guard seconds > 0 else { return nil }
+            return formatDuration(seconds)
+        }
+        return nil
+    }
+
+    private static func formatDuration(_ seconds: TimeInterval) -> String {
+        let total = max(Int(seconds.rounded()), 0)
+        let minutes = total / 60
+        let remainder = total % 60
+        if minutes >= 60 {
+            let hours = minutes / 60
+            let mins = minutes % 60
+            return String(format: "%d:%02d:%02d", hours, mins, remainder)
+        }
+        return String(format: "%d:%02d", minutes, remainder)
+    }
+
+    private static func parseDate(_ raw: String?) -> Date? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: raw) { return date }
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: raw) { return date }
+        let fallback = DateFormatter()
+        fallback.locale = Locale(identifier: "en_US_POSIX")
+        fallback.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        return fallback.date(from: raw)
+    }
 }
 
-struct ChatCallsDummyListView: View {
+struct ChatCallsListView: View {
+    @ObservedObject var viewModel: ChatListViewModel
     var searchText: String = ""
-
-    private let dummyCalls: [DummyCallItem] = [
-        DummyCallItem(id: "1", name: "Riya", initials: "R", direction: .missed, media: .video, time: "2m ago", duration: nil),
-        DummyCallItem(id: "2", name: "Maya", initials: "M", direction: .outgoing, media: .audio, time: "18m ago", duration: "4:12"),
-        DummyCallItem(id: "3", name: "Priya", initials: "P", direction: .incoming, media: .video, time: "1h ago", duration: "12:08"),
-        DummyCallItem(id: "4", name: "Meera", initials: "M", direction: .outgoing, media: .video, time: "Yesterday", duration: "1:45"),
-        DummyCallItem(id: "5", name: "Tanya", initials: "T", direction: .missed, media: .audio, time: "Yesterday", duration: nil),
-        DummyCallItem(id: "6", name: "Nisha", initials: "N", direction: .incoming, media: .audio, time: "Mon", duration: "8:33"),
-        DummyCallItem(id: "7", name: "Sara", initials: "S", direction: .outgoing, media: .audio, time: "Sun", duration: "2:09")
-    ]
 
     var body: some View {
         let rows = filteredCalls
-        if rows.isEmpty {
+        if viewModel.isLoadingCallHistory && rows.isEmpty {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if rows.isEmpty {
             VStack(spacing: 12) {
                 SwiftUI.Image(systemName: "phone")
                     .font(.system(size: 36, weight: .medium))
@@ -120,32 +200,44 @@ struct ChatCallsDummyListView: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
+                    .onAppear {
+                        viewModel.loadMoreCallHistoryIfNeeded(currentItem: call)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            viewModel.deleteCallHistoryItem(id: call.id)
+                        } label: {
+                            Label(ChatStrings.delete.localizedString(), systemImage: "trash")
+                        }
+                    }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListHeaderHeight, 0)
+            .refreshable {
+                viewModel.refreshCallHistory()
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear.frame(height: 80)
             }
         }
     }
 
-    private var filteredCalls: [DummyCallItem] {
+    private var filteredCalls: [CallHistoryItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return dummyCalls }
-        return dummyCalls.filter { $0.name.lowercased().contains(query) }
+        guard !query.isEmpty else { return viewModel.callHistory }
+        return viewModel.callHistory.filter { $0.name.lowercased().contains(query) }
     }
 
-    private func callRow(_ call: DummyCallItem) -> some View {
+    private func callRow(_ call: CallHistoryItem) -> some View {
         HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color.chatPrimarySoft)
-                    .frame(width: 54, height: 54)
-                Text(call.initials)
-                    .font(.chatSemiBold(size: 18))
-                    .foregroundColor(Color.chatPrimary)
-            }
+            CachedProfileImage(
+                userId: call.peerId.isEmpty ? call.id : call.peerId,
+                urlString: call.avatarURL,
+                size: 54,
+                isGroup: call.isGroup,
+                fallbackName: call.name
+            )
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(call.name)
@@ -167,18 +259,23 @@ struct ChatCallsDummyListView: View {
                 Text(call.time)
                     .font(.chatRegular(size: 11))
                     .foregroundColor(Color.chatTextTertiary)
-                SwiftUI.Image(systemName: call.media == .video ? "video.fill" : "phone.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(Color.chatPrimary)
-                    .clipShape(Circle())
+                Button {
+                    viewModel.startCall(from: call)
+                } label: {
+                    SwiftUI.Image(systemName: call.media == .video ? "video.fill" : "phone.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Color.chatPrimary)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 6)
     }
 
-    private func directionIcon(_ call: DummyCallItem) -> String {
+    private func directionIcon(_ call: CallHistoryItem) -> String {
         switch call.direction {
         case .incoming: return "arrow.down.left"
         case .outgoing: return "arrow.up.right"
@@ -186,7 +283,7 @@ struct ChatCallsDummyListView: View {
         }
     }
 
-    private func subtitle(_ call: DummyCallItem) -> String {
+    private func subtitle(_ call: CallHistoryItem) -> String {
         let kind: String
         switch call.direction {
         case .incoming: kind = "Incoming"
@@ -232,31 +329,42 @@ enum ChatTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Chats / Archived filter shown below Quick Moments.
+/// Archived stays hidden until at least one conversation is archived.
 struct ChatTabsView: View {
     @Binding var selectedTab: ChatTab
+    var showsArchived: Bool = false
+
+    private var tabs: [ChatTab] {
+        showsArchived ? [.allChats, .archived] : [.allChats]
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            ForEach(ChatTab.visibleTabs) { tab in
+        HStack(spacing: 20) {
+            ForEach(tabs) { tab in
                 let isSelected = selectedTab == tab
-                Button(action: { selectedTab = tab }) {
-                    HStack(spacing: 6) {
-                        SwiftUI.Image(systemName: tab.iconName)
-                            .font(.chat(.medium, size: 14))
-                        Text(tab.localizedTitle)
-                            .font(.chatMedium(size: 13))
-                            .lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .foregroundColor(isSelected ? kAccent : Color.chatTextSecondary)
-                    .background(
-                        RoundedRectangle(cornerRadius: 50)
-                            .strokeBorder(isSelected ? kAccent : Color.chatSeparator, lineWidth: 1)
-                    )
+                Button {
+                    selectedTab = tab
+                } label: {
+                    Text(tab.localizedTitle)
+                        .font(isSelected ? .chatBold(size: 16) : .chatMedium(size: 16))
+                        .foregroundColor(isSelected ? kTextBlack : Color.chatTextTertiary)
+                        .overlay(alignment: .bottom) {
+                            if isSelected {
+                                Capsule()
+                                    .fill(Color.chatPrimary)
+                                    .frame(height: 2)
+                                    .offset(y: 6)
+                            }
+                        }
                 }
+                .buttonStyle(.plain)
             }
+            Spacer()
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+        .padding(.bottom, 10)
         .applyRTLEnvironment()
     }
 }

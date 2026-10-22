@@ -41,13 +41,15 @@ struct TypingPayload {
 protocol ChatSocketServiceProtocol {
     var messageReceived: AnyPublisher<ConversationMessage, Never> { get }
     var messageAcknowledged: AnyPublisher<ConversationMessage, Never> { get }
-    /// Reaction ack / `chat:message:reacted` — merge onto existing message only (never insert).
+    /// `message:reaction:updated` — merge onto existing message only (never insert).
     var messageReactionUpdated: AnyPublisher<ConversationMessage, Never> { get }
     var messageEdited: AnyPublisher<ConversationMessage, Never> { get }
     var messageTranslation: AnyPublisher<ConversationMessage, Never> { get }
     var messageDeleted: AnyPublisher<ConversationMessage, Never> { get }
     var pinMessageUpdate: AnyPublisher<PinMessageUpdate, Never> { get }
     var forwardMessageAck: AnyPublisher<[String: Any], Never> { get }
+    /// `chat:message_forwarded` — newly created forwarded messages (no toast).
+    var messageForwarded: AnyPublisher<[ConversationMessage], Never> { get }
     var conversationSettingsUpdated: AnyPublisher<[String: Any], Never> { get }
     var conversationDeleted: AnyPublisher<String, Never> { get }
     // Channel
@@ -108,6 +110,9 @@ protocol ChatSocketServiceProtocol {
 
     /// Console `chat:message:pin` — `{ conversationId, messageId, pinned, pinDuration? }`
     func pinMessage(messageId: String, conversationId: String, isPinned: Bool, pinDuration: String?)
+
+    /// Emit `chat:forward_message` with ack callback.
+    func forwardMessage(messageIds: [String], recipientIds: [String], clientMessageId: String)
 }
 
 class ChatSocketService: ChatSocketServiceProtocol {
@@ -121,6 +126,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
     private let messageDeletedSubject = PassthroughSubject<ConversationMessage, Never>()
     private let pinMessageUpdateSubject = PassthroughSubject<PinMessageUpdate, Never>()
     private let forwardMessageAckSubject = PassthroughSubject<[String: Any], Never>()
+    private let messageForwardedSubject = PassthroughSubject<[ConversationMessage], Never>()
     private let conversationSettingsSubject = PassthroughSubject<[String: Any], Never>()
     private let conversationDeletedSubject = PassthroughSubject<String, Never>()
     // Channel subjects
@@ -185,6 +191,10 @@ class ChatSocketService: ChatSocketServiceProtocol {
 
     var forwardMessageAck: AnyPublisher<[String: Any], Never> {
         forwardMessageAckSubject.eraseToAnyPublisher()
+    }
+
+    var messageForwarded: AnyPublisher<[ConversationMessage], Never> {
+        messageForwardedSubject.eraseToAnyPublisher()
     }
 
     var conversationSettingsUpdated: AnyPublisher<[String: Any], Never> {
@@ -255,8 +265,12 @@ class ChatSocketService: ChatSocketServiceProtocol {
         SocketEvent.messageUpdated.rawValue,
         SocketEvent.sendConversationMessageAck.rawValue,
         SocketEvent.updateConversationMessageAck.rawValue,
+        SocketEvent.editMessage.rawValue,
         SocketEvent.messageEdited.rawValue,
+        "chat:message:edited",
+        SocketEvent.replyMessage.rawValue,
         SocketEvent.conversationSettingsUpdated.rawValue,
+        SocketEvent.conversationPinUpdated.rawValue,
         SocketEvent.deleteConversation.rawValue,
         SocketEvent.deleteConversationAck.rawValue,
         SocketEvent.conversationArchived.rawValue,
@@ -268,14 +282,21 @@ class ChatSocketService: ChatSocketServiceProtocol {
         SocketEvent.channelMessageEdited.rawValue,
         SocketEvent.incomingCall.rawValue, SocketEvent.joinCall.rawValue, SocketEvent.leaveCallAck.rawValue, SocketEvent.endCallAck.rawValue,
         SocketEvent.remoteCallEnded.rawValue, SocketEvent.createMeetingAck.rawValue, SocketEvent.acceptCall.rawValue, SocketEvent.rejectCall.rawValue,
-        SocketEvent.votePollAck.rawValue, SocketEvent.reactToMessageAck.rawValue, SocketEvent.messageReacted.rawValue, SocketEvent.translateMessageAck.rawValue,
-        SocketEvent.forwardMessageAck.rawValue, SocketEvent.deleteConversationMessageAck.rawValue,
+        SocketEvent.votePollAck.rawValue, SocketEvent.reactToMessageAck.rawValue, SocketEvent.messageReacted.rawValue, SocketEvent.messageReactionUpdated.rawValue, SocketEvent.translateMessageAck.rawValue,
+        SocketEvent.messageForwarded.rawValue, SocketEvent.deleteConversationMessageAck.rawValue,
         SocketEvent.messageDeleted.rawValue,
+        SocketEvent.messageDeletedAlias,
+        "chat:message:deleted",
+        SocketEvent.pinMessage.rawValue,
+        "chat:message:pin",
         SocketEvent.pinMessageAck.rawValue, SocketEvent.messagePinUpdated.rawValue,
         SocketEvent.messagePinExpired.rawValue,
         SocketEvent.markConversationMessagesSeenAck.rawValue,
         SocketEvent.conversationMessageStatusUpdate.rawValue,
+        "chat:message:status",
+        SocketEvent.deliveryReceipt.rawValue,
         SocketEvent.messageDelivered.rawValue,
+        "chat:message:delivered",
         SocketEvent.seenMessages.rawValue,
         SocketEvent.getConversationStatusAck.rawValue,
         SocketEvent.broadcastUserStatus.rawValue,
@@ -383,12 +404,25 @@ class ChatSocketService: ChatSocketServiceProtocol {
             self?.handleMessageEditAcknowledgment(data: data)
         }
 
-        // Real-time message edited event (broadcast to other participants)
-        listen(SocketEvent.messageEdited.rawValue) { [weak self] data in
-            self?.handleMessageEditedRealTime(data: data)
+        for eventName in SocketEvent.messageEditedListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleMessageEditedRealTime(data: data)
+            }
+        }
+
+        for eventName in SocketEvent.replyMessageListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleReplyMessage(data: data)
+            }
         }
 
         listen(SocketEvent.conversationSettingsUpdated.rawValue) { [weak self] data in
+            self?.handleConversationSettingsUpdate(data: data)
+        }
+        listen(SocketEvent.conversationPinUpdated.rawValue) { [weak self] data in
+            self?.handleConversationSettingsUpdate(data: data)
+        }
+        listen(SocketEvent.conversationArchived.rawValue) { [weak self] data in
             self?.handleConversationSettingsUpdate(data: data)
         }
 
@@ -457,12 +491,11 @@ class ChatSocketService: ChatSocketServiceProtocol {
             self?.handleVotePollAck(data: data)
         }
 
-        // React ack (emitter) + realtime fanout (Android CHAT_MESSAGE_REACTED)
-        listen(SocketEvent.reactToMessageAck.rawValue) { [weak self] data in
-            self?.handleReactToMessageAck(data: data)
-        }
-        listen(SocketEvent.messageReacted.rawValue) { [weak self] data in
-            self?.handleMessageReacted(data: data)
+        // React ack + instant fanout (`message:reaction:updated` and legacy names)
+        for eventName in SocketEvent.messageReactionUpdatedListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleMessageReactionUpdated(data: data, source: eventName)
+            }
         }
 
         // Translation acknowledgement
@@ -470,9 +503,8 @@ class ChatSocketService: ChatSocketServiceProtocol {
             self?.handleTranslateMessageAck(data: data)
         }
 
-        // Forward message acknowledgement
-        listen(SocketEvent.forwardMessageAck.rawValue) { [weak self] data in
-            self?.handleForwardMessageAck(data: data)
+        listen(SocketEvent.messageForwarded.rawValue) { [weak self] data in
+            self?.handleMessageForwarded(data: data)
         }
 
         // Delete message acknowledgement
@@ -481,43 +513,46 @@ class ChatSocketService: ChatSocketServiceProtocol {
         }
 
         // Real-time message deleted event (broadcast to other participants)
-        listen(SocketEvent.messageDeleted.rawValue) { [weak self] data in
-            self?.handleMessageDeletedRealTime(data: data)
+        for eventName in SocketEvent.messageDeletedListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleMessageDeletedRealTime(data: data)
+            }
         }
 
-        // Pin message events (console: ack / updated / expired)
-        listen(SocketEvent.pinMessageAck.rawValue) { [weak self] data in
-            self?.handlePinEvent(data: data)
-        }
-        listen(SocketEvent.messagePinUpdated.rawValue) { [weak self] data in
-            self?.handlePinEvent(data: data)
+        // Pin message events — FlirtTime `chat:pin_message` plus ack / updated / expired
+        for eventName in SocketEvent.pinMessageListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handlePinEvent(data: data)
+            }
         }
         listen(SocketEvent.messagePinExpired.rawValue) { [weak self] data in
             self?.handlePinExpiredEvent(data: data)
         }
 
         // MARK: - Message Status Events
-        // Console contract (https://socket.onevibe.walit.in/console):
-        // - chat:message:seen       = c2s only (client marks read)
-        // - chat:message:seen:ack   = s2c ack to reader
-        // - chat:message:status     = s2c fanout to sender { messageId, status: "seen"|"delivered" }
-        // - chat:message:delivered  = both (client may emit; server pushes delivered to sender)
+        // FlirtTime:
+        // - chat:send_message / chat:message_sent     = sent (single gray tick)
+        // - chat:message_delivered / chat:delivery_receipt = delivered (double gray tick)
+        // - chat:mark_read / chat:read_receipt        = seen (double red tick)
 
         listen(SocketEvent.markConversationMessagesSeenAck.rawValue) { [weak self] data in
             self?.handleSeenAck(data: data)
         }
 
-        listen(SocketEvent.conversationMessageStatusUpdate.rawValue) { [weak self] data in
-            self?.handleConversationMessageStatusUpdate(data: data)
+        for eventName in SocketEvent.readReceiptListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleConversationMessageStatusUpdate(data: data, defaultStatus: "seen")
+            }
         }
 
-        listen(SocketEvent.messageDelivered.rawValue) { [weak self] data in
-            self?.handleReceiptSocketEvent(data: data, status: "delivered")
+        for eventName in SocketEvent.deliveryReceiptListenEvents {
+            listen(eventName) { [weak self] data in
+                self?.handleReceiptSocketEvent(data: data, status: "delivered")
+            }
         }
 
-        // Do NOT treat chat:message:seen as inbound tick fanout — catalog marks it c2s only.
-        // Sender blue ticks come from chat:message:status. Keeping a defensive listener
-        // only when the payload looks like a server push (has status / readerId).
+        // `chat:mark_read` is c2s. Keep a defensive listener for server echoes
+        // that look like a fanout (status / readerId present).
         listen(SocketEvent.seenMessages.rawValue) { [weak self] data in
             self?.handleInboundSeenFanoutIfPresent(data: data)
         }
@@ -811,7 +846,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         )
     }
 
-    /// Console `chat:message:delivered` sample: `{ conversationId, messageId }`
+    /// FlirtTime — emit `chat:message_delivered` `{ conversationId, messageId }`.
     func emitMessageDelivered(conversationId: String, messageId: String) {
         guard !conversationId.isEmpty, !messageId.isEmpty else { return }
         let payload: [String: Any] = [
@@ -820,7 +855,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         ]
         socketManager.emitMessage(SocketEvent.messageDelivered.rawValue, withData: [payload])
         AppLogger.debug(
-            "[Delivered] Emitted chat:message:delivered conversationId=\(conversationId) messageId=\(messageId.prefix(8))"
+            "[Delivered] Emitted chat:message_delivered conversationId=\(conversationId) messageId=\(messageId.prefix(8))"
         )
     }
 
@@ -840,30 +875,48 @@ class ChatSocketService: ChatSocketServiceProtocol {
     // MARK: - Message Status Update Handler
 
     private func unwrapSocketPayload(_ data: [Any]) -> [String: Any]? {
-        guard let root = data.first as? [String: Any] else { return nil }
-        if let nested = root["data"] as? [String: Any] {
-            // Prefer nested fields but keep top-level conversationId/status if missing inside data
-            var merged = nested
-            for key in ["conversationId", "messageId", "messageIds", "status", "seenBy", "readerId", "delivererId", "userId"] {
-                if merged[key] == nil, let value = root[key] {
-                    merged[key] = value
-                }
-            }
-            return merged
+        let root: [String: Any]?
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let arr = data.first as? [Any], let dict = arr.first as? [String: Any] {
+            root = dict
+        } else {
+            root = nil
         }
-        return root
+        guard let root else { return nil }
+
+        let nested: [String: Any]?
+        if let dict = root["data"] as? [String: Any] {
+            nested = dict
+        } else if let arr = root["data"] as? [Any], let dict = arr.first as? [String: Any] {
+            nested = dict
+        } else {
+            nested = nil
+        }
+
+        guard let nested else { return root }
+        var merged = nested
+        for key in ["conversationId", "conversation_id", "messageId", "messageIds", "status", "seenBy", "readerId", "delivererId", "userId"] {
+            if merged[key] == nil, let value = root[key] {
+                merged[key] = value
+            }
+        }
+        return merged
     }
 
     private func extractMessageIds(from payload: [String: Any]) -> [String] {
-        if let mid = payload["messageId"] as? String, !mid.isEmpty {
-            return [mid]
-        }
-        if let mid = payload["id"] as? String, !mid.isEmpty {
-            return [mid]
+        let keys = ["messageId", "message_id", "lastMessageId", "id"]
+        for key in keys {
+            if let mid = SocketAckParser.stringValue(from: payload[key]) {
+                return [mid]
+            }
         }
         if let message = payload["message"] as? [String: Any] {
-            if let mid = message["messageId"] as? String, !mid.isEmpty { return [mid] }
-            if let mid = message["id"] as? String, !mid.isEmpty { return [mid] }
+            for key in keys {
+                if let mid = SocketAckParser.stringValue(from: message[key]) {
+                    return [mid]
+                }
+            }
         }
         if let ids = payload["messageIds"] as? [String] {
             return ids.filter { !$0.isEmpty }
@@ -871,37 +924,49 @@ class ChatSocketService: ChatSocketServiceProtocol {
         if let ids = payload["ids"] as? [String] {
             return ids.filter { !$0.isEmpty }
         }
+        if let anyIds = payload["messageIds"] as? [Any] {
+            return anyIds.compactMap { SocketAckParser.stringValue(from: $0) }
+        }
         return []
     }
 
-    private func handleConversationMessageStatusUpdate(data: [Any]) {
-        guard let payload = unwrapSocketPayload(data) else {
-            AppLogger.debug("ChatSocketService: Failed to parse chat:message:status payload: \(data)")
-            return
-        }
-        let conversationId = payload["conversationId"] as? String
-            ?? (payload["message"] as? [String: Any])?["conversationId"] as? String
+    private func conversationId(from payload: [String: Any]) -> String {
+        SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: payload["conversation_id"])
+            ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversationId"])
+            ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversation_id"])
             ?? ""
-        guard !conversationId.isEmpty else {
-            AppLogger.debug("ChatSocketService: chat:message:status missing conversationId: \(payload)")
-            return
-        }
+    }
 
-        // Console sample: { conversationId, messageId, status: "seen" }
-        let status = (payload["status"] as? String)
-            ?? (payload["receiptStatus"] as? String)
-            ?? (payload["message"] as? [String: Any])?["status"] as? String
-            ?? (payload["message"] as? [String: Any])?["receiptStatus"] as? String
-            ?? ""
+    private func handleConversationMessageStatusUpdate(data: [Any], defaultStatus: String = "seen") {
+        guard let payload = unwrapSocketPayload(data) else {
+            AppLogger.debug("ChatSocketService: Failed to parse chat:read_receipt payload: \(data)")
+            return
+        }
+        let conversationId = conversationId(from: payload)
+
+        // FlirtTime `chat:read_receipt` may omit status — the event itself means seen.
+        // Ignore envelope flags like `{ status: true }` / `"success"`.
+        let status = SocketAckParser.deliveryStatusString(
+            from: payload["status"] ?? payload["receiptStatus"]
+                ?? (payload["message"] as? [String: Any])?["status"]
+                ?? (payload["message"] as? [String: Any])?["receiptStatus"],
+            default: defaultStatus
+        )
         guard !status.isEmpty else {
-            AppLogger.debug("ChatSocketService: chat:message:status missing status field: \(payload)")
+            AppLogger.debug("ChatSocketService: chat:read_receipt missing status field: \(payload)")
             return
         }
 
         let messageIds = extractMessageIds(from: payload)
+        guard !conversationId.isEmpty || !messageIds.isEmpty else {
+            AppLogger.debug("ChatSocketService: chat:read_receipt missing conversationId and messageId: \(payload)")
+            return
+        }
+
         let deliveredTo = payload["deliveredTo"] as? [String] ?? []
-        let seenBy = (payload["seenBy"] as? String)
-            ?? (payload["readerId"] as? String)
+        let seenBy = SocketAckParser.stringValue(from: payload["seenBy"])
+            ?? SocketAckParser.stringValue(from: payload["readerId"])
 
         let update = MessageStatusUpdatePayload(
             conversationId: conversationId,
@@ -912,7 +977,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         )
 
         AppLogger.debug(
-            "[StatusUpdate] chat:message:status conversationId=\(conversationId) status=\(status) messageIds=\(messageIds)"
+            "[StatusUpdate] chat:read_receipt conversationId=\(conversationId) status=\(status) messageIds=\(messageIds)"
         )
 
         DispatchQueue.main.async {
@@ -980,8 +1045,8 @@ class ChatSocketService: ChatSocketServiceProtocol {
         }
     }
 
-    /// Defensive: only accept inbound `chat:message:seen` when it looks like a server push
-    /// (has status/readerId). Ignore plain c2s echoes `{ requestId, conversationId, messageId }`.
+    /// Defensive: only accept inbound `chat:mark_read` when it looks like a server push
+    /// (has status/readerId). Ignore plain c2s echoes `{ conversationId, messageId }`.
     private func handleInboundSeenFanoutIfPresent(data: [Any]) {
         guard let payload = unwrapSocketPayload(data) else { return }
         let hasServerFanoutShape =
@@ -991,36 +1056,37 @@ class ChatSocketService: ChatSocketServiceProtocol {
             || (payload["seenBy"] as? String) != nil
             || payload["data"] is [String: Any]
         guard hasServerFanoutShape else {
-            // Likely our own c2s emit shape or unsupported echo — sender ticks use chat:message:status
-            AppLogger.debug("[Seen] Ignored non-fanout chat:message:seen payload keys=\(Array(payload.keys))")
+            AppLogger.debug("[Seen] Ignored non-fanout chat:mark_read payload keys=\(Array(payload.keys))")
             return
         }
         handleReceiptSocketEvent(data: data, status: "seen")
     }
 
-    /// FE / console `chat:message:delivered` (and defensive seen fanout) → MessageStatusUpdatePayload
+    /// FlirtTime `chat:delivery_receipt` / `chat:message_delivered` (and defensive seen fanout).
     private func handleReceiptSocketEvent(data: [Any], status: String) {
-        guard let payload = unwrapSocketPayload(data),
-              let conversationId = payload["conversationId"] as? String,
-              !conversationId.isEmpty else { return }
+        guard let payload = unwrapSocketPayload(data) else { return }
+        let conversationId = conversationId(from: payload)
+        let messageIds = extractMessageIds(from: payload)
+        guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
         let myId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
-        // Only drop *own action echoes* using explicit actor fields.
+        // Only drop *own action echoes* using explicit reader/deliverer fields.
+        // Do NOT use `userId` — servers often put the original sender there, which
+        // would make User A ignore their own delivery/read receipts.
         let actorId: String = {
             if status == "delivered" {
-                return (payload["delivererId"] as? String) ?? ""
+                return SocketAckParser.stringValue(from: payload["delivererId"]) ?? ""
             }
-            return (payload["readerId"] as? String)
-                ?? (payload["seenBy"] as? String)
+            return SocketAckParser.stringValue(from: payload["readerId"])
+                ?? SocketAckParser.stringValue(from: payload["seenBy"])
                 ?? ""
         }()
         if !myId.isEmpty, !actorId.isEmpty, actorId == myId { return }
 
-        let messageIds = extractMessageIds(from: payload)
-        // Prefer explicit status in payload when present (server fanout)
-        let resolvedStatus = (payload["status"] as? String)
-            ?? (payload["receiptStatus"] as? String)
-            ?? status
+        let resolvedStatus = SocketAckParser.deliveryStatusString(
+            from: payload["status"] ?? payload["receiptStatus"],
+            default: status
+        )
 
         let update = MessageStatusUpdatePayload(
             conversationId: conversationId,
@@ -1051,6 +1117,22 @@ class ChatSocketService: ChatSocketServiceProtocol {
             return
         }
 
+        DispatchQueue.main.async {
+            self.messageReceivedSubject.send(message)
+        }
+    }
+
+    /// `chat:reply_message` may be a full message, `{ message }`, or a sparse client emit.
+    /// Only ingest a real reply message — never treat the parent `messageId` as the new bubble.
+    private func handleReplyMessage(data: [Any]) {
+        guard let raw = data.first as? [String: Any] else { return }
+        let body = (raw["data"] as? [String: Any]) ?? raw
+        let messageData = (body["message"] as? [String: Any]) ?? body
+        let hasIdentity = messageData["id"] != nil && (messageData["sender"] != nil || messageData["senderId"] != nil)
+        guard hasIdentity, let message = ConversationMessage.fromDictionary(messageData) else {
+            AppLogger.debug("ChatSocketService: Ignoring sparse chat:reply_message payload")
+            return
+        }
         DispatchQueue.main.async {
             self.messageReceivedSubject.send(message)
         }
@@ -1100,7 +1182,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         }
     }
 
-    /// Handle real-time message-edited event broadcast from server when someone else edits a message
+    /// Handle real-time `chat:message_edited` (also `chat:edit_message` / legacy `chat:message:edited`).
     private func handleMessageEditedRealTime(data: [Any]) {
         AppLogger.debug("ChatSocketService: Received real-time message-edited event: \(data)")
 
@@ -1109,24 +1191,41 @@ class ChatSocketService: ChatSocketServiceProtocol {
             return
         }
 
-        // The actual message data might be nested inside "data" field or directly in the response
-        var messageData: [String: Any]?
+        let nestedData = (responseData["data"] as? [String: Any]) ?? responseData
+        let messageData = (nestedData["message"] as? [String: Any]) ?? nestedData
 
-        if let nestedData = responseData["data"] as? [String: Any] {
-            messageData = nestedData
-        } else if responseData["id"] != nil {
-            messageData = responseData
+        if let message = ConversationMessage.fromDictionary(messageData) {
+            AppLogger.debug("ChatSocketService: Forwarding edited message to subscribers: \(message.id)")
+            DispatchQueue.main.async {
+                self.messageEditedSubject.send(message)
+            }
+            return
         }
 
-        guard let validMessageData = messageData,
-              let message = ConversationMessage.fromDictionary(validMessageData) else {
+        let messageId = (messageData["messageId"] as? String)
+            ?? (messageData["id"] as? String)
+            ?? (responseData["messageId"] as? String)
+            ?? ""
+        let conversationId = (messageData["conversationId"] as? String)
+            ?? (responseData["conversationId"] as? String)
+            ?? ""
+        let content = (messageData["content"] as? String)
+            ?? (messageData["body"] as? String)
+            ?? ""
+        guard !messageId.isEmpty else {
             AppLogger.debug("ChatSocketService: Failed to parse message from message-edited event: \(responseData)")
             return
         }
 
-        AppLogger.debug("ChatSocketService: Forwarding edited message to subscribers: \(message.id)")
+        let partial = ConversationMessage(
+            id: messageId,
+            conversationId: conversationId,
+            content: content,
+            isEdited: true
+        )
+        AppLogger.debug("ChatSocketService: Forwarding sparse edited message: \(messageId)")
         DispatchQueue.main.async {
-            self.messageEditedSubject.send(message)
+            self.messageEditedSubject.send(partial)
         }
     }
 
@@ -1167,8 +1266,16 @@ class ChatSocketService: ChatSocketServiceProtocol {
     }
 
     private func handleConversationDeletion(data: [Any]) {
-        guard let deletionData = data.first as? [String: Any],
-              let conversationId = deletionData["conversation_id"] as? String else {
+        guard let deletionData = data.first as? [String: Any] else {
+            AppLogger.debug("Failed to parse conversation deletion data")
+            return
+        }
+        let body = (deletionData["data"] as? [String: Any]) ?? deletionData
+        guard let conversationId = body["conversationId"] as? String
+                ?? body["conversation_id"] as? String
+                ?? body["id"] as? String
+                ?? deletionData["conversationId"] as? String,
+              !conversationId.isEmpty else {
             AppLogger.debug("Failed to parse conversation deletion data")
             return
         }
@@ -1305,13 +1412,8 @@ class ChatSocketService: ChatSocketServiceProtocol {
     private var lastReactionAckDedupKey: (messageId: String, updatedAt: String)?
     private var lastVotePollAckDedupKey: (messageId: String, updatedAt: String)?
 
-    private func handleReactToMessageAck(data: [Any]) {
-        publishReactionSocketPayload(data, source: "react:ack")
-    }
-
-    /// Android `CHAT_MESSAGE_REACTED` = `chat:message:reacted`
-    private func handleMessageReacted(data: [Any]) {
-        publishReactionSocketPayload(data, source: "message:reacted")
+    private func handleMessageReactionUpdated(data: [Any], source: String) {
+        publishReactionSocketPayload(data, source: source)
     }
 
     private func publishReactionSocketPayload(_ data: [Any], source: String) {
@@ -1340,10 +1442,14 @@ class ChatSocketService: ChatSocketServiceProtocol {
            let delta = ConversationMessage.reactionDelta(from: ackResponse) {
             var dict: [String: Any] = ["id": delta.messageId]
             if let cid = delta.conversationId { dict["conversationId"] = cid }
-            dict["metadata"] = [
+            var metadata: [String: Any] = [
                 "_reactionDeltaEmoji": delta.emoji,
                 "_reactionDeltaUserId": delta.userId
             ]
+            if let action = delta.action, !action.isEmpty {
+                metadata["_reactionDeltaAction"] = action
+            }
+            dict["metadata"] = metadata
             message = ConversationMessage.fromDictionary(dict) ?? message
         }
 
@@ -1387,14 +1493,25 @@ class ChatSocketService: ChatSocketServiceProtocol {
         }
     }
 
-    private func handleForwardMessageAck(data: [Any]) {
-        guard let ackResponse = data.first as? [String: Any] else {
-            AppLogger.debug("ChatSocketService: Failed to parse forward-message-ack data: \(data)")
+    private func handleMessageForwarded(data: [Any]) {
+        let root: [String: Any]
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let list = data.first as? [[String: Any]] {
+            root = ["success": true, "messages": list]
+        } else {
+            AppLogger.debug("ChatSocketService: Failed to parse chat:message_forwarded data: \(data)")
             return
         }
 
+        let messages = ForwardChatMessagesAPIData.messages(from: root)
+        guard !messages.isEmpty else {
+            AppLogger.debug("ChatSocketService: chat:message_forwarded contained no messages")
+            return
+        }
+        AppLogger.debug("ChatSocketService: chat:message_forwarded count=\(messages.count)")
         DispatchQueue.main.async {
-            self.forwardMessageAckSubject.send(ackResponse)
+            self.messageForwardedSubject.send(messages)
         }
     }
 
@@ -1436,20 +1553,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
                 ?? nonEmptyString(messageData["id"])
             guard let messageId else { return }
 
-            let isForEveryone: Bool
-            if let val = messageData["isDeletedEveryone"] as? Bool {
-                isForEveryone = val
-            } else if let val = messageData["isDeletedEveryone"] as? Int {
-                isForEveryone = val == 1
-            } else if let val = messageData["isDeletedEveryone"] as? String {
-                isForEveryone = val == "1" || val.lowercased() == "true"
-            } else if let scope = messageData["scope"] as? String {
-                isForEveryone = scope.lowercased() == "everyone"
-            } else if let forEveryone = messageData["forEveryone"] as? Bool {
-                isForEveryone = forEveryone
-            } else {
-                isForEveryone = false
-            }
+            let isForEveryone = SocketAckParser.isDeleteForEveryone(from: messageData)
 
             guard isForEveryone else {
                 return
@@ -1461,8 +1565,8 @@ class ChatSocketService: ChatSocketServiceProtocol {
         }
     }
 
-    /// Handle real-time `chat:message:deleted` broadcast (FE shape:
-    /// `{ conversationId, messageId, scope, actorId }`).
+    /// Handle real-time `chat:message_deleted` broadcast (FE shape:
+    /// `{ conversationId, messageId, deleteType, actorId }`).
     private func handleMessageDeletedRealTime(data: [Any]) {
         guard let responseData = data.first as? [String: Any] else {
             AppLogger.debug("ChatSocketService: Failed to parse message-deleted data: \(data)")
@@ -1473,14 +1577,10 @@ class ChatSocketService: ChatSocketServiceProtocol {
 
         let validMessageData = (responseData["data"] as? [String: Any]) ?? responseData
 
-        // FE only removes the bubble for the peer when scope is everyone.
-        let scope = (
-            (validMessageData["scope"] as? String)
-            ?? (responseData["scope"] as? String)
-            ?? "everyone"
-        ).lowercased()
-        guard scope == "everyone" else {
-            AppLogger.debug("ChatSocketService: Ignoring message-deleted scope=\(scope)")
+        // Peers only hide the bubble when deleteType is everyone.
+        let deleteType = SocketAckParser.deleteType(from: validMessageData)
+        guard deleteType == "everyone" else {
+            AppLogger.debug("ChatSocketService: Ignoring message-deleted deleteType=\(deleteType)")
             return
         }
 
@@ -1651,7 +1751,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
     }
 
     // MARK: - Pin Message Emit
-    /// Console `chat:message:pin` sample: `{ conversationId, messageId, pinned }`
+    /// FlirtTime `chat:pin_message` — `{ conversationId, messageId, pinned }`
     func pinMessage(messageId: String, conversationId: String, isPinned: Bool, pinDuration: String?) {
         var payload: [String: Any] = [
             "messageId": messageId,
@@ -1695,15 +1795,23 @@ extension ChatSocketService {
         emitMessage(SocketEvent.endCall.rawValue, withData: payload)
     }
 
-    /// Forward a message to multiple conversations (socket fallback — REST is primary).
-    /// Web parity: `{ messageIds, targetConversationIds }`
-    func forwardMessage(messageIds: [String], receiverIds: [String]) {
+    /// Emit `chat:forward_message` `{ messageIds, recipientIds, clientMessageId }` with ack callback.
+    func forwardMessage(messageIds: [String], recipientIds: [String], clientMessageId: String) {
         let payload: [String: Any] = [
             "messageIds": messageIds,
-            "targetConversationIds": receiverIds,
-            "conversationIds": receiverIds
+            "recipientIds": recipientIds,
+            "clientMessageId": clientMessageId
         ]
-        emitMessage(SocketEvent.forwardMessage.rawValue, withData: payload)
+        AppLogger.debug(
+            "ChatSocketService: ▶ \(SocketEvent.forwardMessage.rawValue) messages=\(messageIds.count) recipients=\(recipientIds.count)"
+        )
+        socketManager.emitWithAck(SocketEvent.forwardMessage.rawValue, withData: payload) { [weak self] data in
+            let response = data.first as? [String: Any] ?? [
+                "success": false,
+                "error": ["message": "Empty forward acknowledgement"]
+            ]
+            self?.forwardMessageAckSubject.send(response)
+        }
     }
     func sendChannelMessage(channelId: String, messageType: String = "text", content: String) {
         let payload: [String: Any] = [
