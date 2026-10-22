@@ -21,6 +21,7 @@ class OtherUserProfileViewModel {
     /// `"like"` | `"super_like"` | `"nope"` from the last successful discovery action.
     @Published private(set) var completedDiscoveryAction: String?
     @Published var errorAction:String?
+    @Published var quotaBlocked: MomentsActionError?
     @Published var errorState:Bool?
 
     @Published var agetMomentImages:MomentUser?
@@ -282,6 +283,9 @@ class OtherUserProfileViewModel {
                 if let coins = result.remainingCoins {
                     CoinWallet.shared.update(coins)
                 }
+                if action == "like" || action == "super_like" {
+                    FreeTierLimitsStore.shared.refresh()
+                }
                 self.completedDiscoveryAction = action
                 self.aUserActionModel = ActionData(
                     status: true,
@@ -300,6 +304,10 @@ class OtherUserProfileViewModel {
                 )
             }, onFailure: { [weak self] error in
                 self?.actionInProgress = false
+                if let quota = Self.quotaError(for: action, error: error) {
+                    self?.quotaBlocked = quota
+                    return
+                }
                 self?.errorAction = parseError(error).flatMap { $0.isEmpty ? nil : $0 }
                     ?? "Unable to update this profile"
             })
@@ -312,6 +320,15 @@ class OtherUserProfileViewModel {
         case Constants.ActionType.favorite: return "super_like"
         default: return "nope"
         }
+    }
+
+    private static func quotaError(for action: String, error: Error) -> MomentsActionError? {
+        if FreeTierErrorCode.isDailyLikeLimit(error) { return .likeLimitReached }
+        if FreeTierErrorCode.matches(error, FreeTierErrorCode.insufficientCoins) { return .insufficientCoins }
+        let statusCode = (error as? APIHTTPError)?.statusCode
+        if action == "like", statusCode == 429 { return .likeLimitReached }
+        if action == "super_like", statusCode == 402 || statusCode == 403 { return .insufficientCoins }
+        return nil
     }
 
     private static func successMessage(for action: String, isMatched: Bool) -> String {

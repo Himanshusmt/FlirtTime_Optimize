@@ -390,6 +390,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             }
         }.store(in: &cancellables)
 
+        viewModel.$quotaBlocked.receive(on: DispatchQueue.main).sink { [weak self] error in
+            guard let self, let error else { return }
+            self.showQuotaPopup(error)
+        }.store(in: &cancellables)
+
         viewModel.$errorAction.receive(on: DispatchQueue.main).sink { [weak self] error in
             guard let self, let error else { return }
             self.showNewAlertPopUp(Title: "Error", Msg: error, isSuccess: false) { _ in }
@@ -398,8 +403,10 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     private func applyPreviewImages() {
+        if coverImageView.image == nil {
+            coverImageView.image = UIImage(named: "addCoverPhoto")
+        }
         guard let previewImage else { return }
-        if coverImageView.image == nil { coverImageView.image = previewImage }
         if avatarImageView.image == nil { avatarImageView.image = previewImage }
     }
 
@@ -418,16 +425,33 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     private func applyHeaderImages() {
         guard let details else { return }
-        let banner = details.banner?.isEmpty == false ? details.banner : details.avatar
-        if displayedCoverPath != banner || coverImageView.image == nil {
-            coverImageView.loadImage(path: banner, placeholder: coverImageView.image ?? previewImage ?? UIImage(named: "addCoverPhoto"))
-            displayedCoverPath = banner
-        }
+        applyCover(path: details.banner)
         if displayedAvatarPath != details.avatar || avatarImageView.image == nil {
             avatarImageView.loadImage(path: details.avatar, placeholder: avatarImageView.image ?? previewImage ?? UIImage(named: "ProfileBlur"))
             displayedAvatarPath = details.avatar
         }
         avatarImageView.accessibilityLabel = "\(details.name)'s profile photo"
+    }
+
+    /// Cover waits for a real `coverPhoto`. Never use the profile face as a stand-in — that flashes for ~1s.
+    private func applyCover(path: String?) {
+        let banner = path?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let banner, !banner.isEmpty else {
+            displayedCoverPath = nil
+            if coverImageView.image == nil {
+                coverImageView.image = UIImage(named: "addCoverPhoto")
+            }
+            return
+        }
+        guard displayedCoverPath != banner else { return }
+        displayedCoverPath = banner
+        let placeholder = coverImageView.image ?? UIImage(named: "addCoverPhoto")
+        coverImageView.loadImage(path: banner, placeholder: placeholder) { [weak self] loaded in
+            guard let self, let loaded, self.displayedCoverPath == banner else { return }
+            UIView.transition(with: self.coverImageView, duration: 0.28, options: [.transitionCrossDissolve, .allowUserInteraction]) {
+                self.coverImageView.image = loaded
+            }
+        }
     }
 
     private func applyHeaderText() {
@@ -602,14 +626,14 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     @IBAction private func likeTapped(_ sender: UIButton) {
+        guard sendInteraction(Constants.ActionType.like) else { return }
         MomentsHaptics.threshold()
         HeartBurst.show(in: view, at: sender.convert(CGPoint(x: sender.bounds.midX, y: sender.bounds.midY), to: view))
-        sendInteraction(Constants.ActionType.like)
     }
 
     @IBAction private func superLikeTapped(_ sender: UIButton) {
+        guard sendInteraction(Constants.ActionType.favorite) else { return }
         MomentsHaptics.superVibe()
-        sendInteraction(Constants.ActionType.favorite)
     }
 
     @IBAction private func voicePlayTapped(_ sender: UIButton) {
@@ -650,12 +674,40 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                    from: self)
     }
 
-    private func sendInteraction(_ type: String) {
+    @discardableResult
+    private func sendInteraction(_ type: String) -> Bool {
+        if let blocked = quotaBlock(for: type) {
+            showQuotaPopup(blocked)
+            return false
+        }
         guard let targetUserId = details?.remoteUserID ?? remoteUserID, !targetUserId.isEmpty else {
             aCustomToastView.show(message: "Unable to update this profile")
-            return
+            return false
         }
         viewModel.clickActionAPI(interaction_type: type, targetUserId: targetUserId)
+        return true
+    }
+
+    private func quotaBlock(for type: String) -> MomentsActionError? {
+        switch type {
+        case Constants.ActionType.like:
+            return FreeTierLimitsStore.shared.blockReason(for: .interested)
+        case Constants.ActionType.favorite:
+            return FreeTierLimitsStore.shared.blockReason(for: .superVibe)
+        default:
+            return nil
+        }
+    }
+
+    private func showQuotaPopup(_ error: MomentsActionError) {
+        switch error {
+        case .likeLimitReached:
+            showSubscriptionPopUp(subscriptionPopUpType: .unlimitedSwipes)
+        case .insufficientCoins, .membershipRequired:
+            showSubscriptionPopUp(subscriptionPopUpType: .superLike)
+        default:
+            break
+        }
     }
 
     /// Same list as Profile's "My Moments", limited to this user's moments.
