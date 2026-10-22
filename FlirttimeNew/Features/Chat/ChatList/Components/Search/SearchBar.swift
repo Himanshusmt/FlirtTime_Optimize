@@ -27,14 +27,14 @@ struct SearchBar: View {
                 placeholderColor: AppColor.Boulder,
                 tintColor: AppColor.Punch
             )
-            .frame(maxWidth: .infinity, minHeight: 36, maxHeight: 40)
+            .frame(maxWidth: .infinity, minHeight: 32, maxHeight: 40)
 
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
                     SwiftUI.Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(uiColor: AppColor.Boulder))
-                        .frame(width: 36, height: 36)
+                        .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear search")
@@ -42,14 +42,14 @@ struct SearchBar: View {
         }
         .padding(.leading, 18)
         .padding(.trailing, 12)
-        .frame(height: 52)
-        .background(Color.white)
-        .clipShape(Capsule())
+        .frame(height: 40)
+        .padding(4)
+        .background(Capsule().fill(Color.white))
         .overlay(
             Capsule()
-                .stroke(isFocused ? Color.chatPrimary : Color(uiColor: AppColor.Silver), lineWidth: 1.5)
+                .stroke(isFocused ? Color.chatPrimary : Color.black.opacity(0.06), lineWidth: 1)
         )
-        .shadow(color: Color(uiColor: AppColor.AppBlack).opacity(0.08), radius: 10, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
         .applyRTLEnvironment()
     }
