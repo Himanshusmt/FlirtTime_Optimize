@@ -26,6 +26,7 @@ class ImageSelectionMethodVC: BaseViewController,UIGestureRecognizerDelegate,Ins
     var isShowImage:Bool? = false
     var strURLImg:UIImage?
     var isShowAvatarImage:Bool? = false
+    var canDeletePhoto:Bool = false
     
     static var storyboardName: StringConvertible {
         return StoryboardName.aboutYou
@@ -39,6 +40,11 @@ class ImageSelectionMethodVC: BaseViewController,UIGestureRecognizerDelegate,Ins
     func setUI(){
         self.mainView.setRoundedManualTopCorners(cornerRadius: 15)
         self.view.backgroundColor = .black.withAlphaComponent(0.7)
+        if let actionsStack = stack1.superview as? UIStackView {
+            actionsStack.distribution = .fill
+            actionsStack.spacing = 17
+        }
+        stack2.distribution = .fill
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tapGesture.cancelsTouchesInView = false
         tapGesture.delegate = self // Set the delegate
@@ -49,20 +55,11 @@ class ImageSelectionMethodVC: BaseViewController,UIGestureRecognizerDelegate,Ins
         swipeDown.direction = .down
         self.view.addGestureRecognizer(swipeDown)
         if self.fromEditProfileScreen ?? false && self.selectImageType == .addSelfImage{
-            if isContainImage == true {
-                self.mainView.isHidden = true
-//                self.deletePictureButton.isHidden = (isContainImage ?? false) //!(isContainImage ?? false)
-//                self.stack1.isHidden = self.isContainImage ?? false
-//                self.stack2.isHidden = (self.isContainImage ?? false) //!(self.isContainImage ?? false)
-//                self.takePhotoGalleryButton.isHidden = true
-                
-            } else {
-                self.mainView.isHidden = false
-                self.deletePictureButton.isHidden = !(isContainImage ?? false)
-                self.stack1.isHidden = self.isContainImage ?? false
-                self.stack2.isHidden = !(self.isContainImage ?? false)
-            }
-            
+            self.mainView.isHidden = false
+            self.stack1.isHidden = false
+            self.takePhotoGalleryButton.isHidden = true
+            self.deletePictureButton.isHidden = !canDeletePhoto
+            self.stack2.isHidden = !canDeletePhoto
         } else if self.fromEditProfileScreen ?? false && self.selectImageType == .addCoverImage {
             self.deletePictureButton.isHidden = true
             self.stack1.isHidden = false
@@ -97,10 +94,8 @@ class ImageSelectionMethodVC: BaseViewController,UIGestureRecognizerDelegate,Ins
             self.imgVWProfile.isHidden = true
         }
         
-        if self.isShowAvatarImage == true {
-            self.mainView.isHidden = true
-        } else {
-            self.mainView.isHidden = false
+        if self.fromEditProfileScreen != true {
+            self.mainView.isHidden = self.isShowAvatarImage == true
         }
     }
 

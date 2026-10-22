@@ -68,6 +68,7 @@ enum AppEndPoint: CustomStringConvertible {
     case onboardingInterests
     case onboardingPhoto(photoId: String)
     case onboardingPhotoPrimary(photoId: String)
+    case userPhotos
 
     // Gesture selfie — GestureVerificationViewController
     case gestureUpload
@@ -207,6 +208,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .myReports: return "api/v1/users/reports"
         case .mediaPresignedURL: return "api/v1/media/presigned-url"
         case .onboardingPhotos: return "api/v1/onboarding/photos"
+        case .userPhotos: return "api/v1/users/photos"
         case .moments: return "api/v1/moments"
         case .myMoments: return "api/v1/moments/me"
         case .userMoments(let userId): return "api/v1/users/\(userId)/moments"
@@ -264,7 +266,7 @@ enum AppEndPoint: CustomStringConvertible {
              .discoveryFilterOptions, .discoveryFilters, .discoveryFiltersReset, .discoverySearch, .connectionRequest,
              .interactions, .interactionCounts, .interactionRead,
              .userProfile, .blockUser, .reportUser, .userCompliment, .searchUsers, .blockedUsers, .myReports,
-             .mediaPresignedURL, .onboardingPhotos,
+             .mediaPresignedURL, .onboardingPhotos, .userPhotos,
              .moments, .myMoments, .userMoments, .momentLike, .momentComments, .momentLikes, .momentReport,
              .momentGifts, .momentGiftsReceived, .moment, .momentComment, .momentCommentLike, .momentCommentReplies,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,

@@ -44,6 +44,9 @@ class EditProfileViewModel{
     private let disposeBag = DisposeBag()
     /// The screen keys photos by `Int`; the backend uses UUIDs.
     private var photoUUIDs: [Int: String] = [:]
+    /// S3 object keys for PUT `/users/photos` (full gallery, 3–6 keys).
+    private var photoKeys: [Int: String] = [:]
+    private var nextTempPhotoID = -1
     private var profileFullName: String?
     private var profileNickName: String?
     private var profileDateOfBirth: String?
@@ -79,14 +82,22 @@ class EditProfileViewModel{
     }
 
     func deleteImageAPI(id:Int) {
-        guard let uuid = photoUUIDs[id] else {
-            errorMessage = "Your main profile photo can't be removed. Upload another photo and make it primary first."
+        guard var keys = galleryKeys(),
+              let oldKey = photoKeys[id],
+              let index = keys.firstIndex(of: oldKey) else {
+            errorMessage = "Unable to delete the photo"
             return
         }
-        sessionManager.deleteGalleryPhoto(id: uuid)
+        keys.remove(at: index)
+        if keys.count < 3 {
+            errorMessage = "Keep at least 3 photos"
+            return
+        }
+        sessionManager.setGalleryPhotos(imageKeys: keys)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] in
                 self?.photoUUIDs[id] = nil
+                self?.photoKeys[id] = nil
                 self?.aDeleteUserImageResponseModel = .mockSuccess("Image deleted successfully")
             }, onFailure: { [weak self] error in
                 self?.errorMessage = parseError(error) ?? "Unable to delete the photo"
@@ -121,39 +132,69 @@ class EditProfileViewModel{
             errorMessage = Constants.ImageErrorTypes.errorUserImage
             return
         }
-        let isPrimary = asPrimary || images.allSatisfy { $0 == nil }
-        sessionManager.uploadGalleryPhoto(imageData: imageData, isPrimary: isPrimary)
+        let filled = images.compactMap { $0 }.count
+        if replacing == nil && filled >= 6 {
+            errorMessage = "You can add up to 6 photos"
+            return
+        }
+
+        sessionManager.uploadImageToS3(imageData, folder: "photos")
+            .flatMap { [weak self] upload -> Single<String> in
+                guard let self, let key = upload.resolvedKey else {
+                    return .error(APIError.apiError("Couldn't start the photo upload"))
+                }
+                guard var keys = self.galleryKeys() else {
+                    return .error(APIError.apiError("Unable to update photos. Please try again."))
+                }
+                if let replacing, let oldKey = self.photoKeys[replacing], let index = keys.firstIndex(of: oldKey) {
+                    keys[index] = key
+                } else {
+                    keys.append(key)
+                }
+                guard (3...6).contains(keys.count) else {
+                    return .error(APIError.apiError("You must have between 3 and 6 photos"))
+                }
+                return self.sessionManager.setGalleryPhotos(imageKeys: keys).map { key }
+            }
             .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] json in
-                guard let self = self else { return }
-                let data = json["data"] as? [String: Any]
-                let photo = (data?["photo"] as? [String: Any]) ?? data
-                var imagePayload: [String: Any] = ["status": 1, "filefor": "gallery", "is_primary": isPrimary]
-                if let uuid = photo?["id"] as? String {
-                    let id = EditProfileAPIMapper.photoID(uuid)
-                    self.photoUUIDs[id] = uuid
-                    imagePayload["id"] = id
-                }
-                let url = (photo?["url"] as? String) ?? (photo?["thumbnailUrl"] as? String) ?? ""
-                let payload: [String: Any] = ["status": true,
-                                              "message": "Image uploaded successfully",
-                                              "data": ["image_url": url, "image": imagePayload]]
+            .subscribe(onSuccess: { [weak self] key in
+                guard let self else { return }
+                self.applyUploadedPhoto(image: image, key: key, replacing: replacing, asPrimary: asPrimary)
+                let payload: [String: Any] = [
+                    "status": true,
+                    "message": "Image uploaded successfully",
+                    "data": ["image_url": "uploaded", "image": ["status": 1, "filefor": "gallery", "is_primary": asPrimary]]
+                ]
                 self.aUploadProfilePhotoResponseModel = EditProfileAPIMapper.decode(UploadProfileImageModel.self, from: payload)
-                if let replacing, let oldUUID = self.photoUUIDs[replacing] {
-                    self.photoUUIDs[replacing] = nil
-                    self.sessionManager.deleteGalleryPhoto(id: oldUUID)
-                        .observe(on: MainScheduler.instance)
-                        .subscribe(onSuccess: { [weak self] in self?.callCheckExistingData() },
-                                   onFailure: { [weak self] _ in self?.callCheckExistingData() })
-                        .disposed(by: self.disposeBag)
-                } else if imagePayload["id"] == nil {
-                    self.callCheckExistingData()
-                }
+                self.callCheckExistingData()
             }, onFailure: { [weak self] error in
                 self?.showErrorMsg = ""
                 self?.errorMessage = parseError(error) ?? Constants.ImageErrorTypes.errorUserImage
             })
             .disposed(by: disposeBag)
+    }
+
+    private func applyUploadedPhoto(image: UIImage, key: String, replacing: Int?, asPrimary: Bool) {
+        let tempID = nextTempPhotoID
+        nextTempPhotoID -= 1
+        if let replacing, let slot = images.firstIndex(where: { $0?.id == replacing }) {
+            photoUUIDs[replacing] = nil
+            photoKeys[replacing] = nil
+            images[slot] = EditProfileImageModel(image: image, id: tempID, status: 1, isPrimary: asPrimary || slot == 0)
+        } else if let slot = images.firstIndex(where: { $0 == nil }) {
+            images[slot] = EditProfileImageModel(image: image, id: tempID, status: 1, isPrimary: slot == 0)
+        }
+        photoKeys[tempID] = key
+    }
+
+    private func galleryKeys() -> [String]? {
+        var keys: [String] = []
+        for image in images {
+            guard let image, let id = image.id else { continue }
+            guard let key = photoKeys[id] else { return nil }
+            keys.append(key)
+        }
+        return keys
     }
 
     func getProfileImagePrimary(id:Int) {
@@ -276,6 +317,7 @@ class EditProfileViewModel{
         }
 
         photoUUIDs = [:]
+        photoKeys = [:]
         var gallery: [[String: Any]] = []
         let photos = ((profile["photos"] as? [[String: Any]]) ?? (data["photos"] as? [[String: Any]]) ?? [])
             .sorted { ($0["displayOrder"] as? Int ?? .max) < ($1["displayOrder"] as? Int ?? .max) }
@@ -283,6 +325,9 @@ class EditProfileViewModel{
             guard let uuid = Self.text(photo["id"]), let url = Self.text(photo["url"]) ?? Self.text(photo["thumbnailUrl"]) else { continue }
             let id = EditProfileAPIMapper.photoID(uuid)
             photoUUIDs[id] = uuid
+            if let key = Self.photoKey(from: photo, url: url) {
+                photoKeys[id] = key
+            }
             gallery.append(["id": id, "filename": url, "filefor": "gallery", "status": 1,
                             "is_primary": (photo["isPrimary"] as? Bool) ?? false])
         }
@@ -293,6 +338,9 @@ class EditProfileViewModel{
             info["avatar"] = primary
         } else if let avatar = info["avatar"] as? String {
             gallery.insert(["id": 0, "filename": avatar, "filefor": "gallery", "status": 1, "is_primary": true], at: 0)
+            if photoKeys[0] == nil {
+                photoKeys[0] = Self.s3PhotoKey(from: avatar)
+            }
         }
         info["images"] = gallery.map { ["image": $0["filename"] ?? "", "type": "gallery", "is_primary": $0["is_primary"] ?? false] }
         info["is_active"] = info["gesture_is_verified"]
@@ -321,6 +369,21 @@ class EditProfileViewModel{
             return text(dict["url"]) ?? text(dict["thumbnailUrl"])
         }
         return text(value)
+    }
+
+    private static func photoKey(from photo: [String: Any], url: String) -> String? {
+        if let key = text(photo["key"]) ?? text(photo["imageKey"]) {
+            return key
+        }
+        return s3PhotoKey(from: url)
+    }
+
+    private static func s3PhotoKey(from url: String) -> String? {
+        let path = url.split(separator: "?").first.map(String.init) ?? url
+        if let range = path.range(of: "photos/") {
+            return String(path[range.lowerBound...])
+        }
+        return path.hasPrefix("photos/") ? path : nil
     }
 
     private static func locationText(_ value: Any?) -> String? {

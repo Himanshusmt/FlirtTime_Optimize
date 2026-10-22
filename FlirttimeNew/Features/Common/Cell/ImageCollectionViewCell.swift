@@ -18,6 +18,7 @@ class ImageCollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var imageDeleButton: UIButton!
     @IBOutlet weak var imgProfile: UIImageView!
     var completion:((Int?)->())?
+    var editAction:(()-> Void)?
     var imageID:Int?
     var deleteAction:(()-> Void)?
 
@@ -91,11 +92,19 @@ class ImageCollectionViewCell: UICollectionViewCell {
 //    }
 
     @IBAction func edit1stImageButtonTapped(_ sender: UIButton) {
+        if let editAction {
+            editAction()
+            return
+        }
         guard let action = completion else { return }
         action(imageID)
     }
 
     @IBAction func editRestImagesButtonTapped(_ sender: UIButton) {
+        if let editAction {
+            editAction()
+            return
+        }
         guard let action = completion else { return }
         action(imageID)
     }

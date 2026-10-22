@@ -88,6 +88,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
     var isOTPEntered:Bool? = false
     var strOTP:String?
     private let voiceIntroView = ProfileVoiceIntroView(style: .editor)
+    private var photosGeneration = 0
 
     static var storyboardName: StringConvertible {
         return StoryboardName.editProfile
@@ -503,49 +504,36 @@ class EditProfileViewController: BaseViewController, Instantiable {
     }
 
     func getUIImageFromImageURL(){
-        var userImg:[UserImage] = []
-        var avatarImg:[UserImage] = []
-        avatarImg = self.userDetailInfo?.user_images?.filter{ $0.isPrimary == true && $0.filefor == "gallery"} ?? []
-        userImg  = self.userDetailInfo?.user_images?.filter{ $0.isPrimary == false && $0.filefor == "gallery"} ?? []
-        if avatarImg.isEmpty {
-            self.aEditProfileViewModel.images[0] = nil
-        }
-        for index in (min(userImg.count, 5) + 1)..<self.aEditProfileViewModel.images.count {
-            self.aEditProfileViewModel.images[index] = nil
-        }
-        self.imageCollectionView.reloadData()
-        for (index,item) in (avatarImg).enumerated(){
-            guard index < 1 else {return}
-            if index == 0 && avatarImg.count > 0 {
+        photosGeneration += 1
+        let generation = photosGeneration
+        aEditProfileViewModel.images = Array(repeating: nil, count: 6)
+        imageCollectionView.reloadData()
 
-                let img = Self.mediaURL(avatarImg[0].filename)
-                if let imageUrl = URL(string: img) {
-                    self.downloadImage(from: imageUrl) { image in
-                        guard image != nil else {return}
-                        let data = EditProfileImageModel(image:image ,id: avatarImg[0].id, status: avatarImg[0].status,isPrimary: avatarImg[0].isPrimary)
-                        self.aEditProfileViewModel.images[index] = data
-                        self.imageCollectionView.reloadData()
-                    }
+        let avatarImg = userDetailInfo?.user_images?.filter { $0.isPrimary == true && $0.filefor == "gallery" } ?? []
+        let userImg = userDetailInfo?.user_images?.filter { $0.isPrimary == false && $0.filefor == "gallery" } ?? []
+
+        func apply(image: UIImage?, id: Int?, status: Int?, isPrimary: Bool?, slot: Int) {
+            guard generation == photosGeneration, let image, (0..<6).contains(slot) else { return }
+            aEditProfileViewModel.images[slot] = EditProfileImageModel(image: image, id: id, status: status, isPrimary: isPrimary)
+            imageCollectionView.reloadData()
+        }
+
+        if let avatar = avatarImg.first {
+            let img = Self.mediaURL(avatar.filename)
+            if let imageUrl = URL(string: img) {
+                downloadImage(from: imageUrl) { image in
+                    apply(image: image, id: avatar.id, status: avatar.status, isPrimary: avatar.isPrimary, slot: 0)
                 }
             }
         }
-        
-        for (index,item) in (userImg).enumerated(){
-            guard index < 5 else {return}
-
-                let img = Self.mediaURL(item.filename)
-                if let imageUrl = URL(string: img) {
-                    self.downloadImage(from: imageUrl) { image in
-                        guard image != nil else {return}
-                        let data = EditProfileImageModel(image:image ,id: item.id,status: item.status,isPrimary: item.isPrimary)
-                        self.aEditProfileViewModel.images[index+1] = data
-                        self.imageCollectionView.reloadData()
-                    }
+        for (index, item) in userImg.prefix(5).enumerated() {
+            let img = Self.mediaURL(item.filename)
+            if let imageUrl = URL(string: img) {
+                downloadImage(from: imageUrl) { image in
+                    apply(image: image, id: item.id, status: item.status, isPrimary: item.isPrimary, slot: index + 1)
                 }
-            
-            
+            }
         }
-        
     }
 
     func setTextFieldUI(){
@@ -837,13 +825,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.aEditProfileViewModel.$aUploadProfilePhotoResponseModel.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
                 self.aActivityIndicator.hide()
-                if let imageUrl = URL(string: model?.data?.image_url ?? "") {
-                    DispatchQueue.main.async {
-                      //  self.showImageAlertPopUp(TitleMsg: "Picture uploaded successfully", TitleBtn: "Continue")
-                        self.addSelectedImage(image: self.upLoadedImg, model: model!)
-                        
-                    }
-                }
+                self.imageCollectionView.reloadData()
             }
         }.store(in: &desposeBag)
         
@@ -1213,16 +1195,56 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.connectThreadSelectionImage.isHidden = false
     }
 
+    private func filledPhotoCount() -> Int {
+        aEditProfileViewModel.images.compactMap { $0 }.count
+    }
+
+    private func openPhotoPicker(at slot: Int) {
+        let existing = slot < aEditProfileViewModel.images.count ? aEditProfileViewModel.images[slot] : nil
+        if existing == nil && filledPhotoCount() >= 6 {
+            aCustomToastView.show(message: "You can add up to 6 photos")
+            return
+        }
+        imageSelectedIndex = slot
+        selectImageType = .addSelfImage
+        deleteImageID = existing?.id
+        openImageSelectionMethodPopUp()
+    }
+
+    private func confirmDeletePhoto(id: Int?, slot: Int? = nil) {
+        let slot = slot ?? imageSelectedIndex ?? 0
+        if slot == 0 {
+            aCustomToastView.show(message: "Your profile photo can't be deleted. Choose a new one to replace it.")
+            return
+        }
+        if filledPhotoCount() <= 3 {
+            aCustomToastView.show(message: "Keep at least 3 photos")
+            return
+        }
+        deleteImageID = id
+        imageSelectedIndex = slot
+        aDeleteCustomPopUp.show(message: Constants.AddMoment.deleteImage + "?",
+                                button1Text: Constants.AlertButtons.cancel,
+                                button2Text: Constants.AlertButtons.yesDelete) { [weak self] in
+            self?.aEditProfileViewModel.deleteImageAPI(id: id ?? 0)
+        }
+    }
+
     func openImageSelectionMethodPopUp(){
         let aImageSelectionMethodVC:ImageSelectionMethodVC = ImageSelectionMethodVC.instantiateFromStoryboard()
         aImageSelectionMethodVC.fromEditProfileScreen = true
         aImageSelectionMethodVC.selectImageType = self.selectImageType
 
-        let slotImage = self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0]
+        let slot = self.imageSelectedIndex ?? 0
+        let slotImage = slot < self.aEditProfileViewModel.images.count ? self.aEditProfileViewModel.images[slot] : nil
         aImageSelectionMethodVC.isContainImage = slotImage != nil
+        aImageSelectionMethodVC.canDeletePhoto = self.selectImageType == .addSelfImage
+            && slot != 0
+            && slotImage != nil
+            && self.filledPhotoCount() > 3
         if slotImage != nil && self.selectImageType == .addSelfImage {
             aImageSelectionMethodVC.isShowImage = true
-            aImageSelectionMethodVC.isShowAvatarImage = self.imageSelectedIndex == 0
+            aImageSelectionMethodVC.isShowAvatarImage = slot == 0
             aImageSelectionMethodVC.strURLImg = slotImage?.image
         } else if self.selectImageType == .addCoverImage && self.addCoverPhotoButton.isHidden == true {
             aImageSelectionMethodVC.isShowImage = true
@@ -1236,10 +1258,8 @@ class EditProfileViewController: BaseViewController, Instantiable {
                 self?.requestPhotoLibraryAccess()
             }
         }
-        aImageSelectionMethodVC.deletePictureCallBack = { [weak self] data in
-            if let id = self?.deleteImageID {
-                self?.aEditProfileViewModel.deleteImageAPI(id:id)
-            }
+        aImageSelectionMethodVC.deletePictureCallBack = { [weak self] _ in
+            self?.confirmDeletePhoto(id: self?.deleteImageID)
         }
         aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
         self.navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
@@ -1407,19 +1427,11 @@ extension EditProfileViewController: UICollectionViewDataSource, UICollectionVie
         case imageCollectionView:
             if let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCollectionViewCell.identifier, for: indexPath) as? ImageCollectionViewCell {
                 cell.setAddImageUI(image: self.aEditProfileViewModel.images[indexPath.item] ?? nil, index: indexPath.item)
+                cell.editAction = { [weak self] in
+                    self?.openPhotoPicker(at: indexPath.item)
+                }
                 cell.completion = { [weak self] id in
-                    print(indexPath.item,id as Any)
-                    self?.deleteImageID = id
-                    
-                    self?.aDeleteCustomPopUp.show(message:Constants.AddMoment.deleteImage + "?",
-                                                 button1Text:Constants.AlertButtons.cancel,
-                                                 button2Text: Constants.AlertButtons.yesDelete) {
-                       // ✅ Call delete API with correct ID
-                        self?.aEditProfileViewModel.deleteImageAPI(id: id ?? 0)
-                    }
-//                    self?.imageSelectedIndex = indexPath.item
-//                    self?.selectImageType = .addSelfImage
-//                    self?.openImageSelectionMethodPopUp()
+                    self?.confirmDeletePhoto(id: id, slot: indexPath.item)
                 }
                 return cell
             }
@@ -1452,17 +1464,7 @@ extension EditProfileViewController: UICollectionViewDataSource, UICollectionVie
                 self.navigationController?.pushViewController(aEditAboutYouViewController, animated:true)
             }
         case imageCollectionView:
-            if self.aEditProfileViewModel.images[indexPath.item] == nil {
-                self.imageSelectedIndex = indexPath.item
-                self.selectImageType = .addSelfImage
-                self.openImageSelectionMethodPopUp()
-            } else {
-                self.deleteImageID = self.aEditProfileViewModel.images[indexPath.item]?.id
-                self.imageSelectedIndex = indexPath.item
-                self.selectImageType = .addSelfImage
-                self.openImageSelectionMethodPopUp()
-                
-            }
+            self.openPhotoPicker(at: indexPath.item)
         default:
             break
         }
@@ -1751,42 +1753,18 @@ extension EditProfileViewController {
         }
     }
 
-    func addSelectedImage(image:[UIImage], model:UploadProfileImageModel){
-        if self.aEditProfileViewModel.images[imageSelectedIndex ?? 0] != nil {
-            self.aEditProfileViewModel.images[imageSelectedIndex ?? 0]?.image = image.first
-        }else{
-            for image in image {
-                for (index,item) in self.aEditProfileViewModel.images.enumerated(){
-                    if item == nil {
-                        let data:EditProfileImageModel? = EditProfileImageModel(image: image, id: model.data?.uploadImg?.id, status: model.data?.uploadImg?.status)
-                        self.aEditProfileViewModel.images[index] = data
-                        break
-                    }
-                }
-            }
-        }
-        DispatchQueue.main.async{
-            self.imageCollectionView.reloadData()
-        }
-    }
-
     func deleteSelectedImage(){
-        self.aEditProfileViewModel.images[self.imageSelectedIndex ?? 0] = nil
-        let imageData:[EditProfileImageModel?] = self.aEditProfileViewModel.images.filter({$0?.image != nil})
-        self.aEditProfileViewModel.images = Array(repeating: nil, count: 6)
-        for image in imageData {
-            for (index,item) in self.aEditProfileViewModel.images.enumerated(){
-                if item == nil {
-                    self.aEditProfileViewModel.images[index] = image
-                    //self.
-                    break
-                }
-            }
+        photosGeneration += 1
+        if let slot = imageSelectedIndex, (0..<aEditProfileViewModel.images.count).contains(slot) {
+            aEditProfileViewModel.images[slot] = nil
         }
-        DispatchQueue.main.async{
-            self.aEditProfileViewModel.callCheckExistingData()
-            //self.imageCollectionView.reloadData()
+        let remaining = aEditProfileViewModel.images.compactMap { $0 }
+        aEditProfileViewModel.images = Array(repeating: nil, count: 6)
+        for (index, image) in remaining.enumerated() where index < 6 {
+            aEditProfileViewModel.images[index] = image
         }
+        imageCollectionView.reloadData()
+        aEditProfileViewModel.callCheckExistingData()
     }
 }
 

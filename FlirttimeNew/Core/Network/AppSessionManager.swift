@@ -289,10 +289,10 @@ final class AppSessionManager {
             .map { _ in () }
     }
 
-    /// Adds an uploaded S3 photo (folder "photos") to the profile gallery.
-    func addGalleryPhoto(imageKey: String) -> Single<Void> {
-        backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .onboardingPhotos,
-                                                      parameters: ["imageKey": imageKey]))
+    /// Replaces the gallery with 3–5 S3 keys (folder "photos"), in display order.
+    func setGalleryPhotos(imageKeys: [String]) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .put, endPoint: .userPhotos,
+                                                      parameters: ["imageKeys": imageKeys]))
             .map { _ in () }
     }
 
