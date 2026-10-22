@@ -453,6 +453,13 @@ struct ConversationMessage: Codable {
         if let isTemp = modifiedDictionary["isTemporary"] as? Bool {
             optimisticMeta["isTemporary"] = isTemp
         }
+        if optimisticMeta["isForwarded"] == nil {
+            if let forwarded = modifiedDictionary["isForwarded"] as? Bool {
+                optimisticMeta["isForwarded"] = forwarded
+            } else if let number = modifiedDictionary["isForwarded"] as? NSNumber {
+                optimisticMeta["isForwarded"] = number.boolValue
+            }
+        }
         let messageId = (modifiedDictionary["id"] as? String) ?? ""
         if (optimisticMeta["isTemporary"] as? Bool) == true,
            optimisticMeta["clientTempId"] == nil,
@@ -515,7 +522,11 @@ struct ConversationMessage: Codable {
             ]
             modifiedDictionary["replyToId"] = replyToDict
         } else if let replyToObj = dictionary["replyTo"] as? [String: Any] {
-            modifiedDictionary["replyToId"] = replyToObj
+            let normalized = Self.normalizedReplyDictionary(replyToObj)
+            modifiedDictionary["replyTo"] = normalized
+            modifiedDictionary["replyToId"] = normalized
+        } else if let replyToIdObj = dictionary["replyToId"] as? [String: Any] {
+            modifiedDictionary["replyToId"] = Self.normalizedReplyDictionary(replyToIdObj)
         }
 
         do {
@@ -555,6 +566,49 @@ struct ConversationMessage: Codable {
             ?? (metadata?["name"]?.value as? String)
             ?? serverLocation?.address
         serverLocation = ServerLocationSimple(lat: lat, lng: lng, address: address)
+    }
+
+    static func normalizedReplyDictionary(_ raw: [String: Any]) -> [String: Any] {
+        var reply = raw
+        if reply["content"] == nil, let body = stringValue(reply["body"]) {
+            reply["content"] = body
+        }
+
+        var sender = reply["sender"] as? [String: Any] ?? [:]
+        if sender.isEmpty, let senderId = stringValue(reply["sender"]) {
+            sender = ["id": senderId]
+        }
+
+        let senderId = stringValue(reply["senderId"])
+            ?? stringValue(sender["id"])
+            ?? stringValue(sender["userId"])
+            ?? stringValue(sender["_id"])
+        if let senderId, !senderId.isEmpty {
+            if stringValue(sender["id"]) == nil {
+                sender["id"] = senderId
+            }
+            reply["senderId"] = senderId
+        }
+        if !sender.isEmpty {
+            reply["sender"] = sender
+        }
+        return reply
+    }
+
+    static func stringValue(_ value: Any?) -> String? {
+        switch value {
+        case let value as String:
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        case let value as Int:
+            return String(value)
+        case let value as Int64:
+            return String(value)
+        case let value as NSNumber:
+            return value.stringValue
+        default:
+            return nil
+        }
     }
 
     static func coordinateValue(_ value: Any?) -> Double? {
@@ -934,12 +988,12 @@ extension ConversationMessage {
     /// Never invents a random `id` — returns nil when message id cannot be resolved.
     /// Does not include empty `content`/`createdAt` so callers must merge onto an existing message.
     ///
-    /// Supports Android / backend `chat:message:reacted` shapes:
+    /// Supports `message:reaction:updated` and legacy `chat:message:reacted` shapes:
     /// - `{ messageId, reactions }` / `{ id, reactions }`
     /// - `{ data: { messageId|id, reactions } }`
     /// - `{ message: { ... } }`
     /// - map-style reactions `{ "👍": ["userId"] }`
-    /// - delta `{ messageId, emoji, userId }` (reactions left nil — caller applies delta)
+    /// - delta `{ messageId, emoji, userId, action? }` (reactions left nil — caller applies delta)
     static func reactionUpdate(from envelope: [String: Any], fallbackMessageId: String? = nil) -> ConversationMessage? {
         let root: [String: Any] = {
             if let data = envelope["data"] as? [String: Any] {
@@ -968,6 +1022,9 @@ extension ConversationMessage {
 
         if let normalized = normalizeReactionsValue(root["reactions"] ?? envelope["reactions"]) {
             dict["reactions"] = normalized
+        } else if let single = (root["reaction"] as? [String: Any]) ?? (envelope["reaction"] as? [String: Any]),
+                  let normalized = normalizeReactionsValue([single]) {
+            dict["reactions"] = normalized
         }
 
         let updatedAt = firstNonEmptyString(root["updatedAt"], root["updated_at"], envelope["updatedAt"])
@@ -979,7 +1036,7 @@ extension ConversationMessage {
     }
 
     /// Incremental fields when server fans out emoji + actor instead of full reactions list.
-    static func reactionDelta(from envelope: [String: Any]) -> (messageId: String, conversationId: String?, emoji: String, userId: String)? {
+    static func reactionDelta(from envelope: [String: Any]) -> (messageId: String, conversationId: String?, emoji: String, userId: String, action: String?)? {
         let root: [String: Any] = {
             if let data = envelope["data"] as? [String: Any] {
                 if let message = data["message"] as? [String: Any] { return message }
@@ -1004,7 +1061,8 @@ extension ConversationMessage {
             root["conversationId"], root["conversation_id"],
             envelope["conversationId"], envelope["conversation_id"]
         )
-        return (messageId, conversationId.isEmpty ? nil : conversationId, emoji, userId)
+        let action = firstNonEmptyString(root["action"], root["type"], envelope["action"], envelope["type"])
+        return (messageId, conversationId.isEmpty ? nil : conversationId, emoji, userId, action.isEmpty ? nil : action)
     }
 
     private static func firstNonEmptyString(_ values: Any?...) -> String {
@@ -1060,13 +1118,42 @@ extension ConversationMessage {
         return nil
     }
 
-    /// Toggle `userId` on `emoji` (server react toggle semantics).
+    /// Apply a reaction fanout. Uses `action` when present (`added` / `changed` / `removed`);
+    /// otherwise toggles `userId` on `emoji`.
     static func applyingReactionDelta(
         _ reactions: [MessageReaction],
         emoji: String,
-        userId: String
+        userId: String,
+        action: String? = nil
     ) -> [MessageReaction] {
         var groups = reactions
+        let normalizedAction = (action ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let shouldRemove = ["removed", "deleted", "remove", "unreact", "unreacted"].contains(normalizedAction)
+        let shouldAdd = ["added", "add", "changed", "change", "updated", "update", "reacted"].contains(normalizedAction)
+
+        if shouldRemove {
+            if let idx = groups.firstIndex(where: { $0.emoji == emoji }) {
+                groups[idx].users.removeAll { $0.userId == userId }
+            }
+            groups.removeAll { $0.users.isEmpty }
+            return groups
+        }
+
+        if shouldAdd {
+            for i in groups.indices {
+                groups[i].users.removeAll { $0.userId == userId }
+            }
+            groups.removeAll { $0.users.isEmpty }
+            if let idx = groups.firstIndex(where: { $0.emoji == emoji }) {
+                if !groups[idx].users.contains(where: { $0.userId == userId }) {
+                    groups[idx].users.append(ReactionUser(userId: userId))
+                }
+            } else {
+                groups.append(MessageReaction(emoji: emoji, users: [ReactionUser(userId: userId)]))
+            }
+            return groups
+        }
+
         if let idx = groups.firstIndex(where: { $0.emoji == emoji && $0.users.contains(where: { $0.userId == userId }) }) {
             groups[idx].users.removeAll { $0.userId == userId }
             groups.removeAll { $0.users.isEmpty }

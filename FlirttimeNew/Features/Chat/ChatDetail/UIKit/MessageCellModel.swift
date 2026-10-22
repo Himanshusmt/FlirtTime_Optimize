@@ -193,7 +193,8 @@ struct MessageCellModel: Hashable {
         isGroupChat: Bool,
         currentUserId: String?,
         showingTranslation: Bool = false,
-        groupParticipants: [GroupParticipant] = []
+        groupParticipants: [GroupParticipant] = [],
+        replySourceMessage: ConversationMessage? = nil
     ) -> MessageCellModel {
         let isIncoming: Bool = {
             if let mine = message.metadata?["isMine"]?.value as? Bool {
@@ -235,39 +236,20 @@ struct MessageCellModel: Hashable {
         }
         let replyPreview = message.replyToId.map { reply -> ReplyPreviewModel in
             var preview = ReplyPreviewModel.from(reply)
-            // NEW replyTo often only has senderId — resolve display name from participants
-            // (groups) or synthesized DM peer/self entries.
-            if preview.senderName == "Unknown" || preview.senderName.isEmpty {
-                let senderId = (reply.sender.id ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                if !senderId.isEmpty,
-                   let participant = groupParticipants.first(where: {
-                       $0.userId == senderId || $0.id == senderId
-                   }) {
-                    let resolved = GroupParticipantDisplay.displayName(
-                        fullName: participant.fullName,
-                        userName: participant.userName,
-                        fallback: ""
-                    )
-                    if !resolved.isEmpty {
-                        preview = ReplyPreviewModel(
-                            messageId: preview.messageId,
-                            senderName: resolved,
-                            content: preview.content,
-                            thumbnailURL: preview.thumbnailURL,
-                            messageType: preview.messageType
-                        )
-                    }
-                }
-                if preview.senderName == "Unknown" || preview.senderName.isEmpty,
-                   !senderId.isEmpty, senderId == currentUserId {
-                    preview = ReplyPreviewModel(
-                        messageId: preview.messageId,
-                        senderName: ChatStrings.chat_you.localizedString(),
-                        content: preview.content,
-                        thumbnailURL: preview.thumbnailURL,
-                        messageType: preview.messageType
-                    )
-                }
+            let resolvedName = resolveReplySenderName(
+                reply: reply,
+                currentUserId: currentUserId,
+                groupParticipants: groupParticipants,
+                sourceMessage: replySourceMessage
+            )
+            if !resolvedName.isEmpty {
+                preview = ReplyPreviewModel(
+                    messageId: preview.messageId,
+                    senderName: resolvedName,
+                    content: preview.content,
+                    thumbnailURL: preview.thumbnailURL,
+                    messageType: preview.messageType
+                )
             }
             return preview
         }
@@ -432,9 +414,73 @@ struct MessageCellModel: Hashable {
 
     static func displayName(for sender: ConversationMessageSender?) -> String? {
         guard let sender else { return nil }
-        if let name = GroupParticipantDisplay.cleanName(sender.fullName) { return name }
-        if let name = GroupParticipantDisplay.cleanName(sender.userName) { return name }
+        if let name = GroupParticipantDisplay.cleanName(sender.fullName),
+           !GroupParticipantDisplay.isPlaceholderName(name) {
+            return name
+        }
+        if let name = GroupParticipantDisplay.cleanName(sender.userName),
+           !GroupParticipantDisplay.isPlaceholderName(name) {
+            return name
+        }
         return nil
+    }
+
+    static func resolveReplySenderName(
+        reply: ReplyToMessage,
+        currentUserId: String?,
+        groupParticipants: [GroupParticipant],
+        sourceMessage: ConversationMessage?
+    ) -> String {
+        let replySenderId = reply.resolvedSenderId
+        let sourceSenderId = (sourceMessage?.sender?.id ?? sourceMessage?.senderId ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let senderId = replySenderId.isEmpty ? sourceSenderId : replySenderId
+
+        if isCurrentUserMessage(sourceMessage, currentUserId: currentUserId)
+            || GroupParticipantDisplay.sameUserId(senderId, currentUserId) {
+            return ChatStrings.chat_you.localizedString()
+        }
+
+        if let sourceName = displayName(for: sourceMessage?.sender) {
+            return sourceName
+        }
+
+        if !senderId.isEmpty,
+           let participant = groupParticipants.first(where: {
+               GroupParticipantDisplay.sameUserId($0.userId, senderId)
+                   || GroupParticipantDisplay.sameUserId($0.id, senderId)
+           }) {
+            let resolved = GroupParticipantDisplay.displayName(
+                fullName: participant.fullName,
+                userName: participant.userName,
+                fallback: ""
+            )
+            if !resolved.isEmpty, !GroupParticipantDisplay.isPlaceholderName(resolved) {
+                return resolved
+            }
+        }
+
+        if let name = GroupParticipantDisplay.cleanName(reply.sender.fullName),
+           !GroupParticipantDisplay.isPlaceholderName(name) {
+            return name
+        }
+        if let name = GroupParticipantDisplay.cleanName(reply.sender.userName),
+           !GroupParticipantDisplay.isPlaceholderName(name) {
+            return name
+        }
+        return ""
+    }
+
+    private static func isCurrentUserMessage(
+        _ message: ConversationMessage?,
+        currentUserId: String?
+    ) -> Bool {
+        guard let message else { return false }
+        if let mine = message.metadata?["isMine"]?.value as? Bool {
+            return mine
+        }
+        let sender = message.senderId ?? message.sender?.id ?? ""
+        return GroupParticipantDisplay.sameUserId(sender, currentUserId)
     }
 
     static func resolveSenderName(
@@ -1037,8 +1083,8 @@ enum DeliveryStatus: Equatable, Hashable {
     var tintColor: UIColor {
         switch self {
         case .sending:  return ChatTheme.primary
-        case .sent:     return ChatTheme.timeOutgoing
-        case .delivered: return ChatTheme.timeOutgoing
+        case .sent:     return ChatTheme.tickPending
+        case .delivered: return ChatTheme.tickPending
         case .read:     return ChatTheme.readReceipt
         case .failed:   return UIColor.systemRed
         }
@@ -1058,7 +1104,10 @@ struct ReplyPreviewModel: Hashable {
     var isVideo: Bool { messageType == "video" || messageType == "reel" }
 
     static func from(_ reply: ReplyToMessage) -> ReplyPreviewModel {
-        let name = reply.sender.fullName ?? reply.sender.userName ?? "Unknown"
+        let rawName = GroupParticipantDisplay.cleanName(reply.sender.fullName)
+            ?? GroupParticipantDisplay.cleanName(reply.sender.userName)
+        let name = (rawName.flatMap { GroupParticipantDisplay.isPlaceholderName($0) ? nil : $0 })
+            ?? "Unknown"
 
         // Resolve message type
         let rawType = (reply.type ?? "").lowercased()

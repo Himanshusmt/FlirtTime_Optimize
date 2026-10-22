@@ -33,7 +33,7 @@ enum EndPoint: CustomStringConvertible {
     case createChatConversation
     case getGroupDetails(String)
     case getGroupMembers(String)
-    case deleteChatConversation(String, String)
+    case deleteChatConversation(String)
     case deleteChatConversationsBulk
     case updateConversationSettings(String)
     case markConversationRead(String)
@@ -43,18 +43,23 @@ enum EndPoint: CustomStringConvertible {
     case getPinnedMessage(String)
     case getPinnedMessages(String)
     case pinConversation(String)
+    case archiveConversation(String)
+    case archiveConversationAlt(String)
     case pinConversationMessage(String, String)
 
     // Messages — `/api/v1/chats/{id}/messages` and `/api/v1/chat/messages`
     case getConversationMessages(String)
     case sendChatMessage(String)
     case sendDirectChatMessage
-    case editChatMessage(String)
-    case deleteMessage(String, String)
+    case editChatMessage(conversationId: String, messageId: String)
+    case replyChatMessage(conversationId: String, messageId: String)
+    case deleteMessage(conversationId: String, messageId: String)
     case deleteChatMessages
     case translateChatMessage(String)
-    case reactChatMessage(String)
+    case reactChatMessage(conversationId: String, messageId: String)
     case messageInfo(String)
+    case forwardChatMessages
+    case getForwardRecipients
 
     // Media
     case mediaImages
@@ -65,6 +70,9 @@ enum EndPoint: CustomStringConvertible {
     case chatPresignedURL
 
     // Video calls — `/api/v1/calls/video`
+    case getCallHistory
+    case deleteCallHistoryItem(String)
+    case deleteAllCallHistory
     case startAgoraCall
     case getAgoraCall(String)
     case initiateVideoCall
@@ -90,28 +98,37 @@ enum EndPoint: CustomStringConvertible {
         case .createChatConversation: return "api/v1/chats"
         case .getGroupDetails(let id): return "api/v1/chats/\(id)"
         case .getGroupMembers(let id): return "api/v1/chats/\(id)/members"
-        case .deleteChatConversation(let id, let scope): return "api/v1/chats/\(id)?scope=\(scope)"
+        case .deleteChatConversation(let id): return "api/v1/chats/\(id)"
         case .deleteChatConversationsBulk: return "api/v1/chats"
         case .updateConversationSettings(let id): return "api/v1/chats/\(id)/settings"
         case .markConversationRead(let id): return "api/v1/chats/\(id)/read"
         case .markConversationUnread(let id): return "api/v1/chats/\(id)/unread"
-        case .markConversationDelivered(let id): return "api/v1/chats/\(id)/delivered"
+        case .markConversationDelivered(let id): return "api/v1/chats/\(id)/delivery"
         case .syncInboxDelivered: return "api/v1/chats/delivered/sync"
         case .getPinnedMessage(let id): return "api/v1/chats/\(id)/messages/pinned"
         case .getPinnedMessages(let id): return "api/v1/chats/\(id)/messages/pinned"
         case .pinConversation(let id): return "api/v1/chats/\(id)/pin"
+        case .archiveConversation(let id): return "api/v1/chat/conversations/\(id)/archive"
+        case .archiveConversationAlt(let id): return "api/v1/chats/\(id)/archive"
         case .pinConversationMessage(let conversationId, let messageId):
             return "api/v1/chats/\(conversationId)/messages/\(messageId)/pin"
 
         case .getConversationMessages(let id): return "api/v1/chats/\(id)/messages"
         case .sendChatMessage(let id): return "api/v1/chats/\(id)/messages"
         case .sendDirectChatMessage: return "api/v1/chat/messages"
-        case .editChatMessage(let id): return "api/v1/chats/messages/\(id)"
-        case .deleteMessage(let id, let scope): return "api/v1/chats/messages/\(id)?scope=\(scope)"
+        case .editChatMessage(let conversationId, let messageId):
+            return "api/v1/chats/\(conversationId)/messages/\(messageId)"
+        case .replyChatMessage(let conversationId, let messageId):
+            return "api/v1/chats/\(conversationId)/messages/\(messageId)/reply"
+        case .deleteMessage(let conversationId, let messageId):
+            return "api/v1/chats/\(conversationId)/messages/\(messageId)"
         case .deleteChatMessages: return "api/v1/chats/messages/delete"
         case .translateChatMessage(let id): return "api/v1/chats/messages/\(id)/translate"
-        case .reactChatMessage(let id): return "api/v1/chats/messages/\(id)/react"
+        case .reactChatMessage(let conversationId, let messageId):
+            return "api/v1/chats/\(conversationId)/messages/\(messageId)/reactions"
         case .messageInfo(let id): return "api/v1/chats/messages/\(id)/info"
+        case .forwardChatMessages: return "api/v1/chats/messages/forward"
+        case .getForwardRecipients: return "api/v1/chats/forward/recipients"
 
         case .mediaImages: return "api/v1/media/images"
         case .mediaUploads: return "api/v1/media/uploads"
@@ -120,6 +137,9 @@ enum EndPoint: CustomStringConvertible {
         case .mediaUploadAbort(let id): return "api/v1/media/uploads/\(id)/abort"
         case .chatPresignedURL: return "api/v1/chats/media/generate-presigned-url"
 
+        case .getCallHistory: return "api/v1/calls"
+        case .deleteCallHistoryItem(let id): return "api/v1/calls/\(id)"
+        case .deleteAllCallHistory: return "api/v1/calls"
         case .startAgoraCall, .initiateVideoCall: return "api/v1/calls/video/initiate"
         case .getAgoraCall: return "api/v1/calls/video/active"
         case .acceptVideoCall(let id): return "api/v1/calls/video/\(id)/accept"

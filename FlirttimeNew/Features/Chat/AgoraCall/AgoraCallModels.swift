@@ -277,7 +277,7 @@ struct AgoraCallUserSummary: Decodable, Equatable {
     let isVerified: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case id, username, fullName, profilePicture, isVerified
+        case id, username, fullName, name, profilePicture, avatarUrl, isVerified
     }
 
     init(from decoder: Decoder) throws {
@@ -285,7 +285,9 @@ struct AgoraCallUserSummary: Decodable, Equatable {
         id = try c.decodeIfPresent(String.self, forKey: .id) ?? ""
         username = try c.decodeIfPresent(String.self, forKey: .username)
         fullName = try c.decodeIfPresent(String.self, forKey: .fullName)
+            ?? c.decodeIfPresent(String.self, forKey: .name)
         profilePicture = try c.decodeIfPresent(String.self, forKey: .profilePicture)
+            ?? c.decodeIfPresent(String.self, forKey: .avatarUrl)
         if let b = try c.decodeIfPresent(Bool.self, forKey: .isVerified) {
             isVerified = b
         } else if let i = try c.decodeIfPresent(Int.self, forKey: .isVerified) {
@@ -314,19 +316,23 @@ struct AgoraCallDto: Decodable, Equatable {
     let calleeId: String
     let caller: AgoraCallUserSummary?
     let callee: AgoraCallUserSummary?
+    /// FlirtTime history payload: `{ user: { id, name, avatarUrl } }`
+    let user: AgoraCallUserSummary?
+    let direction: String?
     let participants: [AgoraCallUserSummary]?
     let appId: String?
     let startedAt: String?
     let endedAt: String?
     let createdAt: String?
+    let duration: TimeInterval?
     /// Group / channel title when provided by server.
     let conversationTitle: String?
     /// Explicit group flag from server (`isGroup` / `conversationType`).
     let isGroup: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case id, conversationId, type, status, channelName, callerId, calleeId
-        case caller, callee, participants, appId, startedAt, endedAt, createdAt
+        case id, conversationId, type, callType, status, channelName, callerId, calleeId
+        case caller, callee, user, direction, participants, appId, startedAt, endedAt, createdAt, duration
         case conversationTitle, title, isGroup, conversationType
     }
 
@@ -334,7 +340,8 @@ struct AgoraCallDto: Decodable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = Self.decodeString(c, forKey: .id) ?? ""
         conversationId = Self.decodeString(c, forKey: .conversationId) ?? ""
-        if let raw = try c.decodeIfPresent(String.self, forKey: .type),
+        if let raw = try c.decodeIfPresent(String.self, forKey: .type)
+            ?? c.decodeIfPresent(String.self, forKey: .callType),
            let parsed = AgoraCallType(rawValue: raw.lowercased()) {
             type = parsed
         } else {
@@ -350,11 +357,23 @@ struct AgoraCallDto: Decodable, Equatable {
         calleeId = Self.decodeString(c, forKey: .calleeId) ?? ""
         caller = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .caller)
         callee = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .callee)
+        user = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .user)
+        direction = try c.decodeIfPresent(String.self, forKey: .direction)
         participants = try c.decodeIfPresent([AgoraCallUserSummary].self, forKey: .participants)
         appId = Self.decodeString(c, forKey: .appId)
         startedAt = try c.decodeIfPresent(String.self, forKey: .startedAt)
         endedAt = try c.decodeIfPresent(String.self, forKey: .endedAt)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        if let seconds = try c.decodeIfPresent(Double.self, forKey: .duration) {
+            duration = seconds
+        } else if let seconds = try c.decodeIfPresent(Int.self, forKey: .duration) {
+            duration = TimeInterval(seconds)
+        } else if let raw = try c.decodeIfPresent(String.self, forKey: .duration),
+                  let seconds = Double(raw) {
+            duration = seconds
+        } else {
+            duration = nil
+        }
         conversationTitle = try c.decodeIfPresent(String.self, forKey: .conversationTitle)
             ?? c.decodeIfPresent(String.self, forKey: .title)
 
@@ -388,8 +407,9 @@ struct AgoraCallDto: Decodable, Equatable {
     }
 
     func peer(relativeTo meId: String) -> AgoraCallUserSummary? {
+        if let user { return user }
         if callerId == meId { return callee }
-        return caller
+        return caller ?? callee
     }
 
     func displayTitle(relativeTo meId: String, fallback: String? = nil) -> String {
@@ -400,11 +420,18 @@ struct AgoraCallDto: Decodable, Equatable {
             return "Group Call"
         }
         if let peer = peer(relativeTo: meId) {
-            return peer.displayName
+            let name = peer.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !name.isEmpty, name != "Unknown" { return name }
         }
         if let fallback, !fallback.isEmpty { return fallback }
-        return "Calling…"
+        return "Unknown"
     }
+}
+
+struct CallHistoryPage {
+    let calls: [AgoraCallDto]
+    let page: Int
+    let hasMore: Bool
 }
 
 struct AgoraCallSession: Equatable {

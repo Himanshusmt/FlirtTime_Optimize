@@ -185,11 +185,11 @@ struct MessageStatusIndicator: View {
         case .sent:
             SwiftUI.Image(systemName: "checkmark")
                 .font(.chat(.medium, size: size - 2))
-                .foregroundColor(.gray.opacity(0.8))
+                .foregroundColor(Color(uiColor: ChatTheme.tickPending))
 
         case .delivered:
             doubleTicksImage
-                .foregroundColor(.gray.opacity(0.8))
+                .foregroundColor(Color(uiColor: ChatTheme.tickPending))
 
         case .read:
             doubleTicksImage

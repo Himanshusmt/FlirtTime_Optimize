@@ -403,8 +403,6 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
     func presentMessageOptions(for model: MessageCellModel, sourceView: UIView) {
         view.endEditing(true)
 
-        // Always prefer live state so Translate / See translation / See original stay in sync
-        // after REST translate updates `translation` + `showingTranslations`.
         let message = viewModel.message(byId: model.message.id) ?? model.message
         let isPinned = isMessagePinned(model)
 
@@ -421,9 +419,6 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
             sheet.configure(
                 message: message,
                 displayContent: model.displayContent,
-                canCopy: false,
-                canTranslate: false,
-                translateTitle: nil,
                 canEdit: false,
                 canDelete: true,
                 canDeleteForEveryone: false,
@@ -433,14 +428,11 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
                 canRetry: model.deliveryStatus == .failed,
                 isPinned: false,
                 onReact: { _ in },
-                onCopy: {},
                 onReply: {},
                 onForward: {},
                 onSelect: {},
-                onTranslate: {},
                 onEdit: {},
                 onPin: {},
-                onMessageInfo: {},
                 onRetry: { [weak self] in
                     self?.viewModel.retryFailedMessage(tempId: message.id)
                 },
@@ -463,41 +455,31 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
 
         let msgType = (message.messageType ?? message.type ?? "").lowercased()
         let isTextMessage = msgType == "text" || msgType.isEmpty
-        let canCopy  = isTextMessage && !model.displayContent.isEmpty
         let isContactMsg = message.metadata?["isContact"]?.value as? Bool == true
         let canEdit  = !model.isIncoming && !isContactMsg && isTextMessage
         let canDel   = viewModel.canDeleteForEveryone(message: message)
-        let canTranslate = shouldEnableTranslate(for: message)
-        let translateTitle = translateButtonTitle(for: message)
         let canForward = !isPollMessage(message)
 
         let sheet = MessageOptionsSheet()
         sheet.configure(
             message: message,
             displayContent: model.displayContent,
-            canCopy: canCopy,
-            canTranslate: canTranslate,
-            translateTitle: translateTitle,
             canEdit: canEdit,
             canDelete: true,
             canDeleteForEveryone: canDel,
             canPin: true,
             canForward: canForward,
             canReply: true,
-            canMessageInfo: !model.isIncoming,
             isPinned: isPinned,
             onReact:             { [weak self] emoji in
                 guard !message.id.isEmpty else { return }
                 self?.viewModel.reactToMessage(messageId: message.id, emoji: emoji)
             },
-            onCopy:              { UIPasteboard.general.string = model.displayContent },
             onReply:             { [weak self] in _ = self?.viewModel.startReply(to: message); self?.inputBar.becomeFirstResponderInput() },
-            onForward:           {},
-            onSelect:            { [weak self] in self?.viewModel.enterSelectionMode(with: message.stableId) },
-            onTranslate:         { [weak self] in
-                let live = self?.viewModel.message(byId: message.id) ?? message
-                self?.handleTranslateToggle(for: live)
+            onForward:           { [weak self] in
+                self?.presentForwardRecipientPicker(messageIds: [message.stableId])
             },
+            onSelect:            { [weak self] in self?.viewModel.enterSelectionMode(with: message.stableId) },
             onEdit:              { [weak self] in self?.viewModel.startEdit(message: message) },
             onPin:               { [weak self] in
                 guard let self else { return }
@@ -512,28 +494,7 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
                     self.presentPinDurationSheet(messageId: message.id)
                 }
             },
-            onMessageInfo: { [weak self] in
-                guard let self else { return }
-                guard !message.id.isEmpty else { return }
-                let infoVC = self.presentMessageInfoSheet()
-                // Prefer REST `GET chat/messages/{id}/info`; fall back to local statuses.
-                self.viewModel.fetchMessageInfo(messageId: message.id) { [weak self, weak infoVC] result in
-                    guard let self, let infoVC else { return }
-                    switch result {
-                    case .success(let data):
-                        let mapped = self.mapMessageInfoAPI(data)
-                        if mapped.readBy.isEmpty && mapped.deliveredTo.isEmpty && mapped.sentTo.isEmpty {
-                            let local = self.buildMessageInfoEntries(from: message)
-                            infoVC.populate(readBy: local.readBy, deliveredTo: local.deliveredTo, sentTo: local.sentTo)
-                        } else {
-                            infoVC.populate(readBy: mapped.readBy, deliveredTo: mapped.deliveredTo, sentTo: mapped.sentTo)
-                        }
-                    case .failure:
-                        let local = self.buildMessageInfoEntries(from: message)
-                        infoVC.populate(readBy: local.readBy, deliveredTo: local.deliveredTo, sentTo: local.sentTo)
-                    }
-                }
-            }, onDeleteForMe:       { [weak self] in
+            onDeleteForMe:       { [weak self] in
                 self?.messageToDelete = message
                 self?.deleteForEveryone = false
                 self?.presentDeleteConfirmation()
@@ -549,8 +510,6 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
                     self?.viewModel.reactToMessage(messageId: message.id, emoji: emoji)
                 }
             }
-            
-            
         )
         sheet.present(in: view)
     }
@@ -587,6 +546,17 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
 
         self.present(vc, animated: true)
         return vc
+    }
+
+    func presentForwardRecipientPicker(messageIds: [String]? = nil) {
+        let currentUserId = viewModel.getCurrentUserId()
+        let picker = ForwardRecipientPickerView(currentUserId: currentUserId) { [weak self] recipientIds in
+            self?.viewModel.forwardSelectedMessages(to: recipientIds, filteredIds: messageIds)
+        }
+        // Wait for MessageOptionsSheet / selection-bar dismiss so the picker is not covered.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { [weak self] in
+            ChatSwiftUIHost.present(picker, style: .pageSheet, from: self)
+        }
     }
 
     private func buildMessageInfoEntries(from message: ConversationMessage) -> (readBy: [MessageInfoEntry], deliveredTo: [MessageInfoEntry], sentTo: [MessageInfoEntry]) {

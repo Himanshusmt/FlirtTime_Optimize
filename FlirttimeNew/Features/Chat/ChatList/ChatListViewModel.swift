@@ -27,10 +27,16 @@ class ChatListViewModel: ObservableObject {
 
     @Published private(set) var pendingConversationIds: Set<String> = []
     @Published private(set) var hasMorePages: Bool = true
+    /// Set when a chat is unarchived so the list can jump back to Chats.
+    @Published private(set) var lastUnarchivedChatId: String?
     @Published var showNoInternetAlert = false
     /// Bumped when group ongoing-call registry changes — forces list row subtitle refresh.
     @Published private(set) var ongoingGroupCallRevision: Int = 0
     @Published private(set) var quickMomentTray: QuickMomentTray?
+    @Published private(set) var callHistory: [CallHistoryItem] = []
+    @Published private(set) var isLoadingCallHistory = false
+    @Published private(set) var isLoadingMoreCallHistory = false
+    @Published private(set) var hasMoreCallHistory = true
     
     // MARK: - Computed Properties
 
@@ -108,6 +114,8 @@ class ChatListViewModel: ObservableObject {
     private var appliedConversationPresentationTokens: [String: String] = [:]
     /// Debounce timers that clear a conversationId from typingConversationIds after 5 s of silence.
     private var typingCleanupTimers: [String: Timer] = [:]
+    private var callHistoryPage = 0
+    private var didLoadCallHistory = false
 
     // MARK: - Initialization
 
@@ -203,6 +211,121 @@ class ChatListViewModel: ObservableObject {
             NotificationCenter.default.post(name: .ChatUnreadCleared, object: nil)
         }
         loadQuickMomentTray()
+    }
+
+    func loadCallHistoryIfNeeded() {
+        guard !didLoadCallHistory, !isLoadingCallHistory else { return }
+        refreshCallHistory()
+    }
+
+    func refreshCallHistory() {
+        hasMoreCallHistory = true
+        fetchCallHistory(page: 1, reset: true)
+    }
+
+    func loadMoreCallHistoryIfNeeded(currentItem: CallHistoryItem) {
+        guard hasMoreCallHistory, !isLoadingCallHistory, !isLoadingMoreCallHistory else { return }
+        guard callHistory.last?.id == currentItem.id else { return }
+        fetchCallHistory(page: callHistoryPage + 1, reset: false)
+    }
+
+    func deleteCallHistoryItem(id: String) {
+        guard !id.isEmpty else { return }
+        let previous = callHistory
+        callHistory.removeAll { $0.id == id }
+        _ = sessionManager.deleteCallHistoryItem(id: id)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: {
+                    AppLogger.debug("[CallHistory] deleted id=\(id)")
+                },
+                onFailure: { [weak self] error in
+                    AppLogger.debug("[CallHistory] delete failed: \(error.localizedDescription)")
+                    self?.callHistory = previous
+                    self?.errorMessage = error.localizedDescription
+                }
+            )
+            .disposed(by: disposeBag)
+    }
+
+    func deleteAllCallHistory() {
+        let previous = callHistory
+        callHistory = []
+        hasMoreCallHistory = false
+        _ = sessionManager.deleteAllCallHistory()
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: {
+                    AppLogger.debug("[CallHistory] deleted all")
+                },
+                onFailure: { [weak self] error in
+                    AppLogger.debug("[CallHistory] delete all failed: \(error.localizedDescription)")
+                    self?.callHistory = previous
+                    self?.hasMoreCallHistory = true
+                    self?.errorMessage = error.localizedDescription
+                }
+            )
+            .disposed(by: disposeBag)
+    }
+
+    func startCall(from item: CallHistoryItem) {
+        let conversationId = item.conversationId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !conversationId.isEmpty else { return }
+        Task { @MainActor in
+            do {
+                try await AgoraCallService.shared.startOutgoing(
+                    conversationId: conversationId,
+                    type: item.media == .video ? .video : .audio,
+                    isGroup: item.isGroup,
+                    displayName: item.name,
+                    avatarURL: item.avatarURL,
+                    calleeId: item.peerId.isEmpty ? nil : item.peerId
+                )
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func fetchCallHistory(page: Int, reset: Bool) {
+        if reset {
+            isLoadingCallHistory = true
+        } else {
+            isLoadingMoreCallHistory = true
+        }
+        _ = sessionManager.getCallHistory(page: page, limit: 20)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { [weak self] result in
+                    guard let self else { return }
+                    let meId = self.getCurrentUserId()
+                    let mapped = result.calls.map { CallHistoryItem(call: $0, currentUserId: meId) }
+                    if reset {
+                        self.callHistory = mapped
+                    } else {
+                        var seen = Set(self.callHistory.map(\.id))
+                        var merged = self.callHistory
+                        for item in mapped where seen.insert(item.id).inserted {
+                            merged.append(item)
+                        }
+                        self.callHistory = merged
+                    }
+                    self.callHistoryPage = result.page
+                    self.hasMoreCallHistory = result.hasMore
+                    self.didLoadCallHistory = true
+                    self.isLoadingCallHistory = false
+                    self.isLoadingMoreCallHistory = false
+                    AppLogger.debug("[CallHistory] loaded page=\(result.page) count=\(mapped.count) hasMore=\(result.hasMore)")
+                },
+                onFailure: { [weak self] error in
+                    AppLogger.debug("[CallHistory] failed: \(error.localizedDescription)")
+                    self?.isLoadingCallHistory = false
+                    self?.isLoadingMoreCallHistory = false
+                    if reset { self?.didLoadCallHistory = false }
+                    self?.errorMessage = error.localizedDescription
+                }
+            )
+            .disposed(by: disposeBag)
     }
 
     func loadQuickMomentTray() {
@@ -425,15 +548,51 @@ class ChatListViewModel: ObservableObject {
         applyConversationSettings(chatId: chatId, settings: ["isPinned": false])
     }
 
+    func isArchived(chatId: String) -> Bool {
+        chat(for: chatId)?.isArchived == true
+    }
+
+    /// PATCH `/api/v1/chat/conversations/{id}/archive` + emit `conversation:archive`.
+    /// Server fans out `conversation:archived` so other devices stay in sync.
     func archiveChat(chatId: String, isArchived: Bool) {
         guard !chatId.isEmpty else { return }
+        guard self.isArchived(chatId: chatId) != isArchived else { return }
+
+        var settings: [String: Any] = ["isArchived": isArchived]
         if isArchived {
-            applyConversationSettings(chatId: chatId, settings: ["isArchived": true, "isPinned": false])
-            loadCachedChatsImmediately()
+            settings["isPinned"] = false
         } else {
-            applyConversationSettings(chatId: chatId, settings: ["isArchived": false])
+            // Unarchive must not look like a delete: keep the row and
+            // protect it from the next GET /chats prune.
+            chatDataService.protectFromInboxPrune(conversationId: chatId)
+            lastUnarchivedChatId = chatId
         }
+        applySettingsToSnapshot(chatId: chatId, settings: settings)
+        chatDataService.updateChatSettings(conversationId: chatId, settings: settings)
+
         ChatListSocketService.shared.emitArchiveConversation(conversationId: chatId, isArchived: isArchived)
+
+        AppLogger.debug("[Archive] ▶ PATCH /api/v1/chat/conversations/\(chatId)/archive isArchived=\(isArchived)")
+        sessionManager.archiveConversation(conversationId: chatId, isArchived: isArchived)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { [weak self] data in
+                    guard let self else { return }
+                    if let remote = data.settings?.isArchived {
+                        self.applySettingsToSnapshot(chatId: chatId, settings: ["isArchived": remote])
+                        self.chatDataService.updateChatSettings(conversationId: chatId, settings: ["isArchived": remote])
+                    }
+                    AppLogger.debug("[Archive] ✅ conversation \(chatId) isArchived=\(isArchived)")
+                },
+                onFailure: { error in
+                    AppLogger.debug("[Archive] ❌ REST failed: \(error.localizedDescription) — socket fallback")
+                    ChatListSocketService.shared.emitArchiveConversation(
+                        conversationId: chatId,
+                        isArchived: isArchived
+                    )
+                }
+            )
+            .disposed(by: disposeBag)
     }
 
     func updateChatArchiveStatus(chatId: String, isArchived: Bool) {
@@ -443,14 +602,13 @@ class ChatListViewModel: ObservableObject {
     func deleteConversation(conversationId: String, forEveryone: Bool = false) {
         guard !conversationId.isEmpty else { return }
         if forEveryone {
-            // Explicit single-chat path: DELETE /chat/conversations/{id}?scope=everyone
             deleteConversationForEveryone(conversationId: conversationId)
         } else {
             deleteConversations(ids: [conversationId], forEveryone: false)
         }
     }
 
-    /// DELETE `/api/v1/chat/conversations/{id}?scope=everyone` (ChatList “Delete for everyone”).
+    /// DELETE `/api/v1/chats/{id}` `{ deleteType: "everyone" }` (ChatList “Delete for everyone”).
     func deleteConversationForEveryone(conversationId: String) {
         guard !conversationId.isEmpty else { return }
 
@@ -461,10 +619,10 @@ class ChatListViewModel: ObservableObject {
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: {
-                    AppLogger.debug("[DeleteChat] REST ok id=\(conversationId) scope=everyone")
+                    AppLogger.debug("[DeleteChat] REST ok id=\(conversationId) deleteType=everyone")
                 },
                 onFailure: { error in
-                    AppLogger.debug("[DeleteChat] REST scope=everyone failed: \(error.localizedDescription) — socket fallback")
+                    AppLogger.debug("[DeleteChat] REST deleteType=everyone failed: \(error.localizedDescription) — socket fallback")
                     ChatListSocketService.shared.emitDeleteConversation(
                         conversationId: conversationId,
                         forEveryone: true
@@ -475,8 +633,7 @@ class ChatListViewModel: ObservableObject {
     }
 
     /// Delete one or many chats via REST.
-    /// Single → `DELETE /chat/conversations/{id}?scope=me|everyone`
-    /// Multiple → body `{ id: [...], scope: "me"|"everyone" }`
+    /// Each → `DELETE /api/v1/chats/{id}` `{ deleteType: "me"|"everyone" }`
     func deleteConversations(ids: [String], forEveryone: Bool = false) {
         let uniqueIds = Array(Set(ids.filter { !$0.isEmpty }))
         guard !uniqueIds.isEmpty else { return }
@@ -501,7 +658,7 @@ class ChatListViewModel: ObservableObject {
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: {
-                    AppLogger.debug("[DeleteChat] REST ok ids=\(uniqueIds.count) scope=\(scope)")
+                    AppLogger.debug("[DeleteChat] REST ok ids=\(uniqueIds.count) deleteType=\(scope)")
                 },
                 onFailure: { error in
                     AppLogger.debug("[DeleteChat] REST failed: \(error.localizedDescription) — socket fallback")
@@ -939,6 +1096,9 @@ class ChatListViewModel: ObservableObject {
         ChatListSocketService.shared.conversationDeleted
             .receive(on: DispatchQueue.main)
             .sink { [weak self] conversationId in
+                // Unarchive can race a stale delete/inbox event — don't remove a
+                // chat we just restored.
+                if self?.lastUnarchivedChatId == conversationId { return }
                 self?.chatDataService.removeChat(conversationId, deleteFromStore: true)
                 self?.scheduleRealtimeSync(forceRefresh: false)
             }
@@ -995,12 +1155,19 @@ class ChatListViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // FE: `chat:inbox:refresh` → scheduleRefresh() so new groups appear without pull-to-refresh
+        // FE: `conversation:updated` / `chat:inbox:refresh` → scheduleRefresh()
         ChatListSocketService.shared.inboxRefreshNeeded
             .receive(on: DispatchQueue.main)
             .sink { [weak self] reason in
                 AppLogger.debug("ChatListViewModel: inbox:refresh reason=\(reason ?? "nil") → forceRefreshChats")
                 self?.forceRefreshChats()
+            }
+            .store(in: &cancellables)
+
+        ChatListSocketService.shared.unreadCountUpdated
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] conversationId, unreadCount in
+                self?.applyUnreadCount(conversationId: conversationId, unreadCount: unreadCount)
             }
             .store(in: &cancellables)
 
@@ -1061,14 +1228,28 @@ class ChatListViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
                 guard let self else { return }
-                // Apply the new status to every affected message id.
-                // Most events carry one id; bulk events also handled here.
-                for messageId in event.messageIds {
-                    self.chatDataService.updateLastMessageStatus(
-                        conversationId: event.conversationId,
-                        messageId: messageId,
-                        status: event.status
-                    )
+                if event.messageIds.isEmpty {
+                    self.applyLastMessageStatus(conversationId: event.conversationId, messageId: nil, status: event.status)
+                    if let lastId = self.chatsSnapshot.first(where: { $0.id == event.conversationId })?.lastMessage?.id {
+                        self.chatDataService.updateLastMessageStatus(
+                            conversationId: event.conversationId,
+                            messageId: lastId,
+                            status: event.status
+                        )
+                    }
+                } else {
+                    for messageId in event.messageIds {
+                        self.chatDataService.updateLastMessageStatus(
+                            conversationId: event.conversationId,
+                            messageId: messageId,
+                            status: event.status
+                        )
+                        self.applyLastMessageStatus(
+                            conversationId: event.conversationId,
+                            messageId: messageId,
+                            status: event.status
+                        )
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -1287,9 +1468,9 @@ class ChatListViewModel: ObservableObject {
         applySettingsToSnapshot(chatId: chatId, settings: settings)
         chatDataService.updateChatSettings(conversationId: chatId, settings: settings)
 
-        // FlirtTime pin is its own REST call. Mute/archive stay on settings until those APIs exist.
+        // Pin/unpin and archive/unarchive have dedicated REST calls.
         if let isPinned = SocketAckParser.boolValue(from: settings["isPinned"]) {
-            AppLogger.debug("[Settings] ▶ POST /api/v1/chats/\(chatId)/pin isPinned=\(isPinned)")
+            AppLogger.debug("[Settings] ▶ PATCH /api/v1/chats/\(chatId)/pin isPinned=\(isPinned)")
             sessionManager.pinConversation(conversationId: chatId, isPinned: isPinned)
                 .observe(on: MainScheduler.instance)
                 .subscribe(
@@ -1302,6 +1483,8 @@ class ChatListViewModel: ObservableObject {
                     },
                     onFailure: { [weak self] error in
                         AppLogger.debug("[Settings] ❌ pin failed: \(error.localizedDescription)")
+                        self?.applySettingsToSnapshot(chatId: chatId, settings: ["isPinned": !isPinned])
+                        self?.chatDataService.updateChatSettings(conversationId: chatId, settings: ["isPinned": !isPinned])
                         self?.handleError(error)
                     }
                 )
@@ -1310,6 +1493,7 @@ class ChatListViewModel: ObservableObject {
 
         var remaining = restSettingsPayload(from: settings)
         remaining.removeValue(forKey: "isPinned")
+        remaining.removeValue(forKey: "isArchived")
         guard !remaining.isEmpty else { return }
 
         AppLogger.debug("[Settings] ▶ PATCH /api/v1/chats/\(chatId)/settings \(remaining)")
@@ -1339,6 +1523,32 @@ class ChatListViewModel: ObservableObject {
                 }
             )
             .disposed(by: disposeBag)
+    }
+
+    private func applyUnreadCount(conversationId: String, unreadCount: Int) {
+        guard !conversationId.isEmpty else { return }
+        chatDataService.setUnreadCount(for: conversationId, unreadCount: unreadCount)
+        guard let index = chatsSnapshot.firstIndex(where: { $0.id == conversationId }) else { return }
+        var chat = chatsSnapshot[index]
+        chat.unreadCount = unreadCount
+        chatsSnapshot[index] = chat
+    }
+
+    /// Instant inbox tick — don't wait for Core Data FRC to republish the row.
+    private func applyLastMessageStatus(conversationId: String, messageId: String?, status: String) {
+        guard !conversationId.isEmpty, !status.isEmpty else { return }
+        guard let index = chatsSnapshot.firstIndex(where: { $0.id == conversationId }) else { return }
+        var chat = chatsSnapshot[index]
+        guard var lastMessage = chat.lastMessage, chat.isLastMessageFromSelf else { return }
+        if let messageId, !messageId.isEmpty, let lastId = lastMessage.id, lastId != messageId {
+            return
+        }
+        let incoming = MessageDeliveryStatus.from(status)
+        let current = MessageDeliveryStatus.from(lastMessage.status)
+        guard incoming != .unknown, incoming >= current else { return }
+        lastMessage.status = incoming == .read ? "seen" : incoming.rawValue
+        chat.lastMessage = lastMessage
+        chatsSnapshot[index] = chat
     }
 
     /// Keep `chatsSnapshot` in sync so SwiftUI re-renders mute icon without waiting for FRC.

@@ -37,6 +37,25 @@ enum SocketAckParser {
         return ConversationMessage.fromDictionary(messageData)
     }
 
+    /// Socket / JSON often encode ids as `NSNumber` — `as? String` alone fails.
+    static func stringValue(from value: Any?) -> String? {
+        if let s = value as? String {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        if let n = value as? NSNumber { return n.stringValue }
+        if let i = value as? Int { return String(i) }
+        return nil
+    }
+
+    /// Only accept real delivery vocabulary. `{ status: true }` / `"success"` fall back.
+    static func deliveryStatusString(from value: Any?, default defaultStatus: String) -> String {
+        guard let raw = stringValue(from: value)?.lowercased() else { return defaultStatus }
+        if raw == "seen" || raw == "read" { return raw }
+        if MessageDeliveryStatus.from(raw) != .unknown { return raw }
+        return defaultStatus
+    }
+
     /// Socket / JSON often encode booleans as `NSNumber` — `as? Bool` alone fails.
     static func boolValue(from value: Any?) -> Bool? {
         if let b = value as? Bool { return b }
@@ -57,6 +76,7 @@ enum SocketAckParser {
     static func conversationSettings(from payload: [String: Any]) -> (conversationId: String, settings: [String: Any])? {
         let conversationId = (payload["conversationId"] as? String)
             ?? (payload["conversation_id"] as? String)
+            ?? (payload["id"] as? String)
             ?? ""
         guard !conversationId.isEmpty else { return nil }
 
@@ -69,8 +89,28 @@ enum SocketAckParser {
                 settings[key] = value
             }
         }
+        if settings["isPinned"] == nil, let pinned = payload["pinned"] {
+            settings["isPinned"] = pinned
+        }
         guard !settings.isEmpty else { return nil }
         return (conversationId, settings)
+    }
+
+    /// FlirtTime delete contract uses `deleteType` (`me` | `everyone`).
+    /// Also accepts legacy `scope` / `forEveryone` / `isDeletedEveryone`.
+    static func deleteType(from payload: [String: Any], default defaultValue: String = "everyone") -> String {
+        if let raw = (payload["deleteType"] as? String) ?? (payload["scope"] as? String) {
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if value == "everyone" { return "everyone" }
+            if value == "me" { return "me" }
+        }
+        if boolValue(from: payload["forEveryone"]) == true { return "everyone" }
+        if boolValue(from: payload["isDeletedEveryone"]) == true { return "everyone" }
+        return defaultValue
+    }
+
+    static func isDeleteForEveryone(from payload: [String: Any], default defaultValue: String = "me") -> Bool {
+        deleteType(from: payload, default: defaultValue) == "everyone"
     }
 }
 
@@ -85,32 +125,88 @@ enum SocketEvent: String, CaseIterable {
     case getMessage = "chat:message_received"
     case translateMessage = "chat:message:translate" // NEW — OLD: translate-message
     case translateMessageAck = "chat:message:translate:ack" // NEW — OLD: translate-message-ack
-    case editMessage = "chat:message:edit" // NEW — OLD: edit-message / update-conversation-message
-    case editMessageAck = "chat:message:edit:ack" // NEW — OLD: edit-message-ack / update-conversation-message-ack
-    case messageEdited = "chat:message:edited" // NEW — OLD: message-edited
-    case deleteMessage = "chat:message:delete" // NEW — OLD: delete-message / delete-conversation-message
-    case deleteMessageAck = "chat:message:delete:ack" // NEW — OLD: delete-message-ack / delete-conversation-message-ack
-    case messageDeleted = "chat:message:deleted" // NEW — OLD: message-deleted
-    case forwardMessage = "chat:message:forward" // NEW — OLD: forward-message
-    case forwardMessageAck = "chat:message:forward:ack" // NEW — OLD: forward-message-ack
+    case editMessage = "chat:edit_message"
+    case editMessageAck = "chat:message:edit:ack"
+    case messageEdited = "chat:message_edited"
+    case replyMessage = "chat:reply_message"
+    case deleteMessage = "chat:delete_message"
+    case deleteMessageAck = "chat:message:delete:ack"
+    case messageDeleted = "chat:message_deleted"
+    /// Client emit — batch forward `{ messageIds, recipientIds, clientMessageId }` (ack via callback).
+    case forwardMessage = "chat:forward_message"
+    /// Server fanout after a successful forward (sender + target threads).
+    case messageForwarded = "chat:message_forwarded"
     case reactToMessage = "chat:message:react" // NEW — OLD: react-to-message
     case reactToMessageAck = "chat:message:react:ack" // NEW — OLD: react-to-message-ack
     /// Android `CHAT_MESSAGE_REACTED` — realtime reaction fanout to conversation members
     case messageReacted = "chat:message:reacted"
-    case messageDelivered = "chat:message:delivered" // NEW
+    /// Instant reaction add / change / toggle fanout
+    case messageReactionUpdated = "message:reaction:updated"
+    /// Client emit when a peer message arrives on this device.
+    case messageDelivered = "chat:message_delivered"
+    /// Server broadcast to the sender after a delivery receipt.
+    case deliveryReceipt = "chat:delivery_receipt"
     case chatListing = "chat:message:list" // NEW — OLD: chat-listing
     case chatListingResp = "chat:message:list:ack" // NEW — OLD: chat-listing-resp
     case seenMessages = "chat:mark_read"
     case seenMessagesAck = "chat:mark_read:ack"
+    /// Server broadcast to the sender after a read receipt.
     case conversationMessageStatusUpdate = "chat:read_receipt"
+    /// Client emit — bulk mark undelivered inbox messages as delivered.
+    case deliveredSync = "chat:delivered_sync"
+
+    /// Delivered listen set — FlirtTime `chat:delivery_receipt` plus emit echo / legacy names.
+    static var deliveryReceiptListenEvents: [String] {
+        [
+            SocketEvent.deliveryReceipt.rawValue,
+            SocketEvent.messageDelivered.rawValue,
+            "chat:message:delivered"
+        ]
+    }
+
+    /// Seen listen set — FlirtTime `chat:read_receipt` plus legacy fanout names.
+    static var readReceiptListenEvents: [String] {
+        [
+            SocketEvent.conversationMessageStatusUpdate.rawValue,
+            "chat:message:status"
+        ]
+    }
 
     // Aliases kept so existing call sites compile (same NEW event names)
     static var sendNewMessage: SocketEvent { .sendConversationMessage }
     static var newMessageAck: SocketEvent { .sendConversationMessageAck }
     static var updateConversationMessage: SocketEvent { .editMessage }
     static var updateConversationMessageAck: SocketEvent { .editMessageAck }
+    static var messageEditedListenEvents: [String] {
+        [
+            SocketEvent.editMessage.rawValue,
+            SocketEvent.messageEdited.rawValue,
+            "chat:message:edited",
+            SocketEvent.editMessageAck.rawValue
+        ]
+    }
+    static var replyMessageListenEvents: [String] {
+        [SocketEvent.replyMessage.rawValue]
+    }
     static var deleteConversationMessage: SocketEvent { .deleteMessage }
     static var deleteConversationMessageAck: SocketEvent { .deleteMessageAck }
+    /// Server may also emit `message:delete` / `message:deleted`.
+    static let deleteMessageAlias = "message:delete"
+    static let messageDeletedAlias = "message:deleted"
+    static var messageDeletedListenEvents: [String] {
+        [
+            SocketEvent.messageDeleted.rawValue,
+            SocketEvent.messageDeletedAlias,
+            "chat:message:deleted"
+        ]
+    }
+    static var messageReactionUpdatedListenEvents: [String] {
+        [
+            SocketEvent.messageReactionUpdated.rawValue,
+            SocketEvent.messageReacted.rawValue,
+            SocketEvent.reactToMessageAck.rawValue
+        ]
+    }
     static var markConversationMessagesSeen: SocketEvent { .seenMessages }
     static var markConversationMessagesSeenAck: SocketEvent { .seenMessagesAck }
 
@@ -131,6 +227,7 @@ enum SocketEvent: String, CaseIterable {
     case deleteConversation = "conversation:delete"
     case archiveConversation = "conversation:archive"
     case conversationArchived = "conversation:archived"
+    case conversationPinUpdated = "conversation:pin-updated"
     case createConversation = "chat:conversation:create" // NEW — OLD: create-conversation
     case createConversationAck = "chat:conversation:create:ack" // NEW
     case listConversations = "chat:conversation:list" // NEW — c2s inbox via socket
@@ -140,6 +237,20 @@ enum SocketEvent: String, CaseIterable {
     case getConversationStatus = "chat:conversation:status:get" // NEW — OLD: get-conversation-status
     case getConversationStatusAck = "chat:conversation:status:get:ack" // NEW — OLD: get-conversation-status-ack
     case messageUpdated = "chat:inbox:refresh" // NEW — soft signal to re-fetch inbox (FE INBOX_REFRESH)
+    /// FlirtTime — conversation list row changed (last message, order, mute, etc.).
+    case conversationUpdated = "conversation:updated"
+    /// Canonical inbox row update after forward / send.
+    case chatConversationUpdated = "chat:conversation_updated"
+    /// FlirtTime — unread badge for one conversation.
+    case conversationUnreadUpdated = "conversation:unread_updated"
+
+    static var inboxRefreshListenEvents: [String] {
+        [
+            SocketEvent.chatConversationUpdated.rawValue,
+            SocketEvent.conversationUpdated.rawValue,
+            SocketEvent.messageUpdated.rawValue
+        ]
+    }
     case getGlobalUnreadCount = "chat:unread:get" // NEW — OLD: get-global-unread-count
     case getGlobalUnreadCountAck = "chat:unread:get:ack" // NEW
     case conversationScreenshot = "chat:screenshot" // NEW — OLD: conversation-screenshot
@@ -161,7 +272,16 @@ enum SocketEvent: String, CaseIterable {
     case groupUpdated = "chat:group:updated" // NEW — s2c group metadata changed
 
     // MARK: Pin
-    case pinMessage = "chat:message:pin" // NEW — OLD: pin-message
+    case pinMessage = "chat:pin_message"
+
+    static var pinMessageListenEvents: [String] {
+        [
+            SocketEvent.pinMessage.rawValue,
+            "chat:message:pin",
+            SocketEvent.pinMessageAck.rawValue,
+            SocketEvent.messagePinUpdated.rawValue
+        ]
+    }
     case pinMessageAck = "chat:message:pin:ack" // NEW — OLD: pin-message-ack
     case getPinnedMessages = "chat:message:pin:list" // NEW — OLD: get-pinned-messages
     case getPinnedMessagesAck = "chat:message:pin:list:ack" // NEW — OLD: get-pinned-messages-ack
@@ -647,6 +767,44 @@ class ChatSocketManager {
         establishConnectionWithRetry()
     }
 
+    /// Emit with Socket.IO acknowledgement callback (used by `chat:forward_message`).
+    func emitWithAck(
+        _ message: String,
+        withData data: [String: Any],
+        timeout: Double = 12,
+        completion: @escaping ([Any]) -> Void
+    ) {
+        let finish: ([Any]) -> Void = { payload in
+            if Thread.isMainThread {
+                completion(payload)
+            } else {
+                DispatchQueue.main.async { completion(payload) }
+            }
+        }
+        let failureAck: [String: Any] = [
+            "success": false,
+            "error": ["message": "Socket not connected"]
+        ]
+        let emitAction: () -> Void = { [weak self] in
+            guard let self, let socket = self.socket, self.isSocketConnected() else {
+                print("[SOCKET ACK] Not connected — cannot emit \(message)")
+                self?.establishConnectionWithRetry()
+                finish([failureAck])
+                return
+            }
+            print("[SOCKET SENT ACK] Event: \(message): \(data)")
+            socket.emitWithAck(message, data).timingOut(after: timeout) { ackData in
+                print("[SOCKET ACK] Event: \(message): \(ackData)")
+                finish(ackData)
+            }
+        }
+        if Thread.isMainThread {
+            emitAction()
+        } else {
+            DispatchQueue.main.async(execute: emitAction)
+        }
+    }
+
     private func flushPendingEmits() {
         pendingEmitsLock.lock()
         let queued = pendingEmits
@@ -1082,14 +1240,16 @@ final class ChatSocketSessionCoordinator {
         Self.syncInboxDelivered()
     }
 
-    /// FE auth-context onConnect / foreground — POST chat/delivered/sync
+    /// FlirtTime — emit `chat:delivered_sync` and POST /api/v1/chats/delivered/sync
     private static func syncInboxDelivered() {
+        ChatSocketManager.shared.emitMessage(SocketEvent.deliveredSync.rawValue, withData: [[:]])
+        AppLogger.debug("[DeliveredSync] Emitted chat:delivered_sync")
         guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else { return }
         _ = sessionManager.syncInboxDelivered()
             .subscribe(onSuccess: { data in
-                AppLogger.debug("[DeliveredSync] updated=\(data.updated ?? 0)")
+                AppLogger.debug("[DeliveredSync] REST updated=\(data.updated ?? 0)")
             }, onFailure: { error in
-                AppLogger.debug("[DeliveredSync] failed: \(error.localizedDescription)")
+                AppLogger.debug("[DeliveredSync] REST failed: \(error.localizedDescription)")
             })
     }
 

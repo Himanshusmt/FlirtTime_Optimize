@@ -93,6 +93,10 @@ extension ChatDetailViewController {
             let canForward = hasSelection && !isSelectionOnlyPolls()
             let actionBar = ChatSelectionActionBar()
             actionBar.configure(hasSelection: hasSelection, canDeleteForEveryone: canDelForAll, canForward: canForward, isChannel: isChannel)
+            actionBar.onForward = { [weak self] in
+                guard let self, self.viewModel.selection.hasSelection else { return }
+                self.presentForwardRecipientPicker()
+            }
             actionBar.onDeleteForMe = { [weak self] in
                 guard let self, self.viewModel.selection.hasSelection else { return }
                 self.viewModel.deleteSelectedMessages(forEveryone: false)

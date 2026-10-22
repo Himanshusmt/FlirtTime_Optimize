@@ -691,15 +691,19 @@ final class ChatDetailViewController: UIViewController {
         let translations = viewModel.showingTranslations
         let participants = viewModel.participantsForMessageDisplay()
 
+        let loadedMessages = groups.flatMap(\.messages)
         var changedMessages: [ConversationMessage] = []
         for group in groups {
             for msg in group.messages {
                 guard let existing = ds.findItem(withId: msg.stableId) else { continue }
                 let translationKey = msg.id.isEmpty ? msg.stableId : msg.id
+                let replyId = msg.replyToId?.id
+                let replySource = loadedMessages.first(where: { $0.id == replyId })
                 let freshModel = MessageCellModel.from(
                     msg, isGroupChat: isGroup, currentUserId: userId,
                     showingTranslation: translations.contains(translationKey),
-                    groupParticipants: participants
+                    groupParticipants: participants,
+                    replySourceMessage: replySource
                 )
                 let cachedModel = ds.modelCache[existing.stableId] ?? existing.model
                 if cachedModel != freshModel

@@ -210,6 +210,7 @@ final class ChatMessagesDataSource: NSObject {
         var nextItemByStableId: [String: ChatMessageCellItem] = [:]
         var nextStableIdByMessageId: [String: String] = [:]
         var seenIds: Set<String> = []  // Deduplicate by both stableId and message.id
+        let loadedMessages = groups.flatMap(\.messages)
 
         for group in groups {
             let section = ChatDateSection(date: group.date, displayText: ChatDateSection.displayText(for: group.date))
@@ -230,7 +231,8 @@ final class ChatMessagesDataSource: NSObject {
                     isGroupChat: isGroupChat,
                     currentUserId: currentUserId,
                     showingTranslation: showingTranslations.contains(translationKey),
-                    groupParticipants: groupParticipants
+                    groupParticipants: groupParticipants,
+                    replySourceMessage: replySourceMessage(for: message, among: loadedMessages)
                 )
                 model.isSelected = selectedMessageIds.contains(model.stableId)
                 models.append(model)
@@ -313,7 +315,8 @@ final class ChatMessagesDataSource: NSObject {
                 isGroupChat: isGroupChat,
                 currentUserId: currentUserId,
                 showingTranslation: showingTranslations.contains(translationKey),
-                groupParticipants: groupParticipants
+                groupParticipants: groupParticipants,
+                replySourceMessage: replySourceMessage(for: message, among: messages)
             )
             var mutableModel = freshModel
             mutableModel.isSelected = selectedMessageIds.contains(stableId)
@@ -374,6 +377,22 @@ final class ChatMessagesDataSource: NSObject {
     func model(at indexPath: IndexPath) -> MessageCellModel? {
         guard let item = diffableDataSource?.itemIdentifier(for: indexPath) else { return nil }
         return modelCache[item.stableId] ?? item.model
+    }
+
+    private func replySourceMessage(
+        for message: ConversationMessage,
+        among messages: [ConversationMessage]
+    ) -> ConversationMessage? {
+        guard let replyId = message.replyToId?.id?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !replyId.isEmpty else { return nil }
+        if let match = messages.first(where: { $0.id == replyId }) {
+            return match
+        }
+        if let stableId = stableIdByMessageId[replyId],
+           let item = itemByStableId[stableId] {
+            return item.message
+        }
+        return nil
     }
 
     func updateConfig(currentUserId: String?, isGroupChat: Bool, showingTranslations: Set<String>, groupParticipants: [GroupParticipant] = []) {

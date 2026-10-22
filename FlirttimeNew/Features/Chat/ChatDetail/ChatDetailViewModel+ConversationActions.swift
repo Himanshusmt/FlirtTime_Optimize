@@ -113,6 +113,7 @@ extension ChatDetailViewModel {
 
         let session = userListViewModel.sessionManager
             ?? Container.sharedContainer.resolve(SessionManager.self)
+        ChatListSocketService.shared.emitDeleteConversation(conversationId: cid, forEveryone: false)
         _ = session?.deleteChatConversation(id: cid, scope: "me")
             .observe(on: MainScheduler.instance)
             .subscribe(
@@ -126,8 +127,7 @@ extension ChatDetailViewModel {
                     }
                 },
                 onFailure: { [weak self] _ in
-                    // Fallback to socket if REST fails
-                    ChatListSocketService.shared.emitDeleteConversation(conversationId: cid)
+                    ChatListSocketService.shared.emitDeleteConversation(conversationId: cid, forEveryone: false)
                     Task { [weak self] in
                         guard let self else { return }
                         try? await self.conversationRepository?.deleteConversation(id: cid)
@@ -170,10 +170,19 @@ extension ChatDetailViewModel {
     }
 
     func handleConversationMessageStatusUpdate(_ payload: MessageStatusUpdatePayload) {
-        guard payload.conversationId == selectedId else { return }
+        let incomingConversationId = payload.conversationId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matchesConversation = !incomingConversationId.isEmpty && incomingConversationId == selectedId
+        let matchesOpenMessage = payload.messageIds.contains { !$0.isEmpty && stateManager.messageById($0) != nil }
+        guard matchesConversation || matchesOpenMessage else {
+            AppLogger.debug("[StatusUpdate] ignored conversationId=\(payload.conversationId) selected=\(selectedId) messageIds=\(payload.messageIds) status=\(payload.status)")
+            return
+        }
 
         let deliveryStatus = MessageDeliveryStatus.from(payload.status)
-        guard deliveryStatus != .unknown else { return }
+        guard deliveryStatus != .unknown else {
+            AppLogger.debug("[StatusUpdate] unknown status '\(payload.status)' conversationId=\(payload.conversationId)")
+            return
+        }
 
         var updatedMessages: [ConversationMessage] = []
         let myId = getCurrentUserId()

@@ -9,7 +9,7 @@ import RxSwift
 
 typealias BackendClient = ChatAPIClient
 
-struct BaseApiResponse<T: Codable>: Codable {
+struct BaseApiResponse<T: Decodable>: Decodable {
     let code: Int?
     let message: String?
     let data: T?
@@ -70,24 +70,24 @@ final class ChatAPIClient {
     }
 
     /// Decodes `{ success, data }` and returns `data`.
-    func load<T: Codable>(request: ApiRequest) -> Single<T> {
+    func load<T: Decodable>(request: ApiRequest) -> Single<T> {
         perform(request) { data, statusCode in
             try Self.unwrap(data: data, statusCode: statusCode)
         }
     }
 
-    func loadChatData<T: Codable>(request: ApiRequest) -> Single<T> {
+    func loadChatData<T: Decodable>(request: ApiRequest) -> Single<T> {
         load(request: request)
     }
 
     /// Decodes the whole body as `T`.
-    func loadModelData<T: Codable>(request: ApiRequest) -> Single<T> {
+    func loadModelData<T: Decodable>(request: ApiRequest) -> Single<T> {
         perform(request) { data, _ in
             try JSONDecoder().decode(T.self, from: data)
         }
     }
 
-    func loadDirect<T: Codable>(request: ApiRequest) -> Single<T> {
+    func loadDirect<T: Decodable>(request: ApiRequest) -> Single<T> {
         perform(request) { data, _ in
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
@@ -148,7 +148,7 @@ final class ChatAPIClient {
         }
     }
 
-    func uploadImage<T: Codable>(request: ApiRequest, imageData: Data?) -> Single<T> {
+    func uploadImage<T: Decodable>(request: ApiRequest, imageData: Data?) -> Single<T> {
         guard let url = url(for: request.endPoint) else {
             return .error(APIError.apiError("Chat base URL is not configured"))
         }
@@ -226,7 +226,7 @@ final class ChatAPIClient {
         return URL(string: root + path)
     }
 
-    private static func unwrap<T: Codable>(data: Data, statusCode: Int) throws -> T {
+    private static func unwrap<T: Decodable>(data: Data, statusCode: Int) throws -> T {
         let base = try? JSONDecoder().decode(BaseResponse.self, from: data)
         let succeeded = base?.success ?? base?.status ?? (200..<300).contains(statusCode)
         guard succeeded else {

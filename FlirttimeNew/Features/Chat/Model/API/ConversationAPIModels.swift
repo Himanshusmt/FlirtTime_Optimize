@@ -905,22 +905,59 @@ struct TranslateChatMessageAPIData: Codable {
     }
 }
 
-/// NEW API — POST chat/messages/forward response `data` (FE: `{ messages: ChatMessage[] }`)
-struct ForwardChatMessagesAPIData: Codable {
+/// POST `/api/v1/chats/messages/forward` response `data`
+/// (`{ messages }`, a single message, or the array itself).
+struct ForwardChatMessagesAPIData: Decodable {
     let messages: [ConversationMessage]?
 
     enum CodingKeys: String, CodingKey {
-        case messages
+        case messages, message
     }
 
     init(from decoder: Decoder) throws {
-        if let c = try? decoder.container(keyedBy: CodingKeys.self),
-           let list = try c.decodeIfPresent([ConversationMessage].self, forKey: .messages) {
+        if let list = try? [ConversationMessage](from: decoder) {
             messages = list
             return
         }
-        // Some backends return the array directly as `data`
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let list = try c.decodeIfPresent([ConversationMessage].self, forKey: .messages) {
+            messages = list
+            return
+        }
+        if let single = try c.decodeIfPresent(ConversationMessage.self, forKey: .message) {
+            messages = [single]
+            return
+        }
         messages = try? [ConversationMessage](from: decoder)
+    }
+
+    /// Parses REST / socket ack / `chat:message_forwarded` envelopes.
+    static func messages(from payload: [String: Any]) -> [ConversationMessage] {
+        func parseList(_ items: [[String: Any]]) -> [ConversationMessage] {
+            items.compactMap { item in
+                let msgData = (item["data"] as? [String: Any]) ?? (item["message"] as? [String: Any]) ?? item
+                return ConversationMessage.fromDictionary(msgData)
+            }
+        }
+
+        if let list = payload["messages"] as? [[String: Any]] {
+            return parseList(list)
+        }
+        if let list = payload["data"] as? [[String: Any]] {
+            return parseList(list)
+        }
+        let nested = (payload["data"] as? [String: Any]) ?? payload
+        if let list = nested["messages"] as? [[String: Any]] {
+            return parseList(list)
+        }
+        if let item = nested["message"] as? [String: Any],
+           let message = ConversationMessage.fromDictionary(item) {
+            return [message]
+        }
+        if let message = ConversationMessage.fromDictionary(nested), !message.id.isEmpty {
+            return [message]
+        }
+        return []
     }
 }
 
@@ -1050,5 +1087,202 @@ struct UpdateConversationSettingsAPIData: Codable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encodeIfPresent(settings, forKey: .settings)
+    }
+}
+
+// MARK: - Forward Recipients
+
+/// Full envelope for GET `/api/v1/chats/forward/recipients`.
+struct ForwardRecipientsAPIResponse: Decodable {
+    let success: Bool?
+    let message: String?
+    let data: ForwardRecipientsAPIData?
+
+    var resolved: ForwardRecipientsAPIData {
+        data ?? ForwardRecipientsAPIData.empty
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case success, message, data, recipients, users, rows
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        success = try c.decodeIfPresent(Bool.self, forKey: .success)
+        message = try c.decodeIfPresent(String.self, forKey: .message)
+        if let nested = try? c.decode(ForwardRecipientsAPIData.self, forKey: .data) {
+            data = nested
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .data) {
+            data = ForwardRecipientsAPIData(recipients: list)
+        } else if let payload = try? ForwardRecipientsAPIData(from: decoder) {
+            data = payload.recipients.isEmpty ? nil : payload
+        } else {
+            data = nil
+        }
+    }
+}
+
+/// Unwrapped `data` for GET `/api/v1/chats/forward/recipients`.
+struct ForwardRecipientsAPIData: Decodable {
+    let recipients: [ForwardRecipient]
+    let page: Int?
+    let limit: Int?
+    let total: Int?
+    let hasMore: Bool?
+
+    static let empty = ForwardRecipientsAPIData(
+        recipients: [],
+        page: nil,
+        limit: nil,
+        total: nil,
+        hasMore: nil
+    )
+
+    init(
+        recipients: [ForwardRecipient],
+        page: Int? = nil,
+        limit: Int? = nil,
+        total: Int? = nil,
+        hasMore: Bool? = nil
+    ) {
+        self.recipients = recipients
+        self.page = page
+        self.limit = limit
+        self.total = total
+        self.hasMore = hasMore
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case recipients, users, rows, chats, conversations, items
+        case pagination
+        case page, limit, total, count, hasMore, totalPages, totalResults
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let pagination = try? c.decode(ConversationPagination.self, forKey: .pagination)
+
+        if let list = try? c.decode([ForwardRecipient].self, forKey: .recipients), !list.isEmpty {
+            recipients = list
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .users), !list.isEmpty {
+            recipients = list
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .rows), !list.isEmpty {
+            recipients = list
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .chats), !list.isEmpty {
+            recipients = list
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .conversations), !list.isEmpty {
+            recipients = list
+        } else if let list = try? c.decode([ForwardRecipient].self, forKey: .items), !list.isEmpty {
+            recipients = list
+        } else {
+            recipients = (try? c.decode([ForwardRecipient].self, forKey: .recipients)) ?? []
+        }
+
+        page = Self.intValue(from: c, key: .page) ?? pagination?.page
+        limit = Self.intValue(from: c, key: .limit) ?? pagination?.pageSize
+        total = Self.intValue(from: c, key: .total)
+            ?? Self.intValue(from: c, key: .count)
+            ?? Self.intValue(from: c, key: .totalResults)
+            ?? pagination?.total
+        if let flag = try? c.decodeIfPresent(Bool.self, forKey: .hasMore) {
+            hasMore = flag
+        } else if let paginationHasMore = pagination?.hasMore {
+            hasMore = paginationHasMore
+        } else if let page, let totalPages = Self.intValue(from: c, key: .totalPages) ?? pagination?.totalPages {
+            hasMore = page < totalPages
+        } else {
+            hasMore = nil
+        }
+    }
+
+    private static func intValue(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        key: CodingKeys
+    ) -> Int? {
+        if let value = try? container.decodeIfPresent(Int.self, forKey: key) { return value }
+        if let raw = try? container.decodeIfPresent(String.self, forKey: key) {
+            return Int(raw.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return nil
+    }
+}
+
+/// One row from GET `/api/v1/chats/forward/recipients` (user or conversation/peer).
+struct ForwardRecipient: Decodable {
+    let id: String
+    let name: String
+    let username: String
+    let avatarURL: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, userId, recipientId, conversationId
+        case fullName, displayName, title, name
+        case userName, username
+        case profilePicture, profileImage, profileImageUrl, avatar, avatarUrl, avatarPath, image
+        case peer, participant, user, recipient
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let nestedPeer = Self.decodeNestedPeer(from: c)
+
+        let resolvedId = Self.firstNonEmpty(
+            try c.decodeIfPresent(String.self, forKey: .userId),
+            try c.decodeIfPresent(String.self, forKey: .recipientId),
+            nestedPeer?.id,
+            try c.decodeIfPresent(String.self, forKey: .id),
+            try c.decodeIfPresent(String.self, forKey: .conversationId)
+        )
+        guard let resolvedId else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .id,
+                in: c,
+                debugDescription: "Forward recipient is missing an id"
+            )
+        }
+
+        id = resolvedId
+        name = Self.firstNonEmpty(
+            try c.decodeIfPresent(String.self, forKey: .fullName),
+            try c.decodeIfPresent(String.self, forKey: .displayName),
+            try c.decodeIfPresent(String.self, forKey: .name),
+            try c.decodeIfPresent(String.self, forKey: .title),
+            nestedPeer?.fullName,
+            nestedPeer?.username,
+            try c.decodeIfPresent(String.self, forKey: .userName),
+            try c.decodeIfPresent(String.self, forKey: .username)
+        ) ?? ""
+        username = Self.firstNonEmpty(
+            try c.decodeIfPresent(String.self, forKey: .userName),
+            try c.decodeIfPresent(String.self, forKey: .username),
+            nestedPeer?.username
+        ) ?? ""
+        avatarURL = Self.firstNonEmpty(
+            try c.decodeIfPresent(String.self, forKey: .profilePicture),
+            try c.decodeIfPresent(String.self, forKey: .profileImage),
+            try c.decodeIfPresent(String.self, forKey: .profileImageUrl),
+            try c.decodeIfPresent(String.self, forKey: .avatar),
+            try c.decodeIfPresent(String.self, forKey: .avatarUrl),
+            try c.decodeIfPresent(String.self, forKey: .avatarPath),
+            try c.decodeIfPresent(String.self, forKey: .image),
+            nestedPeer?.profilePicture
+        )
+    }
+
+    private static func decodeNestedPeer(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) -> ConversationPeer? {
+        if let peer = try? container.decode(ConversationPeer.self, forKey: .peer) { return peer }
+        if let peer = try? container.decode(ConversationPeer.self, forKey: .participant) { return peer }
+        if let peer = try? container.decode(ConversationPeer.self, forKey: .user) { return peer }
+        return try? container.decode(ConversationPeer.self, forKey: .recipient)
+    }
+
+    private static func firstNonEmpty(_ values: String?...) -> String? {
+        for value in values {
+            let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !trimmed.isEmpty { return trimmed }
+        }
+        return nil
     }
 }

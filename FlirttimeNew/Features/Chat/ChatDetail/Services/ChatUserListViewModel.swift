@@ -108,11 +108,11 @@ class ChatUserListViewModel {
             .disposed(by: disposeBag)
     }
     
-    func deleteMessage(id: String) {
-        _ = sessionManager?.deleteMessage(id: id)
-            .subscribe(onSuccess: { postResponse in
+    func deleteMessage(conversationId: String, id: String, scope: String = "me") {
+        _ = sessionManager?.deleteMessage(conversationId: conversationId, messageId: id, scope: scope)
+            .subscribe(onSuccess: { _ in
                 self.delegate?.didDeleteMessage()
-            }, onFailure: { error in
+            }, onFailure: { _ in
                 self.delegate?.didFailedToDeleteMessage()
             })
             .disposed(by: disposeBag)

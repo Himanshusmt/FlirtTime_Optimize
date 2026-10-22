@@ -716,13 +716,23 @@ extension ChatDetailViewController {
     func bannerSenderName(for message: ConversationMessage) -> String {
         let senderId = (message.sender?.id ?? message.senderId ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let resolved = viewModel.resolvedDisplayName(for: senderId)
-        if !resolved.isEmpty { return resolved }
+        let isMine = message.metadata?["isMine"]?.value as? Bool == true
+            || GroupParticipantDisplay.sameUserId(senderId, viewModel.getCurrentUserId())
+        if isMine {
+            return ChatStrings.chat_you.localizedString()
+        }
 
-        if let fullName = GroupParticipantDisplay.cleanName(message.sender?.fullName) {
+        let resolved = viewModel.resolvedDisplayName(for: senderId)
+        if !resolved.isEmpty, !GroupParticipantDisplay.isPlaceholderName(resolved) {
+            return resolved
+        }
+
+        if let fullName = GroupParticipantDisplay.cleanName(message.sender?.fullName),
+           !GroupParticipantDisplay.isPlaceholderName(fullName) {
             return fullName
         }
-        if let userName = GroupParticipantDisplay.cleanName(message.sender?.userName) {
+        if let userName = GroupParticipantDisplay.cleanName(message.sender?.userName),
+           !GroupParticipantDisplay.isPlaceholderName(userName) {
             return userName
         }
         return ""

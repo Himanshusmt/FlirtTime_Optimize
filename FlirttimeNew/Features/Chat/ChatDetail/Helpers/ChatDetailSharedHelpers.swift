@@ -592,8 +592,25 @@ enum GroupParticipantDisplay {
 
     /// FE: `fullName?.trim() || username` — never the raw id.
     static func displayName(fullName: String, userName: String, fallback: String = "Member") -> String {
-        if let name = cleanName(fullName) { return name }
-        if let name = cleanName(userName) { return name }
+        if let name = cleanName(fullName), !isPlaceholderName(name) { return name }
+        if let name = cleanName(userName), !isPlaceholderName(name) { return name }
         return fallback
+    }
+
+    static func isPlaceholderName(_ raw: String?) -> Bool {
+        guard let name = cleanName(raw) else { return true }
+        switch name.lowercased() {
+        case "unknown", "member", "user", "someone":
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func sameUserId(_ lhs: String?, _ rhs: String?) -> Bool {
+        let a = (lhs ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = (rhs ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        return a.caseInsensitiveCompare(b) == .orderedSame
     }
 }

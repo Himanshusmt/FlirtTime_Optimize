@@ -34,6 +34,7 @@ protocol AudioManagerContext: AnyObject {
     func markMessageAsFailed(tempId: String)
     func scheduleFailureTimeout(for tempId: String)
     func resolvedDisplayName(for senderId: String) -> String
+    func replyPreviewSenderFields(for message: ConversationMessage) -> (id: String, userName: String, fullName: String)
     func setCachedMediaData(for messageId: String, data: Data)
     func getFileSize(for url: URL) -> String
     func ensureConversationReady(completion: @escaping (Bool) -> Void)
@@ -137,20 +138,15 @@ final class AudioManager {
             ] as [String: Any]]
         ]
         if let r = ctx.replyingToMessage {
-            let senderId = r.sender?.id ?? r.senderId ?? ""
-            let resolvedName = ctx.resolvedDisplayName(for: senderId)
-            let fullName = r.sender?.fullName ?? r.sender?.userDetails?.dataValues?.fullName ?? (resolvedName.contains(" ") ? resolvedName : "")
-            let userName = r.sender?.userName ?? r.sender?.userDetails?.dataValues?.userName ?? (resolvedName.contains(" ") ? "" : resolvedName)
-            let resolvedFullName = fullName.isEmpty ? resolvedName : fullName
-            let resolvedUserName = userName.isEmpty ? resolvedName : userName
+            let fields = ctx.replyPreviewSenderFields(for: r)
             optimisticDict["replyToId"] = [
                 "id": r.id ?? "",
                 "content": r.content ?? "",
                 "type": r.messageType ?? r.type ?? "text",
                 "sender": [
-                    "id": senderId,
-                    "userName": resolvedUserName,
-                    "fullName": resolvedFullName
+                    "id": fields.id,
+                    "userName": fields.userName,
+                    "fullName": fields.fullName
                 ] as [String: Any]
             ] as [String: Any]
         }

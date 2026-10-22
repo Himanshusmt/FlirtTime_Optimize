@@ -13,6 +13,9 @@ enum ChatStrings: String {
     case chat_archive = "CHAT_ARCHIVE"
     case chat_archiveDescription = "CHAT_ARCHIVE_DESCRIPTION"
     case chat_archived = "CHAT_ARCHIVED"
+    case chat_noArchivedChats = "CHAT_NO_ARCHIVED_CHATS"
+    case chat_unarchive = "CHAT_UNARCHIVE"
+    case chat_unarchiveDescription = "CHAT_UNARCHIVE_DESCRIPTION"
     case chat_audio = "CHAT_AUDIO"
     case chat_block = "CHAT_BLOCK"
     case chat_blockUserConfirmation = "CHAT_BLOCK_USER_CONFIRMATION"
@@ -31,6 +34,10 @@ enum ChatStrings: String {
     case chat_contact = "CHAT_CONTACT"
     case chat_copy = "CHAT_COPY"
     case chat_copyPhone = "CHAT_COPY_PHONE"
+    case chat_deleteAll = "CHAT_DELETE_ALL"
+    case chat_deleteAllCalls = "CHAT_DELETE_ALL_CALLS"
+    case chat_deleteAllCallsConfirmation = "CHAT_DELETE_ALL_CALLS_CONFIRMATION"
+    case chat_deleteCall = "CHAT_DELETE_CALL"
     case chat_deleteChannel = "CHAT_DELETE_CHANNEL"
     case chat_deleteChannelConfirmation = "CHAT_DELETE_CHANNEL_CONFIRMATION"
     case chat_deleteChannelDescription = "CHAT_DELETE_CHANNEL_DESCRIPTION"
@@ -81,6 +88,8 @@ enum ChatStrings: String {
     case chat_follower = "CHAT_FOLLOWER"
     case chat_followers = "CHAT_FOLLOWERS"
     case chat_followingStatus = "CHAT_FOLLOWING_STATUS"
+    case chat_forward = "CHAT_FORWARD"
+    case chat_forwardTo = "CHAT_FORWARD_TO"
     case chat_forwarded = "CHAT_FORWARDED"
     case chat_gettingAddress = "CHAT_GETTING_ADDRESS"
     case chat_gettingLocation = "CHAT_GETTING_LOCATION"
@@ -223,8 +232,11 @@ extension ChatStrings {
         "CHAT_ALLOW_CONTACT_ACCESS_MESSAGE": "Please allow contact access in Settings to share contacts.",
         "CHAT_APPLE_MAPS": "Apple Maps",
         "CHAT_ARCHIVE": "Archive",
-        "CHAT_ARCHIVE_DESCRIPTION": "Are you sure you want to archive chat? You can find archived chat below search bar.",
+        "CHAT_ARCHIVE_DESCRIPTION": "Are you sure you want to archive chat? You can find archived chats below the search bar.",
         "CHAT_ARCHIVED": "Archived",
+        "CHAT_NO_ARCHIVED_CHATS": "No archived chats",
+        "CHAT_UNARCHIVE": "Unarchive",
+        "CHAT_UNARCHIVE_DESCRIPTION": "Move this chat back to your chats list?",
         "CHAT_AUDIO": "Audio",
         "CHAT_BLOCK": "Block",
         "CHAT_BLOCK_USER_CONFIRMATION": "Block User?",
@@ -243,6 +255,10 @@ extension ChatStrings {
         "CHAT_CONTACT": "Contact",
         "CHAT_COPY": "Copy",
         "CHAT_COPY_PHONE": "Copy Phone Number",
+        "CHAT_DELETE_ALL": "Delete All",
+        "CHAT_DELETE_ALL_CALLS": "Delete All Calls",
+        "CHAT_DELETE_ALL_CALLS_CONFIRMATION": "Are you sure you want to delete all call history? This action cannot be undone.",
+        "CHAT_DELETE_CALL": "Delete Call",
         "CHAT_DELETE_CHANNEL": "Delete Channel",
         "CHAT_DELETE_CHANNEL_CONFIRMATION": "Are you sure you want to delete '%@'? This action cannot be undone.",
         "CHAT_DELETE_CHANNEL_DESCRIPTION": "Are you sure you want to delete the channel \"%@\"? This action cannot be undone.",
@@ -293,6 +309,8 @@ extension ChatStrings {
         "CHAT_FOLLOWER": "Follower",
         "CHAT_FOLLOWERS": "Followers",
         "CHAT_FOLLOWING_STATUS": "Following",
+        "CHAT_FORWARD": "Forward",
+        "CHAT_FORWARD_TO": "Forward to",
         "CHAT_FORWARDED": "Forwarded",
         "CHAT_GETTING_ADDRESS": "Getting address...",
         "CHAT_GETTING_LOCATION": "Getting location...",

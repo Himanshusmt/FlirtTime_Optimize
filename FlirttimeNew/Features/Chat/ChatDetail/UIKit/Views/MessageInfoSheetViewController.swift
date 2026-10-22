@@ -16,7 +16,7 @@ enum MessageInfoReceiptStatus {
 
     var tickTint: UIColor {
         switch self {
-        case .sent, .delivered: return .secondaryLabel
+        case .sent, .delivered: return ChatTheme.tickPending
         case .read: return ChatTheme.readReceipt
         }
     }

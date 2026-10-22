@@ -841,24 +841,45 @@ final class ChatDetailViewModel: ObservableObject {
 
         if senderId == selectedUserChatID {
             let peer = headerUserData ?? user
-            if let name = GroupParticipantDisplay.cleanName(peer?.fullName) { return name }
-            if let name = GroupParticipantDisplay.cleanName(peer?.userName) { return name }
-            if let name = GroupParticipantDisplay.cleanName(groupTitle) { return name }
+            if let name = GroupParticipantDisplay.cleanName(peer?.fullName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
+            if let name = GroupParticipantDisplay.cleanName(peer?.userName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
+            if let name = GroupParticipantDisplay.cleanName(groupTitle),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
         }
 
         if senderId == getCurrentUserId() {
             let me = userListViewModel.sessionManager?.user
                 ?? sessionManager?.user
                 ?? Container.sharedContainer.resolve(SessionManager.self)?.user
-            if let name = GroupParticipantDisplay.cleanName(me?.fullName) { return name }
-            if let name = GroupParticipantDisplay.cleanName(me?.userName) { return name }
+            if let name = GroupParticipantDisplay.cleanName(me?.fullName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
+            if let name = GroupParticipantDisplay.cleanName(me?.userName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
         }
 
         if let info = findSenderByUserId(senderId) {
-            if let name = GroupParticipantDisplay.cleanName(info.fullName) { return name }
-            if let name = GroupParticipantDisplay.cleanName(info.userName) { return name }
+            if let name = GroupParticipantDisplay.cleanName(info.fullName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
+            if let name = GroupParticipantDisplay.cleanName(info.userName),
+               !GroupParticipantDisplay.isPlaceholderName(name) { return name }
         }
         return ""
+    }
+
+    func replyPreviewSenderFields(for message: ConversationMessage) -> (id: String, userName: String, fullName: String) {
+        let senderId = (message.sender?.id ?? message.senderId ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolved = resolvedDisplayName(for: senderId)
+        let usableResolved = GroupParticipantDisplay.isPlaceholderName(resolved) ? "" : resolved
+        let fullName = GroupParticipantDisplay.cleanName(message.sender?.fullName)
+            .flatMap { GroupParticipantDisplay.isPlaceholderName($0) ? nil : $0 }
+            ?? usableResolved
+        let userName = GroupParticipantDisplay.cleanName(message.sender?.userName)
+            .flatMap { GroupParticipantDisplay.isPlaceholderName($0) ? nil : $0 }
+            ?? usableResolved
+        return (senderId, userName, fullName)
     }
 
     /// Participants used for bubble/reply name resolution.
@@ -934,6 +955,8 @@ final class ChatDetailViewModel: ObservableObject {
     var conversationStatusTimer: Timer?
     var presenceReconnectObserver: NSObjectProtocol?
     var hasEmittedMarkSeen = false
+    /// Last peer message we acknowledged with delivered + seen. Re-emit when a newer one arrives.
+    var lastAcknowledgedPeerMessageId: String?
 
     // Typing indicator timers
     var typingHideTimer: Timer?
@@ -1424,6 +1447,22 @@ final class ChatDetailViewModel: ObservableObject {
                 self?.handleConversationMessageStatusUpdate(payload)
             }
             .store(in: &cancellables)
+
+        // Inbox listener is always on — apply the same receipts if this screen is open.
+        ChatListSocketService.shared.messageStatusUpdated
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] event in
+                self?.handleConversationMessageStatusUpdate(
+                    MessageStatusUpdatePayload(
+                        conversationId: event.conversationId,
+                        messageIds: event.messageIds,
+                        status: event.status,
+                        deliveredTo: event.deliveredTo,
+                        seenBy: event.seenBy
+                    )
+                )
+            }
+            .store(in: &cancellables)
     }
     
     private func observeSocketLifecycle() {
@@ -1504,6 +1543,13 @@ final class ChatDetailViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] response in
                 self?.handleForwardMessageAck(response)
+            }
+            .store(in: &cancellables)
+
+        socketService.messageForwarded
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] messages in
+                self?.handleForwardMessagesREST(messages, showToast: false)
             }
             .store(in: &cancellables)
 
@@ -2425,6 +2471,50 @@ final class ChatDetailViewModel: ObservableObject {
                 self.prefetchLiveWindowIfNeeded()
             }
         }
+    }
+
+    func enrichReplyPreview(_ message: ConversationMessage) -> ConversationMessage {
+        guard let reply = message.replyToId else { return message }
+
+        var enriched = reply
+        if let original = replyPreviewMessage(for: message) {
+            let originalSenderId = (original.sender?.id ?? original.senderId ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let senderId = enriched.resolvedSenderId.isEmpty ? originalSenderId : enriched.resolvedSenderId
+            let resolved = resolvedDisplayName(for: senderId)
+            let fullName = GroupParticipantDisplay.cleanName(original.sender?.fullName)
+                ?? GroupParticipantDisplay.cleanName(enriched.sender.fullName)
+                ?? (GroupParticipantDisplay.isPlaceholderName(resolved) ? nil : resolved)
+            let userName = GroupParticipantDisplay.cleanName(original.sender?.userName)
+                ?? GroupParticipantDisplay.cleanName(enriched.sender.userName)
+                ?? (GroupParticipantDisplay.isPlaceholderName(resolved) ? nil : resolved)
+            if !senderId.isEmpty || fullName != nil || userName != nil {
+                enriched = enriched.withSender(
+                    id: senderId.isEmpty ? nil : senderId,
+                    userName: userName,
+                    fullName: fullName,
+                    profilePicture: original.sender?.profilePicture ?? enriched.sender.profilePicture
+                )
+            }
+        } else if !enriched.hasUsableSenderName, !enriched.resolvedSenderId.isEmpty {
+            let resolved = resolvedDisplayName(for: enriched.resolvedSenderId)
+            if !resolved.isEmpty, !GroupParticipantDisplay.isPlaceholderName(resolved) {
+                enriched = enriched.withSender(
+                    id: enriched.resolvedSenderId,
+                    userName: resolved,
+                    fullName: resolved
+                )
+            }
+        }
+
+        guard enriched.resolvedSenderId != reply.resolvedSenderId
+                || enriched.sender.fullName != reply.sender.fullName
+                || enriched.sender.userName != reply.sender.userName else {
+            return message
+        }
+        var updated = message
+        updated.replyToId = enriched
+        return updated
     }
 
     func replyPreviewMessage(for parentMessage: ConversationMessage) -> ConversationMessage? {

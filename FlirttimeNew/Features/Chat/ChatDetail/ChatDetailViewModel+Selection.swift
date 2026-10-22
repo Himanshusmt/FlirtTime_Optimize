@@ -116,18 +116,26 @@ extension ChatDetailViewModel {
 
     // MARK: - Forward
 
-    func handleForwardMessagesREST(_ messages: [ConversationMessage]) {
+    func handleForwardMessagesREST(_ messages: [ConversationMessage], showToast: Bool = true) {
         var addedToCurrentChat = false
-        for message in messages {
+        for original in messages {
+            var message = original
+            if message.metadata?["isForwarded"]?.value as? Bool != true {
+                var meta = message.metadata ?? [:]
+                meta["isForwarded"] = AnyCodable(true)
+                message.metadata = meta
+            }
+
             let belongsHere = isChannel
                 ? (message.conversationId == channelId || message.channelId == channelId)
                 : (message.conversationId == selectedId)
 
-            AppLogger.debug("[Forward] REST message id=\(message.id.prefix(8)) conversationId=\(message.conversationId.prefix(8)) belongsHere=\(belongsHere)")
+            AppLogger.debug("[Forward] message id=\(message.id.prefix(8)) conversationId=\(message.conversationId.prefix(8)) belongsHere=\(belongsHere)")
 
+            messageSyncCoordinator.persist(messages: [message], conversationId: message.conversationId)
+            updateConversationLastMessage(message)
             if belongsHere {
                 stateManager.addMessages([message])
-                messageSyncCoordinator.persist(messages: [message])
                 addedToCurrentChat = true
             }
         }
@@ -141,50 +149,23 @@ extension ChatDetailViewModel {
             }
         }
 
-        showToastMessage(ChatStrings.chat_successMessageForwarded.localizedString())
+        if showToast {
+            showToastMessage(ChatStrings.chat_successMessageForwarded.localizedString())
+        }
     }
 
     func handleForwardMessageAck(_ response: [String: Any]) {
-        guard let status = response["status"] as? Bool, status == true else {
-            let errorMsg = response["message"] as? String ?? ChatStrings.chat_errorForwardFailed.localizedString()
+        if !SocketAckParser.isSuccess(response),
+           response["success"] != nil || response["status"] != nil {
+            let errorMsg = (response["message"] as? String)
+                ?? ((response["error"] as? [String: Any])?["message"] as? String)
+                ?? ChatStrings.chat_errorForwardFailed.localizedString()
             showToastMessage(errorMsg)
             return
         }
 
-        if let forwardedItems = response["data"] as? [[String: Any]] {
-            var addedToCurrentChat = false
-            for item in forwardedItems {
-                let msgData = (item["data"] as? [String: Any]) ?? item
-
-                guard let message = ConversationMessage.fromDictionary(msgData) else {
-                    AppLogger.debug("[Forward] fromDictionary failed for messageId: \(item["messageId"] ?? item["id"] ?? "unknown") — keys: \(msgData.keys)")
-                    continue
-                }
-
-                let belongsHere = isChannel
-                    ? (message.conversationId == channelId || message.channelId == channelId)
-                    : (message.conversationId == selectedId)
-
-                AppLogger.debug("[Forward] parsed message id=\(message.id.prefix(8)) conversationId=\(message.conversationId.prefix(8)) selectedId=\(selectedId.prefix(8)) belongsHere=\(belongsHere)")
-
-                if belongsHere {
-                    stateManager.addMessages([message])
-                    messageSyncCoordinator.persist(messages: [message])
-                    addedToCurrentChat = true
-                }
-            }
-
-            if addedToCurrentChat {
-                shouldAutoScroll = true
-                let snapshot = stateManager.getGroupedMessagesSnapshot()
-                if snapshot != groupedMessages {
-                    groupedMessages = snapshot
-                    handleMessageListUpdate(snapshot.flatMap { $0.messages })
-                }
-            }
-        }
-
-        showToastMessage(ChatStrings.chat_successMessageForwarded.localizedString())
+        let messages = ForwardChatMessagesAPIData.messages(from: response)
+        handleForwardMessagesREST(messages, showToast: true)
     }
 
     func forwardSelectedMessages(to userIds: [String], filteredIds: [String]? = nil) {
@@ -204,7 +185,7 @@ extension ChatDetailViewModel {
 
     // MARK: - Delete
 
-    /// Multi-select delete — POST `chat/messages/delete` `{ messageIds, scope: me|everyone }`.
+    /// Multi-select delete — DELETE `/api/v1/chats/{id}/messages/{messageId}` `{ deleteType }`.
     /// Optimistic UI first; socket used only as fallback if REST fails.
     func deleteSelectedMessages(forEveryone: Bool) {
         let rawIds = Array(selection.selectedMessageIds)
@@ -250,21 +231,21 @@ extension ChatDetailViewModel {
         let scope = forEveryone ? "everyone" : "me"
         if !serverIds.isEmpty {
             AppLogger.debug(
-                "[Delete] ▶ POST chat/messages/delete count=\(serverIds.count) scope=\(scope) ids=\(serverIds) (multi-select)"
+                "[Delete] ▶ DELETE /api/v1/chats/\(selectedId)/messages count=\(serverIds.count) deleteType=\(scope) ids=\(serverIds) (multi-select)"
             )
-            messageService.deleteMessages(messageIds: serverIds, scope: scope)
+            messageService.deleteMessages(conversationId: selectedId, messageIds: serverIds, scope: scope)
                 .receive(on: DispatchQueue.main)
                 .sink(
                     receiveCompletion: { [weak self] completion in
                         if case .failure(let error) = completion {
                             AppLogger.debug(
-                                "[Delete] multi-select scope=\(scope) failed: \(error.localizedDescription) — socket fallback"
+                                "[Delete] multi-select deleteType=\(scope) failed: \(error.localizedDescription) — socket fallback"
                             )
                             self?.emitDeleteMessagesSocket(messageIds: serverIds, forEveryone: forEveryone)
                         }
                     },
                     receiveValue: { _ in
-                        AppLogger.debug("[Delete] ✅ multi-select scope=\(scope) count=\(serverIds.count)")
+                        AppLogger.debug("[Delete] ✅ multi-select deleteType=\(scope) count=\(serverIds.count)")
                     }
                 )
                 .store(in: &cancellables)
@@ -274,15 +255,17 @@ extension ChatDetailViewModel {
         showToastMessage(totalCount > 1 ? ChatStrings.chat_messagesDeleted.localizedString() : ChatStrings.chat_messageDeleted.localizedString())
     }
 
-    /// Socket fallback — FE `chat:message:delete` with `{ messageIds, scope }` (web parity).
+    /// Socket fallback — `chat:delete_message` with `{ conversationId, messageIds, deleteType }`.
     func emitDeleteMessagesSocket(messageIds: [String], forEveryone: Bool) {
         guard !messageIds.isEmpty else { return }
-        let scope = forEveryone ? "everyone" : "me"
+        let deleteType = forEveryone ? "everyone" : "me"
         var payload: [String: Any] = [
             "messageIds": messageIds,
-            "scope": scope,
-            "forEveryone": forEveryone
+            "deleteType": deleteType
         ]
+        if messageIds.count == 1 {
+            payload["messageId"] = messageIds[0]
+        }
         if !selectedId.isEmpty {
             payload["conversationId"] = selectedId
         }
@@ -291,7 +274,7 @@ extension ChatDetailViewModel {
             withData: [payload]
         )
         AppLogger.debug(
-            "[Delete] ▶ socket fallback \(SocketEvent.deleteConversationMessage.rawValue) messageIds=\(messageIds.count) scope=\(scope)"
+            "[Delete] ▶ socket fallback \(SocketEvent.deleteConversationMessage.rawValue) messageIds=\(messageIds.count) deleteType=\(deleteType)"
         )
     }
 

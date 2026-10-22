@@ -127,6 +127,21 @@ extension ConfirmationModal {
         )
     }
 
+    static func unarchiveChat(
+        chatName: String,
+        onUnarchive: @escaping () -> Void,
+        onDismiss: @escaping () -> Void
+    ) -> ConfirmationModal {
+        ConfirmationModal(
+            title: ChatStrings.chat_unarchive.localizedString() + "?",
+            description: ChatStrings.chat_unarchiveDescription.localizedString(),
+            imageName: ChatAssets.archive,
+            actionButtonTitle: ChatStrings.chat_unarchive.localizedString(),
+            onAction: onUnarchive,
+            onDismiss: onDismiss
+        )
+    }
+
     static func deleteChat(
         chatName: String,
         isGroup: Bool = false,
