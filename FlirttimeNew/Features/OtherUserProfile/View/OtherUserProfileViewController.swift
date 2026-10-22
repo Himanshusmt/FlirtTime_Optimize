@@ -523,6 +523,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         voiceDurationLabel.text = VoiceIntroRecorderViewController.format(remaining.rounded(.up))
     }
 
+    /// Same flag for showing chat and skipping the Premium gate.
+    private var isMatchedWithUser: Bool {
+        fromExploreMatches == true
+            || userMatchesData != nil
+            || details?.isMatched == true
+    }
+
     /// Which buttons show depends on where the profile was opened from.
     private func configureActionBar() {
         moreButton.isHidden = isOwnProfile
@@ -530,9 +537,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         actionBarFadeView.isHidden = isOwnProfile
         guard !isOwnProfile else { return }
 
-        let isMatched = fromExploreMatches == true
-            || userMatchesData != nil
-            || details?.isMatched == true
+        let isMatched = isMatchedWithUser
         let onlySuperLike = fromExploreScreen == true && !isMatched && isShowSuperLikeView
         dislikeButton.isHidden = onlySuperLike
         likeButton.isHidden = isMatched || onlySuperLike
@@ -595,8 +600,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             navigationController?.popViewController(animated: true)
             return
         }
-        let isMatched = userMatchesData?.matchedUserID != nil
-        if FreeTierLimitsStore.shared.canStartChat(isMatched: isMatched) {
+        if FreeTierLimitsStore.shared.canStartChat(isMatched: isMatchedWithUser) {
             openChat()
         } else {
             showSubscriptionPopUp(subscriptionPopUpType: .chat)
@@ -605,11 +609,15 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
 
     private func openChat() {
         guard let details else { return }
+        guard let chatUserID = details.remoteUserID ?? remoteUserID, !chatUserID.isEmpty else {
+            aCustomToastView.show(message: "Unable to start chat")
+            return
+        }
         let avatarURL = details.avatar.flatMap { path -> String? in
             guard !path.isEmpty else { return nil }
             return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
         }
-        ChatProfileRouter.openChat(userID: details.userID,
+        ChatProfileRouter.openChat(userID: chatUserID,
                                    name: details.name,
                                    avatarPath: avatarURL,
                                    isVerified: details.isVerified,
