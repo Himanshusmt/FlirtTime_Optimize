@@ -30,6 +30,8 @@ struct OtherUserProfileDetails {
     var sharedInterests: [MomentsInterest]? = nil
     /// "More about me" answers from the API as display text, keyed by attribute alias.
     var aboutAnswers: [OtherUserAboutItem] = []
+    /// True when both users have matched; drives the profile chat button.
+    var isMatched: Bool = false
 
     var nameAndAge: String {
         age.map { "\(name), \($0)" } ?? name
@@ -130,7 +132,8 @@ extension OtherUserProfileDetails {
                   interestIDs: match.interests,
                   isVerified: match.isActive == true,
                   isOnline: match.isOnline == true && match.onlineShow != false,
-                  attributeValues: attributes.reduce(into: [:]) { $0[$1.0] = $1.1 })
+                  attributeValues: attributes.reduce(into: [:]) { $0[$1.0] = $1.1 },
+                  isMatched: true)
     }
 
     /// Full profile from `users/:userId/profile`; anything the API leaves empty keeps `fallback`'s value.
@@ -170,6 +173,9 @@ extension OtherUserProfileDetails {
                   sharedInterests: profile.sharedInterests.map { tags in
                       tags.compactMap { MomentsInterestCatalog.interest(named: $0.name, emoji: $0.emoji) }
                   } ?? fallback?.sharedInterests,
-                  aboutAnswers: profile.moreAboutMe ?? fallback?.aboutAnswers ?? [])
+                  aboutAnswers: profile.moreAboutMe ?? fallback?.aboutAnswers ?? [],
+                  isMatched: profile.isMatched == true
+                    || ["matched", "accepted", "connected"].contains(profile.matchStatus?.lowercased() ?? "")
+                    || fallback?.isMatched == true)
     }
 }

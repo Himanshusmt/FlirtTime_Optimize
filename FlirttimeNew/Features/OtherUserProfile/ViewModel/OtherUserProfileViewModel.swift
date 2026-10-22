@@ -9,8 +9,7 @@ import UIKit
 import RxSwift
 import Swinject
 
-// TODO: replace the mock responses with ApiName.getAction / getMomentUserImages /
-// checkSubscription requests.
+// TODO: replace remaining mock responses (moment images / subscription check).
 class OtherUserProfileViewModel {
 
     @Published var statusFalse:String?
@@ -53,6 +52,7 @@ class OtherUserProfileViewModel {
 
     private lazy var sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()
+    private var actionInProgress = false
 
     var quickMomentFrames: [MomentsStory] {
         quickMoments.enumerated().map { $1.storyMoment(id: $0) }
@@ -264,20 +264,56 @@ class OtherUserProfileViewModel {
         }
     }
 
-    func clickActionAPI(interaction_type:String, user_ID:Int) {
-        respond { [weak self] in
-            let message: String
-            switch interaction_type {
-            case "1": message = "You liked this profile"
-            case "2": message = "You disliked this profile"
-            case "3": message = "Super like sent"
-            default: message = "Done"
-            }
-            self?.aUserActionModel = MockDataStore.shared.decode(ActionData.self, from: [
-                "status": true,
-                "message": message,
-                "data": ["membership_required": false, "coin_required": false, "is_match": false]
-            ])
+    /// Profile X / heart / super-like → `POST discovery/actions` (`nope` / `like` / `super_like`).
+    func clickActionAPI(interaction_type: String, targetUserId: String) {
+        guard !actionInProgress, !targetUserId.isEmpty else { return }
+        let action = Self.discoveryAction(for: interaction_type)
+        actionInProgress = true
+        sessionManager.discoveryAction(targetUserId: targetUserId, action: action)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] result in
+                guard let self else { return }
+                self.actionInProgress = false
+                if let coins = result.remainingCoins {
+                    CoinWallet.shared.update(coins)
+                }
+                self.aUserActionModel = ActionData(
+                    status: true,
+                    message: Self.successMessage(for: action, isMatched: result.isMatched == true),
+                    file: nil,
+                    exception: nil,
+                    data: MyData(
+                        membership_required: false,
+                        current_balance: result.remainingCoins,
+                        match_image: nil,
+                        match_display_name: nil,
+                        coin_required: false,
+                        is_match: result.isMatched,
+                        match_user_id: nil
+                    )
+                )
+            }, onFailure: { [weak self] error in
+                self?.actionInProgress = false
+                self?.errorAction = parseError(error).flatMap { $0.isEmpty ? nil : $0 }
+                    ?? "Unable to update this profile"
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private static func discoveryAction(for interactionType: String) -> String {
+        switch interactionType {
+        case Constants.ActionType.like: return "like"
+        case Constants.ActionType.favorite: return "super_like"
+        default: return "nope"
+        }
+    }
+
+    private static func successMessage(for action: String, isMatched: Bool) -> String {
+        if isMatched { return "It's a match" }
+        switch action {
+        case "like": return "You liked this profile"
+        case "super_like": return "Super like sent"
+        default: return "Not interested"
         }
     }
 

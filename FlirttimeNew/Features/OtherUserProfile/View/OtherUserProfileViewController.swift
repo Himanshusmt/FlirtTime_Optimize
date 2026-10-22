@@ -531,12 +531,13 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         guard !isOwnProfile else { return }
 
         let isMatched = fromExploreMatches == true
+            || userMatchesData != nil
+            || details?.isMatched == true
         let onlySuperLike = fromExploreScreen == true && !isMatched && isShowSuperLikeView
-        let onlyChat = isMatched || (fromExploreScreen == true && !isShowSuperLikeView)
-        dislikeButton.isHidden = onlyChat || onlySuperLike
-        likeButton.isHidden = onlyChat || onlySuperLike
+        dislikeButton.isHidden = onlySuperLike
+        likeButton.isHidden = isMatched || onlySuperLike
         superLikeButton.isHidden = !onlySuperLike
-        chatButton.isHidden = onlySuperLike
+        chatButton.isHidden = !isMatched
     }
 
     // MARK: - Actions
@@ -616,8 +617,11 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     }
 
     private func sendInteraction(_ type: String) {
-        guard let userID = details?.userID else { return }
-        viewModel.clickActionAPI(interaction_type: type, user_ID: userID)
+        guard let targetUserId = details?.remoteUserID ?? remoteUserID, !targetUserId.isEmpty else {
+            aCustomToastView.show(message: "Unable to update this profile")
+            return
+        }
+        viewModel.clickActionAPI(interaction_type: type, targetUserId: targetUserId)
     }
 
     /// Same list as Profile's "My Moments", limited to this user's moments.
