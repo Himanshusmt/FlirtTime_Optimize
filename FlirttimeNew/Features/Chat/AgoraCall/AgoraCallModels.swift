@@ -452,11 +452,18 @@ struct AgoraCallSession: Equatable {
     }
 
     /// Parses Android/web CallSession:
-    /// `{ success, requestId, data: { call, token, uid, appId } }` or bare `{ call, token, uid, appId }`.
+    /// `{ session: { call, token, uid, appId, type } }`, `{ data: { call, token, uid, appId } }`,
+    /// or bare `{ call, token, uid, appId }`.
     init?(dict: [String: Any]) {
         let root = Self.unwrapSessionDict(dict)
-        guard let callDict = root["call"] as? [String: Any],
-              let callData = try? JSONSerialization.data(withJSONObject: callDict),
+        guard var callDict = root["call"] as? [String: Any] else {
+            return nil
+        }
+        if callDict["type"] == nil, callDict["callType"] == nil,
+           let sessionType = root["type"] ?? dict["type"] {
+            callDict["type"] = sessionType
+        }
+        guard let callData = try? JSONSerialization.data(withJSONObject: callDict),
               let call = try? JSONDecoder().decode(AgoraCallDto.self, from: callData),
               !call.id.isEmpty else {
             return nil
@@ -485,9 +492,15 @@ struct AgoraCallSession: Equatable {
     }
 
     private static func unwrapSessionDict(_ dict: [String: Any]) -> [String: Any] {
+        if let session = dict["session"] as? [String: Any] {
+            return unwrapSessionDict(session)
+        }
         if let data = dict["data"] as? [String: Any] {
-            if data["call"] != nil { return data }
-            if let nested = data["data"] as? [String: Any], nested["call"] != nil { return nested }
+            if data["session"] != nil || data["call"] != nil { return unwrapSessionDict(data) }
+            if let nested = data["data"] as? [String: Any],
+               nested["session"] != nil || nested["call"] != nil {
+                return unwrapSessionDict(nested)
+            }
         }
         return dict
     }
@@ -503,6 +516,7 @@ struct AgoraCallSession: Equatable {
 }
 
 enum AgoraCallSocketEvents {
+    // Video — existing `video_call:*` path (do not change; video is working).
     static let create = "video_call:initiate"
     static let createAck = "video_call:accepted"
     static let incoming = "video_call:incoming"
@@ -521,6 +535,49 @@ enum AgoraCallSocketEvents {
     static let endAck = "video_call:ended"
     static let participantJoined = "call:participant:joined"
     static let participantLeft = "call:participant:left"
+
+    // Audio / unified — `call:*`. Voice does not emit `video_call:incoming`.
+    static let audioCreate = "call:create"
+    static let audioCreateAck = "call:create:ack"
+    static let audioIncoming = "call:incoming"
+    static let audioAccept = "call:accept"
+    static let audioAccepted = "call:accepted"
+    static let audioJoin = "call:join"
+    static let audioDecline = "call:decline"
+    static let audioDeclined = "call:declined"
+    static let audioRejected = "call:rejected"
+    static let audioCancelled = "call:cancelled"
+    static let audioBusy = "call:busy"
+    static let audioRinging = "call:ringing"
+    static let audioLeave = "call:leave"
+    static let audioLeaveAck = "call:leave:ack"
+    static let audioEnd = "call:end"
+    static let audioEnded = "call:ended"
+    static let audioEndAck = "call:end:ack"
+
+    static func createEvent(for type: AgoraCallType) -> String {
+        type == .video ? create : audioCreate
+    }
+
+    static func createAckEvent(for type: AgoraCallType) -> String {
+        type == .video ? createAck : audioCreateAck
+    }
+
+    static func acceptEvent(for type: AgoraCallType) -> String {
+        type == .video ? accept : audioAccept
+    }
+
+    static func declineEvent(for type: AgoraCallType) -> String {
+        type == .video ? decline : audioDecline
+    }
+
+    static func endEvent(for type: AgoraCallType) -> String {
+        type == .video ? end : audioEnd
+    }
+
+    static func leaveEvent(for type: AgoraCallType) -> String {
+        type == .video ? leave : audioLeave
+    }
 }
 
 /// Shared payload fields for decline / busy / reject / cancel / end:ack (mirrors web `call-context`).

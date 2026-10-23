@@ -134,11 +134,13 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }()
 
     private lazy var actionBar: UIStackView = {
+        let superLike = MomentsProfileActionButton.make(kind: .superLike, size: 72) { [weak self] in
+            self?.superLikeTapped()
+        }
         let stack = UIStackView(arrangedSubviews: [
             actionButton(title: "Not interested", symbol: "xmark", size: 58, background: AppColor.AppWhite, tint: AppColor.MineShaft,
                          hint: "Same as swiping left") { [weak self] in self?.cardStack.perform(.notMyVibe) },
-            actionButton(title: "Connect", symbol: "star.fill", size: 72, background: AppColor.Punch, tint: .white,
-                         hint: "Send a Like with a reason") { [weak self] in self?.connectTapped() },
+            labeledAction(title: "Super like", color: AppColor.Punch, hint: "Send a Super Like", button: superLike),
             actionButton(title: "Like", symbol: "heart.fill", size: 58, background: AppColor.Lavenderblush, tint: AppColor.Punch,
                          hint: "Same as swiping right") { [weak self] in self?.cardStack.perform(.interested) }
         ])
@@ -355,6 +357,18 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         return stack
     }
 
+    private func labeledAction(title: String, color: UIColor, hint: String, button: UIButton) -> UIView {
+        button.accessibilityHint = hint
+        let label = UILabel.vibeLabel(.medium, 12, style: .caption1, color: color)
+        label.text = title
+        label.isAccessibilityElement = false
+        let stack = UIStackView(arrangedSubviews: [button, label])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 6
+        return stack
+    }
+
     private func show(_ page: Page) {
         if page == .moments {
             tabs.select(currentPage.rawValue, sendsActions: false)
@@ -483,23 +497,9 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
 
     // MARK: - Actions
 
-    private func connectTapped() {
-        guard let profile = viewModel.currentProfile, cardStackShouldBeginInteraction(cardStack) else { return }
-        presentConnectBecause(for: profile) { [weak self] reasons in
-            guard let self, self.viewModel.currentProfile?.id == profile.id else { return }
-            self.pendingConnectReasons = reasons
-            if !self.cardStack.perform(.interested) {
-                self.pendingConnectReasons = nil
-            }
-        }
-    }
-
-    private func presentConnectBecause(for profile: MomentsProfile, onSend: @escaping ([ConnectReason]) -> Void) {
-        let connectVC = ConnectBecauseViewController(profile: profile)
-        connectVC.onSend = { [weak self] reasons in
-            self?.dismiss(animated: true) { onSend(reasons) }
-        }
-        presentSheet(connectVC, detents: [.medium(), .large()])
+    private func superLikeTapped() {
+        guard cardStackShouldBeginInteraction(cardStack) else { return }
+        _ = cardStack.perform(.superVibe)
     }
 
     private func send(_ action: MomentsAction, for profile: MomentsProfile, reasons: [ConnectReason],
@@ -579,9 +579,23 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openChat(with profile: MomentsProfile) {
-        // TODO: push ChatViewController for `profile` once chat is ported.
-        tabBarController?.selectedIndex = 3
-        showComingSoon("Chat")
+        guard let userID = profile.remoteUserId, !userID.isEmpty else {
+            aCustomToastView.show(message: "Unable to start chat")
+            return
+        }
+        if !FreeTierLimitsStore.shared.canStartChat(isMatched: true) {
+            showSubscriptionPopUp(subscriptionPopUpType: .chat)
+            return
+        }
+        let avatarURL = profile.photos.first.flatMap { path -> String? in
+            guard !path.isEmpty else { return nil }
+            return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
+        }
+        ChatProfileRouter.openChat(userID: userID,
+                                   name: profile.displayName,
+                                   avatarPath: avatarURL,
+                                   isVerified: profile.isVerified,
+                                   from: self)
     }
 
     private func openProfile(_ profile: MomentsProfile) {
@@ -748,16 +762,6 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         } else {
             aCustomToastView.show(message: "No one else into \(interest.title) right now")
         }
-    }
-
-    private func presentSheet(_ viewController: UIViewController, detents: [UISheetPresentationController.Detent]) {
-        viewController.modalPresentationStyle = .pageSheet
-        if let sheet = viewController.sheetPresentationController {
-            sheet.detents = detents
-            sheet.prefersGrabberVisible = true
-            sheet.preferredCornerRadius = 20
-        }
-        present(viewController, animated: true)
     }
 
     private func notificationTapped() {

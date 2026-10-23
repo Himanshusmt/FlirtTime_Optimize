@@ -634,8 +634,12 @@ final class DiscoverViewModel {
 
     /// Full profile from `users/:userId/profile`; anything the API leaves empty keeps the card's value.
     static func makeProfile(from detail: OtherUserProfile, merging base: MomentsProfile) -> MomentsProfile {
-        let photo = detail.profilePhoto ?? ""
-        let photos = photo.isEmpty ? base.photos : [photo]
+        let gallery = OtherUserPhoto.ordered(detail.photos ?? []).map(\.url)
+        var photos: [String] = []
+        for path in gallery + [detail.profilePhoto].compactMap({ $0 }) + base.photos
+            where !path.isEmpty && !photos.contains(path) {
+            photos.append(path)
+        }
 
         let interests = uniqueInterests(detail.interests ?? [])
         let shared = detail.sharedInterests.map(uniqueInterests) ?? base.sharedInterests
@@ -676,7 +680,8 @@ final class DiscoverViewModel {
                                   vibeScore: detail.vibeScore ?? base.vibeScore)
         profile.commonInterestsCount = base.commonInterestsCount
         profile.momentsCount = max(base.momentsCount, moments.count)
-        profile.remoteUserId = base.remoteUserId
+        profile.remoteUserId = base.remoteUserId ?? detail.userId
+        profile.aboutAnswers = detail.moreAboutMe ?? base.aboutAnswers
         return profile
     }
 
