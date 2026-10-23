@@ -73,7 +73,7 @@ struct QMList<Item: Codable>: Codable {
         }
         let container = try decoder.container(keyedBy: QMKey.self)
         items = container.first([Item].self, "quickMoments", "moments", "stories", "items",
-                                "reactions", "viewers", "users", "results", "data") ?? []
+                                "reactions", "viewers", "replies", "users", "results", "data") ?? []
         total = container.int("totalStories", "totalCount", "total", "count", "storiesCount")
     }
 }
@@ -236,12 +236,14 @@ struct QuickMomentCreateData: Codable {
 struct QuickMomentReaction: Codable {
     let emoji: String
     let createdAt: String?
+    let timeAgo: String?
     let author: MomentsAuthor?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         emoji = c.string("emoji", "reaction") ?? ""
         createdAt = c.string("reactedAt", "createdAt", "updatedAt")
+        timeAgo = c.string("timeAgo")
         author = nestedUser(in: c, decoder: decoder)?.author
     }
 }
@@ -271,12 +273,57 @@ struct QuickMomentReactionsPage: Codable {
 
 struct QuickMomentViewer: Codable {
     let viewedAt: String?
+    let timeAgo: String?
     let author: MomentsAuthor?
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         viewedAt = c.string("viewedAt", "createdAt", "seenAt")
+        timeAgo = c.string("timeAgo")
         author = nestedUser(in: c, decoder: decoder)?.author
+    }
+}
+
+struct QuickMomentViewersPage: Codable {
+    let viewers: [QuickMomentViewer]
+    let total: Int
+
+    init(from decoder: Decoder) throws {
+        let list = try QMList<QuickMomentViewer>(from: decoder)
+        let c = try? decoder.container(keyedBy: QMKey.self)
+        let pagination = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("pagination"))
+        viewers = c?.first([QuickMomentViewer].self, "viewers") ?? list.items
+        total = c?.int("totalViews", "totalViewers", "total") ?? list.total ?? pagination?.int("total") ?? viewers.count
+    }
+}
+
+// MARK: - Replies (GET quick-moments/:id/reply)
+
+struct QuickMomentReply: Codable {
+    let text: String
+    let createdAt: String?
+    let timeAgo: String?
+    let author: MomentsAuthor?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: QMKey.self)
+        text = c.string("message", "text", "body", "reply", "content") ?? ""
+        createdAt = c.string("createdAt", "repliedAt", "updatedAt")
+        timeAgo = c.string("timeAgo")
+        author = nestedUser(in: c, decoder: decoder)?.author
+    }
+}
+
+struct QuickMomentRepliesPage: Codable {
+    let replies: [QuickMomentReply]
+    let total: Int
+
+    init(from decoder: Decoder) throws {
+        let list = try QMList<QuickMomentReply>(from: decoder)
+        let c = try? decoder.container(keyedBy: QMKey.self)
+        let pagination = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("pagination"))
+        replies = c?.first([QuickMomentReply].self, "replies", "items", "messages") ?? list.items
+        total = c?.int("totalReplies", "repliesCount", "total") ?? list.total ?? pagination?.int("total") ?? replies.count
     }
 }
 

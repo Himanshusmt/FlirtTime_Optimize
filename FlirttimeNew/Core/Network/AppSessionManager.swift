@@ -693,10 +693,9 @@ final class AppSessionManager {
     }
 
     /// Story author only.
-    func quickMomentViewers(momentId: String) -> Single<[QuickMomentViewer]> {
-        let request: Single<QMList<QuickMomentViewer>> = backendClient.load(request: AppApiRequest(
-            method: .get, endPoint: .quickMomentViewers(momentId: momentId)))
-        return request.map(\.items)
+    func quickMomentViewers(momentId: String, page: Int = 1, limit: Int = 30) -> Single<QuickMomentViewersPage> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .quickMomentViewers(momentId: momentId),
+                                                  parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
     }
 
     /// `emoji` is one of 😍 🔥 😂 😮 👏 ❤️. Sending the same emoji again removes the reaction.
