@@ -126,6 +126,10 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let userInfo = notification.request.content.userInfo
+        #if DEBUG
+        print("FCM willPresent: \(userInfo)")
+        #endif
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -135,10 +139,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
+        #if DEBUG
+        print("FCM tapped: \(userInfo)")
+        #endif
         DispatchQueue.main.async {
-            if let base = UIApplication.shared.topViewController() as? BaseViewController {
-                NotificationManager.shared.handleNotification(userInfo, from: base)
-            }
+            NotificationManager.shared.handleNotification(userInfo)
         }
         completionHandler()
     }

@@ -152,6 +152,14 @@ class ExploreViewController: BaseViewController {
 
     // MARK: - Tabs
 
+    /// Push / in-app notification: jump to a tab even if Explore is already visible.
+    func openFromNotification(_ tab: ExploreTab) {
+        strSelectedLike = tab.interactionType
+        guard isViewLoaded else { return }
+        scrollToTab(tab, animated: false)
+        loadTab(tab)
+    }
+
     private func scrollToTab(_ tab: ExploreTab, animated: Bool) {
         let width = pagerScrollView.bounds.width
         let targetOffset = CGPoint(x: CGFloat(tab.rawValue) * width, y: 0)

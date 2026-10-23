@@ -40,6 +40,11 @@ class AppTabBarController: UITabBarController, Instantiable {
         setupCustomButton()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        NotificationManager.shared.consumePendingNotification()
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
