@@ -59,18 +59,21 @@ final class MomentsPillTabsView: UIControl {
 
 // MARK: - Moments page
 
-/// Quick Moments from `GET quick-moments/tray`: the user's own stories first, then everyone else's.
+/// Quick Moments from `GET quick-moments/tray`: Add new first, then the user's own stories, then everyone else's.
 final class DiscoverMomentsView: UIView {
 
+    /// Opens the composer for a new Quick Moment.
+    var onAdd: (() -> Void)?
     /// Called with the tapped user's tray entry and whether it's the signed-in user's own.
     var onOpenStories: ((QuickMomentTrayItem, Bool) -> Void)?
 
-    private struct Item {
-        let tray: QuickMomentTrayItem
-        let isMine: Bool
+    private enum Item {
+        case add
+        case story(QuickMomentTrayItem, isMine: Bool)
     }
 
     private var items: [Item] = []
+    private var ownAvatarPath: String?
     private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -82,6 +85,7 @@ final class DiscoverMomentsView: UIView {
         view.showsVerticalScrollIndicator = false
         view.dataSource = self
         view.delegate = self
+        view.register(QuickMomentAddCell.self, forCellWithReuseIdentifier: QuickMomentAddCell.reuseID)
         view.register(MomentCell.self, forCellWithReuseIdentifier: MomentCell.reuseID)
         return view
     }()
@@ -104,13 +108,16 @@ final class DiscoverMomentsView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(tray: QuickMomentTray?) {
-        var items: [Item] = []
+        ownAvatarPath = tray?.me?.user?.photo
+            ?? UserDataManager.shared.userAvtarImage
+            ?? UserDataManager.shared.appUser?.profilePicture
+        var items: [Item] = [.add]
         if let me = tray?.me, me.hasActive {
-            items.append(Item(tray: me, isMine: true))
+            items.append(.story(me, isMine: true))
         }
-        items += (tray?.users ?? []).filter(\.hasActive).map { Item(tray: $0, isMine: false) }
+        items += (tray?.users ?? []).filter(\.hasActive).map { .story($0, isMine: false) }
         self.items = items
-        emptyLabel.isHidden = !items.isEmpty
+        emptyLabel.isHidden = true
         collectionView.reloadData()
     }
 }
@@ -122,10 +129,16 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentCell.reuseID, for: indexPath) as! MomentCell
-        let item = items[indexPath.item]
-        cell.configure(tray: item.tray, isMine: item.isMine)
-        return cell
+        switch items[indexPath.item] {
+        case .add:
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: QuickMomentAddCell.reuseID, for: indexPath) as! QuickMomentAddCell
+            cell.configure(avatarPath: ownAvatarPath)
+            return cell
+        case .story(let tray, let isMine):
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: MomentCell.reuseID, for: indexPath) as! MomentCell
+            cell.configure(tray: tray, isMine: isMine)
+            return cell
+        }
     }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -134,8 +147,81 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let item = items[indexPath.item]
-        onOpenStories?(item.tray, item.isMine)
+        switch items[indexPath.item] {
+        case .add:
+            onAdd?()
+        case .story(let tray, let isMine):
+            onOpenStories?(tray, isMine)
+        }
+    }
+}
+
+/// First-grid cell: current user's profile photo fills the card, with Add new + plus.
+private final class QuickMomentAddCell: UICollectionViewCell {
+
+    static let reuseID = "QuickMomentAddCell"
+    private static let plusSize: CGFloat = 32
+
+    private let avatar = UIImageView()
+    private let plus = UIImageView(
+        image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .bold))
+    )
+    private let titleLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.layer.cornerRadius = 20
+        contentView.layer.cornerCurve = .continuous
+        contentView.clipsToBounds = true
+        contentView.backgroundColor = AppColor.AthensGray
+
+        avatar.contentMode = .scaleAspectFill
+        avatar.clipsToBounds = true
+        avatar.image = UIImage(named: "ProfileBlur")
+        contentView.addSubview(avatar)
+        avatar.pinEdges(to: contentView)
+
+        let shade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.7)],
+                                     start: CGPoint(x: 0.5, y: 0.55), end: CGPoint(x: 0.5, y: 1))
+        contentView.addSubview(shade)
+        shade.pinEdges(to: contentView)
+
+        plus.tintColor = .white
+        plus.contentMode = .center
+        plus.backgroundColor = AppColor.Punch
+        plus.layer.cornerRadius = Self.plusSize / 2
+        plus.clipsToBounds = true
+        plus.layer.borderWidth = 2
+        plus.layer.borderColor = UIColor.white.cgColor
+        plus.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(plus)
+
+        titleLabel.text = "Add new"
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+
+        NSLayoutConstraint.activate([
+            plus.widthAnchor.constraint(equalToConstant: Self.plusSize),
+            plus.heightAnchor.constraint(equalToConstant: Self.plusSize),
+            plus.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            plus.bottomAnchor.constraint(equalTo: titleLabel.topAnchor, constant: -10),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -12),
+            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
+        ])
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        accessibilityLabel = "Add a moment"
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func configure(avatarPath: String?) {
+        avatar.loadImage(path: avatarPath, placeholder: UIImage(named: "ProfileBlur"))
+    }
+
+    override var isHighlighted: Bool {
+        didSet { UIView.animate(withDuration: 0.15) { self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity } }
     }
 }
 

@@ -9,6 +9,8 @@ import UIKit
 
 final class QuickMomentsListViewController: BaseViewController {
 
+    /// Opens the composer for a new Quick Moment.
+    var onAdd: (() -> Void)?
     /// Called with the tapped user's tray entry and whether it's the signed-in user's own.
     var onOpenStories: ((QuickMomentTrayItem, Bool) -> Void)?
 
@@ -41,6 +43,7 @@ final class QuickMomentsListViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = AppColor.AppWhite
+        momentsView.onAdd = { [weak self] in self?.onAdd?() }
         momentsView.onOpenStories = { [weak self] item, isMine in self?.onOpenStories?(item, isMine) }
         setUI()
         momentsView.configure(tray: tray)

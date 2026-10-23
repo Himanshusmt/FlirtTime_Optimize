@@ -388,6 +388,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     private func openQuickMomentsList() {
         let listVC = QuickMomentsListViewController(tray: viewModel.quickMomentTray)
         listVC.hidesBottomBarWhenPushed = true
+        listVC.onAdd = { [weak self] in self?.openAddQuickMoment() }
         listVC.onOpenStories = { [weak self] item, isMine in self?.openQuickMoments(of: item, isMine: isMine) }
         quickMomentsList = listVC
         navigationController?.pushViewController(listVC, animated: true)
@@ -662,6 +663,27 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         } else {
             completion()
         }
+    }
+
+    private func openAddQuickMoment() {
+        let presenter = quickMomentsList ?? self
+        let composer = AddQuickMomentViewController()
+        composer.onShare = { [weak self, weak presenter] text, background, image in
+            guard let self else { return }
+            presenter?.setLoading(true)
+            self.viewModel.createQuickMoment(text: text, background: background, image: image) { [weak self, weak presenter] result in
+                presenter?.setLoading(false)
+                guard let self else { return }
+                let toast = presenter?.aCustomToastView ?? self.aCustomToastView
+                switch result {
+                case .success:
+                    toast.show(message: "Quick moment shared")
+                case .failure(let error):
+                    toast.show(message: error.message)
+                }
+            }
+        }
+        presenter.present(composer, animated: true)
     }
 
     private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {

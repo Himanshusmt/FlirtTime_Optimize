@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import UIKit
 import Combine
 import RxSwift
 import Swinject
@@ -426,6 +427,49 @@ final class DiscoverViewModel {
             .disposed(by: disposeBag)
     }
 
+    /// A text Quick Moment when `image` is `nil`, otherwise a photo uploaded to S3 with `text` as its caption.
+    func createQuickMoment(text: String?, background: Int?, image: UIImage?, completion: @escaping (Result<Void, MomentsError>) -> Void) {
+        let body = text?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(QuickMoment.maxTextLength)
+        let caption = body.map(String.init) ?? ""
+
+        let request: Single<QuickMoment?>
+        if let image {
+            request = Single<Data>.create { single in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    if let data = Self.jpegData(for: image) {
+                        single(.success(data))
+                    } else {
+                        single(.failure(APIError.apiError("Couldn't prepare your photo.")))
+                    }
+                }
+                return Disposables.create()
+            }
+            .flatMap { [sessionManager] data in sessionManager.uploadQuickMomentImage(data) }
+            .flatMap { [sessionManager] upload -> Single<QuickMoment?> in
+                guard let key = upload.resolvedKey else { return .error(APIError.apiError("Photo upload failed")) }
+                return sessionManager.createImageQuickMoment(imageKey: key, caption: caption)
+            }
+        } else {
+            guard !caption.isEmpty else {
+                completion(.failure(MomentsError(message: "Add a photo or write something")))
+                return
+            }
+            request = sessionManager.createTextQuickMoment(text: caption,
+                                                           backgroundColor: QuickMomentColors.hex(forBackground: background ?? 0),
+                                                           textColor: QuickMomentColors.textColor)
+        }
+
+        request
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] _ in
+                self?.loadQuickMomentTray()
+                completion(.success(()))
+            }, onFailure: { error in
+                completion(.failure(MomentsError(message: parseError(error) ?? "Unable to share quick moment")))
+            })
+            .disposed(by: disposeBag)
+    }
+
     /// A user's active stories, newest first; falls back to the tray's copy when the request fails or is empty.
     /// Own stories come from `quick-moments/me`, since the tray copy has no reaction or reply counts.
     func quickMoments(of item: QuickMomentTrayItem, isMine: Bool = false, completion: @escaping ([QuickMoment]) -> Void) {
@@ -686,6 +730,15 @@ final class DiscoverViewModel {
         profile.aboutAnswers = detail.moreAboutMe ?? base.aboutAnswers
         profile.fullLocation = cleanedLocation(detail.fullLocation) ?? cleanedLocation(detail.city) ?? base.fullLocation
         return profile
+    }
+
+    /// JPEG under the backend's 10 MB Quick Moment limit.
+    private static func jpegData(for image: UIImage) -> Data? {
+        let maxBytes = 10 * 1024 * 1024
+        for quality in [0.8, 0.6, 0.4, 0.2] as [CGFloat] {
+            if let data = image.jpegData(compressionQuality: quality), data.count <= maxBytes { return data }
+        }
+        return nil
     }
 
     /// "2026-10-12T10:14:35.577Z", with or without fractional seconds.
