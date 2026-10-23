@@ -2,8 +2,7 @@
 //  QuickMomentActivityViewController.swift
 //  FlirttimeNew
 //
-//  Who reacted to the signed-in user's Quick Moment.
-//  Views / replies come back later when one combined activity API is ready.
+//  One list of views, reactions, and replies from GET .../replies.
 //
 
 import UIKit
@@ -14,8 +13,10 @@ final class QuickMomentActivityViewController: UIViewController {
 
     private struct Row {
         let author: MomentsAuthor?
+        let message: String?
         let trailing: String?
         let timeText: String?
+        let sortDate: Date
     }
 
     private static let pageSize = 30
@@ -23,8 +24,9 @@ final class QuickMomentActivityViewController: UIViewController {
     private let moment: QuickMoment
     private var rows: [Row] = []
     private var page = 0
-    private var total = 0
-    private var hasMore = true
+    private var repliesTotal = 0
+    private var loadedReplyCount = 0
+    private var hasMoreReplies = true
     private var isLoading = false
     private var didLoad = false
     private var failed = false
@@ -59,7 +61,7 @@ final class QuickMomentActivityViewController: UIViewController {
     init(moment: QuickMoment) {
         self.moment = moment
         super.init(nibName: nil, bundle: nil)
-        total = moment.reactionsCount
+        repliesTotal = moment.repliesCount
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -101,56 +103,79 @@ final class QuickMomentActivityViewController: UIViewController {
 
     private func loadPage(reset: Bool) {
         if isLoading { return }
-        if !reset, !hasMore { return }
+        if !reset, !hasMoreReplies { return }
 
         let nextPage = reset ? 1 : page + 1
         isLoading = true
         failed = false
         if reset {
-            hasMore = true
+            hasMoreReplies = true
             spinner.startAnimating()
             emptyLabel.isHidden = true
         } else {
             updateFooter()
         }
 
-        sessionManager.quickMomentReactions(momentId: moment.id, page: nextPage, limit: Self.pageSize)
+        sessionManager.quickMomentReplies(momentId: moment.id, page: nextPage, limit: Self.pageSize)
             .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] page in
-                guard let self else { return }
-                let newRows = page.reactions.map {
-                    Row(author: $0.author, trailing: $0.emoji.nilIfEmpty,
-                        timeText: MomentsDate.timeAgo(from: $0.createdAt).nilIfEmpty ?? $0.timeAgo)
-                }
-                self.apply(page: nextPage, rows: newRows, total: page.total, failed: false)
+            .subscribe(onSuccess: { [weak self] data in
+                self?.apply(page: nextPage, data: data)
             }, onFailure: { [weak self] _ in
-                self?.apply(page: nextPage, rows: [], total: self?.total ?? 0, failed: true)
+                self?.applyFailed()
             })
             .disposed(by: disposeBag)
     }
 
-    private func apply(page: Int, rows: [Row], total: Int, failed: Bool) {
+    private func apply(page: Int, data: QuickMomentRepliesPage) {
         isLoading = false
         didLoad = true
-        self.failed = failed && self.rows.isEmpty
-        if !failed {
-            self.rows = page == 1 ? rows : self.rows + rows
-            self.page = page
-            self.total = max(total, self.rows.count)
-            hasMore = !rows.isEmpty && self.rows.count < self.total
-        } else if self.rows.isEmpty {
-            hasMore = false
+        failed = false
+
+        let replyRows = data.replies.map {
+            Row(author: $0.author, message: $0.text.nilIfEmpty, trailing: nil,
+                timeText: MomentsDate.timeAgo(from: $0.createdAt).nilIfEmpty ?? $0.timeAgo,
+                sortDate: MomentsDate.date(from: $0.createdAt) ?? .distantPast)
         }
+        if page == 1 {
+            let viewRows = data.viewers.map {
+                Row(author: $0.author, message: "Viewed your quick moment", trailing: nil,
+                    timeText: MomentsDate.timeAgo(from: $0.viewedAt).nilIfEmpty ?? $0.timeAgo,
+                    sortDate: MomentsDate.date(from: $0.viewedAt) ?? .distantPast)
+            }
+            let reactionRows = data.reactions.map {
+                Row(author: $0.author, message: nil, trailing: $0.emoji.nilIfEmpty,
+                    timeText: MomentsDate.timeAgo(from: $0.createdAt).nilIfEmpty ?? $0.timeAgo,
+                    sortDate: MomentsDate.date(from: $0.createdAt) ?? .distantPast)
+            }
+            rows = viewRows + reactionRows + replyRows
+        } else {
+            rows += replyRows
+        }
+        rows.sort { $0.sortDate > $1.sortDate }
+        loadedReplyCount = page == 1 ? data.replies.count : loadedReplyCount + data.replies.count
+        self.page = page
+        repliesTotal = max(data.total, loadedReplyCount)
+        hasMoreReplies = !data.replies.isEmpty && loadedReplyCount < repliesTotal
+
         spinner.stopAnimating()
         tableView.reloadData()
-        if failed && self.rows.isEmpty {
-            emptyLabel.text = "Couldn't load reactions. Please try again."
-            emptyLabel.isHidden = false
-        } else if didLoad && self.rows.isEmpty {
-            emptyLabel.text = "No reactions yet.\nEmoji reactions will show up here."
+        if rows.isEmpty {
+            emptyLabel.text = "No activity yet.\nViews, reactions, and replies will show up here."
             emptyLabel.isHidden = false
         } else {
             emptyLabel.isHidden = true
+        }
+        updateFooter()
+    }
+
+    private func applyFailed() {
+        isLoading = false
+        didLoad = true
+        failed = rows.isEmpty
+        spinner.stopAnimating()
+        if failed {
+            emptyLabel.text = "Couldn't load activity. Please try again."
+            emptyLabel.isHidden = false
         }
         updateFooter()
     }
@@ -175,7 +200,7 @@ extension QuickMomentActivityViewController: UITableViewDataSource, UITableViewD
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: ActivityCell.reuseID, for: indexPath) as! ActivityCell
         let row = rows[indexPath.row]
-        cell.configure(author: row.author, trailing: row.trailing, timeText: row.timeText)
+        cell.configure(author: row.author, message: row.message, trailing: row.trailing, timeText: row.timeText)
         return cell
     }
 
@@ -192,6 +217,7 @@ private final class ActivityCell: UITableViewCell {
     private let avatar = UIImageView()
     private let nameLabel = UILabel.vibeLabel(.medium, 15, style: .subheadline, color: AppColor.AppBlack)
     private let timeLabel = UILabel.vibeLabel(.regular, 12, style: .caption1, color: AppColor.SilverChalice)
+    private let messageLabel = UILabel.vibeLabel(.regular, 14, style: .subheadline, color: AppColor.MineShaft, lines: 0)
     private let trailingLabel = UILabel()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -210,9 +236,12 @@ private final class ActivityCell: UITableViewCell {
         let nameRow = UIStackView(arrangedSubviews: [nameLabel, timeLabel])
         nameRow.spacing = 6
         nameRow.alignment = .firstBaseline
-        let row = UIStackView(arrangedSubviews: [avatar, nameRow, trailingLabel])
+        let texts = UIStackView(arrangedSubviews: [nameRow, messageLabel])
+        texts.axis = .vertical
+        texts.spacing = 2
+        let row = UIStackView(arrangedSubviews: [avatar, texts, trailingLabel])
         row.spacing = 12
-        row.alignment = .center
+        row.alignment = .top
         contentView.addSubview(row)
         row.pinEdges(to: contentView, insets: UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16))
         NSLayoutConstraint.activate([
@@ -223,15 +252,17 @@ private final class ActivityCell: UITableViewCell {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(author: MomentsAuthor?, trailing: String?, timeText: String?) {
+    func configure(author: MomentsAuthor?, message: String?, trailing: String?, timeText: String?) {
         avatar.loadImage(path: author?.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
         let name = author?.displayName ?? "Someone"
         nameLabel.text = name
         timeLabel.text = timeText
         timeLabel.isHidden = (timeText ?? "").isEmpty
+        messageLabel.text = message
+        messageLabel.isHidden = (message ?? "").isEmpty
         trailingLabel.text = trailing
         trailingLabel.isHidden = trailing == nil
-        accessibilityLabel = [name, trailing, timeText].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        accessibilityLabel = [name, trailing, message, timeText].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
     }
 }
 

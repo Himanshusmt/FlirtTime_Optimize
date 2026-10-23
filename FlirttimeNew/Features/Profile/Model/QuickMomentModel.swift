@@ -297,7 +297,7 @@ struct QuickMomentViewersPage: Codable {
     }
 }
 
-// MARK: - Replies (GET quick-moments/:id/reply)
+// MARK: - Replies (GET quick-moments/:id/replies)
 
 struct QuickMomentReply: Codable {
     let text: String
@@ -317,13 +317,23 @@ struct QuickMomentReply: Codable {
 struct QuickMomentRepliesPage: Codable {
     let replies: [QuickMomentReply]
     let total: Int
+    let reactions: [QuickMomentReaction]
+    let reactionsTotal: Int
+    let viewers: [QuickMomentViewer]
+    let viewsTotal: Int
 
     init(from decoder: Decoder) throws {
         let list = try QMList<QuickMomentReply>(from: decoder)
         let c = try? decoder.container(keyedBy: QMKey.self)
         let pagination = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("pagination"))
+        let reactionsBox = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("reactions"))
+        let viewsBox = try? c?.nestedContainer(keyedBy: QMKey.self, forKey: QMKey("views"))
         replies = c?.first([QuickMomentReply].self, "replies", "items", "messages") ?? list.items
         total = c?.int("totalReplies", "repliesCount", "total") ?? list.total ?? pagination?.int("total") ?? replies.count
+        reactions = reactionsBox?.first([QuickMomentReaction].self, "reactors", "reactions") ?? []
+        reactionsTotal = reactionsBox?.int("total", "totalReactions") ?? reactions.count
+        viewers = viewsBox?.first([QuickMomentViewer].self, "viewers") ?? []
+        viewsTotal = viewsBox?.int("total", "totalViews") ?? viewers.count
     }
 }
 

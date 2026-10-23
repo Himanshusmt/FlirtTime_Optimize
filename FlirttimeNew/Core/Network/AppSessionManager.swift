@@ -709,6 +709,11 @@ final class AppSessionManager {
                                                       parameters: ["message": message]))
     }
 
+    func quickMomentReplies(momentId: String, page: Int = 1, limit: Int = 30) -> Single<QuickMomentRepliesPage> {
+        backendClient.load(request: AppApiRequest(method: .get, endPoint: .quickMomentReplies(momentId: momentId),
+                                                  parameters: ["page": page, "limit": limit], encoding: URLEncoding.queryString))
+    }
+
     /// Marks the story as seen, which greys out its ring in the tray.
     func markQuickMomentViewed(momentId: String) -> Single<Void> {
         backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .quickMomentView(momentId: momentId)))

@@ -135,6 +135,7 @@ enum AppEndPoint: CustomStringConvertible {
     case quickMomentReactions(momentId: String)
     case quickMomentReact(momentId: String)
     case quickMomentReply(momentId: String)
+    case quickMomentReplies(momentId: String)
     case quickMomentView(momentId: String)
     case quickMomentViewers(momentId: String)
 
@@ -231,6 +232,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .quickMomentReactions(let momentId): return "api/v1/quick-moments/\(momentId)/reactions"
         case .quickMomentReact(let momentId): return "api/v1/quick-moments/\(momentId)/react"
         case .quickMomentReply(let momentId): return "api/v1/quick-moments/\(momentId)/reply"
+        case .quickMomentReplies(let momentId): return "api/v1/quick-moments/\(momentId)/replies"
         case .quickMomentView(let momentId): return "api/v1/quick-moments/\(momentId)/view"
         case .quickMomentViewers(let momentId): return "api/v1/quick-moments/\(momentId)/viewers"
         case .coinPackages: return "api/v1/coin-packages"
@@ -271,7 +273,7 @@ enum AppEndPoint: CustomStringConvertible {
              .momentGifts, .momentGiftsReceived, .moment, .momentComment, .momentCommentLike, .momentCommentReplies,
              .quickMoments, .quickMomentsTray, .myQuickMoments, .userQuickMoments, .quickMomentUploadURL,
              .quickMoment, .quickMomentReactions, .quickMomentReact, .quickMomentReply,
-             .quickMomentView, .quickMomentViewers,
+             .quickMomentReplies, .quickMomentView, .quickMomentViewers,
              .coinPackages, .coinsPurchaseVerify, .walletBalance, .subscriptions, .subscriptionsPurchaseVerify, .mySubscription,
              .deviceRegister, .deviceUnregister,
              .notifications, .notificationCounts, .notificationRead, .notificationsReadAll, .notification,
