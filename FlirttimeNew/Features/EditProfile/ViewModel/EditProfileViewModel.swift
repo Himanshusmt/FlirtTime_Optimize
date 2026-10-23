@@ -151,9 +151,9 @@ class EditProfileViewModel{
                 } else {
                     keys.append(key)
                 }
-                guard (3...6).contains(keys.count) else {
-                    return .error(APIError.apiError("You must have between 3 and 6 photos"))
-                }
+//                guard (3...6).contains(keys.count) else {
+//                    return .error(APIError.apiError("You must have between 3 and 6 photos"))
+//                }
                 return self.saveGalleryKeys(keys).map { key }
             }
             .observe(on: MainScheduler.instance)
