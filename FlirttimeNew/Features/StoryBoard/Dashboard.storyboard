@@ -80,7 +80,7 @@
                                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Notification" translatesAutoresizingMaskIntoConstraints="NO" id="ksg-V0-3Yv">
                                                 <rect key="frame" x="7.666666666666686" y="8" width="25" height="24"/>
                                             </imageView>
-                                            <button opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mwz-vz-TbL">
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mwz-vz-TbL">
                                                 <rect key="frame" x="0.0" y="0.0" width="40" height="40"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" constant="40" id="VFl-xh-zMT"/>
@@ -282,7 +282,7 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-hc-101" userLabel="Header Container">
                                 <rect key="frame" x="0.0" y="59" width="393" height="52"/>
                                 <subviews>
-                                <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-001" userLabel="Top Bar">
+                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-001" userLabel="Top Bar">
                                     <rect key="frame" x="0.0" y="0.0" width="393" height="52"/>
                                     <subviews>
                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="FlirtTimeTitle" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-002" userLabel="Logo">
@@ -292,11 +292,11 @@
                                                 <constraint firstAttribute="height" constant="24" id="MLv-tc-002"/>
                                             </constraints>
                                         </imageView>
-                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-006" userLabel="Add Moment Button">
-                                            <rect key="frame" x="299" y="4" width="44" height="44"/>
+                                        <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-006" userLabel="Add Moment Button">
+                                            <rect key="frame" x="313" y="10" width="32" height="32"/>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="44" id="MLv-tc-017"/>
-                                                <constraint firstAttribute="height" constant="44" id="MLv-tc-018"/>
+                                                <constraint firstAttribute="width" constant="32" id="MLv-tc-017"/>
+                                                <constraint firstAttribute="height" constant="32" id="MLv-tc-018"/>
                                             </constraints>
                                             <accessibility key="accessibilityConfiguration" label="Add moment"/>
                                             <state key="normal" image="PlusIcon"/>
@@ -304,11 +304,11 @@
                                                 <action selector="addMomentTapped:" destination="lhb-dt-1Kd" eventType="touchUpInside" id="MLv-ac-007"/>
                                             </connections>
                                         </button>
-                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-003" userLabel="Notification Button">
-                                            <rect key="frame" x="343" y="4" width="44" height="44"/>
+                                        <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MLv-tb-003" userLabel="Notification Button">
+                                            <rect key="frame" x="345" y="6" width="40" height="40"/>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="44" id="MLv-tc-003"/>
-                                                <constraint firstAttribute="height" constant="44" id="MLv-tc-004"/>
+                                                <constraint firstAttribute="width" constant="40" id="MLv-tc-003"/>
+                                                <constraint firstAttribute="height" constant="40" id="MLv-tc-004"/>
                                             </constraints>
                                             <accessibility key="accessibilityConfiguration" label="Notifications"/>
                                             <state key="normal" image="Notification"/>
@@ -350,7 +350,7 @@
                                         <constraint firstItem="MLv-tb-005" firstAttribute="leading" secondItem="MLv-tb-004" secondAttribute="trailing" constant="2" id="MLv-tc-011"/>
                                         <constraint firstItem="MLv-tb-005" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-012"/>
                                         <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="MLv-tb-005" secondAttribute="trailing" constant="16" id="MLv-tc-013"/>
-                                        <constraint firstAttribute="trailing" secondItem="MLv-tb-003" secondAttribute="trailing" constant="6" id="MLv-tc-014"/>
+                                        <constraint firstAttribute="trailing" secondItem="MLv-tb-003" secondAttribute="trailing" constant="8" id="MLv-tc-014"/>
                                         <constraint firstItem="MLv-tb-003" firstAttribute="centerY" secondItem="MLv-tb-001" secondAttribute="centerY" id="MLv-tc-015"/>
                                         <constraint firstAttribute="height" constant="52" id="MLv-tc-016"/>
                                         <constraint firstItem="MLv-tb-003" firstAttribute="leading" secondItem="MLv-tb-006" secondAttribute="trailing" id="MLv-tc-019"/>

@@ -33,6 +33,14 @@ final class CardDetailViewController: BaseViewController {
     private var playButton = UIButton(type: .custom)
     private var actionButtons: [UIButton] = []
     private var isSendingAction = false
+    private let refreshIndicator = ProfileRefreshIndicator()
+    private var isLoadingDetail = false
+    private var galleryTopConstraint: NSLayoutConstraint?
+    private var galleryHeightConstraint: NSLayoutConstraint?
+    private var galleryTopShade: UIView?
+    private var galleryBaseHeight: CGFloat = 0
+    /// Cover stretch is only for a user pull; attaching the refresh control would otherwise stretch it on first open.
+    private var canStretchCover = false
 
     init(profile: MomentsProfile) {
         self.profile = profile
@@ -46,6 +54,7 @@ final class CardDetailViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = AppColor.AppWhite
+        view.isOpaque = true
         setUI()
         NotificationCenter.default.addObserver(self, selector: #selector(playerChanged), name: VoiceIntroPlayer.stateDidChange, object: nil)
         playerChanged()
@@ -55,7 +64,12 @@ final class CardDetailViewController: BaseViewController {
     /// The card only carries feed fields; the full profile fills in bio, voice, Moments and the rest.
     /// On failure the screen keeps showing the card data.
     private func loadDetail() {
-        guard let userID = profile.remoteUserId else { return }
+        guard let userID = profile.remoteUserId else {
+            endRefreshing()
+            return
+        }
+        guard !isLoadingDetail else { return }
+        isLoadingDetail = true
         sessionManager.otherUserProfile(userId: userID)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] detail in
@@ -64,13 +78,56 @@ final class CardDetailViewController: BaseViewController {
                 self.profile.moments.removeAll { self.hiddenMomentIDs.contains($0.id) }
                 self.buildContent()
                 self.playerChanged()
+                self.isLoadingDetail = false
+                self.endRefreshing()
+            }, onFailure: { [weak self] _ in
+                self?.isLoadingDetail = false
+                self?.endRefreshing()
             })
             .disposed(by: disposeBag)
+    }
+
+    /// Matches Other User Profile and Profile: a clear `UIRefreshControl` drives the pull,
+    /// and `refreshIndicator` shows progress over the cover photo.
+    private func configurePullToRefresh() {
+        let refreshControl = UIRefreshControl()
+        refreshControl.tintColor = .clear
+        refreshControl.addTarget(self, action: #selector(pullToRefresh), for: .valueChanged)
+        scrollView.refreshControl = refreshControl
+        scrollView.alwaysBounceVertical = true
+        scrollView.alwaysBounceHorizontal = false
+        scrollView.delegate = self
+        refreshIndicator.install(in: view)
+    }
+
+    @objc private func pullToRefresh() {
+        refreshIndicator.beginRefreshing()
+        if !isLoadingDetail {
+            loadDetail()
+        }
+        if !isLoadingDetail {
+            endRefreshing()
+        }
+    }
+
+    private func endRefreshing() {
+        scrollView.refreshControl?.endRefreshing()
+        refreshIndicator.endRefreshing()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         checkHideCustomButton(hide: true)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        canStretchCover = true
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateGalleryBaseHeight()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -86,7 +143,8 @@ final class CardDetailViewController: BaseViewController {
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.showsVerticalScrollIndicator = false
         scrollView.alwaysBounceVertical = true
-        let fade = MomentsGradientView(colors: [.clear, AppColor.AppWhite],
+        scrollView.backgroundColor = AppColor.AppWhite
+        let fade = MomentsGradientView(colors: [AppColor.AppWhite.withAlphaComponent(0), AppColor.AppWhite],
                                        start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
         fade.isUserInteractionEnabled = false
         [scrollView, fade, bottomBar].forEach {
@@ -95,6 +153,7 @@ final class CardDetailViewController: BaseViewController {
         }
         setBottomBar()
         let topButtons = makeTopButtons()
+        configurePullToRefresh()
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -127,8 +186,13 @@ final class CardDetailViewController: BaseViewController {
         counter = PaddedPillLabel()
         playButton = UIButton(type: .custom)
         waveform = nil
+        galleryTopConstraint = nil
+        galleryHeightConstraint = nil
+        galleryTopShade = nil
 
         let content = UIView()
+        content.backgroundColor = AppColor.AppWhite
+        content.clipsToBounds = false
         let gallery = makeGallery()
         let sheet = makeSheet()
         [content, gallery, sheet].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
@@ -137,6 +201,13 @@ final class CardDetailViewController: BaseViewController {
         content.addSubview(sheet)
         contentView = content
 
+        let baseHeight = galleryBaseHeight > 1 ? galleryBaseHeight : view.bounds.height * 0.56
+        galleryBaseHeight = baseHeight
+        let galleryTop = gallery.topAnchor.constraint(equalTo: content.topAnchor)
+        let galleryHeight = gallery.heightAnchor.constraint(equalToConstant: baseHeight)
+        galleryTopConstraint = galleryTop
+        galleryHeightConstraint = galleryHeight
+
         NSLayoutConstraint.activate([
             content.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             content.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
@@ -144,10 +215,10 @@ final class CardDetailViewController: BaseViewController {
             content.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             content.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
-            gallery.topAnchor.constraint(equalTo: content.topAnchor),
+            galleryTop,
             gallery.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             gallery.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            gallery.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.56),
+            galleryHeight,
 
             sheet.topAnchor.constraint(equalTo: gallery.bottomAnchor, constant: -28),
             sheet.leadingAnchor.constraint(equalTo: content.leadingAnchor),
@@ -218,6 +289,7 @@ final class CardDetailViewController: BaseViewController {
 
         let topShade = MomentsGradientView(colors: [UIColor.black.withAlphaComponent(0.4), .clear],
                                         start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
+        galleryTopShade = topShade
         let shade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.7)],
                                      start: CGPoint(x: 0.5, y: 0.5), end: CGPoint(x: 0.5, y: 1))
         [topShade, shade].forEach {
@@ -250,24 +322,40 @@ final class CardDetailViewController: BaseViewController {
             let verified = UIButton(type: .system)
             verified.setImage(UIImage(named: "verified")?.withRenderingMode(.alwaysOriginal), for: .normal)
             verified.tintColor = .clear
+            verified.imageView?.contentMode = .scaleAspectFit
+            verified.contentHorizontalAlignment = .fill
+            verified.contentVerticalAlignment = .fill
             verified.accessibilityLabel = "Verified profile"
             verified.addAction(UIAction { [weak self] _ in
                 guard let self else { return }
                 MomentsVerificationInfo.present(for: self.profile, from: self)
             }, for: .touchUpInside)
-            verified.widthAnchor.constraint(equalToConstant: 18).isActive = true
-            verified.heightAnchor.constraint(equalToConstant: 18).isActive = true
+            verified.setContentHuggingPriority(.required, for: .horizontal)
+            verified.widthAnchor.constraint(equalToConstant: 24).isActive = true
+            verified.heightAnchor.constraint(equalToConstant: 24).isActive = true
             nameRow.addArrangedSubview(verified)
         }
         nameRow.addArrangedSubview(UIView())
         let info = UIStackView(arrangedSubviews: [nameRow])
         info.axis = .vertical
-        info.spacing = 2
-        let metaParts = [profile.locationLine, profile.datingIntent.map { "Looking for \($0.lowercased())" }].compactMap { $0 }
-        if !metaParts.isEmpty {
-            let meta = UILabel.vibeLabel(.regular, 15, style: .subheadline, color: UIColor.white.withAlphaComponent(0.9), lines: 2)
-            meta.text = metaParts.joined(separator: " · ")
-            info.addArrangedSubview(meta)
+        info.spacing = 4
+        if let line = profile.locationLine {
+            let pin = UIImageView(image: UIImage(systemName: "location.fill",
+                                                 withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)))
+            pin.tintColor = UIColor.white.withAlphaComponent(0.92)
+            pin.setContentHuggingPriority(.required, for: .horizontal)
+            pin.setContentCompressionResistancePriority(.required, for: .horizontal)
+            let location = UILabel.vibeLabel(.regular, 15, style: .subheadline, color: UIColor.white.withAlphaComponent(0.92), lines: 2)
+            location.text = line
+            let locationRow = UIStackView(arrangedSubviews: [pin, location])
+            locationRow.spacing = 5
+            locationRow.alignment = .center
+            info.addArrangedSubview(locationRow)
+        }
+        if let intent = profile.datingIntent {
+            let lookingFor = UILabel.vibeLabel(.regular, 15, style: .subheadline, color: UIColor.white.withAlphaComponent(0.9), lines: 2)
+            lookingFor.text = "Looking for \(intent.lowercased())"
+            info.addArrangedSubview(lookingFor)
         }
 
         [badgeRow, info].forEach {
@@ -518,7 +606,7 @@ final class CardDetailViewController: BaseViewController {
         let notInterested = MomentsProfileActionButton.make(kind: .notInterested) { [weak self] in
             self?.sendAction(.notMyVibe)
         }
-        let superLike = MomentsProfileActionButton.make(kind: .superLike) { [weak self] in
+        let superLike = MomentsProfileActionButton.make(kind: .superLike, size: 72) { [weak self] in
             self?.sendAction(.superVibe)
         }
         let like = MomentsProfileActionButton.make(kind: .like) { [weak self] in
@@ -779,8 +867,36 @@ final class CardDetailViewController: BaseViewController {
 
 extension CardDetailViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard scrollView === galleryScrollView, scrollView.bounds.width > 0 else { return }
-        let page = Int((scrollView.contentOffset.x / scrollView.bounds.width).rounded())
-        counter.text = "\(min(max(page, 0), profile.photos.count - 1) + 1)/\(profile.photos.count)"
+        if scrollView === galleryScrollView {
+            guard scrollView.bounds.width > 0 else { return }
+            let page = Int((scrollView.contentOffset.x / scrollView.bounds.width).rounded())
+            counter.text = "\(min(max(page, 0), profile.photos.count - 1) + 1)/\(profile.photos.count)"
+            return
+        }
+        guard scrollView === self.scrollView else { return }
+        let maxOffsetY = max(0, scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height)
+        if scrollView.contentOffset.y > maxOffsetY {
+            scrollView.contentOffset.y = maxOffsetY
+        }
+        let pull = max(0, -scrollView.contentOffset.y)
+        if canStretchCover || scrollView.isDragging {
+            stretchCover(by: pull)
+            refreshIndicator.update(pullDistance: pull)
+        }
+    }
+
+    private func stretchCover(by stretch: CGFloat) {
+        guard let galleryTopConstraint, galleryTopConstraint.constant != -stretch else { return }
+        galleryTopConstraint.constant = -stretch
+        galleryHeightConstraint?.constant = galleryBaseHeight + stretch
+        galleryTopShade?.transform = CGAffineTransform(translationX: 0, y: -stretch)
+    }
+
+    private func updateGalleryBaseHeight() {
+        let next = view.bounds.height * 0.56
+        guard next > 1, abs(next - galleryBaseHeight) > 0.5 else { return }
+        galleryBaseHeight = next
+        let pull = max(0, -scrollView.contentOffset.y)
+        galleryHeightConstraint?.constant = next + pull
     }
 }

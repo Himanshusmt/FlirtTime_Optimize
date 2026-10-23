@@ -2,8 +2,6 @@
 //  AppDelegate.swift
 //  FlirttimeNew
 //
-//  Created by Aasif on 07/10/26.
-//
 
 import UIKit
 import IQKeyboardManagerSwift
@@ -16,6 +14,15 @@ import UserNotifications
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // OneVibe: PushKit + CallKit MUST be first. A killed-app VoIP wake drops the
+        // push if the registry is created after Firebase / UI work.
+        _ = CallKitManager.shared
+        VoIPPushManager.shared.start()
+        IncomingCallPushRouter.registerCallNotificationCategory()
+        AppLogger.killCall(
+            "didFinishLaunching — PushKit + CallKit FIRST appState=\(application.applicationState.rawValue) (0=active 1=inactive 2=background)"
+        )
+
         IQKeyboardManager.shared.isEnabled = true
         IQKeyboardManager.shared.resignOnTouchOutside = true
         IQKeyboardManager.shared.toolbarConfiguration.tintColor = AppColor.Punch
@@ -24,6 +31,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         configureFirebasePush(application)
         startChat()
         startStore()
+
+        // Cold start from a tapped call notification (app was killed).
+        if let remote = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
+            DispatchQueue.main.async {
+                _ = IncomingCallPushRouter.handleIncomingCallPushIfNeeded(
+                    userInfo: remote,
+                    source: "launchOptions"
+                )
+            }
+        }
         return true
     }
 
@@ -73,7 +90,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if !mapsKey.isEmpty {
             GMSServices.provideAPIKey(mapsKey)
         }
-        _ = CallKitManager.shared
         _ = CoreDataManager.shared.viewContext
         ChatSocketSessionCoordinator.shared.start()
         Task { @MainActor in
@@ -95,18 +111,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         #endif
     }
 
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(userInfo: userInfo, source: "remoteNotification") {
+            completionHandler(.newData)
+            return
+        }
+        completionHandler(.noData)
+    }
+
     func applicationWillTerminate(_ application: UIApplication) {
         ChatSocketSessionCoordinator.shared.handleApplicationWillTerminate()
     }
-
-    // MARK: UISceneSession Lifecycle
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 }
-
-// MARK: - MessagingDelegate
 
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
@@ -118,14 +142,19 @@ extension AppDelegate: MessagingDelegate {
     }
 }
 
-// MARK: - UNUserNotificationCenterDelegate
-
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(
+            userInfo: notification.request.content.userInfo,
+            source: "willPresent"
+        ) {
+            completionHandler([])
+            return
+        }
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -134,6 +163,10 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        if IncomingCallPushRouter.handleNotificationAction(response) {
+            completionHandler()
+            return
+        }
         let userInfo = response.notification.request.content.userInfo
         DispatchQueue.main.async {
             if let base = UIApplication.shared.topViewController() as? BaseViewController {

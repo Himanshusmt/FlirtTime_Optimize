@@ -378,6 +378,98 @@ final class MomentsCommentViewModel {
             .disposed(by: disposeBag)
     }
 
+    // MARK: - Sockets
+
+    enum SocketCommentChange {
+        case inserted(indexPath: IndexPath, isNewThread: Bool)
+        case deleted(section: Int, removedThread: Bool)
+        case liked(commentId: String)
+        case none
+    }
+
+    func applySocket(_ update: MomentSocketUpdate) -> SocketCommentChange {
+        guard update.momentId == vibeId else { return .none }
+        switch update.kind {
+        case .commentCreated:
+            return applySocketCommentCreated(update)
+        case .commentDeleted:
+            return applySocketCommentDeleted(update)
+        case .commentLikeUpdated:
+            return applySocketCommentLike(update)
+        default:
+            return .none
+        }
+    }
+
+    private func applySocketCommentCreated(_ update: MomentSocketUpdate) -> SocketCommentChange {
+        guard var comment = update.comment ?? update.commentId.map({
+            MomentsComment(id: $0, vibeId: vibeId, body: nil, createdAt: MomentsDate.string(from: Date()),
+                           author: nil, isMine: false, parentId: nil, likesCount: 0, isLiked: false, repliesCount: 0)
+        }) else { return .none }
+        if allComments.contains(where: { $0.id == comment.id }) {
+            return .none
+        }
+        if (comment.parentId ?? "").isEmpty == false, comment.parentId == comment.id {
+            comment.parentId = nil
+        }
+        allComments.append(comment)
+        if let parentId = comment.parentId, !parentId.isEmpty {
+            adjustReplyCount(rootId: parentId, by: 1)
+            expandedIds.insert(parentId)
+        }
+        totalCount += 1
+        rebuildThreads()
+        guard let indexPath = indexPath(forCommentId: comment.id) else { return .none }
+        return .inserted(indexPath: indexPath, isNewThread: indexPath.row == 0)
+    }
+
+    private func applySocketCommentDeleted(_ update: MomentSocketUpdate) -> SocketCommentChange {
+        guard let commentId = update.commentId ?? update.comment?.id,
+              let section = threads.firstIndex(where: { thread in
+                  thread.comment.id == commentId || thread.replies.contains { $0.id == commentId }
+              }) else { return .none }
+        let removedThread = threads[section].comment.id == commentId
+        var removed = 1
+        if removedThread {
+            let replyIds = Set(threads[section].replies.map(\.id))
+            removed += replyIds.count
+            allComments.removeAll { $0.id == commentId || replyIds.contains($0.id) }
+            expandedIds.remove(commentId)
+        } else {
+            allComments.removeAll { $0.id == commentId }
+            adjustReplyCount(rootId: threads[section].comment.id, by: -1)
+        }
+        totalCount = max(0, update.commentsCount ?? (totalCount - removed))
+        rebuildThreads()
+        return .deleted(section: section, removedThread: removedThread)
+    }
+
+    private func applySocketCommentLike(_ update: MomentSocketUpdate) -> SocketCommentChange {
+        guard let commentId = update.commentId ?? update.comment?.id,
+              let index = allComments.firstIndex(where: { $0.id == commentId }) else { return .none }
+        if likeRequestsInFlight.contains(commentId), update.commentIsLiked == nil {
+            if let count = update.commentLikesCount {
+                allComments[index].likesCount = max(0, count)
+                rebuildThreads()
+                return .liked(commentId: commentId)
+            }
+            return .none
+        }
+        if let count = update.commentLikesCount {
+            allComments[index].likesCount = max(0, count)
+        } else if let liked = update.commentIsLiked {
+            let before = allComments[index].isLiked ?? false
+            if liked != before {
+                allComments[index].likesCount = max((allComments[index].likesCount ?? 0) + (liked ? 1 : -1), 0)
+            }
+        }
+        if let liked = update.commentIsLiked {
+            allComments[index].isLiked = liked
+        }
+        rebuildThreads()
+        return .liked(commentId: commentId)
+    }
+
     // MARK: - Threads
 
     private func merge(_ comments: [MomentsComment]) {

@@ -7,13 +7,14 @@ import Foundation
 import RxSwift
 import Swinject
 
-/// Keeps the FCM token registered with the backend (`devices/register`) for the signed-in user.
-/// Firebase wiring lives in `AppDelegate` (`FirebaseApp.configure`, Messaging + APNs delegates).
+/// Keeps FCM + PushKit VoIP tokens registered with the backend (`devices/register`).
+/// Firebase wiring lives in `AppDelegate`; VoIP token updates come from `VoIPPushManager`.
 final class DeviceTokenManager {
 
     static let shared = DeviceTokenManager()
 
     private static let fcmTokenKey = "fcmDeviceToken"
+    private static let voipTokenKey = "voipDeviceToken"
     private static let registeredTokenKey = "fcmRegisteredDeviceToken"
 
     private let defaults = UserDefaults.standard
@@ -29,10 +30,19 @@ final class DeviceTokenManager {
         set { defaults.set(newValue, forKey: Self.fcmTokenKey) }
     }
 
-    /// The token last accepted by the backend for the current session.
+    private(set) var voipToken: String? {
+        get { defaults.string(forKey: Self.voipTokenKey) }
+        set { defaults.set(newValue, forKey: Self.voipTokenKey) }
+    }
+
+    /// Fingerprint of the last FCM+VoIP pair accepted by the backend.
     private var registeredToken: String? {
         get { defaults.string(forKey: Self.registeredTokenKey) }
         set { defaults.set(newValue, forKey: Self.registeredTokenKey) }
+    }
+
+    private var registrationFingerprint: String {
+        "\(fcmToken ?? "")|\(voipToken ?? "")"
     }
 
     func update(fcmToken token: String) {
@@ -44,13 +54,34 @@ final class DeviceTokenManager {
         registerIfNeeded()
     }
 
+    func update(voipToken token: String) {
+        guard !token.isEmpty else { return }
+        if token != voipToken {
+            voipToken = token
+            registeredToken = nil
+        }
+        registerIfNeeded()
+    }
+
+    func clearVoIPToken() {
+        voipToken = nil
+        registeredToken = nil
+    }
+
+    /// OneVibe: re-upsert FCM + VoIP after login so `devices.voipToken` is not null.
+    func registerPushTokensAfterLogin(reason: String) {
+        AppLogger.killCall("registerPushTokensAfterLogin reason=\(reason) fcm=\(fcmToken?.count ?? 0) voip=\(voipToken?.count ?? 0)")
+        registerIfNeeded(force: true)
+    }
+
     /// Call after login and on launch with a valid session.
     func registerIfNeeded(force: Bool = false) {
         guard sessionManager.isLoggedIn, let token = fcmToken, !token.isEmpty else { return }
-        guard force || registeredToken != token else { return }
-        sessionManager.registerDevice(token: token)
+        let fingerprint = registrationFingerprint
+        guard force || registeredToken != fingerprint else { return }
+        sessionManager.registerDevice(token: token, voipToken: voipToken)
             .subscribe(onSuccess: { [weak self] in
-                self?.registeredToken = token
+                self?.registeredToken = fingerprint
             })
             .disposed(by: disposeBag)
     }

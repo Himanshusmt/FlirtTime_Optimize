@@ -102,7 +102,11 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         view.addBlushBackground()
         setUI()
         setUploadBinding()
-        notificationButton.bindNotificationBadge(inset: 10)
+        setSocketBinding()
+        notificationButton.clipsToBounds = false
+        notificationButton.superview?.clipsToBounds = false
+        headerContainerView.clipsToBounds = false
+        notificationButton.bindNotificationBadge(inset: 6)
         loadFeed(showLoader: true)
     }
 
@@ -204,6 +208,58 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     // MARK: - Upload progress
 
+    private func setSocketBinding() {
+        MomentsSocketService.shared.setupSocketListeners()
+        MomentsSocketService.shared.updates
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] update in
+                self?.applySocket(update)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func applySocket(_ update: MomentSocketUpdate) {
+        let change = viewModel.applySocket(update)
+        switch change {
+        case .counts(let row):
+            refreshCounts(at: row)
+        case .inserted(let row):
+            applyRowChange(inserted: true, row: row)
+        case .removed(let row):
+            dismissComments(for: update.momentId)
+            applyRowChange(inserted: false, row: row)
+            onVibeRemoved?(update.momentId)
+        case .none:
+            break
+        }
+    }
+
+    private func applyRowChange(inserted: Bool, row: Int) {
+        let tableCount = tableView.numberOfSections > 0 ? tableView.numberOfRows(inSection: 0) : 0
+        let modelCount = viewModel.vibes.count
+        let expected = inserted ? tableCount + 1 : tableCount - 1
+        if expected == modelCount, row < modelCount || !inserted {
+            let path = IndexPath(row: inserted ? row : min(row, max(tableCount - 1, 0)), section: 0)
+            tableView.performBatchUpdates {
+                if inserted {
+                    tableView.insertRows(at: [path], with: .fade)
+                } else {
+                    tableView.deleteRows(at: [path], with: .fade)
+                }
+            }
+        } else {
+            tableView.reloadData()
+        }
+        updateEmptyState()
+    }
+
+    private func dismissComments(for vibeId: String) {
+        let comments = presentedViewController as? MomentsCommentViewController
+            ?? presentedViewController?.presentedViewController as? MomentsCommentViewController
+        guard comments?.vibeId == vibeId else { return }
+        comments?.dismiss(animated: true)
+    }
+
     private func setUploadBinding() {
         guard !isOtherUserScope else { return }
         uploadViewModel.$uploadProgress
@@ -225,6 +281,7 @@ final class MomentsListViewController: BaseViewController, Instantiable {
                 switch result {
                 case .success(let vibe):
                     if vibe.media?.isEmpty == false {
+                        self.viewModel.markLocalEdit(id: vibe.id)
                         self.viewModel.prepend(vibe)
                         self.tableView.reloadData()
                         self.updateEmptyState()
@@ -450,6 +507,7 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         let commentViewController = MomentsCommentViewController(vibe: vibe)
         commentViewController.onCommentsCountChanged = { [weak self] count in
             guard let self else { return }
+            self.viewModel.markLocalEdit(id: vibe.id)
             let row = self.viewModel.updateVibe(id: vibe.id) { $0.commentsCount = count }
             self.refreshCounts(at: row)
         }
@@ -471,6 +529,7 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         let giftViewController = MomentsGiftViewController(vibe: vibe)
         giftViewController.onGiftsSent = { [weak self] sentCount in
             guard let self else { return }
+            self.viewModel.markLocalEdit(id: vibe.id)
             let row = self.viewModel.updateVibe(id: vibe.id) { $0.giftCount = ($0.giftCount ?? 0) + sentCount }
             self.refreshCounts(at: row)
             self.aCustomToastView.show(message: sentCount > 1 ? "\(sentCount) gifts sent 🎉" : "Gift sent 🎉")

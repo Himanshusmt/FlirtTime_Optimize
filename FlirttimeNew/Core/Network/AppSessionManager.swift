@@ -6,6 +6,7 @@
 import Alamofire
 import Foundation
 import RxSwift
+import UIKit
 
 /// One function per FlirtTime API.
 final class AppSessionManager {
@@ -796,14 +797,36 @@ final class AppSessionManager {
 
     // MARK: - Devices
 
-    /// Registering a token that belongs to another account moves it to the signed-in user.
-    func registerDevice(token: String) -> Single<Void> {
-        let params: [String: Any] = [
+    /// OneVibe upsert: `deviceToken` is FCM, `voipToken` is PushKit. Backend must persist both.
+    func registerDevice(
+        token: String,
+        voipToken: String? = nil,
+        tokenType: String = "fcm",
+        deviceId: String? = nil
+    ) -> Single<Void> {
+        let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        var params: [String: Any] = [
             "deviceToken": token,
             "platform": "ios",
-            "appVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
-            "deviceModel": Self.deviceModel
+            "provider": "fcm",
+            "tokenType": tokenType,
+            "deviceId": deviceId ?? UIDevice.current.identifierForVendor?.uuidString ?? "",
+            "deviceName": UIDevice.current.name,
+            "deviceModel": Self.deviceModel,
+            "osVersion": UIDevice.current.systemVersion,
+            "appVersion": "\(appVersion) (\(build))",
+            "locale": Locale.current.identifier,
+            "timezone": TimeZone.current.identifier,
+            "notificationsEnabled": true
         ]
+        if let voipToken, !voipToken.isEmpty {
+            params["voipToken"] = voipToken
+            params["voip_token"] = voipToken
+            AppLogger.killCall("registerDevice params include voipToken len=\(voipToken.count)")
+        } else {
+            AppLogger.killCall("registerDevice WARNING: voipToken empty — killed-app CallKit will NOT work")
+        }
         return backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .deviceRegister, parameters: params))
             .map { _ in () }
     }
@@ -853,7 +876,7 @@ final class AppSessionManager {
             }
             AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
             if let user = auth.user { UserDataManager.shared.appUser = user }
-            DeviceTokenManager.shared.registerIfNeeded(force: true)
+            DeviceTokenManager.shared.registerPushTokensAfterLogin(reason: "login")
             CoinWallet.shared.refresh()
             FreeTierLimitsStore.shared.refresh()
             return auth

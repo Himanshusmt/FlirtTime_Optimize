@@ -406,6 +406,16 @@ enum SocketEvent: String, CaseIterable {
     case vibeCommentDeleted = "vibe:comment:deleted"
     case vibeCommentUpdated = "vibe:comment:updated"
     case followChanged = "follow:changed"
+
+    // MARK: Moments — live feed counts / comments / gifts
+    case momentCreated = "moment:created"
+    case momentUpdated = "moment:updated"
+    case momentLikeUpdated = "moment:like_updated"
+    case momentCommentCreated = "moment:comment_created"
+    case momentCommentDeleted = "moment:comment_deleted"
+    case momentCommentLikeUpdated = "moment:comment_like_updated"
+    case momentGiftSent = "moment:gift_sent"
+    case momentDeleted = "moment:deleted"
 }
 
 class ChatSocketManager {
@@ -1232,6 +1242,7 @@ final class ChatSocketSessionCoordinator {
         }
         ChatListSocketService.shared.setupSocketListeners()
         ChannelSocketService.shared.setupSocketListeners()
+        MomentsSocketService.shared.setupSocketListeners()
         print("[SocketSession] Ensuring socket connection (\(reason))")
         ChatSocketManager.shared.establishConnection()
         Self.syncInboxDelivered()
@@ -1262,6 +1273,7 @@ final class ChatSocketSessionCoordinator {
     func shutdownForLogout() {
         ChatListSocketService.shared.invalidateSocketListeners()
         ChannelSocketService.shared.invalidateSocketListeners()
+        MomentsSocketService.shared.invalidateSocketListeners()
         ChatSocketManager.shared.clearSocialRoomTracking()
         ChatSocketManager.shared.closeConnection()
         ChatSocketManager.shared.clearSocketListeners()

@@ -682,31 +682,23 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
 
     /// `stories` arrive newest first; they play oldest first, starting at the first unseen one.
     private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
-        let stories = Array(stories.reversed())
         guard !stories.isEmpty else { return }
-        let user = item.user
-        let userId = user?.id ?? stories.first?.userId
-        var profile = MomentsProfile(id: userId?.stableID ?? 0,
-                                  displayName: isMine ? "You" : (user?.name ?? user?.fullName ?? "Someone"),
-                                  age: nil,
-                                  isVerified: user?.isVerified ?? false,
-                                  gender: nil,
-                                  city: user?.location,
-                                  distanceKm: nil,
-                                  isOnline: nil,
-                                  datingIntent: nil,
-                                  photos: [user?.photo].compactMap { $0 },
-                                  about: "",
-                                  interests: [],
-                                  sharedInterests: [],
-                                  reasons: [],
-                                  voiceIntro: nil,
-                                  moments: stories.enumerated().map { $0.element.storyMoment(id: $0.offset) },
-                                  vibeScore: nil)
-        profile.remoteUserId = userId
-        let startIndex = isMine ? 0 : (stories.firstIndex { !$0.hasViewed } ?? 0)
-        let viewer = QuickMomentViewController(profile: profile, startIndex: startIndex, isOwnMoments: isMine)
-        if !isMine { MomentsAnalytics.track(.vibeMomentOpened, profileID: profile.id) }
+        let (pages, start) = QuickMomentViewerPage.sequence(tray: viewModel.quickMomentTray, selected: item, isMine: isMine)
+        let pager = QuickMomentsPagerViewController(pages: pages, startIndex: start, initialStories: stories)
+        pager.onLoadStories = { [weak self] page, done in
+            self?.viewModel.quickMoments(of: page.item, isMine: page.isMine, completion: done)
+        }
+        pager.onBindViewer = { [weak self] viewer, stories, page in
+            self?.bindQuickMomentViewer(viewer, stories: stories, isMine: page.isMine)
+        }
+        pager.onDismiss = { [weak self] in self?.viewModel.loadQuickMomentTray() }
+        (navigationController ?? self).present(pager, animated: true)
+    }
+
+    private func bindQuickMomentViewer(_ viewer: QuickMomentViewController, stories: [QuickMoment], isMine: Bool) {
+        if !isMine {
+            MomentsAnalytics.track(.vibeMomentOpened, profileID: viewer.analyticsProfileID)
+        }
 
         if isMine {
             viewer.onShowActivity = { index, presenter in
@@ -725,34 +717,33 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
                     self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
                 }
             }
-        } else {
-            var seen = Set<String>()
-            viewer.onMomentShown = { [weak self] index in
-                guard stories.indices.contains(index), !stories[index].hasViewed,
-                      seen.insert(stories[index].id).inserted else { return }
-                self?.viewModel.markQuickMomentViewed(id: stories[index].id)
-            }
-            viewer.onReact = { [weak self] index, emoji in
-                guard stories.indices.contains(index) else { return }
-                self?.viewModel.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
-                    self?.aCustomToastView.show(message: message)
-                }
-            }
-            viewer.onReply = { [weak self] index, message in
-                guard stories.indices.contains(index) else { return }
-                self?.viewModel.replyToQuickMoment(id: stories[index].id, message: message) { error in
-                    self?.aCustomToastView.show(message: error)
-                }
-            }
-            viewer.onReport = { [weak self] profile, reason in
-                self?.applySafety(.report(reason), to: profile) {}
-            }
-            viewer.onViewProfile = { [weak self] profile in
-                self?.dismiss(animated: true) { self?.openProfile(profile) }
+            return
+        }
+
+        var seen = Set<String>()
+        viewer.onMomentShown = { [weak self] index in
+            guard stories.indices.contains(index), !stories[index].hasViewed,
+                  seen.insert(stories[index].id).inserted else { return }
+            self?.viewModel.markQuickMomentViewed(id: stories[index].id)
+        }
+        viewer.onReact = { [weak self] index, emoji in
+            guard stories.indices.contains(index) else { return }
+            self?.viewModel.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
+                self?.aCustomToastView.show(message: message)
             }
         }
-        viewer.onDismiss = { [weak self] in self?.viewModel.loadQuickMomentTray() }
-        (navigationController ?? self).present(viewer, animated: true)
+        viewer.onReply = { [weak self] index, message in
+            guard stories.indices.contains(index) else { return }
+            self?.viewModel.replyToQuickMoment(id: stories[index].id, message: message) { error in
+                self?.aCustomToastView.show(message: error)
+            }
+        }
+        viewer.onReport = { [weak self] profile, reason in
+            self?.applySafety(.report(reason), to: profile) {}
+        }
+        viewer.onViewProfile = { [weak self] profile in
+            self?.dismiss(animated: true) { self?.openProfile(profile) }
+        }
     }
 
     private func discover(_ interest: MomentsInterest) {

@@ -97,6 +97,7 @@ final class ChatDetailViewController: UIViewController {
     var selectionActionView: ChatSelectionActionBar?
 
     var attachmentPanel: AttachmentPanelView?
+    var isHandlingGalleryPick = false
 
     var pendingAttachmentFromKeyboard: Bool = false
 

@@ -21,6 +21,8 @@ final class MomentsListViewModel {
     private var currentPage = 0
     /// Bumped on every like tap so only the latest response for a moment is applied.
     private var likeGeneration: [String: Int] = [:]
+    /// Local like / comment / gift / delete, so a socket echo doesn't bump counts twice.
+    private var recentLocalEdits: [String: Date] = [:]
     private let onlyCurrentUser: Bool
     /// Set for another user's moments (`GET users/:userId/moments`); mock people (numeric ids) still come from `MockMomentsStore`.
     private let authorID: String?
@@ -130,6 +132,7 @@ final class MomentsListViewModel {
     func prepend(_ vibe: MomentsPost) {
         vibes.removeAll { $0.id == vibe.id }
         vibes.insert(vibe, at: 0)
+        totalCount = max(totalCount, vibes.count)
     }
 
     @discardableResult
@@ -137,6 +140,98 @@ final class MomentsListViewModel {
         guard let index = index(of: id) else { return nil }
         change(&vibes[index])
         return index
+    }
+
+    func markLocalEdit(id: String) {
+        recentLocalEdits[id] = Date()
+    }
+
+    private func hasRecentLocalEdit(_ id: String) -> Bool {
+        guard let date = recentLocalEdits[id] else { return false }
+        if Date().timeIntervalSince(date) > 3 {
+            recentLocalEdits.removeValue(forKey: id)
+            return false
+        }
+        return true
+    }
+
+    @discardableResult
+    func removeVibe(id: String) -> Int? {
+        guard let index = index(of: id) else { return nil }
+        vibes.remove(at: index)
+        totalCount = max(0, totalCount - 1)
+        return index
+    }
+
+    // MARK: - Sockets
+
+    enum SocketListChange {
+        case counts(Int)
+        case inserted(Int)
+        case removed(Int)
+        case none
+    }
+
+    /// Applies a live `moment:*` event to the in-memory feed.
+    func applySocket(_ update: MomentSocketUpdate) -> SocketListChange {
+        if update.kind == .deleted {
+            return removeVibe(id: update.momentId).map { .removed($0) } ?? .none
+        }
+
+        if index(of: update.momentId) == nil {
+            guard let moment = update.moment, shouldAccept(moment) else { return .none }
+            prepend(apply(update, to: moment))
+            return .inserted(0)
+        }
+
+        let row = updateVibe(id: update.momentId) { vibe in
+            vibe = apply(update, to: vibe)
+        }
+        return row.map { .counts($0) } ?? .none
+    }
+
+    private func shouldAccept(_ vibe: MomentsPost) -> Bool {
+        guard !Self.isAuthorBlocked(vibe) else { return false }
+        if onlyCurrentUser { return isOwnVibe(vibe) }
+        if let authorID { return Self.authorID(of: vibe) == authorID }
+        return true
+    }
+
+    private func apply(_ update: MomentSocketUpdate, to vibe: MomentsPost) -> MomentsPost {
+        var vibe = vibe
+        let skipDelta = hasRecentLocalEdit(update.momentId)
+
+        if let likes = update.likesCount {
+            vibe.likesCount = likes
+        } else if !skipDelta, update.kind == .likeUpdated, let liked = update.viewerHasLiked {
+            let before = vibe.hasLiked ?? false
+            if liked != before {
+                vibe.likesCount = max((vibe.likesCount ?? 0) + (liked ? 1 : -1), 0)
+            }
+        }
+
+        if let comments = update.commentsCount {
+            vibe.commentsCount = comments
+        } else if !skipDelta {
+            switch update.kind {
+            case .commentCreated:
+                vibe.commentsCount = (vibe.commentsCount ?? 0) + 1
+            case .commentDeleted:
+                vibe.commentsCount = max((vibe.commentsCount ?? 0) - 1, 0)
+            default:
+                break
+            }
+        }
+
+        if let gifts = update.giftsCount {
+            vibe.giftCount = gifts
+        } else if !skipDelta, update.kind == .giftSent {
+            vibe.giftCount = (vibe.giftCount ?? 0) + 1
+        }
+
+        if let shares = update.sharesCount { vibe.shareCount = shares }
+        if let liked = update.viewerHasLiked { vibe.hasLiked = liked }
+        return vibe
     }
 
     // MARK: - Report
@@ -175,6 +270,7 @@ final class MomentsListViewModel {
 
     /// Deletes an own moment; `completion` receives the removed row.
     func deleteVibe(vibeId: String, completion: @escaping (Result<Int?, MomentsError>) -> Void) {
+        markLocalEdit(id: vibeId)
         sessionManager.deleteMoment(momentId: vibeId)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] in
@@ -214,6 +310,7 @@ final class MomentsListViewModel {
     /// the row index to refresh once the response lands (nil if the moment is gone).
     func toggleLike(vibeId: String, completion: @escaping (Int?) -> Void) {
         guard let index = index(of: vibeId) else { return }
+        markLocalEdit(id: vibeId)
         let before = vibes[index]
         let liked = !(before.hasLiked ?? false)
         updateVibe(id: vibeId) {

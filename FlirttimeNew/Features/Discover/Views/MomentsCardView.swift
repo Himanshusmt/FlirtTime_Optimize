@@ -143,14 +143,17 @@ final class MomentsCardView: UIView {
             let verified = UIButton(type: .system)
             verified.setImage(UIImage(named: "verified")?.withRenderingMode(.alwaysOriginal), for: .normal)
             verified.tintColor = .clear
+            verified.imageView?.contentMode = .scaleAspectFit
+            verified.contentHorizontalAlignment = .fill
+            verified.contentVerticalAlignment = .fill
             verified.accessibilityLabel = "Verified profile"
             verified.addAction(UIAction { [weak self] _ in
                 guard let self else { return }
                 self.delegate?.vibeCardDidTapVerification(self)
             }, for: .touchUpInside)
             verified.setContentHuggingPriority(.required, for: .horizontal)
-            verified.widthAnchor.constraint(equalToConstant: 18).isActive = true
-            verified.heightAnchor.constraint(equalToConstant: 18).isActive = true
+            verified.widthAnchor.constraint(equalToConstant: 24).isActive = true
+            verified.heightAnchor.constraint(equalToConstant: 24).isActive = true
             nameRow.addArrangedSubview(verified)
         }
 

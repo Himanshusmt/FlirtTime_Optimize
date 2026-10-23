@@ -185,14 +185,14 @@
                                                                         <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                         <nil key="highlightedColor"/>
                                                                     </label>
-                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="verified" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vi-001" userLabel="Verified Badge">
-                                                                        <rect key="frame" x="123" y="7" width="18" height="18"/>
+                                                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="1000" verticalHuggingPriority="1000" horizontalCompressionResistancePriority="1000" verticalCompressionResistancePriority="1000" image="verified" translatesAutoresizingMaskIntoConstraints="NO" id="oup-vi-001" userLabel="Verified Badge">
+                                                                        <rect key="frame" x="123" y="6" width="20" height="20"/>
                                                                         <accessibility key="accessibilityConfiguration" label="Verified profile">
                                                                             <bool key="isElement" value="YES"/>
                                                                         </accessibility>
                                                                         <constraints>
-                                                                            <constraint firstAttribute="width" constant="18" id="oup-vi-002"/>
-                                                                            <constraint firstAttribute="height" constant="18" id="oup-vi-003"/>
+                                                                            <constraint firstAttribute="width" constant="20" id="oup-vi-002"/>
+                                                                            <constraint firstAttribute="height" constant="20" id="oup-vi-003"/>
                                                                         </constraints>
                                                                     </imageView>
                                                                 </subviews>
@@ -865,17 +865,17 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="fill" contentVerticalAlignment="fill" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oup-sk-010" userLabel="Super Like Button" customClass="BounceButton" customModule="FlirttimeNew" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="6" width="60" height="60"/>
+                                        <rect key="frame" x="0.0" y="0" width="72" height="72"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
-                                            <constraint firstAttribute="width" constant="60" id="oup-sk-011"/>
-                                            <constraint firstAttribute="height" constant="60" id="oup-sk-012"/>
+                                            <constraint firstAttribute="width" constant="72" id="oup-sk-011"/>
+                                            <constraint firstAttribute="height" constant="72" id="oup-sk-012"/>
                                         </constraints>
                                         <accessibility key="accessibilityConfiguration" label="Super like"/>
                                         <state key="normal" image="SuperLikeAction"/>
                                         <userDefinedRuntimeAttributes>
                                             <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
-                                                <real key="value" value="30"/>
+                                                <real key="value" value="36"/>
                                             </userDefinedRuntimeAttribute>
                                             <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
                                                 <color key="value" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>

@@ -265,26 +265,9 @@ enum MomentsProfileActionButton {
     static let imageName = "SuperLikeAction"
 
     static func make(kind: Kind, size: CGFloat = 60, action: @escaping () -> Void) -> UIButton {
-        let button = UIButton(type: .custom)
-        button.layer.cornerRadius = size / 2
+        let button = BounceButton(type: .custom)
         button.accessibilityLabel = kind.title
-        switch kind {
-        case .notInterested:
-            button.backgroundColor = AppColor.AppWhite
-            button.tintColor = AppColor.DoveGray
-            button.setImage(UIImage(systemName: "xmark",
-                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
-            applyShadow(to: button, color: UIColor.black, opacity: 0.15, radius: 10, offsetY: 4)
-        case .superLike:
-            applyIcon(to: button)
-            applyShadow(to: button, color: AppColor.Punch, opacity: 0.4, radius: 12, offsetY: 6)
-        case .like:
-            button.backgroundColor = AppColor.Punch
-            button.tintColor = .white
-            button.setImage(UIImage(systemName: "heart.fill",
-                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
-            applyShadow(to: button, color: AppColor.Punch, opacity: 0.4, radius: 12, offsetY: 6)
-        }
+        applyStyle(kind, to: button, size: size)
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         NSLayoutConstraint.activate([
             button.widthAnchor.constraint(equalToConstant: size),
@@ -293,9 +276,39 @@ enum MomentsProfileActionButton {
         return button
     }
 
-    static func applyIcon(to button: UIButton) {
+    /// Same fills, tints and shadows as Other User Profile's storyboard buttons.
+    static func applyStyle(_ kind: Kind, to button: UIButton, size: CGFloat? = nil) {
+        if let size {
+            button.layer.cornerRadius = size / 2
+            button.constraints
+                .filter { $0.firstAttribute == .width || $0.firstAttribute == .height }
+                .forEach { $0.constant = size }
+        } else if button.bounds.width > 0 {
+            button.layer.cornerRadius = button.bounds.width / 2
+        }
+        button.clipsToBounds = false
+        button.adjustsImageWhenHighlighted = true
+        switch kind {
+        case .notInterested:
+            button.backgroundColor = .white
+            button.tintColor = AppColor.DoveGray
+            button.setImage(UIImage(systemName: "xmark",
+                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
+            applyShadow(to: button, color: .black, opacity: 0.15, radius: 10, offsetY: 4)
+        case .superLike:
+            applyIcon(to: button, size: size)
+        case .like:
+            button.backgroundColor = AppColor.Punch
+            button.tintColor = .white
+            button.setImage(UIImage(systemName: "heart.fill",
+                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
+            applyShadow(to: button, color: AppColor.Punch, opacity: 0.4, radius: 12, offsetY: 6)
+        }
+    }
+
+    static func applyIcon(to button: UIButton, size: CGFloat? = nil) {
         let icon = UIImage(named: imageName)?.withRenderingMode(.alwaysOriginal)
-        button.backgroundColor = .clear
+        button.backgroundColor = .white
         button.tintColor = nil
         button.adjustsImageWhenHighlighted = true
         button.setImage(icon, for: .normal)
@@ -304,6 +317,13 @@ enum MomentsProfileActionButton {
         button.contentVerticalAlignment = .fill
         button.imageEdgeInsets = .zero
         button.clipsToBounds = false
+        if let size {
+            button.layer.cornerRadius = size / 2
+            button.constraints
+                .filter { $0.firstAttribute == .width || $0.firstAttribute == .height }
+                .forEach { $0.constant = size }
+        }
+        applyShadow(to: button, color: .black, opacity: 0.15, radius: 10, offsetY: 4)
     }
 
     private static func applyShadow(to button: UIButton, color: UIColor, opacity: Float, radius: CGFloat, offsetY: CGFloat) {

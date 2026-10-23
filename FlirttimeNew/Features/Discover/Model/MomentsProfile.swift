@@ -167,6 +167,8 @@ struct MomentsProfile: Equatable {
     var remoteUserId: String? = nil
     /// "More about me" answers from GET `users/:userId/profile`.
     var aboutAnswers: [OtherUserAboutItem] = []
+    /// API `fullLocation` (e.g. "Mumbai, Maharashtra, India"); preferred over `city` on Card Detail.
+    var fullLocation: String? = nil
 
     static func == (lhs: MomentsProfile, rhs: MomentsProfile) -> Bool {
         lhs.id == rhs.id
@@ -183,9 +185,11 @@ struct MomentsProfile: Equatable {
         return "\(Int(distanceKm.rounded())) km away"
     }
 
-    /// "Mumbai · 3 km away"
+    /// "Mumbai, Maharashtra, India · 3 km away" when `fullLocation` is set; otherwise city + distance.
     var locationLine: String? {
-        let parts = [city, distanceText].compactMap { $0 }
+        let full = fullLocation?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let place = (full?.isEmpty == false ? full : nil) ?? city
+        let parts = [place, distanceText].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

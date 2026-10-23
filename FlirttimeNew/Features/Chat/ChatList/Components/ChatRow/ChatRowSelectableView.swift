@@ -494,9 +494,10 @@ struct UserNameRow: View {
                 .font(.chatSemiBold(size: 14))
                 .lineLimit(1)
             if verified {
-                SwiftUI.Image(systemName: "checkmark.seal.fill")
-                    .foregroundColor(kBlue)
-                    .font(.caption)
+                SwiftUI.Image(ChatAssets.verified)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14, height: 14)
             }
         }
     }
