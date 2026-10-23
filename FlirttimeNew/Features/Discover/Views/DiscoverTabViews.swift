@@ -156,17 +156,17 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
     }
 }
 
-/// First-grid cell: current user's profile photo fills the card, with Add new + plus.
+/// First-grid cell: same card as other users, with the signed-in user's photo, a light red wash,
+/// a plus in the avatar circle, and “Add new” in place of the name.
 private final class QuickMomentAddCell: UICollectionViewCell {
 
     static let reuseID = "QuickMomentAddCell"
-    private static let plusSize: CGFloat = 32
+    private static let avatarSize: CGFloat = 28
+    private static let ringSize: CGFloat = 36
 
     private let avatar = UIImageView()
-    private let plus = UIImageView(
-        image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .bold))
-    )
-    private let titleLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
+    private let plusCircle = UIView()
+    private let nameLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -181,33 +181,52 @@ private final class QuickMomentAddCell: UICollectionViewCell {
         contentView.addSubview(avatar)
         avatar.pinEdges(to: contentView)
 
+        let redWash = UIView()
+        redWash.backgroundColor = AppColor.Punch.withAlphaComponent(0.28)
+        redWash.isUserInteractionEnabled = false
+        contentView.addSubview(redWash)
+        redWash.pinEdges(to: contentView)
+
         let shade = MomentsGradientView(colors: [.clear, UIColor.black.withAlphaComponent(0.7)],
                                      start: CGPoint(x: 0.5, y: 0.55), end: CGPoint(x: 0.5, y: 1))
         contentView.addSubview(shade)
         shade.pinEdges(to: contentView)
 
+        plusCircle.backgroundColor = AppColor.Punch
+        plusCircle.layer.cornerRadius = Self.avatarSize / 2
+        plusCircle.layer.borderWidth = 2
+        plusCircle.layer.borderColor = UIColor.white.cgColor
+        plusCircle.translatesAutoresizingMaskIntoConstraints = false
+
+        let plus = UIImageView(
+            image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
+        )
         plus.tintColor = .white
         plus.contentMode = .center
-        plus.backgroundColor = AppColor.Punch
-        plus.layer.cornerRadius = Self.plusSize / 2
-        plus.clipsToBounds = true
-        plus.layer.borderWidth = 2
-        plus.layer.borderColor = UIColor.white.cgColor
-        plus.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(plus)
+        plusCircle.addSubview(plus)
+        plus.pinEdges(to: plusCircle)
 
-        titleLabel.text = "Add new"
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(titleLabel)
+        let avatarWrap = UIView()
+        avatarWrap.translatesAutoresizingMaskIntoConstraints = false
+        avatarWrap.addSubview(plusCircle)
+
+        nameLabel.text = "Add new"
+        let row = UIStackView(arrangedSubviews: [avatarWrap, nameLabel])
+        row.spacing = 8
+        row.alignment = .center
+        row.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(row)
 
         NSLayoutConstraint.activate([
-            plus.widthAnchor.constraint(equalToConstant: Self.plusSize),
-            plus.heightAnchor.constraint(equalToConstant: Self.plusSize),
-            plus.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            plus.bottomAnchor.constraint(equalTo: titleLabel.topAnchor, constant: -10),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -12),
-            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
+            avatarWrap.widthAnchor.constraint(equalToConstant: Self.ringSize),
+            avatarWrap.heightAnchor.constraint(equalToConstant: Self.ringSize),
+            plusCircle.widthAnchor.constraint(equalToConstant: Self.avatarSize),
+            plusCircle.heightAnchor.constraint(equalToConstant: Self.avatarSize),
+            plusCircle.centerXAnchor.constraint(equalTo: avatarWrap.centerXAnchor),
+            plusCircle.centerYAnchor.constraint(equalTo: avatarWrap.centerYAnchor),
+            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
+            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
         ])
         isAccessibilityElement = true
         accessibilityTraits = .button
