@@ -396,7 +396,7 @@ struct DiscoveryActionResult: Codable {
         let c = try decoder.container(keyedBy: QMKey.self)
         action = c.string("action")
         targetUserId = c.string("targetUserId", "target_user_id")
-        isMatched = c.bool("isMatched", "is_matched")
+        isMatched = c.bool("isMatched", "is_matched", "is_match")
         matchId = c.string("matchId", "match_id")
         coinsDeducted = c.int("coinsDeducted", "coins_deducted")
         remainingCoins = c.int("remainingCoins", "remaining_coins")

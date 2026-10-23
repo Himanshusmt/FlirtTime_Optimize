@@ -592,7 +592,7 @@ final class AgoraCallService: NSObject {
         }
         do {
             let session = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<AgoraCallSession, Error>) in
-                AgoraCallSignaling.shared.acceptCall(callId: callId) { result in
+                AgoraCallSignaling.shared.acceptCall(callId: callId, type: self.call?.type) { result in
                     cont.resume(with: result)
                 }
             }
@@ -602,6 +602,11 @@ final class AgoraCallService: NSObject {
             await enterActive(merged)
             PendingKillCallStore.clear()
         } catch {
+            if phase == .active, didJoinRtc {
+                AppLogger.killCall("acceptIncoming REST failed after socket join — keep call")
+                PendingKillCallStore.clear()
+                return
+            }
             AppLogger.killCall("acceptIncoming FAILED: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             resetUi()
@@ -617,7 +622,7 @@ final class AgoraCallService: NSObject {
         let rejoinSnapshot = makeRejoinableSnapshotForCurrentGroupCall()
         let id = preferredCallId ?? callId
         if let id, !id.isEmpty {
-            AgoraCallSignaling.shared.declineCall(callId: id)
+            AgoraCallSignaling.shared.declineCall(callId: id, type: call?.type)
             AppLogger.killCall("declineIncoming emit callId=\(id)")
         } else {
             AppLogger.killCall("declineIncoming SKIPPED — no callId")
@@ -642,10 +647,10 @@ final class AgoraCallService: NSObject {
         if let endingCallId, !endingCallId.isEmpty {
             // Call owner → call:end (sabki call band). Members → call:leave.
             if isGroupCall, phase == .active, !isCallOwner {
-                AgoraCallSignaling.shared.leaveCall(callId: endingCallId)
+                AgoraCallSignaling.shared.leaveCall(callId: endingCallId, type: call?.type)
                 AppLogger.killCall("hangUp leaveCall callId=\(endingCallId)")
             } else {
-                AgoraCallSignaling.shared.endCall(callId: endingCallId)
+                AgoraCallSignaling.shared.endCall(callId: endingCallId, type: call?.type)
                 AppLogger.killCall("hangUp endCall callId=\(endingCallId)")
                 // Creator ended — nobody (including us) should see Rejoin for this call.
                 clearRejoinableGroupCall(matchingCallId: endingCallId)
@@ -827,7 +832,7 @@ final class AgoraCallService: NSObject {
 
         do {
             let session = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<AgoraCallSession, Error>) in
-                AgoraCallSignaling.shared.acceptCall(callId: info.callId) { result in
+                AgoraCallSignaling.shared.acceptCall(callId: info.callId, type: info.type) { result in
                     cont.resume(with: result)
                 }
             }
@@ -1148,14 +1153,14 @@ final class AgoraCallService: NSObject {
         }
         if phase == .idle, isOnSystemPhoneCall {
             AppLogger.killCall("seedIncoming busy — on system/cellular call new=\(call.id)")
-            rejectIncomingAsBusy(callId: call.id)
+            rejectIncomingAsBusy(callId: call.id, type: call.type)
             return
         }
         guard phase == .idle || matchesCallId(call.id) else {
             AppLogger.killCall("seedIncoming skip — phase=\(phase) existing=\(callId ?? "nil") new=\(call.id)")
             if !matchesCallId(call.id) {
                 if isOnSystemPhoneCall || phase == .incoming {
-                    rejectIncomingAsBusy(callId: call.id)
+                    rejectIncomingAsBusy(callId: call.id, type: call.type)
                 } else {
                     offerPendingIncoming(call)
                 }
@@ -1338,13 +1343,13 @@ final class AgoraCallService: NSObject {
         }
         if phase == .idle, isOnSystemPhoneCall {
             AppLogger.killCall("presentIncomingInApp busy — on system/cellular call new=\(call.id)")
-            rejectIncomingAsBusy(callId: call.id)
+            rejectIncomingAsBusy(callId: call.id, type: call.type)
             return
         }
         guard phase == .idle || callId == call.id else {
             if !matchesCallId(call.id) {
                 if isOnSystemPhoneCall || phase == .incoming {
-                    rejectIncomingAsBusy(callId: call.id)
+                    rejectIncomingAsBusy(callId: call.id, type: call.type)
                 } else {
                     offerPendingIncoming(call)
                 }
@@ -1539,7 +1544,7 @@ final class AgoraCallService: NSObject {
         case .idle:
             // Seed still in-flight — decline with CallKit's id so caller stops ringing.
             if let id = preferredCallId ?? callId, !id.isEmpty {
-                AgoraCallSignaling.shared.declineCall(callId: id)
+                AgoraCallSignaling.shared.declineCall(callId: id, type: call?.type)
             }
             stopCallLivenessPolling()
             resetUi()
@@ -1576,13 +1581,13 @@ final class AgoraCallService: NSObject {
             // Cellular / FaceTime — still auto-busy.
             if isOnSystemPhoneCall {
                 AppLogger.killCall("handleIncoming busy — on system/cellular call new=\(incoming.id)")
-                rejectIncomingAsBusy(callId: incoming.id)
+                rejectIncomingAsBusy(callId: incoming.id, type: incoming.type)
                 return
             }
 
             // Already on an incoming ring for someone else — can't show two full ring UIs.
             if phase == .incoming {
-                rejectIncomingAsBusy(callId: incoming.id)
+                rejectIncomingAsBusy(callId: incoming.id, type: incoming.type)
                 return
             }
 
@@ -1594,7 +1599,7 @@ final class AgoraCallService: NSObject {
         // On cellular / FaceTime — do not ring Agora; caller sees busy.
         if isOnSystemPhoneCall {
             AppLogger.killCall("handleIncoming busy — on system/cellular call new=\(incoming.id)")
-            rejectIncomingAsBusy(callId: incoming.id)
+            rejectIncomingAsBusy(callId: incoming.id, type: incoming.type)
             return
         }
 
@@ -1621,7 +1626,7 @@ final class AgoraCallService: NSObject {
     }
 
     /// Auto-reject a new incoming call while this device cannot take it (cellular / double-ring).
-    func rejectIncomingAsBusy(callId: String) {
+    func rejectIncomingAsBusy(callId: String, type: AgoraCallType? = nil) {
         guard !callId.isEmpty else { return }
         if pendingIncomingCall?.id == callId {
             pendingIncomingCall = nil
@@ -1631,8 +1636,8 @@ final class AgoraCallService: NSObject {
         AppLogger.killCall(
             "rejectIncomingAsBusy new=\(callId) current=\(self.callId ?? "nil") phase=\(phase) group=\(isGroupCall)"
         )
-        AgoraCallSignaling.shared.notifyBusy(callId: callId)
-        AgoraCallSignaling.shared.declineCall(callId: callId, reason: "busy")
+        AgoraCallSignaling.shared.notifyBusy(callId: callId, type: type)
+        AgoraCallSignaling.shared.declineCall(callId: callId, reason: "busy", type: type)
     }
 
     /// Offer Accept / Decline while already on another OneVibe call (does not busy-reject).
@@ -1654,8 +1659,8 @@ final class AgoraCallService: NSObject {
         }
         // Replace a previous waiting third call — busy-decline the older one.
         if let previous = pendingIncomingCall, previous.id != call.id {
-            AgoraCallSignaling.shared.notifyBusy(callId: previous.id)
-            AgoraCallSignaling.shared.declineCall(callId: previous.id, reason: "busy")
+            AgoraCallSignaling.shared.notifyBusy(callId: previous.id, type: previous.type)
+            AgoraCallSignaling.shared.declineCall(callId: previous.id, reason: "busy", type: previous.type)
         }
         pendingIncomingCall = call
         AppLogger.killCall(
@@ -1675,7 +1680,7 @@ final class AgoraCallService: NSObject {
         guard let pending = pendingIncomingCall else { return }
         pendingIncomingCall = nil
         stopPendingIncomingHaptics()
-        AgoraCallSignaling.shared.declineCall(callId: pending.id, reason: "declined")
+        AgoraCallSignaling.shared.declineCall(callId: pending.id, reason: "declined", type: pending.type)
         AppLogger.killCall("declinePendingIncoming callId=\(pending.id)")
         notifyUI()
     }
@@ -1768,10 +1773,10 @@ final class AgoraCallService: NSObject {
         let endingCallId = callId
         if let endingCallId, !endingCallId.isEmpty {
             if isGroupCall, phase == .active, !isCallOwner {
-                AgoraCallSignaling.shared.leaveCall(callId: endingCallId)
+                AgoraCallSignaling.shared.leaveCall(callId: endingCallId, type: call?.type)
             } else {
                 // Peer on this call should see "Call ended" (supersededBy helps clients map switch).
-                AgoraCallSignaling.shared.endCall(callId: endingCallId, supersededBy: nextCallId)
+                AgoraCallSignaling.shared.endCall(callId: endingCallId, supersededBy: nextCallId, type: call?.type)
                 clearRejoinableGroupCall(matchingCallId: endingCallId)
             }
         }
@@ -1927,7 +1932,7 @@ final class AgoraCallService: NSObject {
     /// Tell the caller our device is showing the incoming ring UI.
     private func emitCalleeRingingIfNeeded(callId: String) {
         guard !callId.isEmpty else { return }
-        AgoraCallSignaling.shared.notifyRinging(callId: callId)
+        AgoraCallSignaling.shared.notifyRinging(callId: callId, type: call?.type)
     }
 
     /// If server payload omits group flags, infer from local conversation cache.
@@ -3444,9 +3449,9 @@ final class AgoraCallService: NSObject {
         let endingCallId = callId
         if let endingCallId, !endingCallId.isEmpty {
             if isGroupCall, phase == .active, !isCallOwner {
-                AgoraCallSignaling.shared.leaveCall(callId: endingCallId)
+                AgoraCallSignaling.shared.leaveCall(callId: endingCallId, type: call?.type)
             } else {
-                AgoraCallSignaling.shared.endCall(callId: endingCallId)
+                AgoraCallSignaling.shared.endCall(callId: endingCallId, type: call?.type)
                 clearRejoinableGroupCall(matchingCallId: endingCallId)
             }
         }
@@ -3939,7 +3944,7 @@ final class AgoraCallService: NSObject {
         guard phase == .active, let callId, !callId.isEmpty, !isRefreshingAgoraToken else { return }
         isRefreshingAgoraToken = true
         AppLogger.debug("AgoraCallService: refreshing Agora token for callId=\(callId)")
-        AgoraCallSignaling.shared.acceptCall(callId: callId) { [weak self] result in
+        AgoraCallSignaling.shared.acceptCall(callId: callId, type: call?.type) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
                 self.isRefreshingAgoraToken = false

@@ -62,11 +62,11 @@
                                             <action selector="applyFilterButtonTapped:" destination="6tJ-vk-WP3" eventType="touchUpInside" id="x7o-yr-Odf"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xSr-Bt-n01" userLabel="Search Button">
-                                        <rect key="frame" x="305" y="6" width="40" height="40"/>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xSr-Bt-n01" userLabel="Search Button">
+                                        <rect key="frame" x="345" y="6" width="0.0" height="40"/>
                                         <accessibility key="accessibilityConfiguration" label="Search people"/>
                                         <constraints>
-                                            <constraint firstAttribute="width" constant="40" id="xSr-Bt-n02"/>
+                                            <constraint firstAttribute="width" constant="0.0" id="xSr-Bt-n02"/>
                                             <constraint firstAttribute="height" constant="40" id="xSr-Bt-n03"/>
                                         </constraints>
                                         <state key="normal" image="ExploreSearch"/>

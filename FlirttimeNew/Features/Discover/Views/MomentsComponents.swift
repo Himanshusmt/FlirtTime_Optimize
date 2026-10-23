@@ -243,3 +243,74 @@ final class MomentsPreviewView: UIView {
     }
 }
 
+// MARK: - Profile action buttons
+
+/// Circular Like / Super Like / Not interested controls used on Other User Profile, Card Detail and Discover.
+enum MomentsProfileActionButton {
+
+    enum Kind {
+        case notInterested
+        case superLike
+        case like
+
+        var title: String {
+            switch self {
+            case .notInterested: return "Not interested"
+            case .superLike: return "Super like"
+            case .like: return "Like"
+            }
+        }
+    }
+
+    static let imageName = "SuperLikeAction"
+
+    static func make(kind: Kind, size: CGFloat = 60, action: @escaping () -> Void) -> UIButton {
+        let button = UIButton(type: .custom)
+        button.layer.cornerRadius = size / 2
+        button.accessibilityLabel = kind.title
+        switch kind {
+        case .notInterested:
+            button.backgroundColor = AppColor.AppWhite
+            button.tintColor = AppColor.DoveGray
+            button.setImage(UIImage(systemName: "xmark",
+                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
+            applyShadow(to: button, color: UIColor.black, opacity: 0.15, radius: 10, offsetY: 4)
+        case .superLike:
+            applyIcon(to: button)
+            applyShadow(to: button, color: AppColor.Punch, opacity: 0.4, radius: 12, offsetY: 6)
+        case .like:
+            button.backgroundColor = AppColor.Punch
+            button.tintColor = .white
+            button.setImage(UIImage(systemName: "heart.fill",
+                                    withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .bold)), for: .normal)
+            applyShadow(to: button, color: AppColor.Punch, opacity: 0.4, radius: 12, offsetY: 6)
+        }
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: size),
+            button.heightAnchor.constraint(equalToConstant: size)
+        ])
+        return button
+    }
+
+    static func applyIcon(to button: UIButton) {
+        let icon = UIImage(named: imageName)?.withRenderingMode(.alwaysOriginal)
+        button.backgroundColor = .clear
+        button.tintColor = nil
+        button.adjustsImageWhenHighlighted = true
+        button.setImage(icon, for: .normal)
+        button.imageView?.contentMode = .scaleAspectFit
+        button.contentHorizontalAlignment = .fill
+        button.contentVerticalAlignment = .fill
+        button.imageEdgeInsets = .zero
+        button.clipsToBounds = false
+    }
+
+    private static func applyShadow(to button: UIButton, color: UIColor, opacity: Float, radius: CGFloat, offsetY: CGFloat) {
+        button.layer.shadowColor = color.cgColor
+        button.layer.shadowOpacity = opacity
+        button.layer.shadowRadius = radius
+        button.layer.shadowOffset = CGSize(width: 0, height: offsetY)
+    }
+}
+

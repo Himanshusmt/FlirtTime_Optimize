@@ -26,6 +26,7 @@ final class MomentsConnectionViewController: UIViewController {
     }
 
     var onStartConversation: ((MomentsProfile) -> Void)?
+    var onDismiss: (() -> Void)?
 
     private let mode: Mode
     private let reaction: MomentsReaction?
@@ -211,9 +212,13 @@ final class MomentsConnectionViewController: UIViewController {
                 guard let self else { return }
                 self.dismiss(animated: true) { self.onStartConversation?(profile) }
             })
-            views.append(button("Keep Exploring", filled: false) { [weak self] in self?.dismiss(animated: true) })
+            views.append(button("Keep Exploring", filled: false) { [weak self] in
+                self?.dismiss(animated: true) { self?.onDismiss?() }
+            })
         } else {
-            views.append(button("Keep Exploring", filled: true) { [weak self] in self?.dismiss(animated: true) })
+            views.append(button("Keep Exploring", filled: true) { [weak self] in
+                self?.dismiss(animated: true) { self?.onDismiss?() }
+            })
         }
         return views
     }

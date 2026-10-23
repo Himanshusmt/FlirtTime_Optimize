@@ -14,7 +14,7 @@ struct ApiRequest {
 }
 
 /// Chat REST paths, relative to `ChatConfig.baseURL` (`https://flirttimeapi.walit.in`).
-/// FlirtTime chat lives under `/api/v1/chats` and `/api/v1/calls/video`.
+/// FlirtTime chat lives under `/api/v1/chats`, unified `/api/v1/calls`, and `/api/v1/calls/video`.
 enum EndPoint: CustomStringConvertible {
     // Users
     case getUserById(String)
@@ -69,12 +69,18 @@ enum EndPoint: CustomStringConvertible {
     case mediaUploadAbort(String)
     case chatPresignedURL
 
-    // Video calls — `/api/v1/calls/video`
+    // Calls — unified `/api/v1/calls` (audio + type) and video `/api/v1/calls/video`
     case getCallHistory
     case deleteCallHistoryItem(String)
     case deleteAllCallHistory
     case startAgoraCall
     case getAgoraCall(String)
+    case startUnifiedCall
+    case acceptUnifiedCall(String)
+    case declineUnifiedCall(String)
+    case endUnifiedCall(String)
+    case leaveUnifiedCall(String)
+    case getUnifiedCall(String)
     case initiateVideoCall
     case acceptVideoCall(String)
     case rejectVideoCall(String)
@@ -137,11 +143,15 @@ enum EndPoint: CustomStringConvertible {
         case .mediaUploadAbort(let id): return "api/v1/media/uploads/\(id)/abort"
         case .chatPresignedURL: return "api/v1/chats/media/generate-presigned-url"
 
-        case .getCallHistory: return "api/v1/calls"
+        case .getCallHistory, .startUnifiedCall, .startAgoraCall: return "api/v1/calls"
         case .deleteCallHistoryItem(let id): return "api/v1/calls/\(id)"
         case .deleteAllCallHistory: return "api/v1/calls"
-        case .startAgoraCall, .initiateVideoCall: return "api/v1/calls/video/initiate"
-        case .getAgoraCall: return "api/v1/calls/video/active"
+        case .acceptUnifiedCall(let id): return "api/v1/calls/\(id)/accept"
+        case .declineUnifiedCall(let id): return "api/v1/calls/\(id)/decline"
+        case .endUnifiedCall(let id): return "api/v1/calls/\(id)/end"
+        case .leaveUnifiedCall(let id): return "api/v1/calls/\(id)/leave"
+        case .getUnifiedCall(let id), .getAgoraCall(let id): return "api/v1/calls/\(id)"
+        case .initiateVideoCall: return "api/v1/calls/video/initiate"
         case .acceptVideoCall(let id): return "api/v1/calls/video/\(id)/accept"
         case .rejectVideoCall(let id): return "api/v1/calls/video/\(id)/reject"
         case .endVideoCall(let id): return "api/v1/calls/video/\(id)/end"

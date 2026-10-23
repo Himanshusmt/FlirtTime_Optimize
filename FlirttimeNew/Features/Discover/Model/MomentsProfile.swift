@@ -165,6 +165,8 @@ struct MomentsProfile: Equatable {
     var momentsCount: Int = 0
     /// Backend user id (UUID) for profiles from `discovery/people`; `id` is a local id derived from it.
     var remoteUserId: String? = nil
+    /// "More about me" answers from GET `users/:userId/profile`.
+    var aboutAnswers: [OtherUserAboutItem] = []
 
     static func == (lhs: MomentsProfile, rhs: MomentsProfile) -> Bool {
         lhs.id == rhs.id

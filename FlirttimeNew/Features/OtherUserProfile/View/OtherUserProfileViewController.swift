@@ -371,17 +371,25 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         viewModel.$aUserActionModel.receive(on: DispatchQueue.main).sink { [weak self] model in
             guard let self, let model else { return }
             if model.status == true {
-                self.aCustomToastView.show(message: model.message ?? "")
                 let action = self.viewModel.completedDiscoveryAction
                 if action == "nope" {
+                    self.aCustomToastView.show(message: model.message ?? "")
                     self.navigationController?.popViewController(animated: true)
                 } else if let action {
                     self.details?.myAction = action
                     self.seededMyAction = action
-                    if model.data?.is_match == true {
+                    let didMatch = model.data?.is_match == true
+                    if didMatch {
                         self.details?.isMatched = true
                     }
                     self.configureActionBar()
+                    if didMatch {
+                        self.presentMatchScreen()
+                    } else {
+                        self.aCustomToastView.show(message: model.message ?? "")
+                    }
+                } else {
+                    self.aCustomToastView.show(message: model.message ?? "")
                 }
             } else if UserDataManager.shared.isUserSubscriptionDone == true {
                 self.aDeleteCustomPopUp.show(message: model.message ?? "", button1Text: Constants.AlertButtons.ok, button2Text: "", hideButton2: true)
@@ -589,9 +597,10 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         let action = details?.myAction?.lowercased()
         let hasSuperLiked = action == "super_like"
         let hasLiked = action == "like" || hasSuperLiked
+        MomentsProfileActionButton.applyIcon(to: superLikeButton)
         dislikeButton.isHidden = false
-        likeButton.isHidden = isMatched || hasLiked
-        superLikeButton.isHidden = isMatched || !hasLiked || hasSuperLiked
+        likeButton.isHidden = hasLiked
+        superLikeButton.isHidden = hasSuperLiked
         chatButton.isHidden = !isMatched
     }
 
@@ -672,6 +681,67 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                    avatarPath: avatarURL,
                                    isVerified: details.isVerified,
                                    from: self)
+    }
+
+    /// Same "It's a Match" overlay used after a Discover swipe.
+    private func presentMatchScreen() {
+        guard let profile = momentsProfile() else {
+            aCustomToastView.show(message: "It's a match")
+            return
+        }
+        MomentsHaptics.connected()
+        MomentsAnalytics.track(.connectionCreated, profileID: profile.id)
+        let connectionVC = MomentsConnectionViewController(mode: .matched(profile))
+        connectionVC.onStartConversation = { [weak self] _ in
+            guard let self else { return }
+            if FreeTierLimitsStore.shared.canStartChat(isMatched: true) {
+                self.openChat()
+            } else {
+                self.showSubscriptionPopUp(subscriptionPopUpType: .chat)
+            }
+        }
+        present(connectionVC, animated: true)
+    }
+
+    /// Profile payload for the match overlay: photos, name, and shared interests.
+    private func momentsProfile() -> MomentsProfile? {
+        guard let details else { return nil }
+        let interests: [MomentsInterest]
+        if !details.interests.isEmpty {
+            interests = details.interests
+        } else {
+            interests = MomentsInterestCatalog.interests(for: details.interestIDs)
+        }
+        let shared: [MomentsInterest]
+        if let listed = details.sharedInterests {
+            shared = listed
+        } else {
+            let mine = Set((viewModel.myInterests ?? []).map(\.id))
+            shared = interests.filter { mine.contains($0.id) }
+        }
+        var photos = details.photos.compactMap(\.image).filter { !$0.isEmpty }
+        if photos.isEmpty, let avatar = details.avatar, !avatar.isEmpty {
+            photos = [avatar]
+        }
+        var profile = MomentsProfile(id: details.userID,
+                                  displayName: details.name,
+                                  age: details.age,
+                                  isVerified: details.isVerified,
+                                  gender: nil,
+                                  city: details.location,
+                                  distanceKm: nil,
+                                  isOnline: details.isOnline,
+                                  datingIntent: nil,
+                                  photos: photos,
+                                  about: details.about ?? "",
+                                  interests: interests,
+                                  sharedInterests: shared,
+                                  reasons: [],
+                                  voiceIntro: viewModel.voiceIntro,
+                                  moments: [],
+                                  vibeScore: nil)
+        profile.remoteUserId = details.remoteUserID ?? remoteUserID
+        return profile
     }
 
     @discardableResult

@@ -31,6 +31,8 @@ final class CardDetailViewController: BaseViewController {
     private let bottomBar = UIView()
     private var waveform: VoiceWaveformView?
     private var playButton = UIButton(type: .custom)
+    private var actionButtons: [UIButton] = []
+    private var isSendingAction = false
 
     init(profile: MomentsProfile) {
         self.profile = profile
@@ -84,7 +86,10 @@ final class CardDetailViewController: BaseViewController {
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.showsVerticalScrollIndicator = false
         scrollView.alwaysBounceVertical = true
-        [scrollView, bottomBar].forEach {
+        let fade = MomentsGradientView(colors: [.clear, AppColor.AppWhite],
+                                       start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
+        fade.isUserInteractionEnabled = false
+        [scrollView, fade, bottomBar].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -95,7 +100,12 @@ final class CardDetailViewController: BaseViewController {
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            fade.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            fade.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            fade.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            fade.heightAnchor.constraint(equalToConstant: 120),
 
             bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -105,6 +115,8 @@ final class CardDetailViewController: BaseViewController {
             topButtons.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             topButtons.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
         ])
+        scrollView.contentInset.bottom = 96
+        scrollView.verticalScrollIndicatorInsets.bottom = 96
         buildContent()
     }
 
@@ -319,7 +331,79 @@ final class CardDetailViewController: BaseViewController {
             chips.onTap = { [weak self] interest in self?.onInterestTapped?(interest) }
             stack.addArrangedSubview(section("Interests", content: chips))
         }
+        if let aboutMe = makeMoreAboutMeSection() {
+            stack.addArrangedSubview(aboutMe)
+        }
         return sheet
+    }
+
+    private func makeMoreAboutMeSection() -> UIView? {
+        let rows = OtherUserProfileDetails.moreAboutMeRows(from: profile.aboutAnswers)
+        guard !rows.isEmpty else { return nil }
+        let list = UIStackView()
+        list.axis = .vertical
+        list.spacing = 0
+        for (index, info) in rows.enumerated() {
+            list.addArrangedSubview(makeAboutRow(info, isLast: index == rows.count - 1))
+        }
+        let card = UIView()
+        card.backgroundColor = AppColor.AthensGray
+        card.layer.cornerRadius = 18
+        card.layer.cornerCurve = .continuous
+        card.addSubview(list)
+        list.pinEdges(to: card)
+        return section("More about me", content: card)
+    }
+
+    private func makeAboutRow(_ info: OtherUserBasicInfo, isLast: Bool) -> UIView {
+        let icon = UIImageView()
+        icon.backgroundColor = AppColor.AppWhite
+        icon.layer.cornerRadius = 16
+        icon.clipsToBounds = true
+        if let path = info.iconPath, !path.isEmpty {
+            icon.contentMode = .scaleAspectFit
+            icon.loadImage(path: path)
+        } else {
+            icon.contentMode = .center
+            icon.tintColor = AppColor.Punch
+            icon.image = UIImage(systemName: "sparkles",
+                                 withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold))
+        }
+
+        let title = UILabel.vibeLabel(.medium, 14, style: .subheadline, color: AppColor.DoveGray)
+        title.text = info.title
+        let value = UILabel.vibeLabel(.medium, 14, style: .subheadline, color: AppColor.MineShaft)
+        value.text = info.value
+        value.textAlignment = .right
+        value.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let text = UIStackView(arrangedSubviews: [title, value])
+        text.spacing = 8
+
+        let row = UIStackView(arrangedSubviews: [icon, text])
+        row.spacing = 12
+        row.alignment = .center
+        let wrapper = UIView()
+        wrapper.addSubview(row)
+        row.pinEdges(to: wrapper, insets: UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 14))
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: 32),
+            icon.heightAnchor.constraint(equalToConstant: 32)
+        ])
+        if !isLast {
+            let line = UIView()
+            line.backgroundColor = AppColor.Iron
+            line.translatesAutoresizingMaskIntoConstraints = false
+            wrapper.addSubview(line)
+            NSLayoutConstraint.activate([
+                line.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
+                line.leadingAnchor.constraint(equalTo: text.leadingAnchor),
+                line.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: -14),
+                line.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor)
+            ])
+        }
+        wrapper.isAccessibilityElement = true
+        wrapper.accessibilityLabel = "\(info.title): \(info.value)"
+        return wrapper
     }
 
     private func makeWhySection() -> UIView {
@@ -428,29 +512,30 @@ final class CardDetailViewController: BaseViewController {
     }
 
     private func setBottomBar() {
-        bottomBar.backgroundColor = AppColor.AppWhite
-        bottomBar.layer.shadowColor = UIColor.black.cgColor
-        bottomBar.layer.shadowOpacity = 0.06
-        bottomBar.layer.shadowRadius = 10
-        bottomBar.layer.shadowOffset = CGSize(width: 0, height: -3)
+        bottomBar.backgroundColor = .clear
+        bottomBar.isOpaque = false
 
-        var notMyVibe = UIButton.Configuration.filled()
-        notMyVibe.cornerStyle = .capsule
-        notMyVibe.baseForegroundColor = AppColor.Punch
-        notMyVibe.baseBackgroundColor = AppColor.Lavenderblush
-        notMyVibe.attributedTitle = AttributedString("Not interested", attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 16)]))
-        let notMyVibeButton = UIButton(configuration: notMyVibe)
-        notMyVibeButton.addAction(UIAction { [weak self] _ in self?.onAction?(.notMyVibe, nil, nil) }, for: .touchUpInside)
+        let notInterested = MomentsProfileActionButton.make(kind: .notInterested) { [weak self] in
+            self?.sendAction(.notMyVibe)
+        }
+        let superLike = MomentsProfileActionButton.make(kind: .superLike) { [weak self] in
+            self?.sendAction(.superVibe)
+        }
+        let like = MomentsProfileActionButton.make(kind: .like) { [weak self] in
+            self?.sendAction(.interested)
+        }
+        actionButtons = [notInterested, superLike, like]
 
-        let row = UIStackView(arrangedSubviews: [notMyVibeButton])
+        let row = UIStackView(arrangedSubviews: [notInterested, superLike, like])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 18
         row.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(row)
         NSLayoutConstraint.activate([
-            row.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
-            row.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 20),
-            row.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -20),
-            row.bottomAnchor.constraint(equalTo: bottomBar.safeAreaLayoutGuide.bottomAnchor, constant: -8),
-            row.heightAnchor.constraint(greaterThanOrEqualToConstant: 52)
+            row.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 8),
+            row.centerXAnchor.constraint(equalTo: bottomBar.centerXAnchor),
+            row.bottomAnchor.constraint(equalTo: bottomBar.safeAreaLayoutGuide.bottomAnchor, constant: -10)
         ])
     }
 
@@ -468,8 +553,131 @@ final class CardDetailViewController: BaseViewController {
         MomentsHaptics.threshold()
         let delay = UIAccessibility.isReduceMotionEnabled ? 0.1 : 0.45
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            self?.onAction?(.interested, nil, reaction)
+            self?.sendAction(.interested, reaction: reaction)
         }
+    }
+
+    private func sendAction(_ action: MomentsAction, reaction: MomentsReaction? = nil) {
+        guard !isSendingAction else { return }
+        if let blocked = FreeTierLimitsStore.shared.blockReason(for: action) {
+            showQuotaPopup(blocked)
+            return
+        }
+        switch action {
+        case .superVibe: MomentsHaptics.superVibe()
+        case .interested: MomentsHaptics.threshold()
+        default: break
+        }
+        if let onAction {
+            isSendingAction = true
+            actionButtons.forEach { $0.isEnabled = false }
+            onAction(action, nil, reaction)
+            return
+        }
+        sendActionLocally(action, reaction: reaction)
+    }
+
+    /// Used when this screen is opened outside Discover (e.g. Quick Moments → profile).
+    private func sendActionLocally(_ action: MomentsAction, reaction: MomentsReaction?) {
+        guard let targetUserID = profile.remoteUserId, !targetUserID.isEmpty else {
+            aCustomToastView.show(message: "This profile can't be updated right now")
+            return
+        }
+        isSendingAction = true
+        actionButtons.forEach { $0.isEnabled = false }
+        aActivityIndicator.show()
+        sessionManager.discoveryAction(targetUserId: targetUserID, action: action.apiAction)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] result in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                if let coins = result.remainingCoins {
+                    CoinWallet.shared.update(coins)
+                }
+                if action == .interested || action == .superVibe {
+                    FreeTierLimitsStore.shared.refresh()
+                }
+                if result.isMatched == true {
+                    self.presentMatchScreen(reaction: reaction)
+                } else {
+                    self.aCustomToastView.show(message: Self.successMessage(for: action))
+                    self.navigationController?.popViewController(animated: true)
+                }
+            }, onFailure: { [weak self] error in
+                guard let self else { return }
+                self.aActivityIndicator.hide()
+                self.isSendingAction = false
+                self.actionButtons.forEach { $0.isEnabled = true }
+                let mapped = Self.actionError(for: action, error: error)
+                if mapped == .likeLimitReached || mapped == .insufficientCoins || mapped == .membershipRequired {
+                    self.showQuotaPopup(mapped)
+                } else {
+                    self.aCustomToastView.show(message: parseError(error) ?? "Something went wrong. Please try again.")
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func presentMatchScreen(reaction: MomentsReaction?) {
+        MomentsHaptics.connected()
+        MomentsAnalytics.track(.connectionCreated, profileID: profile.id)
+        let connectionVC = MomentsConnectionViewController(mode: .matched(profile), reaction: reaction)
+        connectionVC.onStartConversation = { [weak self] matched in
+            self?.openChat(with: matched)
+        }
+        connectionVC.onDismiss = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        }
+        present(connectionVC, animated: true)
+    }
+
+    private func openChat(with profile: MomentsProfile) {
+        guard let userID = profile.remoteUserId, !userID.isEmpty else {
+            aCustomToastView.show(message: "Unable to start chat")
+            return
+        }
+        if !FreeTierLimitsStore.shared.canStartChat(isMatched: true) {
+            showSubscriptionPopUp(subscriptionPopUpType: .chat)
+            return
+        }
+        let avatarURL = profile.photos.first.flatMap { path -> String? in
+            guard !path.isEmpty else { return nil }
+            return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
+        }
+        ChatProfileRouter.openChat(userID: userID,
+                                   name: profile.displayName,
+                                   avatarPath: avatarURL,
+                                   isVerified: profile.isVerified,
+                                   from: self)
+    }
+
+    private func showQuotaPopup(_ error: MomentsActionError) {
+        switch error {
+        case .likeLimitReached:
+            showSubscriptionPopUp(subscriptionPopUpType: .unlimitedSwipes)
+        case .insufficientCoins, .membershipRequired:
+            showSubscriptionPopUp(subscriptionPopUpType: .superLike)
+        default:
+            break
+        }
+    }
+
+    private static func successMessage(for action: MomentsAction) -> String {
+        switch action {
+        case .interested: return "💗 Like sent"
+        case .superVibe: return "✨ Super Like sent"
+        case .notMyVibe, .nope: return "Not interested"
+        }
+    }
+
+    private static func actionError(for action: MomentsAction, error: Error) -> MomentsActionError {
+        if FreeTierErrorCode.isDailyLikeLimit(error) { return .likeLimitReached }
+        if FreeTierErrorCode.matches(error, FreeTierErrorCode.insufficientCoins) { return .insufficientCoins }
+        let statusCode = (error as? APIHTTPError)?.statusCode ?? error.statusCode
+        if action == .interested, statusCode == 429 { return .likeLimitReached }
+        if action == .superVibe, statusCode == 402 || statusCode == 403 { return .insufficientCoins }
+        if statusCode == 502 || statusCode == 503 || statusCode == 504 { return .serverBusy }
+        return .network
     }
 
     private func toggleVoice() {

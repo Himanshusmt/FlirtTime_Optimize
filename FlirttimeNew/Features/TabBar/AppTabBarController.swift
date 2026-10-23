@@ -8,6 +8,16 @@
 import UIKit
 
 class AppTabBarController: UITabBarController, Instantiable {
+
+    /// Tab order matches `Dashboard.storyboard`.
+    private enum AppTab: Int {
+        case moments = 0
+        case explore = 1
+        case discover = 2
+        case messages = 3
+        case profile = 4
+    }
+
     static let buttonD = UIButton.init(type: .custom)
 
     static var buttonBottomConstraint: NSLayoutConstraint?
@@ -28,7 +38,7 @@ class AppTabBarController: UITabBarController, Instantiable {
         self.tabBar.tintColor = AppColor.Punch
         UITabBarItem.appearance().setTitleTextAttributes([NSAttributedString.Key.foregroundColor: AppColor.Punch], for: .normal)
         UITabBarItem.appearance().setTitleTextAttributes([NSAttributedString.Key.font: UIFont.fredoka(.regular, size: 13)], for: .selected)
-        self.selectedIndex = 2
+        self.selectedIndex = AppTab.moments.rawValue
         self.delegate = self
         setButton()
         buttonAction()
@@ -92,12 +102,12 @@ class AppTabBarController: UITabBarController, Instantiable {
     }
 
     @objc func customButtonTapped() {
-        self.selectedIndex = 2
+        self.selectedIndex = AppTab.discover.rawValue
     }
 
     func setToHome() {
         DispatchQueue.main.async {
-            self.selectedIndex = 2
+            self.selectedIndex = AppTab.discover.rawValue
         }
     }
 
@@ -111,7 +121,7 @@ class AppTabBarController: UITabBarController, Instantiable {
     }
 
     @objc func setMyButton() {
-        self.selectedIndex = 2
+        self.selectedIndex = AppTab.discover.rawValue
     }
 }
 

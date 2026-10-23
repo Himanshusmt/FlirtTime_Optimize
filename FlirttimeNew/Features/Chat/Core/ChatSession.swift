@@ -1654,24 +1654,83 @@ final class SessionManager {
         return nil
     }
 
-    /// FlirtTime — POST /api/v1/calls/video/initiate `{ calleeId, conversationId }`
+    /// Routes by media type: audio → `POST /api/v1/calls`, video → `POST /api/v1/calls/video/initiate`.
     func startAgoraCall(conversationId: String, type: String, calleeId: String? = nil) -> Single<[String: Any]> {
-        AppLogger.debug("startAgoraCall type=\(type) conversationId=\(conversationId)")
+        let normalized = type.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        AppLogger.debug("startAgoraCall type=\(normalized) conversationId=\(conversationId)")
+        if normalized == "audio" || normalized == "voice" {
+            return startUnifiedCall(conversationId: conversationId, type: "audio", calleeId: calleeId)
+        }
         return initiateVideoCall(calleeId: calleeId ?? "", conversationId: conversationId)
     }
 
-    /// FlirtTime — GET /api/v1/calls/video/active
+    /// GET `/api/v1/calls/{id}` with video-active fallback.
     func fetchAgoraCall(callId: String) -> Single<[String: Any]> {
-        getActiveVideoCall()
-            .map { dict in
-                let id = (dict["id"] as? String) ?? (dict["callId"] as? String) ?? ""
-                if id.isEmpty || id == callId { return dict }
-                if let call = dict["call"] as? [String: Any] {
-                    let nestedId = (call["id"] as? String) ?? (call["callId"] as? String) ?? ""
-                    if nestedId == callId { return dict }
+        getUnifiedCall(callId: callId)
+            .catch { error in
+                AppLogger.debug("ChatAPI: GET /api/v1/calls/\(callId) failed (\(error.localizedDescription)) — fallback video/active")
+                return self.getActiveVideoCall().map { dict in
+                    let id = (dict["id"] as? String) ?? (dict["callId"] as? String) ?? ""
+                    if id.isEmpty || id == callId { return dict }
+                    if let call = dict["call"] as? [String: Any] {
+                        let nestedId = (call["id"] as? String) ?? (call["callId"] as? String) ?? ""
+                        if nestedId == callId { return dict }
+                    }
+                    return dict
                 }
-                return dict
             }
+    }
+
+    /// POST `/api/v1/calls` `{ conversationId, type }` — voice uses `type=audio`.
+    func startUnifiedCall(conversationId: String, type: String, calleeId: String? = nil) -> Single<[String: Any]> {
+        var params: [String: Any] = [
+            "conversationId": conversationId,
+            "type": type
+        ]
+        if let calleeId {
+            let trimmed = calleeId.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                params["calleeId"] = trimmed
+            }
+        }
+        let apiRequest = ApiRequest(
+            method: .post,
+            endPoint: .startUnifiedCall,
+            parameters: params,
+            encoding: JSONEncoding.default
+        )
+        AppLogger.debug("ChatAPI: POST /api/v1/calls conversationId=\(conversationId) type=\(type)")
+        return unwrapJSON(apiRequest)
+    }
+
+    func acceptUnifiedCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .acceptUnifiedCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/\(callId)/accept")
+        return unwrapJSON(apiRequest)
+    }
+
+    func declineUnifiedCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .declineUnifiedCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/\(callId)/decline")
+        return unwrapJSON(apiRequest)
+    }
+
+    func endUnifiedCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .endUnifiedCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/\(callId)/end")
+        return unwrapJSON(apiRequest)
+    }
+
+    func leaveUnifiedCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .post, endPoint: .leaveUnifiedCall(callId))
+        AppLogger.debug("ChatAPI: POST /api/v1/calls/\(callId)/leave")
+        return unwrapJSON(apiRequest)
+    }
+
+    func getUnifiedCall(callId: String) -> Single<[String: Any]> {
+        let apiRequest = ApiRequest(method: .get, endPoint: .getUnifiedCall(callId))
+        AppLogger.debug("ChatAPI: GET /api/v1/calls/\(callId)")
+        return unwrapJSON(apiRequest)
     }
 
     func initiateVideoCall(calleeId: String, conversationId: String) -> Single<[String: Any]> {
@@ -1720,7 +1779,13 @@ final class SessionManager {
                 return [:]
             }
             if let dataObj = json["data"] as? [String: Any] {
+                if let session = dataObj["session"] as? [String: Any] {
+                    return session
+                }
                 return dataObj
+            }
+            if let session = json["session"] as? [String: Any] {
+                return session
             }
             return json
         }

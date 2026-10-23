@@ -7,6 +7,7 @@
 
 import Foundation
 import Swinject
+import RxSwift
 
 final class AgoraCallSignaling {
 
@@ -15,6 +16,8 @@ final class AgoraCallSignaling {
     private let timeoutSeconds: TimeInterval = 18
     private let connectTimeoutSeconds: TimeInterval = 5
     private var listenerIds: [UUID] = []
+    /// callId → audio/video so decline/end/leave hit the matching REST + socket family.
+    private var callTypes: [String: AgoraCallType] = [:]
 
     private init() {}
 
@@ -29,7 +32,7 @@ final class AgoraCallSignaling {
         ChatSocketManager.shared.ensureConnecting()
     }
 
-    /// FlirtTime REST `POST /api/v1/calls/video/initiate`. Socket signaling comes later.
+    /// Audio: `POST /api/v1/calls` + `call:create`. Video: existing `/calls/video/initiate`.
     func startCall(
         conversationId: String,
         type: AgoraCallType,
@@ -45,19 +48,25 @@ final class AgoraCallSignaling {
         completion: @escaping (Result<AgoraCallSession, Error>) -> Void
     ) {
         let requestId = UUID().uuidString
-        waitForAck(event: AgoraCallSocketEvents.createAck, requestId: requestId, completion: completion)
+        waitForAck(event: AgoraCallSocketEvents.createAckEvent(for: type), requestId: requestId) { [weak self] result in
+            if case .success(let session) = result {
+                self?.remember(type: session.call.type, callId: session.call.id)
+            }
+            completion(result)
+        }
         let payload: [String: Any] = [
             "conversationId": conversationId,
             "type": type.rawValue,
             "requestId": requestId
         ]
-        AppLogger.debug("AgoraCallSignaling: emit call:create conversationId=\(conversationId) type=\(type.rawValue)")
-        ChatSocketManager.shared.emitMessage(AgoraCallSocketEvents.create, withData: [payload])
+        let event = AgoraCallSocketEvents.createEvent(for: type)
+        AppLogger.debug("AgoraCallSignaling: emit \(event) conversationId=\(conversationId) type=\(type.rawValue)")
+        ChatSocketManager.shared.emitMessage(event, withData: [payload])
     }
 
     private func startCallViaREST(
         conversationId: String,
-        type _: AgoraCallType,
+        type: AgoraCallType,
         calleeId: String?,
         completion: @escaping (Result<AgoraCallSession, Error>) -> Void
     ) {
@@ -69,36 +78,62 @@ final class AgoraCallSignaling {
         }
 
         let peerId = (calleeId ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !peerId.isEmpty else {
-            DispatchQueue.main.async {
-                completion(.failure(AgoraCallError.failed("Unable to start call (missing callee)")))
+        let request: Single<[String: Any]>
+        let apiLabel: String
+        if type == .audio {
+            request = sessionManager.startUnifiedCall(
+                conversationId: conversationId,
+                type: AgoraCallType.audio.rawValue,
+                calleeId: peerId.isEmpty ? nil : peerId
+            )
+            apiLabel = "POST /calls"
+        } else {
+            guard !peerId.isEmpty else {
+                DispatchQueue.main.async {
+                    completion(.failure(AgoraCallError.failed("Unable to start call (missing callee)")))
+                }
+                return
             }
-            return
+            request = sessionManager.initiateVideoCall(calleeId: peerId, conversationId: conversationId)
+            apiLabel = "POST /calls/video/initiate"
         }
 
-        _ = sessionManager.initiateVideoCall(calleeId: peerId, conversationId: conversationId)
-            .subscribe(onSuccess: { dict in
+        _ = request
+            .subscribe(onSuccess: { [weak self] dict in
                 if let session = Self.parseJoinSession(from: dict) {
+                    self?.remember(type: type, callId: session.call.id)
                     DispatchQueue.main.async { completion(.success(session)) }
+                } else if type == .audio, let self {
+                    AppLogger.debug("AgoraCallSignaling: audio REST payload unparsed — fallback call:create")
+                    self.startCallViaSocket(conversationId: conversationId, type: type, completion: completion)
                 } else {
                     DispatchQueue.main.async {
                         completion(.failure(AgoraCallError.failed("Invalid REST call session payload")))
                     }
                 }
-            }, onFailure: { error in
+            }, onFailure: { [weak self] error in
+                let message = error.localizedDescription
+                CallInternationalDiagnostics.noteAPI(event: apiLabel, success: false, detail: message)
+                if AgoraCallError.isBusyMessage(message) {
+                    DispatchQueue.main.async { completion(.failure(AgoraCallError.busy)) }
+                    return
+                }
+                if type == .audio, let self {
+                    AppLogger.debug("AgoraCallSignaling: audio REST start failed — fallback call:create")
+                    self.startCallViaSocket(conversationId: conversationId, type: type, completion: completion)
+                    return
+                }
                 DispatchQueue.main.async {
-                    let message = error.localizedDescription
-                    CallInternationalDiagnostics.noteAPI(event: "POST /calls/video/initiate", success: false, detail: message)
-                    if AgoraCallError.isBusyMessage(message) {
-                        completion(.failure(AgoraCallError.busy))
-                    } else {
-                        completion(.failure(AgoraCallError.failed(message)))
-                    }
+                    completion(.failure(AgoraCallError.failed(message)))
                 }
             })
     }
 
-    func acceptCall(callId: String, completion: @escaping (Result<AgoraCallSession, Error>) -> Void) {
+    func acceptCall(
+        callId: String,
+        type: AgoraCallType? = nil,
+        completion: @escaping (Result<AgoraCallSession, Error>) -> Void
+    ) {
         guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else {
             DispatchQueue.main.async {
                 completion(.failure(AgoraCallError.failed("Unable to accept call (no session manager)")))
@@ -106,9 +141,25 @@ final class AgoraCallSignaling {
             return
         }
 
-        _ = sessionManager.acceptVideoCall(callId: callId)
-            .subscribe(onSuccess: { dict in
+        let resolved = resolvedType(callId: callId, preferred: type)
+        remember(type: resolved, callId: callId)
+
+        if resolved == .audio {
+            emitCallControl(
+                event: AgoraCallSocketEvents.audioAccept,
+                callId: callId,
+                attempt: 1
+            )
+        }
+
+        let request = resolved == .audio
+            ? sessionManager.acceptUnifiedCall(callId: callId)
+            : sessionManager.acceptVideoCall(callId: callId)
+
+        _ = request
+            .subscribe(onSuccess: { [weak self] dict in
                 if let session = Self.parseJoinSession(from: dict) {
+                    self?.remember(type: session.call.type, callId: session.call.id)
                     DispatchQueue.main.async { completion(.success(session)) }
                 } else {
                     DispatchQueue.main.async {
@@ -182,9 +233,10 @@ final class AgoraCallSignaling {
             return
         }
         _ = sessionManager.fetchAgoraCall(callId: callId)
-            .subscribe(onSuccess: { dict in
+            .subscribe(onSuccess: { [weak self] dict in
                 CallInternationalDiagnostics.noteAPI(event: "GET calls/\(callId)", success: true)
                 if let session = Self.parseJoinSession(from: dict) {
+                    self?.remember(type: session.call.type, callId: session.call.id)
                     DispatchQueue.main.async { completion(.success(session)) }
                 } else {
                     DispatchQueue.main.async {
@@ -207,6 +259,9 @@ final class AgoraCallSignaling {
         if let session = AgoraCallSession(dict: dict) {
             return session
         }
+        if let nested = dict["session"] as? [String: Any], let session = AgoraCallSession(dict: nested) {
+            return session
+        }
         if dict["id"] != nil, dict["channelName"] != nil || dict["conversationId"] != nil {
             var wrapped: [String: Any] = ["call": dict]
             wrapped["token"] = dict["token"]
@@ -224,7 +279,9 @@ final class AgoraCallSignaling {
         return nil
     }
 
-    func declineCall(callId: String, reason: String? = nil) {
+    func declineCall(callId: String, reason: String? = nil, type: AgoraCallType? = nil) {
+        let resolved = resolvedType(callId: callId, preferred: type)
+        remember(type: resolved, callId: callId)
         var extra: [String: Any] = [:]
         if let reason, !reason.isEmpty {
             extra["reason"] = reason
@@ -235,25 +292,30 @@ final class AgoraCallSignaling {
             extra["status"] = AgoraCallDeclineReason.declined.rawValue
         }
         emitCallControl(
-            event: AgoraCallSocketEvents.decline,
+            event: AgoraCallSocketEvents.declineEvent(for: resolved),
             callId: callId,
             attempt: 1,
             extra: extra
         )
         if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
-            _ = sessionManager.rejectVideoCall(callId: callId)
+            let request = resolved == .audio
+                ? sessionManager.declineUnifiedCall(callId: callId)
+                : sessionManager.rejectVideoCall(callId: callId)
+            _ = request
                 .subscribe(onSuccess: { _ in
-                    AppLogger.killCall("REST reject OK callId=\(callId)")
+                    AppLogger.killCall("REST decline OK callId=\(callId) type=\(resolved.rawValue)")
                 }, onFailure: { error in
-                    AppLogger.killCall("REST reject failed: \(error.localizedDescription)")
+                    AppLogger.killCall("REST decline failed: \(error.localizedDescription)")
                 })
         }
     }
 
     /// Notify caller that the callee is already on another call.
-    func notifyBusy(callId: String) {
+    func notifyBusy(callId: String, type: AgoraCallType? = nil) {
+        let resolved = resolvedType(callId: callId, preferred: type)
+        let event = resolved == .video ? AgoraCallSocketEvents.busy : AgoraCallSocketEvents.audioBusy
         emitCallControl(
-            event: AgoraCallSocketEvents.busy,
+            event: event,
             callId: callId,
             attempt: 1,
             extra: [
@@ -264,27 +326,39 @@ final class AgoraCallSignaling {
     }
 
     /// Callee device is ringing — caller should show "Ringing…" (WhatsApp-style).
-    func notifyRinging(callId: String) {
+    func notifyRinging(callId: String, type: AgoraCallType? = nil) {
+        let resolved = resolvedType(callId: callId, preferred: type)
+        let event = resolved == .video ? AgoraCallSocketEvents.ringing : AgoraCallSocketEvents.audioRinging
         emitCallControl(
-            event: AgoraCallSocketEvents.ringing,
+            event: event,
             callId: callId,
             attempt: 1,
             extra: ["status": "ringing", "call_id": callId]
         )
     }
 
-    func endCall(callId: String, supersededBy: String? = nil) {
+    func endCall(callId: String, supersededBy: String? = nil, type: AgoraCallType? = nil) {
+        let resolved = resolvedType(callId: callId, preferred: type)
+        remember(type: resolved, callId: callId)
         var extra: [String: Any] = [:]
         if let supersededBy, !supersededBy.isEmpty {
             extra["supersededBy"] = supersededBy
             extra["reason"] = "switched"
             extra["status"] = "ended"
         }
-        emitCallControl(event: AgoraCallSocketEvents.end, callId: callId, attempt: 1, extra: extra)
+        emitCallControl(
+            event: AgoraCallSocketEvents.endEvent(for: resolved),
+            callId: callId,
+            attempt: 1,
+            extra: extra
+        )
         if let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
-            _ = sessionManager.endVideoCall(callId: callId)
+            let request = resolved == .audio
+                ? sessionManager.endUnifiedCall(callId: callId)
+                : sessionManager.endVideoCall(callId: callId)
+            _ = request
                 .subscribe(onSuccess: { _ in
-                    AppLogger.killCall("REST end OK callId=\(callId)")
+                    AppLogger.killCall("REST end OK callId=\(callId) type=\(resolved.rawValue)")
                 }, onFailure: { error in
                     AppLogger.killCall("REST end failed: \(error.localizedDescription)")
                 })
@@ -292,8 +366,22 @@ final class AgoraCallSignaling {
     }
 
     /// Leave an ongoing group call without ending it for everyone else.
-    func leaveCall(callId: String) {
-        emitCallControl(event: AgoraCallSocketEvents.leave, callId: callId, attempt: 1)
+    func leaveCall(callId: String, type: AgoraCallType? = nil) {
+        let resolved = resolvedType(callId: callId, preferred: type)
+        remember(type: resolved, callId: callId)
+        emitCallControl(
+            event: AgoraCallSocketEvents.leaveEvent(for: resolved),
+            callId: callId,
+            attempt: 1
+        )
+        if resolved == .audio, let sessionManager = Container.sharedContainer.resolve(SessionManager.self) {
+            _ = sessionManager.leaveUnifiedCall(callId: callId)
+                .subscribe(onSuccess: { _ in
+                    AppLogger.killCall("REST leave OK callId=\(callId)")
+                }, onFailure: { error in
+                    AppLogger.killCall("REST leave failed: \(error.localizedDescription)")
+                })
+        }
     }
 
     /// Decline / end / leave must not silently fail when CallKit answers before the socket is up.
@@ -373,31 +461,58 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onIncoming(_ handler: @escaping (AgoraCallDto) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.incoming) { data in
-            guard let dict = Self.firstDict(data) else { return }
-            // Shapes: { call }, { data: { call } }, or bare CallDto
-            let callDict: [String: Any]
-            if let call = dict["call"] as? [String: Any] {
-                callDict = call
-            } else if let data = dict["data"] as? [String: Any],
-                      let call = data["call"] as? [String: Any] {
-                callDict = call
-            } else if dict["id"] != nil, dict["channelName"] != nil || dict["conversationId"] != nil {
-                callDict = dict
-            } else {
-                return
-            }
-            guard let call = Self.decode(AgoraCallDto.self, from: callDict), !call.id.isEmpty else { return }
-            handler(call)
+        // Video stays on video_call:incoming. Voice uses call:incoming only.
+        listen(AgoraCallSocketEvents.incoming) { [weak self] data in
+            self?.handleIncomingPayload(data, defaultType: .video, handler: handler)
         }
+        return listen(AgoraCallSocketEvents.audioIncoming) { [weak self] data in
+            self?.handleIncomingPayload(data, defaultType: .audio, handler: handler)
+        }
+    }
+
+    private func handleIncomingPayload(
+        _ data: [Any],
+        defaultType: AgoraCallType,
+        handler: @escaping (AgoraCallDto) -> Void
+    ) {
+        guard let dict = Self.firstDict(data) else { return }
+        // Shapes: { call }, { data: { call } }, { session: { call } }, or bare CallDto
+        var callDict: [String: Any]
+        if let call = dict["call"] as? [String: Any] {
+            callDict = call
+        } else if let session = dict["session"] as? [String: Any],
+                  let call = session["call"] as? [String: Any] {
+            callDict = call
+        } else if let nested = dict["data"] as? [String: Any],
+                  let call = nested["call"] as? [String: Any] {
+            callDict = call
+        } else if dict["id"] != nil, dict["channelName"] != nil || dict["conversationId"] != nil {
+            callDict = dict
+        } else {
+            return
+        }
+        if callDict["type"] == nil, callDict["callType"] == nil {
+            let sessionType = dict["type"]
+                ?? (dict["session"] as? [String: Any])?["type"]
+                ?? defaultType.rawValue
+            callDict["type"] = sessionType
+        }
+        guard let call = Self.decode(AgoraCallDto.self, from: callDict), !call.id.isEmpty else { return }
+        remember(type: call.type, callId: call.id)
+        handler(call)
     }
 
     @discardableResult
     func onJoin(_ handler: @escaping (AgoraCallSession) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.join) { data in
+        listenMany([
+            AgoraCallSocketEvents.join,
+            AgoraCallSocketEvents.audioJoin,
+            AgoraCallSocketEvents.audioAccepted
+        ]) { [weak self] data in
             guard let dict = Self.firstDict(data) else { return }
             if let success = dict["success"] as? Bool, !success { return }
             if let session = Self.parseJoinSession(from: dict) {
+                self?.remember(type: session.call.type, callId: session.call.id)
                 handler(session)
             }
         }
@@ -405,7 +520,7 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onDeclined(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.declined) { data in
+        listenMany([AgoraCallSocketEvents.declined, AgoraCallSocketEvents.audioDeclined]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else {
                 AppLogger.debug("AgoraCallSignaling: call:declined missing callId")
@@ -420,7 +535,7 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onBusy(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.busy) { data in
+        listenMany([AgoraCallSocketEvents.busy, AgoraCallSocketEvents.audioBusy]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else {
                 AppLogger.debug("AgoraCallSignaling: call:busy missing callId keys")
@@ -435,7 +550,7 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onRejected(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.rejected) { data in
+        listenMany([AgoraCallSocketEvents.rejected, AgoraCallSocketEvents.audioRejected]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else {
                 AppLogger.debug("AgoraCallSignaling: call:rejected missing callId")
@@ -448,7 +563,7 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onCancelled(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.cancelled) { data in
+        listenMany([AgoraCallSocketEvents.cancelled, AgoraCallSocketEvents.audioCancelled]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else {
                 AppLogger.debug("AgoraCallSignaling: call:cancelled missing callId")
@@ -463,7 +578,7 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onRinging(_ handler: @escaping (_ callId: String) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.ringing) { data in
+        listenMany([AgoraCallSocketEvents.ringing, AgoraCallSocketEvents.audioRinging]) { data in
             if let dict = Self.firstDict(data) {
                 let callId = Self.extractCallId(from: dict)
                 AppLogger.killCall("call:ringing callId=\(callId.isEmpty ? "empty" : callId) keys=\(dict.keys.sorted())")
@@ -483,7 +598,11 @@ final class AgoraCallSignaling {
 
     @discardableResult
     func onEndAck(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.endAck) { data in
+        listenMany([
+            AgoraCallSocketEvents.endAck,
+            AgoraCallSocketEvents.audioEndAck,
+            AgoraCallSocketEvents.audioLeaveAck
+        ]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else { return }
             AppLogger.killCall(
@@ -493,10 +612,14 @@ final class AgoraCallSignaling {
         }
     }
 
-    /// Remote party ended the call (`call:end` broadcast — not only the emitter's ack).
+    /// Remote party ended the call (`call:end` / `call:ended` — not only the emitter's ack).
     @discardableResult
     func onRemoteEnd(_ handler: @escaping (AgoraCallLifecyclePayload) -> Void) -> UUID {
-        listen(AgoraCallSocketEvents.end) { data in
+        listenMany([
+            AgoraCallSocketEvents.end,
+            AgoraCallSocketEvents.audioEnd,
+            AgoraCallSocketEvents.audioEnded
+        ]) { data in
             guard let dict = Self.firstDict(data),
                   let payload = Self.lifecyclePayload(from: dict) else {
                 AppLogger.killCall("call:end missing callId")
@@ -550,6 +673,37 @@ final class AgoraCallSignaling {
         let id = ChatSocketManager.shared.listenToEvent(event, completionHandler: handler)
         listenerIds.append(id)
         return id
+    }
+
+    @discardableResult
+    private func listenMany(_ events: [String], handler: @escaping ([Any]) -> Void) -> UUID {
+        var first: UUID?
+        for event in events {
+            let id = listen(event, handler: handler)
+            if first == nil { first = id }
+        }
+        return first ?? UUID()
+    }
+
+    private func remember(type: AgoraCallType, callId: String) {
+        let id = callId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else { return }
+        callTypes[id] = type
+    }
+
+    private func resolvedType(callId: String, preferred: AgoraCallType?) -> AgoraCallType {
+        if let preferred { return preferred }
+        if let cached = callTypes[callId] { return cached }
+        if Thread.isMainThread {
+            return MainActor.assumeIsolated {
+                if let current = AgoraCallService.shared.call,
+                   current.id.caseInsensitiveCompare(callId) == .orderedSame || callId.isEmpty {
+                    return current.type
+                }
+                return .video
+            }
+        }
+        return .video
     }
 
     private func waitForAck(
@@ -609,7 +763,7 @@ final class AgoraCallSignaling {
                 return
             }
 
-            guard let session = AgoraCallSession(dict: dict) else {
+            guard let session = Self.parseJoinSession(from: dict) else {
                 CallInternationalDiagnostics.noteSignaling(event: event, success: false, latencyMs: latencyMs)
                 DispatchQueue.main.async {
                     completion(.failure(AgoraCallError.failed("Invalid call session payload")))

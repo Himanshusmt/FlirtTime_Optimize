@@ -39,6 +39,19 @@ struct OtherUserProfileDetails {
         age.map { "\(name), \($0)" } ?? name
     }
 
+    /// Bundled attribute titles and icons for "More about me" rows.
+    static let attributesCatalog: [AttributesData] = {
+        guard let url = Bundle.main.url(forResource: "Attributes", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let model = try? JSONDecoder().decode(AttributesModel.self, from: data) else { return [] }
+        return model.data ?? []
+    }()
+
+    /// "More about me" rows from profile answers, titled and ordered from `Attributes.json`.
+    static func moreAboutMeRows(from answers: [OtherUserAboutItem]) -> [OtherUserBasicInfo] {
+        basicInfo(answers: answers, attributes: attributesCatalog)
+    }
+
     /// "More about me" rows, in the order of `Attributes.json`; unanswered ones are skipped.
     func basicInfo(from attributes: [AttributesData]) -> [OtherUserBasicInfo] {
         if !aboutAnswers.isEmpty {
