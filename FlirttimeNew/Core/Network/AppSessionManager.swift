@@ -482,8 +482,11 @@ final class AppSessionManager {
 
     // MARK: - Moments
 
-    func momentsFeed(page: Int, limit: Int) -> Single<MomentFeedPage> {
-        let params: [String: Any] = ["page": page, "limit": limit, "type": "feed"]
+    func momentsFeed(page: Int, limit: Int, momentId: String? = nil) -> Single<MomentFeedPage> {
+        var params: [String: Any] = ["page": page, "limit": limit, "type": "feed", "scope": "all"]
+        if let momentId, !momentId.isEmpty {
+            params["momentId"] = momentId
+        }
         let request: Single<MomentFeedData> = backendClient.load(request: AppApiRequest(method: .get, endPoint: .moments,
                                                                                         parameters: params, encoding: URLEncoding.queryString))
         return request.map { $0.page() }

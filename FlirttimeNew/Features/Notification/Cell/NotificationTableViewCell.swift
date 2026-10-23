@@ -184,8 +184,16 @@ final class NotificationTableViewCell: UITableViewCell {
     /// `nil` for types without a dedicated icon, so no badge is shown over the photo.
     private static func typeStyle(for type: NotificationType) -> (symbol: String, color: UIColor)? {
         switch type {
-        case .like:
+        case .like, .momentLike, .momentCommentLike:
             return ("heart.fill", AppColor.Punch)
+        case .momentComment:
+            return ("bubble.left.fill", UIColor(named: "#4278FC") ?? .systemBlue)
+        case .momentGift:
+            return ("gift.fill", AppColor.Punch)
+        case .momentReaction:
+            return ("face.smiling.fill", AppColor.Punch)
+        case .profileVisit:
+            return ("eye.fill", AppColor.Punch)
         case .favorite:
             return ("star.fill", UIColor(named: "#4278FC") ?? .systemBlue)
         case .match:

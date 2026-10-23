@@ -53,6 +53,15 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     private var scope: Scope = .everyone
     /// Scrolled to once after the first page loads.
     private var focusVibeID: String?
+    /// One-shot: only the notification-driven first page includes `momentId` in the feed request.
+    private var pendingFeedMomentId: String?
+    /// After the focused moment loads, open comments or the received-gift list.
+    private var pendingNotificationSheet: NotificationSheet?
+
+    enum NotificationSheet {
+        case comments
+        case receivedGifts
+    }
     private lazy var viewModel: MomentsListViewModel = {
         switch scope {
         case .everyone: return MomentsListViewModel()
@@ -103,6 +112,16 @@ final class MomentsListViewController: BaseViewController, Instantiable {
         setUI()
         setUploadBinding()
         notificationButton.bindNotificationBadge(inset: 10)
+        loadFeed(showLoader: true)
+    }
+
+    /// Opens the feed on a specific moment from an FCM / in-app notification tap.
+    func openFromNotification(momentId: String, sheet: NotificationSheet? = nil) {
+        focusVibeID = momentId
+        pendingFeedMomentId = momentId
+        pendingNotificationSheet = sheet
+        presentedViewController?.dismiss(animated: false)
+        guard isViewLoaded else { return }
         loadFeed(showLoader: true)
     }
 
@@ -281,7 +300,9 @@ final class MomentsListViewController: BaseViewController, Instantiable {
             pendingFeedLoader = work
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.feedLoaderDelay, execute: work)
         }
-        viewModel.loadFirstPage { [weak self] result in
+        let momentId = pendingFeedMomentId
+        pendingFeedMomentId = nil
+        viewModel.loadFirstPage(momentId: momentId) { [weak self] result in
             guard let self else { return }
             self.pendingFeedLoader?.cancel()
             self.pendingFeedLoader = nil
@@ -295,11 +316,13 @@ final class MomentsListViewController: BaseViewController, Instantiable {
             }
             self.tableView.reloadData()
             self.updateEmptyState()
+            let focusedId = self.focusVibeID ?? momentId
             if let id = self.focusVibeID, let row = self.viewModel.index(of: id) {
                 self.focusVibeID = nil
                 self.tableView.layoutIfNeeded()
                 self.tableView.scrollToRow(at: IndexPath(row: row, section: 0), at: .top, animated: false)
             }
+            self.presentPendingNotificationSheet(momentId: focusedId)
         }
     }
 
@@ -350,6 +373,57 @@ final class MomentsListViewController: BaseViewController, Instantiable {
 
     @IBAction private func backTapped(_ sender: UIButton) {
         navigationController?.popViewController(animated: true)
+    }
+
+    private func presentPendingNotificationSheet(momentId: String?) {
+        guard let sheet = pendingNotificationSheet else { return }
+        guard let momentId, let vibe = viewModel.vibes.first(where: { $0.id == momentId }) else {
+            pendingNotificationSheet = nil
+            return
+        }
+        let presentSheet = { [weak self] in
+            guard let self else { return }
+            self.pendingNotificationSheet = nil
+            switch sheet {
+            case .comments:
+                self.presentComments(for: vibe)
+            case .receivedGifts:
+                self.presentReceivedGifts(for: vibe)
+            }
+        }
+        let presentWhenVisible = { [weak self] in
+            guard let self else { return }
+            if let presented = self.presentedViewController {
+                presented.dismiss(animated: false, completion: presentSheet)
+            } else {
+                presentSheet()
+            }
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.view.window == nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: presentWhenVisible)
+            } else {
+                presentWhenVisible()
+            }
+        }
+    }
+
+    private func presentComments(for vibe: MomentsPost) {
+        let commentViewController = MomentsCommentViewController(vibe: vibe)
+        commentViewController.onCommentsCountChanged = { [weak self] count in
+            guard let self else { return }
+            let row = self.viewModel.updateVibe(id: vibe.id) { $0.commentsCount = count }
+            self.refreshCounts(at: row)
+        }
+        commentViewController.onOpenUser = { [weak self] seed in
+            self?.openUser(from: seed)
+        }
+        presentAsSheet(commentViewController, detents: [.medium(), .large()])
+    }
+
+    private func presentReceivedGifts(for vibe: MomentsPost) {
+        presentAsSheet(MomentsReceivedGiftsViewController(vibe: vibe), detents: [.medium(), .large()])
     }
 
     private func presentAsSheet(_ viewController: UIViewController, detents: [UISheetPresentationController.Detent]) {
@@ -446,17 +520,7 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
 
     func vibeCellDidTapComment(_ cell: MomentsTableViewCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
-        let vibe = viewModel.vibes[indexPath.row]
-        let commentViewController = MomentsCommentViewController(vibe: vibe)
-        commentViewController.onCommentsCountChanged = { [weak self] count in
-            guard let self else { return }
-            let row = self.viewModel.updateVibe(id: vibe.id) { $0.commentsCount = count }
-            self.refreshCounts(at: row)
-        }
-        commentViewController.onOpenUser = { [weak self] seed in
-            self?.openUser(from: seed)
-        }
-        presentAsSheet(commentViewController, detents: [.medium(), .large()])
+        presentComments(for: viewModel.vibes[indexPath.row])
     }
 
     func vibeCellDidTapGift(_ cell: MomentsTableViewCell) {
@@ -464,7 +528,7 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         let vibe = viewModel.vibes[indexPath.row]
 
         if viewModel.isOwnVibe(vibe) {
-            presentAsSheet(MomentsReceivedGiftsViewController(vibe: vibe), detents: [.medium(), .large()])
+            presentReceivedGifts(for: vibe)
             return
         }
 

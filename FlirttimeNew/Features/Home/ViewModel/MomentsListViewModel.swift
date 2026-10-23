@@ -65,9 +65,9 @@ final class MomentsListViewModel {
 
     // MARK: - Feed
 
-    func loadFirstPage(completion: @escaping (Result<Void, MomentsError>) -> Void) {
+    func loadFirstPage(momentId: String? = nil, completion: @escaping (Result<Void, MomentsError>) -> Void) {
         currentPage = 0
-        fetchPage(1, completion: completion)
+        fetchPage(1, momentId: momentId, completion: completion)
     }
 
     func loadNextPage(completion: @escaping (Result<Void, MomentsError>) -> Void) {
@@ -75,7 +75,7 @@ final class MomentsListViewModel {
         fetchPage(currentPage + 1, completion: completion)
     }
 
-    private func fetchPage(_ page: Int, completion: @escaping (Result<Void, MomentsError>) -> Void) {
+    private func fetchPage(_ page: Int, momentId: String? = nil, completion: @escaping (Result<Void, MomentsError>) -> Void) {
         isLoading = true
         if let authorID, OtherUserProfileRouter.remoteID(for: authorID) == nil {
             DispatchQueue.main.async { [weak self] in
@@ -95,7 +95,7 @@ final class MomentsListViewModel {
         } else if onlyCurrentUser {
             request = sessionManager.myMoments(page: page, limit: pageSize)
         } else {
-            request = sessionManager.momentsFeed(page: page, limit: pageSize)
+            request = sessionManager.momentsFeed(page: page, limit: pageSize, momentId: momentId)
         }
         request
             .observe(on: MainScheduler.instance)

@@ -26,12 +26,19 @@ struct NotificationType: Equatable {
     static let message = NotificationType(rawValue: "message")
     static let call = NotificationType(rawValue: "call")
     static let missedCall = NotificationType(rawValue: "missedCall")
+    static let momentLike = NotificationType(rawValue: "moment_like")
+    static let momentComment = NotificationType(rawValue: "moment_comment")
+    static let momentCommentLike = NotificationType(rawValue: "moment_comment_like")
+    static let momentGift = NotificationType(rawValue: "moment_gift")
+    static let momentReaction = NotificationType(rawValue: "moment_reaction")
+    static let profileVisit = NotificationType(rawValue: "profile_visit")
 
     static let allTypes: [NotificationType] = [
         .message, .like, .favorite,
         .match, .incomplete, .gestureVerified, .gestureUnverified,
         .profileImageVerified, .profileImageUnverified, .imageVerified,
-        .imageUnverified, .membershipUpgrade, .compliment, .call, .missedCall
+        .imageUnverified, .membershipUpgrade, .compliment, .call, .missedCall,
+        .momentLike, .momentComment, .momentCommentLike, .momentGift, .momentReaction, .profileVisit
     ]
 
     init(rawValue: String) {
@@ -44,7 +51,17 @@ struct NotificationType: Equatable {
         "missed_call": .missedCall, "profile_verified": .profileImageVerified,
         "photo_approved": .imageVerified, "photo_rejected": .imageUnverified,
         "photo_not_approved": .imageUnverified, "profile_incomplete": .incomplete,
-        "subscription": .membershipUpgrade, "premium": .membershipUpgrade
+        "subscription": .membershipUpgrade, "premium": .membershipUpgrade,
+        "moment_like": .momentLike, "moment-like": .momentLike,
+        "moment_comment": .momentComment, "moment-comment": .momentComment,
+        "moment_comment_like": .momentCommentLike, "moment-comment-like": .momentCommentLike,
+        "comment_like": .momentCommentLike, "comment-like": .momentCommentLike,
+        "moment_gift": .momentGift, "moment-gift": .momentGift,
+        "moment_reaction": .momentReaction, "moment-reaction": .momentReaction,
+        "quick_moment": .momentReaction, "quick-moment": .momentReaction,
+        "quick_moment_reaction": .momentReaction, "quick-moment-reaction": .momentReaction,
+        "profile_visit": .profileVisit, "profile-visit": .profileVisit,
+        "moment": .momentLike
     ]
 
     init(from userInfo: [AnyHashable: Any]) {
@@ -67,9 +84,11 @@ final class NotificationManager {
     private init() {}
 
     private enum Tab: Int {
+        case moments = 0
         case explore = 1
         case home = 2
         case messages = 3
+        case profile = 4
     }
 
     private var pendingUserInfo: [AnyHashable: Any]?
@@ -161,12 +180,77 @@ final class NotificationManager {
         case .message:
             openChat(tabBar, data: data)
 
+        case .momentLike:
+            openMoments(tabBar, momentId: stringValue(data, keys: ["momentId", "navTargetId", "entityId"]))
+
+        case .momentComment, .momentCommentLike:
+            openMoments(tabBar,
+                        momentId: stringValue(data, keys: ["momentId", "navTargetId", "entityId"]),
+                        sheet: .comments)
+
+        case .momentGift:
+            openMoments(tabBar,
+                        momentId: stringValue(data, keys: ["momentId", "navTargetId", "entityId"]),
+                        sheet: .receivedGifts)
+
+        case .momentReaction:
+            openQuickMoment(tabBar, momentId: stringValue(data, keys: ["quickMomentId", "momentId", "navTargetId", "entityId"]))
+
+        case .profileVisit:
+            openProfileVisit(tabBar, data: data)
+
         case .missedCall:
             presenter(from: viewController, tabBar: tabBar)?.showComingSoon("Calls")
 
         default:
             break
         }
+    }
+
+    private func openMoments(_ tabBar: AppTabBarController,
+                             momentId: String?,
+                             sheet: MomentsListViewController.NotificationSheet? = nil) {
+        guard let momentsNav = tabBar.viewControllers?[Tab.moments.rawValue] as? UINavigationController else {
+            tabBar.selectedIndex = Tab.moments.rawValue
+            return
+        }
+        momentsNav.popToRootViewController(animated: false)
+        if let momentId, !momentId.isEmpty,
+           let momentsVC = momentsNav.viewControllers.first as? MomentsListViewController {
+            momentsVC.openFromNotification(momentId: momentId, sheet: sheet)
+            _ = momentsVC.view
+        }
+        tabBar.selectedIndex = Tab.moments.rawValue
+    }
+
+    private func openQuickMoment(_ tabBar: AppTabBarController, momentId: String?) {
+        guard let profileNav = tabBar.viewControllers?[Tab.profile.rawValue] as? UINavigationController else {
+            tabBar.selectedIndex = Tab.profile.rawValue
+            return
+        }
+        profileNav.popToRootViewController(animated: false)
+        tabBar.selectedIndex = Tab.profile.rawValue
+        if let momentId, !momentId.isEmpty,
+           let profileVC = profileNav.viewControllers.first as? ProfileViewController {
+            profileVC.openFromNotification(quickMomentId: momentId)
+            _ = profileVC.view
+        }
+    }
+
+    private func openProfileVisit(_ tabBar: AppTabBarController, data: [AnyHashable: Any]) {
+        let visitorId = stringValue(data, keys: ["visitorId", "navTargetId", "entityId", "actor_id", "senderId"])
+        guard let visitorId, !visitorId.isEmpty else {
+            select(tabBar, .profile)
+            return
+        }
+        var name = stringValue(data, keys: ["visitorName", "senderName"])
+        if name?.caseInsensitiveCompare("Someone") == .orderedSame {
+            name = nil
+        }
+        select(tabBar, .home)
+        guard let discoverNav = tabBar.viewControllers?[Tab.home.rawValue] as? UINavigationController,
+              let presenter = discoverNav.topViewController else { return }
+        OtherUserProfileRouter.open(OtherUserProfileRouter.Seed(userID: visitorId, name: name), from: presenter)
     }
 
     private func openExplore(_ tabBar: AppTabBarController, tab: ExploreTab) {

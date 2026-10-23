@@ -23,6 +23,7 @@ class ProfileViewController: BaseViewController {
     private var userProfileData: UserDetailsData?
     private var coverImageUrl: String?
     private var selectedImage: UIImage?
+    private var pendingQuickMomentId: String?
 
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
@@ -84,6 +85,23 @@ class ProfileViewController: BaseViewController {
         view.backgroundColor = AppColor.AppWhite
         setUI()
         setBinding()
+        if pendingQuickMomentId != nil {
+            resolvePendingQuickMomentNotification()
+        }
+    }
+
+    /// Opens the user's own Quick Moment from an FCM / in-app reaction tap, then the activity sheet.
+    func openFromNotification(quickMomentId: String) {
+        pendingQuickMomentId = quickMomentId
+        presentedViewController?.dismiss(animated: false)
+        guard isViewLoaded else { return }
+        if view.window == nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.resolvePendingQuickMomentNotification()
+            }
+        } else {
+            resolvePendingQuickMomentNotification()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -799,7 +817,28 @@ class ProfileViewController: BaseViewController {
         }
     }
 
-    private func openQuickMoment(at index: Int) {
+    private func resolvePendingQuickMomentNotification() {
+        guard pendingQuickMomentId != nil else { return }
+        if openPendingQuickMomentIfPresent() { return }
+        aProfileViewModel.getQuickMoments { [weak self] in
+            guard let self else { return }
+            if !self.openPendingQuickMomentIfPresent(), self.pendingQuickMomentId != nil {
+                self.pendingQuickMomentId = nil
+                self.aCustomToastView.show(message: "This quick moment has expired")
+            }
+        }
+    }
+
+    @discardableResult
+    private func openPendingQuickMomentIfPresent() -> Bool {
+        guard let id = pendingQuickMomentId,
+              let index = aProfileViewModel.quickMoments.firstIndex(where: { $0.id == id }) else { return false }
+        pendingQuickMomentId = nil
+        openQuickMoment(at: index, showActivity: true)
+        return true
+    }
+
+    private func openQuickMoment(at index: Int, showActivity: Bool = false) {
         let moments = aProfileViewModel.quickMomentFrames
         guard moments.indices.contains(index) else { return }
         let info = aProfileViewModel.myProfile?.profile
@@ -824,7 +863,10 @@ class ProfileViewController: BaseViewController {
         let viewer = QuickMomentViewController(profile: profile, startIndex: index, isOwnMoments: true)
         viewer.onShowActivity = { [weak self] index, presenter in self?.showQuickMomentActivity(at: index, from: presenter) }
         viewer.onDelete = { [weak self] index in self?.deleteQuickMoment(at: index) }
-        present(viewer, animated: true)
+        present(viewer, animated: true) { [weak self] in
+            guard showActivity, let self else { return }
+            self.showQuickMomentActivity(at: index, from: viewer)
+        }
     }
 
     private func settingsTapped() {

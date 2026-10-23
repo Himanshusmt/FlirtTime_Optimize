@@ -76,7 +76,7 @@ class ProfileViewModel {
             .disposed(by: disposeBag)
     }
 
-    func getQuickMoments() {
+    func getQuickMoments(completion: (() -> Void)? = nil) {
         beginRequest()
         sessionManager.myQuickMoments()
             .observe(on: MainScheduler.instance)
@@ -85,8 +85,10 @@ class ProfileViewModel {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
                 self?.endRequest()
+                completion?()
             }, onFailure: { [weak self] _ in
                 self?.endRequest()
+                completion?()
             })
             .disposed(by: disposeBag)
     }
