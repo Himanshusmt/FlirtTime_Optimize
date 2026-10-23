@@ -73,8 +73,8 @@ struct ConversationMessage: Codable {
         case isPinned, isViewOnce, isViewed
         case replyTo
         case clientMessageId, clientMsgId
-        case receiptStatus
-        case isMine, isRead, recipientId
+        case receiptStatus, messageStatus
+        case isMine, isRead, isDelivered, seen, recipientId
     }
     
     init(from decoder: Decoder) throws {
@@ -94,9 +94,10 @@ struct ConversationMessage: Codable {
             ?? resolvedMedia?.first?.thumbnail
         statuses = (try? container.decodeIfPresent([MessageStatus].self, forKey: .statuses)) ?? nil
         myStatus = (try? container.decodeIfPresent(MessageStatus.self, forKey: .myStatus)) ?? nil
-        // NEW FE uses `receiptStatus`; older payloads use `status`
+        // NEW FE uses `receiptStatus` / `messageStatus`; older payloads use `status`
         status = try container.decodeIfPresent(String.self, forKey: .status)
             ?? container.decodeIfPresent(String.self, forKey: .receiptStatus)
+            ?? container.decodeIfPresent(String.self, forKey: .messageStatus)
         metadata = try container.decodeIfPresent([String: AnyCodable].self, forKey: .metadata)
         serverLocation = try? container.decodeIfPresent(ServerLocationSimple.self, forKey: .serverLocation)
         post = try? container.decodeIfPresent(Post.self, forKey: .post)
@@ -207,15 +208,24 @@ struct ConversationMessage: Codable {
 
         let isMine = try? container.decodeIfPresent(Bool.self, forKey: .isMine)
         let isRead = try? container.decodeIfPresent(Bool.self, forKey: .isRead)
+        let isDelivered = try? container.decodeIfPresent(Bool.self, forKey: .isDelivered)
+        let seenFlag = try? container.decodeIfPresent(Bool.self, forKey: .seen)
         if isMine != nil || isRead != nil {
             var meta = metadata ?? [:]
             if let isMine { meta["isMine"] = AnyCodable(isMine) }
             if let isRead { meta["isRead"] = AnyCodable(isRead) }
             metadata = meta
         }
-        if status == nil, isRead == true {
-            status = "read"
+        let currentStatus = (status ?? "").lowercased()
+        if isRead == true || seenFlag == true {
+            status = "seen"
             if seenAt == nil { seenAt = sentAt ?? createdAt }
+            if deliveredAt == nil { deliveredAt = seenAt ?? sentAt ?? createdAt }
+        } else if isDelivered == true {
+            if currentStatus != "read" && currentStatus != "seen" {
+                status = "delivered"
+            }
+            if deliveredAt == nil { deliveredAt = sentAt ?? createdAt }
         } else if status == nil, isMine == true {
             status = "sent"
         }
@@ -468,6 +478,39 @@ struct ConversationMessage: Codable {
         }
         if !optimisticMeta.isEmpty {
             modifiedDictionary["metadata"] = optimisticMeta
+        }
+
+        // Receipt flags must win over an empty / "sent" ack fallback.
+        if (modifiedDictionary["status"] as? String)?.isEmpty != false {
+            if let receipt = modifiedDictionary["receiptStatus"] as? String, !receipt.isEmpty {
+                modifiedDictionary["status"] = receipt
+            } else if let messageStatus = modifiedDictionary["messageStatus"] as? String, !messageStatus.isEmpty {
+                modifiedDictionary["status"] = messageStatus
+            }
+        }
+        let isReadFlag = SocketAckParser.boolValue(from: modifiedDictionary["isRead"]) == true
+        let seenFlag = SocketAckParser.boolValue(from: modifiedDictionary["seen"]) == true
+        let isDeliveredFlag = SocketAckParser.boolValue(from: modifiedDictionary["isDelivered"]) == true
+        if isReadFlag || seenFlag {
+            modifiedDictionary["status"] = "seen"
+            if (modifiedDictionary["seenAt"] as? String)?.isEmpty != false {
+                modifiedDictionary["seenAt"] = modifiedDictionary["sentAt"] as? String
+                    ?? modifiedDictionary["createdAt"] as? String
+            }
+            if (modifiedDictionary["deliveredAt"] as? String)?.isEmpty != false {
+                modifiedDictionary["deliveredAt"] = modifiedDictionary["seenAt"] as? String
+                    ?? modifiedDictionary["sentAt"] as? String
+                    ?? modifiedDictionary["createdAt"] as? String
+            }
+        } else if isDeliveredFlag {
+            let current = (modifiedDictionary["status"] as? String)?.lowercased() ?? ""
+            if current != "read" && current != "seen" {
+                modifiedDictionary["status"] = "delivered"
+            }
+            if (modifiedDictionary["deliveredAt"] as? String)?.isEmpty != false {
+                modifiedDictionary["deliveredAt"] = modifiedDictionary["sentAt"] as? String
+                    ?? modifiedDictionary["createdAt"] as? String
+            }
         }
 
         // Ack payloads often omit status/sentAt — treat as sent so UI leaves the clock icon.

@@ -56,6 +56,114 @@ enum SocketAckParser {
         return defaultStatus
     }
 
+    /// Prefer `receiptStatus` / `messageStatus` over envelope `status: true` / `"success"`.
+    /// Walks `message` and `messages[]`, then flags `isRead` / `seen` / `isDelivered`.
+    static func receiptStatus(
+        from payload: [String: Any],
+        root: [String: Any]? = nil,
+        default defaultStatus: String
+    ) -> String {
+        var candidates: [[String: Any]] = [payload]
+        candidates.append(contentsOf: nestedMessageDicts(in: payload))
+        if let root {
+            candidates.append(root)
+            candidates.append(contentsOf: nestedMessageDicts(in: root))
+        }
+        for dict in candidates {
+            if let status = receiptVocab(from: dict) {
+                return status
+            }
+        }
+        for dict in candidates {
+            if let status = receiptFlags(from: dict) {
+                return status
+            }
+        }
+        return defaultStatus
+    }
+
+    /// Collect receipt ids without treating a conversation `id` as a message id.
+    /// Order: `messageIds` / `ids`, then `messages[]`, nested `message`, singular keys, top-level `id` last.
+    static func receiptMessageIds(
+        from payload: [String: Any],
+        root: [String: Any]? = nil
+    ) -> [String] {
+        var collected: [String] = []
+        var seen = Set<String>()
+
+        func add(_ value: String?) {
+            guard let value, !value.isEmpty, !seen.contains(value) else { return }
+            seen.insert(value)
+            collected.append(value)
+        }
+
+        func addArray(_ value: Any?) {
+            if let ids = value as? [String] {
+                ids.forEach { add($0) }
+            } else if let ids = value as? [Any] {
+                ids.forEach { add(stringValue(from: $0)) }
+            }
+        }
+
+        func collectKnownIds(from dict: [String: Any]) {
+            addArray(dict["messageIds"])
+            addArray(dict["ids"])
+            for message in nestedMessageDicts(in: dict) {
+                add(stringValue(from: message["id"]))
+                add(stringValue(from: message["messageId"]))
+                add(stringValue(from: message["clientMessageId"]))
+                add(stringValue(from: message["clientMsgId"]))
+            }
+            add(stringValue(from: dict["messageId"]))
+            add(stringValue(from: dict["lastReadMessageId"]))
+            add(stringValue(from: dict["clientMessageId"]))
+            add(stringValue(from: dict["clientMsgId"]))
+        }
+
+        collectKnownIds(from: payload)
+        if let root {
+            collectKnownIds(from: root)
+        }
+        if collected.isEmpty {
+            add(stringValue(from: payload["id"]))
+            if let root {
+                add(stringValue(from: root["id"]))
+            }
+        }
+        return collected
+    }
+
+    private static func nestedMessageDicts(in dict: [String: Any]) -> [[String: Any]] {
+        var result: [[String: Any]] = []
+        if let message = dict["message"] as? [String: Any] {
+            result.append(message)
+        }
+        if let messages = dict["messages"] as? [[String: Any]] {
+            result.append(contentsOf: messages)
+        } else if let messages = dict["messages"] as? [Any] {
+            result.append(contentsOf: messages.compactMap { $0 as? [String: Any] })
+        }
+        return result
+    }
+
+    private static func receiptVocab(from dict: [String: Any]) -> String? {
+        for key in ["receiptStatus", "messageStatus", "status"] {
+            let mapped = deliveryStatusString(from: dict[key], default: "")
+            if !mapped.isEmpty { return mapped }
+        }
+        return nil
+    }
+
+    private static func receiptFlags(from dict: [String: Any]) -> String? {
+        if boolValue(from: dict["isRead"]) == true || boolValue(from: dict["seen"]) == true {
+            return "read"
+        }
+        if boolValue(from: dict["isDelivered"]) == true {
+            return "delivered"
+        }
+        return nil
+    }
+
     /// Socket / JSON often encode booleans as `NSNumber` — `as? Bool` alone fails.
     static func boolValue(from value: Any?) -> Bool? {
         if let b = value as? Bool { return b }
@@ -155,20 +263,24 @@ enum SocketEvent: String, CaseIterable {
     /// Client emit — bulk mark undelivered inbox messages as delivered.
     case deliveredSync = "chat:delivered_sync"
 
-    /// Delivered listen set — FlirtTime `chat:delivery_receipt` plus emit echo / legacy names.
+    /// Delivered listen set — same payload on every name; sender upgrades ticks only.
     static var deliveryReceiptListenEvents: [String] {
         [
-            SocketEvent.deliveryReceipt.rawValue,
-            SocketEvent.messageDelivered.rawValue,
-            "chat:message:delivered"
+            "chat:delivery_receipt",
+            "chat:message_delivered",
+            "chat:message:delivered",
+            "message:delivery_receipt"
         ]
     }
 
-    /// Seen listen set — FlirtTime `chat:read_receipt` plus legacy fanout names.
+    /// Seen listen set — `chat:message:status` / `message:status` also carry delivered.
     static var readReceiptListenEvents: [String] {
         [
-            SocketEvent.conversationMessageStatusUpdate.rawValue,
-            "chat:message:status"
+            "chat:read_receipt",
+            "chat:message:seen",
+            "message:read_receipt",
+            "chat:message:status",
+            "message:status"
         ]
     }
 

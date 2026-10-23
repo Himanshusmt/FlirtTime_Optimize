@@ -78,15 +78,29 @@ class CallKitManager: NSObject {
         Locale.current.regionCode != "CN"
     }
 
-    /// Zip-compatible: anything except `.background` prefers in-app UI.
-    /// Kill wake / suspended → `.background` → CallKit (required for bg/kill ringing).
+    /// True only when the user is actually looking at Flirttime.
+    /// Scene-based kill/background wakes are `.inactive` / `.foregroundInactive` — those
+    /// must use CallKit, not the in-app ring (otherwise VoIP is silently fulfilled).
     static var isAppInForeground: Bool {
         if Thread.isMainThread {
-            return UIApplication.shared.applicationState != .background
+            return hasUserVisibleScene
         }
         return DispatchQueue.main.sync {
-            UIApplication.shared.applicationState != .background
+            hasUserVisibleScene
         }
+    }
+
+    private static var hasUserVisibleScene: Bool {
+        UIApplication.shared.connectedScenes.contains { $0.activationState == .foregroundActive }
+    }
+
+    /// CallKit is currently showing (or answering) an incoming Flirttime call.
+    var hasReportedIncomingCall: Bool {
+        currentCallUUID != nil || pendingCallKitHandoffUUID != nil
+    }
+
+    private static var isUserLoggedIn: Bool {
+        CallPushAuth.isLoggedIn
     }
 
     /// Legacy accessor used by Dyte path.
@@ -96,7 +110,7 @@ class CallKitManager: NSObject {
     }
 
     override init() {
-        let config = CXProviderConfiguration(localizedName: "OneVibe")
+        let config = CXProviderConfiguration(localizedName: "Flirttime")
         // Keep 1 like the working zip — after Answer we release CallKit so a waiting
         // VoIP can report a fresh incoming without replacing an active CallKit UUID.
         config.maximumCallGroups = 1
@@ -184,7 +198,7 @@ class CallKitManager: NSObject {
         guard isCallKitAllowed else {
             AppLogger.killCall("Skip CallKit UI (China region) callId=\(callId)")
             Task { @MainActor in
-                guard UserDefaults.standard.bool(forKey: "isUserLogIn") else {
+                guard Self.isUserLoggedIn else {
                     AppLogger.killCall("Skip in-app incoming — not logged in callId=\(callId)")
                     completion?()
                     return
@@ -211,10 +225,10 @@ class CallKitManager: NSObject {
         if payload["callId"] == nil { payload["callId"] = callId }
         if payload["type"] == nil { payload["type"] = hasVideo ? "video" : "audio" }
 
-        // Zip rule: only `.background` uses CallKit as primary UI.
+        // Only a user-visible scene uses in-app UI. Kill/background/inactive wake → CallKit.
         let appState = UIApplication.shared.applicationState
-        let preferInApp = appState != .background
-        let loggedIn = UserDefaults.standard.bool(forKey: "isUserLogIn")
+        let preferInApp = Self.isAppInForeground
+        let loggedIn = Self.isUserLoggedIn
 
         // —— Call-waiting FIRST (before any full CallKit report) ——
         if loggedIn, isInLiveOneVibeCall {
@@ -372,8 +386,8 @@ class CallKitManager: NSObject {
         _ = hasVideo // PushKit payload may be video; silent UI stays audio-looking to reduce chrome.
 
         let update = CXCallUpdate()
-        update.remoteHandle = CXHandle(type: .generic, value: callerName.isEmpty ? "OneVibe" : callerName)
-        update.localizedCallerName = callerName.isEmpty ? "OneVibe" : callerName
+        update.remoteHandle = CXHandle(type: .generic, value: callerName.isEmpty ? "Flirttime" : callerName)
+        update.localizedCallerName = callerName.isEmpty ? "Flirttime" : callerName
         // Audio-looking update reduces full-screen video CallKit chrome during the tiny window.
         update.hasVideo = false
         update.supportsHolding = false

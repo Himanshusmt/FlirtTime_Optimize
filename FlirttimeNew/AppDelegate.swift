@@ -31,6 +31,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         configureFirebasePush(application)
         startChat()
         startStore()
+        if CallPushAuth.isLoggedIn {
+            UserDefaults.standard.set(true, forKey: "isUserLogIn")
+            DeviceTokenManager.shared.registerIfNeeded()
+        }
 
         // Cold start from a tapped call notification (app was killed).
         if let remote = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
@@ -121,6 +125,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             return
         }
         completionHandler(.noData)
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        DeviceTokenManager.shared.registerIfNeeded()
+        Task { @MainActor in
+            AgoraCallService.shared.ensureCallUIVisibleAfterForeground()
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

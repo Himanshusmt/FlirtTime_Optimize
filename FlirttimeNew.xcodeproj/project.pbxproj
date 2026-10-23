@@ -4158,7 +4158,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
-				INFOPLIST_KEY_NSVoIPUsageDescription = "";
+				INFOPLIST_KEY_NSVoIPUsageDescription = "Flirttime uses VoIP so you can receive audio and video calls when the app is in the background or closed.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
@@ -4207,7 +4207,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
-				INFOPLIST_KEY_NSVoIPUsageDescription = "";
+				INFOPLIST_KEY_NSVoIPUsageDescription = "Flirttime uses VoIP so you can receive audio and video calls when the app is in the background or closed.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;

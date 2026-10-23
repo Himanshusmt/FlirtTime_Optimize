@@ -2,7 +2,8 @@
 //  IncomingCallPushRouter.swift
 //  FlirttimeNew
 //
-//  OneVibe-compatible VoIP + FCM incoming-call routing for foreground, background, and kill.
+//  OneVibe-compatible VoIP + FCM incoming-call routing.
+//  Visible app → in-app ring. Background / killed / inactive wake → CallKit.
 //
 
 import Foundation

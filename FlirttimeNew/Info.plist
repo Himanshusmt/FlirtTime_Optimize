@@ -42,6 +42,8 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSVoIPUsageDescription</key>
+	<string>Flirttime uses VoIP so you can receive audio and video calls when the app is in the background or closed.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

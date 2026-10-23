@@ -247,7 +247,14 @@ class ChatStateManager: ChatStateManagerProtocol {
     func messageById(_ id: String) -> ConversationMessage? {
         lock.lock()
         defer { lock.unlock() }
-        return _messageById[id]
+        if let exact = _messageById[id] { return exact }
+        for message in _messages {
+            if message.stableId == id { return message }
+            if let tempId = message.metadata?["clientTempId"]?.value as? String, tempId == id {
+                return message
+            }
+        }
+        return nil
     }
 
     private let isoFormatter: ISO8601DateFormatter = {
@@ -540,9 +547,15 @@ class ChatStateManager: ChatStateManagerProtocol {
     }
 
     private func rebuildLookup() {
-        var dict = [String: ConversationMessage](minimumCapacity: _messages.count)
+        var dict = [String: ConversationMessage](minimumCapacity: _messages.count * 2)
         for message in _messages {
             dict[message.id] = message
+            if message.stableId != message.id {
+                dict[message.stableId] = message
+            }
+            if let tempId = message.metadata?["clientTempId"]?.value as? String, !tempId.isEmpty {
+                dict[tempId] = message
+            }
         }
         _messageById = dict
     }

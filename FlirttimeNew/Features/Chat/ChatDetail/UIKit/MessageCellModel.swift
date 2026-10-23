@@ -1054,20 +1054,39 @@ enum DeliveryStatus: Equatable, Hashable {
     case failed
 
     static func from(message: ConversationMessage, currentUserId: String?) -> DeliveryStatus {
-        switch message.deliveryStatus {
-        case .sending:  return .sending
-        case .sent:     return .sent
-        case .delivered: return .delivered
-        case .read:     return .read
-        case .failed:   return .failed
-        case .unknown:  break
+        let isOutgoing: Bool = {
+            if let mine = message.metadata?["isMine"]?.value as? Bool {
+                return mine
+            }
+            let sender = message.senderId ?? message.sender?.id ?? ""
+            if let currentUserId, !currentUserId.isEmpty, !sender.isEmpty {
+                return sender == currentUserId
+            }
+            return false
+        }()
+
+        var best = MessageDeliveryStatus.from(
+            status: message.status,
+            sentAt: message.sentAt,
+            deliveredAt: message.deliveredAt,
+            seenAt: message.seenAt
+        )
+        if let statuses = message.statuses {
+            for entry in statuses {
+                best = max(best, MessageDeliveryStatus.from(entry.status))
+            }
         }
-        // Fallback for unknown / non-outgoing messages
-        guard message.senderId == currentUserId else { return .sent }
-        // Prefer sent over sending when status is unknown — avoids delete-only options sheet
-        // and clock ticks on already-delivered server messages.
-        if message.isOptimisticTemporary { return .sending }
-        return .sent
+
+        switch best {
+        case .sending: return .sending
+        case .sent: return .sent
+        case .delivered: return .delivered
+        case .read: return .read
+        case .failed: return .failed
+        case .unknown:
+            if isOutgoing && message.isOptimisticTemporary { return .sending }
+            return .sent
+        }
     }
 
     var icon: UIImage? {

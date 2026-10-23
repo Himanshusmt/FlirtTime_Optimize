@@ -869,6 +869,7 @@ final class AppSessionManager {
 
     func logout() {
         AppTokenStore.shared.clear()
+        UserDefaults.standard.set(false, forKey: "isUserLogIn")
         UserDataManager.shared.removeUserData()
         CoinWallet.shared.update(0)
         FreeTierLimitsStore.shared.refresh()
@@ -882,6 +883,7 @@ final class AppSessionManager {
                 throw APIHTTPError(statusCode: 0, message: "Login failed. Please try again.")
             }
             AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
+            UserDefaults.standard.set(true, forKey: "isUserLogIn")
             if let user = auth.user { UserDataManager.shared.appUser = user }
             DeviceTokenManager.shared.registerPushTokensAfterLogin(reason: "login")
             CoinWallet.shared.refresh()

@@ -831,31 +831,33 @@ class ChatSocketService: ChatSocketServiceProtocol {
         emitMarkMessagesSeen(conversationId: conversationId, messageId: nil)
     }
 
-    /// FlirtTime — emit `chat:mark_read` `{ conversationId, messageId }`.
+    /// FlirtTime — emit `chat:mark_read` `{ conversationId, lastReadMessageId, messageId }`.
     func emitMarkMessagesSeen(conversationId: String, messageId: String?) {
         guard !conversationId.isEmpty else { return }
         var payload: [String: Any] = [
             "conversationId": conversationId
         ]
         if let messageId, !messageId.isEmpty {
-            payload["messageId"] = messageId
+            payload["lastReadMessageId"] = messageId
+            payload["messageId"] = messageId // compat
         }
         socketManager.emitMessage(SocketEvent.markConversationMessagesSeen.rawValue, withData: [payload])
         AppLogger.debug(
-            "[MarkSeen] Emitted chat:mark_read conversationId=\(conversationId) messageId=\(messageId ?? "nil")"
+            "[MarkSeen] Emitted chat:mark_read conversationId=\(conversationId) lastReadMessageId=\(messageId ?? "nil")"
         )
     }
 
-    /// FlirtTime — emit `chat:message_delivered` `{ conversationId, messageId }`.
+    /// FlirtTime — emit `chat:message_delivered` `{ conversationId, messageIds, messageId }`.
     func emitMessageDelivered(conversationId: String, messageId: String) {
         guard !conversationId.isEmpty, !messageId.isEmpty else { return }
         let payload: [String: Any] = [
             "conversationId": conversationId,
-            "messageId": messageId
+            "messageIds": [messageId],
+            "messageId": messageId // compat
         ]
         socketManager.emitMessage(SocketEvent.messageDelivered.rawValue, withData: [payload])
         AppLogger.debug(
-            "[Delivered] Emitted chat:message_delivered conversationId=\(conversationId) messageId=\(messageId.prefix(8))"
+            "[Delivered] Emitted chat:message_delivered conversationId=\(conversationId) messageIds=\([messageId])"
         )
     }
 
@@ -896,7 +898,13 @@ class ChatSocketService: ChatSocketServiceProtocol {
 
         guard let nested else { return root }
         var merged = nested
-        for key in ["conversationId", "conversation_id", "messageId", "messageIds", "status", "seenBy", "readerId", "delivererId", "userId"] {
+        for key in [
+            "conversationId", "conversation_id", "messageId", "messageIds",
+            "lastReadMessageId", "clientMessageId", "messages",
+            "status", "receiptStatus", "messageStatus",
+            "isRead", "isDelivered", "seen",
+            "seenBy", "readerId", "delivererId", "userId"
+        ] {
             if merged[key] == nil, let value = root[key] {
                 merged[key] = value
             }
@@ -905,36 +913,18 @@ class ChatSocketService: ChatSocketServiceProtocol {
     }
 
     private func extractMessageIds(from payload: [String: Any]) -> [String] {
-        let keys = ["messageId", "message_id", "lastMessageId", "id"]
-        for key in keys {
-            if let mid = SocketAckParser.stringValue(from: payload[key]) {
-                return [mid]
-            }
-        }
-        if let message = payload["message"] as? [String: Any] {
-            for key in keys {
-                if let mid = SocketAckParser.stringValue(from: message[key]) {
-                    return [mid]
-                }
-            }
-        }
-        if let ids = payload["messageIds"] as? [String] {
-            return ids.filter { !$0.isEmpty }
-        }
-        if let ids = payload["ids"] as? [String] {
-            return ids.filter { !$0.isEmpty }
-        }
-        if let anyIds = payload["messageIds"] as? [Any] {
-            return anyIds.compactMap { SocketAckParser.stringValue(from: $0) }
-        }
-        return []
+        SocketAckParser.receiptMessageIds(from: payload)
     }
 
     private func conversationId(from payload: [String: Any]) -> String {
-        SocketAckParser.stringValue(from: payload["conversationId"])
+        let firstNested = (payload["messages"] as? [[String: Any]])?.first
+            ?? (payload["messages"] as? [Any])?.first as? [String: Any]
+        return SocketAckParser.stringValue(from: payload["conversationId"])
             ?? SocketAckParser.stringValue(from: payload["conversation_id"])
             ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversationId"])
             ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversation_id"])
+            ?? SocketAckParser.stringValue(from: firstNested?["conversationId"])
+            ?? SocketAckParser.stringValue(from: firstNested?["conversation_id"])
             ?? ""
     }
 
@@ -947,12 +937,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
 
         // FlirtTime `chat:read_receipt` may omit status — the event itself means seen.
         // Ignore envelope flags like `{ status: true }` / `"success"`.
-        let status = SocketAckParser.deliveryStatusString(
-            from: payload["status"] ?? payload["receiptStatus"]
-                ?? (payload["message"] as? [String: Any])?["status"]
-                ?? (payload["message"] as? [String: Any])?["receiptStatus"],
-            default: defaultStatus
-        )
+        let status = SocketAckParser.receiptStatus(from: payload, default: defaultStatus)
         guard !status.isEmpty else {
             AppLogger.debug("ChatSocketService: chat:read_receipt missing status field: \(payload)")
             return
@@ -1006,7 +991,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         AppLogger.debug("[SeenAck] success conversationId=\(conversationId) count=\(count)")
 
         // Some servers put the sender-facing status snapshot into ack data.
-        let status = (payload["status"] as? String) ?? ""
+        let status = SocketAckParser.receiptStatus(from: payload, root: root, default: "")
         let messageIds = extractMessageIds(from: payload)
         let rows = payload["rows"] as? [[String: Any]]
             ?? (payload["messages"] as? [[String: Any]])
@@ -1015,7 +1000,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         if !conversationId.isEmpty, (!messageIds.isEmpty && !status.isEmpty) || !rows.isEmpty {
             if !rows.isEmpty {
                 for row in rows {
-                    let rowStatus = (row["status"] as? String) ?? status
+                    let rowStatus = SocketAckParser.receiptStatus(from: row, default: status)
                     guard !rowStatus.isEmpty else { continue }
                     let ids = extractMessageIds(from: row)
                     guard !ids.isEmpty else { continue }
@@ -1052,6 +1037,7 @@ class ChatSocketService: ChatSocketServiceProtocol {
         let hasServerFanoutShape =
             (payload["status"] as? String) != nil
             || (payload["receiptStatus"] as? String) != nil
+            || (payload["messageStatus"] as? String) != nil
             || (payload["readerId"] as? String) != nil
             || (payload["seenBy"] as? String) != nil
             || payload["data"] is [String: Any]
@@ -1070,11 +1056,12 @@ class ChatSocketService: ChatSocketServiceProtocol {
         guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
         let myId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
+        let resolvedStatus = SocketAckParser.receiptStatus(from: payload, default: status)
         // Only drop *own action echoes* using explicit reader/deliverer fields.
         // Do NOT use `userId` — servers often put the original sender there, which
         // would make User A ignore their own delivery/read receipts.
         let actorId: String = {
-            if status == "delivered" {
+            if resolvedStatus == "delivered" {
                 return SocketAckParser.stringValue(from: payload["delivererId"]) ?? ""
             }
             return SocketAckParser.stringValue(from: payload["readerId"])
@@ -1082,11 +1069,6 @@ class ChatSocketService: ChatSocketServiceProtocol {
                 ?? ""
         }()
         if !myId.isEmpty, !actorId.isEmpty, actorId == myId { return }
-
-        let resolvedStatus = SocketAckParser.deliveryStatusString(
-            from: payload["status"] ?? payload["receiptStatus"],
-            default: status
-        )
 
         let update = MessageStatusUpdatePayload(
             conversationId: conversationId,

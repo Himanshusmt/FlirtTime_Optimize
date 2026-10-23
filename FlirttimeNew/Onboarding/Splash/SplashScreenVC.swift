@@ -70,7 +70,24 @@ class SplashScreenVC: UIViewController,Instantiable {
         }
     }
     
-    func navigateToNextScreen(){
+    func navigateToNextScreen() {
+        Task { @MainActor in
+            self.continueSplashNavigationIfAllowed()
+        }
+    }
+
+    @MainActor
+    private func continueSplashNavigationIfAllowed() {
+        // Kill/background CallKit answer presents on this splash window. Replacing the
+        // root here would tear down the live audio/video call UI.
+        if AgoraCallService.shared.hasActiveCallSession || CallKitManager.shared.hasReportedIncomingCall {
+            AppLogger.killCall("Splash hold — incoming/active call phase=\(AgoraCallService.shared.phase)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+                self?.navigateToNextScreen()
+            }
+            return
+        }
+
         let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
         guard UserDataManager.shared.isOTPVerificationDone == true else {
             routeByLocalState()
@@ -81,17 +98,32 @@ class SplashScreenVC: UIViewController,Instantiable {
             routeByLocalState()
             return
         }
+        UserDefaults.standard.set(true, forKey: "isUserLogIn")
         sessionManager.getMe()
             .subscribe(onSuccess: { [weak self] _ in
                 DeviceTokenManager.shared.registerIfNeeded(force: true)
-                self?.routeByLocalState()
+                Task { @MainActor in
+                    self?.routeByLocalStateIfNoCall()
+                }
             }, onFailure: { [weak self] error in
                 if httpStatusCode(from: error) == 401 {
                     sessionManager.logout()
                 }
-                self?.routeByLocalState()
+                Task { @MainActor in
+                    self?.routeByLocalStateIfNoCall()
+                }
             })
             .disposed(by: disposeBag)
+    }
+
+    @MainActor
+    private func routeByLocalStateIfNoCall() {
+        if AgoraCallService.shared.hasActiveCallSession || CallKitManager.shared.hasReportedIncomingCall {
+            AppLogger.killCall("Splash defer root swap — call still live")
+            navigateToNextScreen()
+            return
+        }
+        routeByLocalState()
     }
 
     private func routeByLocalState() {

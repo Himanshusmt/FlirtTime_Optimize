@@ -76,12 +76,27 @@ final class DeviceTokenManager {
 
     /// Call after login and on launch with a valid session.
     func registerIfNeeded(force: Bool = false) {
-        guard sessionManager.isLoggedIn, let token = fcmToken, !token.isEmpty else { return }
+        guard sessionManager.isLoggedIn else {
+            if fcmToken != nil || voipToken != nil {
+                AppLogger.killCall("registerDevice skip — not logged in fcm=\(fcmToken?.count ?? 0) voip=\(voipToken?.count ?? 0)")
+            }
+            return
+        }
+        guard let token = fcmToken, !token.isEmpty else {
+            AppLogger.killCall("registerDevice skip — FCM empty voip=\(voipToken?.count ?? 0)")
+            return
+        }
         let fingerprint = registrationFingerprint
         guard force || registeredToken != fingerprint else { return }
+        if voipToken == nil || voipToken?.isEmpty == true {
+            AppLogger.killCall("registerDevice sending FCM without VoIP — killed-app CallKit will fail until VoIP token syncs")
+        }
         sessionManager.registerDevice(token: token, voipToken: voipToken)
             .subscribe(onSuccess: { [weak self] in
                 self?.registeredToken = fingerprint
+                AppLogger.killCall("registerDevice OK voipSent=\(!(self?.voipToken ?? "").isEmpty)")
+            }, onFailure: { error in
+                AppLogger.killCall("registerDevice FAILED: \(error.localizedDescription)")
             })
             .disposed(by: disposeBag)
     }

@@ -299,7 +299,7 @@ final class AgoraCallService: NSObject {
 
     var currentCallId: String? { callId }
 
-    /// Zip-compatible: foreground / inactive → in-app. Background / kill → CallKit.
+    /// User-visible scene → in-app. Background, kill, or inactive wake → CallKit.
     var prefersInAppIncomingUI: Bool {
         CallKitManager.isAppInForeground
     }
@@ -1552,7 +1552,7 @@ final class AgoraCallService: NSObject {
         }
     }
 
-    /// Background → CallKit. Foreground (user inside the app) → in-app only.
+    /// Background / kill / inactive wake → CallKit. Visible app → in-app only.
     private func shouldUseCallKitForIncoming() -> Bool {
         !prefersInAppIncomingUI
     }

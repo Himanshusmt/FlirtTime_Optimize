@@ -22,6 +22,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         ChatSocketSessionCoordinator.shared.handleApplicationWillEnterForeground()
     }
 
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        ChatSocketSessionCoordinator.shared.activateSessionIfNeeded(reason: "scene-active")
+        DeviceTokenManager.shared.registerIfNeeded()
+        Task { @MainActor in
+            AgoraCallService.shared.ensureCallUIVisibleAfterForeground()
+        }
+    }
+
     private func showSplashAsRoot() {
         let splashVC = SplashScreenVC.instantiateFromStoryboard()
         let navController = UINavigationController(rootViewController: splashVC)

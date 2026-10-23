@@ -113,14 +113,9 @@ extension ConversationMessage {
 
     var deliveryStatus: MessageDeliveryStatus {
         let currentUserId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
-
-        let isFromSelf = sender?.id == currentUserId || senderId == currentUserId
-
-        if isFromSelf {
-            return getOtherUserStatus(currentUserId: currentUserId)
-        } else {
-            return .unknown
-        }
+        // Always resolve from status / timestamps / statuses[] so a SessionManager
+        // id mismatch (or metadata.isMine-only outgoing) cannot stick ticks on sent.
+        return getOtherUserStatus(currentUserId: currentUserId)
     }
 
     private func getOtherUserStatus(currentUserId: String) -> MessageDeliveryStatus {

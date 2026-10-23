@@ -187,14 +187,29 @@ extension ChatDetailViewModel {
         var updatedMessages: [ConversationMessage] = []
         let myId = getCurrentUserId()
 
+        func isOwnOutbound(_ msg: ConversationMessage) -> Bool {
+            if msg.isSystemMessage { return false }
+            if (msg.metadata?["isMine"]?.value as? Bool) == true { return true }
+            let sender = msg.senderId ?? msg.sender?.id ?? ""
+            return !myId.isEmpty && sender == myId
+        }
+
+        func pendingAliasIds(for message: ConversationMessage, extra: [String] = []) -> [String] {
+            var ids = Set(extra.filter { !$0.isEmpty })
+            if !message.id.isEmpty { ids.insert(message.id) }
+            if !message.stableId.isEmpty { ids.insert(message.stableId) }
+            if let tempId = message.metadata?["clientTempId"]?.value as? String, !tempId.isEmpty {
+                ids.insert(tempId)
+            }
+            return Array(ids)
+        }
+
         // FE ConversationThreadPage.onSeen / onDelivered: advance all own outbound
         // messages in the thread (ignores specific messageId). That also covers the
         // race where seen arrives before the optimistic temp id is swapped to server id.
         let snapshot = stateManager.getGroupedMessagesSnapshot().flatMap(\.messages)
         let ownOutboundIds: [String] = snapshot.compactMap { msg in
-            if msg.isSystemMessage { return nil }
-            let sender = msg.senderId ?? msg.sender?.id ?? ""
-            guard sender == myId else { return nil }
+            guard isOwnOutbound(msg) else { return nil }
             let status = (msg.status ?? "").lowercased()
             guard status != "failed" else { return nil }
             return msg.id
@@ -214,6 +229,9 @@ extension ChatDetailViewModel {
 
         var touchedIds = Set(payload.messageIds.filter { !$0.isEmpty })
         touchedIds.formUnion(targetIds)
+        for msg in snapshot where targetIds.contains(msg.id) || isOwnOutbound(msg) {
+            touchedIds.formUnion(pendingAliasIds(for: msg))
+        }
 
         registerPendingDeliveryStatus(deliveryStatus, for: Array(touchedIds))
 
@@ -224,8 +242,7 @@ extension ChatDetailViewModel {
                     // Seen/delivered may arrive for server id before temp swap — upgrade matching temps
                     for (tempId, tempMsg) in tempMessageMapping
                     where tempMsg.conversationId == selectedId {
-                        let sender = tempMsg.senderId ?? tempMsg.sender?.id ?? ""
-                        guard sender == myId else { continue }
+                        guard isOwnOutbound(tempMsg) else { continue }
                         let currentStatus = MessageDeliveryStatus.from(
                             status: tempMsg.status,
                             sentAt: tempMsg.sentAt,
@@ -237,15 +254,17 @@ extension ChatDetailViewModel {
                         stateManager.updateMessage(updated)
                         tempMessageMapping[tempId] = updated
                         updatedMessages.append(updated)
-                        registerPendingDeliveryStatus(deliveryStatus, for: [tempId, messageId])
+                        registerPendingDeliveryStatus(
+                            deliveryStatus,
+                            for: pendingAliasIds(for: updated, extra: [tempId, messageId])
+                        )
                     }
                 }
                 continue
             }
 
             // Only upgrade ticks on messages we sent
-            let sender = existing.senderId ?? existing.sender?.id ?? ""
-            guard sender == myId else { continue }
+            guard isOwnOutbound(existing) else { continue }
 
             let currentStatus = MessageDeliveryStatus.from(
                 status: existing.status,
@@ -267,12 +286,15 @@ extension ChatDetailViewModel {
             )
             updatedMessages.append(updated)
             messageSyncCoordinator.persist(messages: [updated])
-            registerPendingDeliveryStatus(deliveryStatus, for: [messageId])
+            registerPendingDeliveryStatus(deliveryStatus, for: pendingAliasIds(for: updated, extra: [messageId]))
             if let serverId = tempMessageMapping[messageId]?.id, !serverId.isEmpty, serverId != messageId {
                 registerPendingDeliveryStatus(deliveryStatus, for: [serverId])
             }
             for (tempId, tempMsg) in tempMessageMapping where tempMsg.id == messageId || tempId == messageId {
-                registerPendingDeliveryStatus(deliveryStatus, for: [tempId, tempMsg.id])
+                registerPendingDeliveryStatus(
+                    deliveryStatus,
+                    for: pendingAliasIds(for: tempMsg, extra: [tempId, tempMsg.id])
+                )
             }
         }
 
@@ -291,16 +313,25 @@ extension ChatDetailViewModel {
             messages = groups.flatMap(\.messages)
         }
 
-        let idsToClear = Array(touchedIds)
+        var idsToClear = Set(touchedIds)
+        for msg in updatedMessages {
+            idsToClear.formUnion(pendingAliasIds(for: msg))
+        }
         Task { [weak self] in
-            // Give CoreData persist a moment, then drop pending overrides
             try? await Task.sleep(nanoseconds: 1_500_000_000)
             await MainActor.run {
                 guard let self else { return }
                 for id in idsToClear {
-                    if self.pendingStatusUpdates[id] == deliveryStatus {
-                        self.pendingStatusUpdates.removeValue(forKey: id)
-                    }
+                    guard let pending = self.pendingStatusUpdates[id], pending == deliveryStatus else { continue }
+                    let stored = self.stateManager.messageById(id)
+                    let storedStatus = MessageDeliveryStatus.from(
+                        status: stored?.status,
+                        sentAt: stored?.sentAt,
+                        deliveredAt: stored?.deliveredAt,
+                        seenAt: stored?.seenAt
+                    )
+                    guard storedStatus >= pending else { continue }
+                    self.pendingStatusUpdates.removeValue(forKey: id)
                 }
             }
         }

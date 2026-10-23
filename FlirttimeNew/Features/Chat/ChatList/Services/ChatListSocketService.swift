@@ -496,12 +496,21 @@ class ChatListSocketService: ObservableObject {
         let conversationId = message.conversationId
         guard !conversationId.isEmpty, !message.id.isEmpty else { return }
 
+        var messageIds = [message.id]
+        if let tempId = message.metadata?["clientTempId"]?.value as? String,
+           !tempId.isEmpty, tempId != message.id {
+            messageIds.append(tempId)
+        }
         ChatSocketManager.shared.emitMessage(
             SocketEvent.messageDelivered.rawValue,
             withData: [[
                 "conversationId": conversationId,
+                "messageIds": messageIds,
                 "messageId": message.id
             ]]
+        )
+        AppLogger.debug(
+            "[Delivered] Emitted chat:message_delivered conversationId=\(conversationId) messageIds=\(messageIds)"
         )
 
         guard let sessionManager = Container.sharedContainer.resolve(SessionManager.self) else { return }
@@ -1211,29 +1220,21 @@ class ChatListSocketService: ObservableObject {
             return
         }
         let payload = (root["data"] as? [String: Any]) ?? root
-        let statusString = SocketAckParser.deliveryStatusString(
-            from: payload["status"] ?? payload["receiptStatus"] ?? root["status"],
-            default: "seen"
-        )
+        let statusString = SocketAckParser.receiptStatus(from: payload, root: root, default: "seen")
         applyGlobalReceiptPayload(root: root, payload: payload, statusString: statusString)
     }
 
     private func applyGlobalReceiptPayload(root: [String: Any], payload: [String: Any], statusString: String) {
-        var messageIds: [String] = []
-        if let mid = SocketAckParser.stringValue(from: payload["messageId"]) {
-            messageIds = [mid]
-        } else if let mid = SocketAckParser.stringValue(from: root["messageId"]) {
-            messageIds = [mid]
-        } else if let mid = SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["id"]) {
-            messageIds = [mid]
-        } else if let ids = payload["messageIds"] as? [String] {
-            messageIds = ids.filter { !$0.isEmpty }
-        } else if let ids = root["messageIds"] as? [String] {
-            messageIds = ids.filter { !$0.isEmpty }
-        }
+        let messageIds = SocketAckParser.receiptMessageIds(from: payload, root: root)
 
+        let firstNested = (payload["messages"] as? [[String: Any]])?.first
+            ?? (payload["messages"] as? [Any])?.first as? [String: Any]
         let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
+            ?? SocketAckParser.stringValue(from: payload["conversation_id"])
             ?? SocketAckParser.stringValue(from: root["conversationId"])
+            ?? SocketAckParser.stringValue(from: root["conversation_id"])
+            ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversationId"])
+            ?? SocketAckParser.stringValue(from: firstNested?["conversationId"])
             ?? ""
         guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
@@ -1307,16 +1308,20 @@ class ChatListSocketService: ObservableObject {
             return
         }
         let payload = (root["data"] as? [String: Any]) ?? root
+        let resolvedStatus = SocketAckParser.receiptStatus(from: payload, root: root, default: status)
+        let firstNested = (payload["messages"] as? [[String: Any]])?.first
+            ?? (payload["messages"] as? [Any])?.first as? [String: Any]
         let conversationId = SocketAckParser.stringValue(from: payload["conversationId"])
             ?? SocketAckParser.stringValue(from: payload["conversation_id"])
             ?? SocketAckParser.stringValue(from: root["conversationId"])
             ?? SocketAckParser.stringValue(from: root["conversation_id"])
             ?? SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["conversationId"])
+            ?? SocketAckParser.stringValue(from: firstNested?["conversationId"])
             ?? ""
 
         let myId = Container.sharedContainer.resolve(SessionManager.self)?.user?.userId ?? ""
         let actorId: String = {
-            if status == "delivered" {
+            if resolvedStatus == "delivered" {
                 return SocketAckParser.stringValue(from: payload["delivererId"]) ?? ""
             }
             return SocketAckParser.stringValue(from: payload["readerId"])
@@ -1325,22 +1330,15 @@ class ChatListSocketService: ObservableObject {
         }()
         if !myId.isEmpty, !actorId.isEmpty, actorId == myId { return }
 
-        var messageIds: [String] = []
-        if let mid = SocketAckParser.stringValue(from: payload["messageId"]) {
-            messageIds = [mid]
-        } else if let ids = payload["messageIds"] as? [String] {
-            messageIds = ids.filter { !$0.isEmpty }
-        } else if let mid = SocketAckParser.stringValue(from: (payload["message"] as? [String: Any])?["id"]) {
-            messageIds = [mid]
-        }
+        let messageIds = SocketAckParser.receiptMessageIds(from: payload, root: root)
         guard !conversationId.isEmpty || !messageIds.isEmpty else { return }
 
         let statusEvent = MessageStatusEvent(
             conversationId: conversationId,
             messageIds: messageIds,
-            status: status,
+            status: resolvedStatus,
             deliveredTo: [],
-            seenBy: (status == "seen" || status == "read") ? (actorId.isEmpty ? nil : actorId) : nil
+            seenBy: (resolvedStatus == "seen" || resolvedStatus == "read") ? (actorId.isEmpty ? nil : actorId) : nil
         )
         Task { @MainActor in self._messageStatusSubject.send(statusEvent) }
 
@@ -1351,14 +1349,14 @@ class ChatListSocketService: ObservableObject {
                 object: nil,
                 userInfo: [
                     "conversationId": conversationId,
-                    "status": status,
+                    "status": resolvedStatus,
                     "messageIds": messageIds
                 ]
             )
             return
         }
 
-        let newStatus = MessageDeliveryStatus.from(status)
+        let newStatus = MessageDeliveryStatus.from(resolvedStatus)
         guard newStatus != .unknown else { return }
         let repo = MessageRepository()
         Task {
@@ -1378,7 +1376,7 @@ class ChatListSocketService: ObservableObject {
                     await ConversationRepository().updateLastMessageStatusIfLatest(
                         conversationId: convId,
                         messageId: messageId,
-                        status: updated.status ?? status
+                        status: updated.status ?? resolvedStatus
                     )
                 }
             }
@@ -1388,7 +1386,7 @@ class ChatListSocketService: ObservableObject {
                     object: nil,
                     userInfo: [
                         "conversationId": conversationId,
-                        "status": status,
+                        "status": resolvedStatus,
                         "messageIds": messageIds
                     ]
                 )
