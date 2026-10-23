@@ -559,6 +559,7 @@ final class DiscoverViewModel {
         profile.commonInterestsCount = person.commonInterestsCount
         profile.momentsCount = person.totalMoments ?? 0
         profile.remoteUserId = userID
+        profile.fullLocation = cleanedLocation(locationLabel)
         return profile
     }
 
@@ -605,6 +606,7 @@ final class DiscoverViewModel {
         profile.commonInterestsCount = person.commonInterestsCount
         profile.momentsCount = person.totalMoments ?? 0
         profile.remoteUserId = userID
+        profile.fullLocation = cleanedLocation(locationLabel)
         return profile
     }
 
@@ -682,6 +684,7 @@ final class DiscoverViewModel {
         profile.momentsCount = max(base.momentsCount, moments.count)
         profile.remoteUserId = base.remoteUserId ?? detail.userId
         profile.aboutAnswers = detail.moreAboutMe ?? base.aboutAnswers
+        profile.fullLocation = cleanedLocation(detail.fullLocation) ?? cleanedLocation(detail.city) ?? base.fullLocation
         return profile
     }
 
@@ -722,6 +725,11 @@ final class DiscoverViewModel {
     static func cityName(from location: String?) -> String? {
         guard let city = location?.split(separator: ",").first?.trimmingCharacters(in: .whitespaces), !city.isEmpty else { return nil }
         return city
+    }
+
+    static func cleanedLocation(_ location: String?) -> String? {
+        let value = location?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? nil : value
     }
 
     static func age(from dob: String?) -> Int? {

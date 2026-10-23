@@ -111,7 +111,7 @@ struct ChatListView: View {
                                 ?? UserDataManager.shared.appUser?.profilePicture,
                             onlineUserIds: viewModel.onlineUserIds,
                             onAdd: { navigator.onAddQuickMoment?() },
-                            onOpen: { item, isMine in navigator.onOpenQuickMoment?(item, isMine) }
+                            onOpen: { item, isMine in navigator.onOpenQuickMoment?(item, isMine, viewModel.quickMomentTray) }
                         )
                         .padding(.top, 8)
                         .padding(.bottom, 6)

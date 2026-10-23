@@ -59,7 +59,7 @@ struct DiscoveryPerson: Codable {
         name = c.string("name", "displayName", "fullName")
         age = c.int("age")
         about = c.string("about", "bio")
-        location = c.string("location")
+        location = c.string("fullLocation", "location")
         city = c.string("city")
         distanceKm = c.first(Double.self, "distanceKm")
         isVerified = c.bool("isVerified", "isFaceVerified")
@@ -282,7 +282,7 @@ struct DiscoverySearchProfile: Codable {
         isVerified = c.bool("isVerified", "isFaceVerified")
         isOnline = c.bool("isOnline")
         distanceKm = c.first(Double.self, "distanceKm")
-        location = c.string("location")
+        location = c.string("fullLocation", "location")
         city = c.string("city")
         lookingFor = c.string("lookingFor")
         primaryPhotoUrl = c.string("primaryPhotoUrl")
@@ -418,6 +418,8 @@ struct OtherUserProfile: Codable {
     let age: Int?
     let gender: String?
     let city: String?
+    /// Full location label from the API (e.g. "Mumbai, Maharashtra, India").
+    let fullLocation: String?
     let distanceKm: Double?
     /// Ready-made label such as "5.2 km away".
     let distance: String?
@@ -447,7 +449,7 @@ struct OtherUserProfile: Codable {
     let canConnect: Bool?
 
     private enum CodingKeys: String, CodingKey {
-        case userId, username, name, fullName, age, gender, city, distanceKm, distance, isVerified, isOnline, lastSeen,
+        case userId, username, name, fullName, age, gender, city, fullLocation, distanceKm, distance, isVerified, isOnline, lastSeen,
              profilePhoto, coverPhoto, bio, vibeScore, vibeExplanation, voiceIntro, moments, interests, sharedInterests,
              moreAboutMe, photos, myAction, matchStatus, hasLiked, isMatched, canConnect
     }
@@ -469,6 +471,8 @@ struct OtherUserProfile: Codable {
         age = value { $0.int("age") }
         gender = value { $0.string("gender") }
         city = value { $0.string("city") } ?? location?.string("city", "label", "name")
+        fullLocation = value { $0.string("fullLocation", "full_location") }
+            ?? location?.string("fullLocation", "full_location", "label")
         distanceKm = value { $0.first(Double.self, "distanceKm") }
         distance = value { $0.string("distance") }
         isVerified = value { $0.bool("isVerified", "isFaceVerified") }

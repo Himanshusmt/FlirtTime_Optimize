@@ -721,23 +721,60 @@ final class BackgroundUploadService: ObservableObject {
             metadata["height"] = size.height
         }
 
+        // OneVibe image path: upload file → POST /messages with mediaIds only.
+        // Do not emit chat:send_message and do not multipart the image (both created a 2nd row).
+        if resolvedType == "image" {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                _ = sessionManager.sendChatMessage(
+                    conversationId: task.conversationId,
+                    body: nil,
+                    type: resolvedType,
+                    mediaIds: mediaIds,
+                    location: nil,
+                    poll: nil,
+                    postId: nil,
+                    clientMessageId: task.tempId,
+                    replyToId: task.replyToId,
+                    contentURL: uploaded?.publicUrl,
+                    metadata: metadata
+                )
+                .subscribe(
+                    onSuccess: { [weak self] message in
+                        Task { @MainActor in
+                            guard let self else {
+                                continuation.resume()
+                                return
+                            }
+                            var serverMessage = message
+                            var meta = serverMessage.metadata ?? [:]
+                            if meta["clientTempId"] == nil {
+                                meta["clientTempId"] = AnyCodable(task.tempId)
+                                serverMessage.metadata = meta
+                            }
+                            let statusLower = (serverMessage.status ?? "").lowercased()
+                            if statusLower.isEmpty || statusLower == "sending" || statusLower == "pending" {
+                                serverMessage.status = "sent"
+                            }
+                            self.updateStatus(tempId: task.tempId, status: .completed)
+                            self.finalizeUpload(tempId: task.tempId, serverMessage: serverMessage)
+                            continuation.resume()
+                        }
+                    },
+                    onFailure: { [weak self] error in
+                        Task { @MainActor in
+                            AppLogger.debug("[BGUpload] REST send failed: \(error.localizedDescription)")
+                            self?.markFailed(tempId: task.tempId, reason: "rest send failed")
+                            continuation.resume()
+                        }
+                    }
+                )
+            }
+            return
+        }
+
         let fileData = (try? Data(contentsOf: URL(fileURLWithPath: task.localFileURL)))
         let mimeType = uploaded?.contentType
             ?? (resolvedType == "audio" ? "audio/mp4" : "image/jpeg")
-
-        if resolvedType == "image" {
-            ChatMessageService.emitImageSendMessage(
-                conversationId: task.conversationId,
-                imageUrl: uploaded?.publicUrl ?? metadata["imageUrl"] as? String,
-                image: uploaded?.key ?? contentKey,
-                fileData: fileData,
-                mimeType: mimeType,
-                content: contentKey,
-                clientMessageId: task.tempId,
-                replyToId: task.replyToId,
-                thumbnailUrl: metadata["thumbnailUrl"] as? String
-            )
-        }
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let jsonSend = sessionManager.sendChatMessage(
@@ -755,7 +792,7 @@ final class BackgroundUploadService: ObservableObject {
             )
 
             let send: Single<ConversationMessage>
-            if let fileData, !fileData.isEmpty, resolvedType == "image" || resolvedType == "audio" {
+            if let fileData, !fileData.isEmpty, resolvedType == "audio" {
                 var extra = metadata
                 extra["content"] = contentKey ?? ""
                 extra["key"] = contentKey ?? ""
@@ -891,6 +928,51 @@ final class BackgroundUploadService: ObservableObject {
         }
 
         guard let fileData = try? Data(contentsOf: fileURL), !fileData.isEmpty else { return nil }
+
+        // OneVibe image path: POST /api/v1/media/images (purpose: chat) → mediaId.
+        if task.messageType == "image" {
+            return await withCheckedContinuation { continuation in
+                var resumed = false
+                let finish: (ChatPresignedUploadResult?) -> Void = { result in
+                    guard !resumed else { return }
+                    resumed = true
+                    continuation.resume(returning: result)
+                }
+
+                _ = sessionManager.uploadPostImageDirect(imageData: fileData, purpose: "chat")
+                    .map { session -> ChatPresignedUploadResult in
+                        let mediaId = session.resolvedMediaId ?? session.resolvedStorageKey ?? ""
+                        guard !mediaId.isEmpty else {
+                            throw APIError.apiError("media/images did not return mediaId")
+                        }
+                        return ChatPresignedUploadResult(
+                            key: mediaId,
+                            publicUrl: session.resolvedPublicUrl,
+                            thumbnailUrl: session.resolvedThumbnailUrl,
+                            contentType: "image/jpeg"
+                        )
+                    }
+                    .catch { _ in
+                        sessionManager.uploadChatAttachment(
+                            data: fileData,
+                            kind: "image",
+                            contentType: "image/jpeg",
+                            fileName: task.filename
+                        )
+                    }
+                    .subscribe(
+                        onSuccess: { uploaded in
+                            AppLogger.debug("[BGUpload] Image mediaId=\(uploaded.key) url=\(uploaded.publicUrl ?? "nil")")
+                            finish(uploaded)
+                        },
+                        onFailure: { error in
+                            AppLogger.debug("[BGUpload] Image upload failed: \(error.localizedDescription)")
+                            finish(nil)
+                        }
+                    )
+            }
+        }
+
         let kind = task.messageType == "audio" ? "audio" : "image"
         let contentType = task.messageType == "audio" ? "audio/mp4" : "image/jpeg"
 

@@ -42,8 +42,8 @@ final class ChatListContainerViewController: BaseViewController {
         navigator.onAddQuickMoment = { [weak self] in
             self?.openAddQuickMoment()
         }
-        navigator.onOpenQuickMoment = { [weak self] item, isMine in
-            self?.openQuickMoments(of: item, isMine: isMine)
+        navigator.onOpenQuickMoment = { [weak self] item, isMine, tray in
+            self?.openQuickMoments(of: item, isMine: isMine, tray: tray)
         }
         tapGesture()
         ChatMockSeeder.shared.seedIfNeeded()
@@ -284,11 +284,11 @@ final class ChatListContainerViewController: BaseViewController {
         present(composer, animated: true)
     }
 
-    private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
+    private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool, tray: QuickMomentTray?) {
         quickMomentsHost.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
             if isMine {
-                self.presentQuickMoments(stories, of: item, isMine: true)
+                self.presentQuickMoments(stories, of: item, isMine: true, tray: tray)
                 return
             }
             guard !stories.isEmpty else {
@@ -296,38 +296,28 @@ final class ChatListContainerViewController: BaseViewController {
                 self.quickMomentsHost.loadQuickMomentTray()
                 return
             }
-            self.presentQuickMoments(stories, of: item, isMine: false)
+            self.presentQuickMoments(stories, of: item, isMine: false, tray: tray)
         }
     }
 
-    private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
-        let stories = Array(stories.reversed())
+    private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool, tray: QuickMomentTray?) {
         guard !stories.isEmpty else { return }
-        let user = item.user
-        let userId = user?.id ?? stories.first?.userId
-        var profile = MomentsProfile(
-            id: userId?.stableID ?? 0,
-            displayName: isMine ? "You" : (user?.name ?? user?.fullName ?? "Someone"),
-            age: nil,
-            isVerified: user?.isVerified ?? false,
-            gender: nil,
-            city: user?.location,
-            distanceKm: nil,
-            isOnline: nil,
-            datingIntent: nil,
-            photos: [user?.photo].compactMap { $0 },
-            about: "",
-            interests: [],
-            sharedInterests: [],
-            reasons: [],
-            voiceIntro: nil,
-            moments: stories.enumerated().map { $0.element.storyMoment(id: $0.offset) },
-            vibeScore: nil
-        )
-        profile.remoteUserId = userId
-        let startIndex = isMine ? 0 : (stories.firstIndex { !$0.hasViewed } ?? 0)
-        let viewer = QuickMomentViewController(profile: profile, startIndex: startIndex, isOwnMoments: isMine)
+        let (pages, start) = QuickMomentViewerPage.sequence(tray: tray, selected: item, isMine: isMine)
+        let pager = QuickMomentsPagerViewController(pages: pages, startIndex: start, initialStories: stories)
+        pager.onLoadStories = { [weak self] page, done in
+            self?.quickMomentsHost.quickMoments(of: page.item, isMine: page.isMine, completion: done)
+        }
+        pager.onBindViewer = { [weak self] viewer, stories, page in
+            self?.bindQuickMomentViewer(viewer, stories: stories, isMine: page.isMine)
+        }
+        pager.onDismiss = { [weak self] in
+            self?.quickMomentsHost.loadQuickMomentTray()
+            self?.navigator.onChatDetailPopped?()
+        }
+        (navigationController ?? self).present(pager, animated: true)
+    }
 
+    private func bindQuickMomentViewer(_ viewer: QuickMomentViewController, stories: [QuickMoment], isMine: Bool) {
         if isMine {
             viewer.onShowActivity = { index, presenter in
                 guard stories.indices.contains(index) else { return }
@@ -345,38 +335,34 @@ final class ChatListContainerViewController: BaseViewController {
                     self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
                 }
             }
-        } else {
-            var seen = Set<String>()
-            viewer.onMomentShown = { [weak self] index in
-                guard stories.indices.contains(index), !stories[index].hasViewed,
-                      seen.insert(stories[index].id).inserted else { return }
-                self?.quickMomentsHost.markQuickMomentViewed(id: stories[index].id)
-            }
-            viewer.onReact = { [weak self] index, emoji in
-                guard stories.indices.contains(index) else { return }
-                self?.quickMomentsHost.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
-                    self?.aCustomToastView.show(message: message)
-                }
-            }
-            viewer.onReply = { [weak self] index, message in
-                guard stories.indices.contains(index) else { return }
-                self?.quickMomentsHost.replyToQuickMoment(id: stories[index].id, message: message) { error in
-                    self?.aCustomToastView.show(message: error)
-                }
-            }
-            viewer.onViewProfile = { [weak self] profile in
-                self?.dismiss(animated: true) {
-                    let profileVC = CardDetailViewController(profile: profile)
-                    profileVC.hidesBottomBarWhenPushed = true
-                    self?.navigationController?.pushViewController(profileVC, animated: true)
-                }
+            return
+        }
+
+        var seen = Set<String>()
+        viewer.onMomentShown = { [weak self] index in
+            guard stories.indices.contains(index), !stories[index].hasViewed,
+                  seen.insert(stories[index].id).inserted else { return }
+            self?.quickMomentsHost.markQuickMomentViewed(id: stories[index].id)
+        }
+        viewer.onReact = { [weak self] index, emoji in
+            guard stories.indices.contains(index) else { return }
+            self?.quickMomentsHost.reactToQuickMoment(id: stories[index].id, emoji: emoji) { message in
+                self?.aCustomToastView.show(message: message)
             }
         }
-        viewer.onDismiss = { [weak self] in
-            self?.quickMomentsHost.loadQuickMomentTray()
-            self?.navigator.onChatDetailPopped?()
+        viewer.onReply = { [weak self] index, message in
+            guard stories.indices.contains(index) else { return }
+            self?.quickMomentsHost.replyToQuickMoment(id: stories[index].id, message: message) { error in
+                self?.aCustomToastView.show(message: error)
+            }
         }
-        (navigationController ?? self).present(viewer, animated: true)
+        viewer.onViewProfile = { [weak self] profile in
+            self?.dismiss(animated: true) {
+                let profileVC = CardDetailViewController(profile: profile)
+                profileVC.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(profileVC, animated: true)
+            }
+        }
     }
 }
 

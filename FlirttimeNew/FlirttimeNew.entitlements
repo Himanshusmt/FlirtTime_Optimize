@@ -8,5 +8,7 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.proximity-reader.customer-engagement</key>
+	<array/>
 </dict>
 </plist>

@@ -256,7 +256,7 @@ final class MomentsFiltersViewController: UIViewController {
     }
 
     private func makeToggleSection() -> UIView {
-        let verified = toggleRow(symbol: "verified", tint: UIColor(red: 0.25, green: 0.52, blue: 0.96, alpha: 1),
+        let verified = toggleRow(symbol: "verified", tint: AppColor.Punch,
                                  title: "Verified only", subtitle: "Photo-verified profiles", toggle: verifiedSwitch) { [weak self] isOn in
             self?.filters.verifiedOnly = isOn
             self?.changed(refreshControls: false)

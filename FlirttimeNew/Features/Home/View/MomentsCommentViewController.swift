@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Combine
 import IQKeyboardManagerSwift
 
 final class MomentsCommentViewController: BaseViewController {
@@ -13,8 +14,10 @@ final class MomentsCommentViewController: BaseViewController {
     var onCommentsCountChanged: ((Int) -> Void)?
     /// Called after the sheet is dismissed so the presenting Moments list can push the profile.
     var onOpenUser: ((OtherUserProfileRouter.Seed) -> Void)?
+    var vibeId: String { viewModel.vibeId }
 
     private var isResolvingMention = false
+    private var cancellables: Set<AnyCancellable> = []
 
     private let viewModel: MomentsCommentViewModel
     private var wasKeyboardManagerEnabled = true
@@ -161,6 +164,7 @@ final class MomentsCommentViewController: BaseViewController {
         view.backgroundColor = AppColor.AppWhite
         setUI()
         refreshSendState()
+        setSocketBinding()
         loadComments()
     }
 
@@ -286,6 +290,35 @@ final class MomentsCommentViewController: BaseViewController {
     private func updateEmptyState() {
         emptyStateLabel.text = "No comments yet.\nStart the conversation."
         emptyStateLabel.isHidden = !viewModel.isEmpty
+    }
+
+    private func setSocketBinding() {
+        MomentsSocketService.shared.setupSocketListeners()
+        MomentsSocketService.shared.updates
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] update in
+                self?.applySocket(update)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func applySocket(_ update: MomentSocketUpdate) {
+        guard update.momentId == viewModel.vibeId else { return }
+        switch viewModel.applySocket(update) {
+        case .inserted(let indexPath, let isNewThread):
+            emptyStateLabel.isHidden = true
+            apply(isNewThread ? .insert(indexPath.section) : .reload(indexPath.section))
+            onCommentsCountChanged?(viewModel.totalCount)
+        case .deleted(let section, let removedThread):
+            if replyTarget?.id == update.commentId { cancelReply() }
+            apply(removedThread ? .delete(section) : .reload(section), animation: .fade)
+            updateEmptyState()
+            onCommentsCountChanged?(viewModel.totalCount)
+        case .liked(let commentId):
+            reconfigureRow(forCommentId: commentId)
+        case .none:
+            break
+        }
     }
 
     // MARK: - Data

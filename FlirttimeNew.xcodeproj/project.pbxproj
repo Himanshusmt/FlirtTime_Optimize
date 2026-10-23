@@ -75,16 +75,18 @@
 		A1E7C0DE000000000000C3B1 /* SearchPeopleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */; };
 		A1E7C0DE000000000000C4B1 /* SearchPeople.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */; };
 		A1F0C0DE0000000000000001 /* DeviceTokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */; };
+		B2C0V0IP0000000000000001 /* VoIPPushManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C0V0IP0000000000000002 /* VoIPPushManager.swift */; };
+		B2C0V0IP0000000000000003 /* IncomingCallPushRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C0V0IP0000000000000004 /* IncomingCallPushRouter.swift */; };
 		A1F0C0DE0000000000000003 /* NotificationBadgeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C0DE0000000000000004 /* NotificationBadgeStore.swift */; };
+		A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F1L1M1T000000000000001 /* FreeTierLimits.swift */; };
 		A712710E57D93B73CAAC2886 /* FilteredProfilesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A997E988C48ABBBFC52E3B9 /* FilteredProfilesViewController.swift */; };
 		A7F3C2E19B4D5A6C8E0F1D2C /* GestureVerificationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */; };
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
-		FF1000000000000000000003 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FF1000000000000000000002 /* FirebaseCore */; };
-		FF1000000000000000000005 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FF1000000000000000000004 /* FirebaseMessaging */; };
 		AA8A87203B42CD1AAC86E678 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
 		ABA8E3131442FE3510E2B568 /* Settings.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BABCADFABF14A0789D8A669B /* Settings.storyboard */; };
 		AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */; };
+		7C91A0B2E4D84F6A9E1C2B0E /* QuickMomentsPagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C91A0B2E4D84F6A9E1C2B0D /* QuickMomentsPagerViewController.swift */; };
 		B1C2D3E4F5A60718293A4B5D /* OtherUserProfileRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* OtherUserProfileRouter.swift */; };
 		B2C3D4E5F60718293A4B5C6E /* S3MediaUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* S3MediaUploader.swift */; };
 		B4D13E3BE4F46F39A4FB5591 /* MomentsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E1BA562B4E8690629FCE44 /* MomentsComponents.swift */; };
@@ -96,6 +98,7 @@
 		C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Moments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BD5B93999CE8EC6BDE4CF6 /* FilterModel+Moments.swift */; };
 		C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */; };
 		C3D4E5F60718293A4B5C6D7E /* MomentLikesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7F /* MomentLikesViewController.swift */; };
+		C4E5F60718293A4B5C6D8A2 /* MomentsSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E5F60718293A4B5C6D8A1 /* MomentsSocketService.swift */; };
 		C3D5E7F9A1B2C4D6E8F0A1B3 /* ProfilePhotoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */; };
 		C4F6FB126131ADD65E0ABDD1 /* DiscoverTabViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 550DB0372E00F5662FAC56E3 /* DiscoverTabViews.swift */; };
 		C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */; };
@@ -704,7 +707,6 @@
 		E3E8893A3078C1AA0026295C /* outgoing_ringback.caf in Resources */ = {isa = PBXBuildFile; fileRef = E3E888853078C1AA0026295C /* outgoing_ringback.caf */; };
 		E3FF37FA308232C1001EC8C2 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E3FF37F9308232C0001EC8C2 /* GoogleService-Info.plist */; };
 		E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */; };
-		A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F1L1M1T000000000000001 /* FreeTierLimits.swift */; };
 		E851F509A9AEA35CCEAE972D /* MockDiscover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7045A9235ADAA76496ED259C /* MockDiscover.swift */; };
 		ECF3D5B9CE6A4717BE493145 /* OtherUserMomentCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */; };
 		F189E90288DF492E06A41554 /* PremiumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE289C6E8EF572061621B105 /* PremiumViewController.swift */; };
@@ -714,6 +716,8 @@
 		F690335568303B016201193C /* MomentsFiltersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */; };
 		F8CB26514F9C07EB669DE2C9 /* MomentsStoryComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */; };
 		FB67863579153AC35FC6EFD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */; };
+		FF1000000000000000000003 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = FF1000000000000000000002 /* FirebaseCore */; };
+		FF1000000000000000000005 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FF1000000000000000000004 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -766,6 +770,7 @@
 		7E1A2B3C4D5E6F7081920A1B /* InteractionAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionAPIModels.swift; sourceTree = "<group>"; };
 		7E1A2B3C4D5E6F7081920B2A /* MyProfileAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyProfileAPIModels.swift; sourceTree = "<group>"; };
 		7FB6A6E2D71BF2706C814A73 /* AppUser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
+		7C91A0B2E4D84F6A9E1C2B0D /* QuickMomentsPagerViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentsPagerViewController.swift; sourceTree = "<group>"; };
 		84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentViewController.swift; sourceTree = "<group>"; };
 		868BB79E57AB24F029259346 /* FlirttimeStore.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = FlirttimeStore.storekit; sourceTree = "<group>"; };
 		89EDAEE82222FCD54C07B78F /* GestureActionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureActionOverlay.swift; sourceTree = "<group>"; };
@@ -782,7 +787,10 @@
 		A1E7C0DE000000000000C3A1 /* SearchPeopleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPeopleViewModel.swift; sourceTree = "<group>"; };
 		A1E7C0DE000000000000C4A1 /* SearchPeople.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = SearchPeople.storyboard; sourceTree = "<group>"; };
 		A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DeviceTokenManager.swift; sourceTree = "<group>"; };
+		B2C0V0IP0000000000000002 /* VoIPPushManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoIPPushManager.swift; sourceTree = "<group>"; };
+		B2C0V0IP0000000000000004 /* IncomingCallPushRouter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IncomingCallPushRouter.swift; sourceTree = "<group>"; };
 		A1F0C0DE0000000000000004 /* NotificationBadgeStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationBadgeStore.swift; sourceTree = "<group>"; };
+		A2F1L1M1T000000000000001 /* FreeTierLimits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreeTierLimits.swift; sourceTree = "<group>"; };
 		A31B9D86E77BC38CB0E0D459 /* PremiumViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumViews.swift; sourceTree = "<group>"; };
 		A4583B56CB0B673558BE2228 /* VoiceIntroModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIntroModel.swift; sourceTree = "<group>"; };
 		A7F3C2E19B4D5A6C8E0F1D2B /* GestureVerificationViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GestureVerificationViewModel.swift; sourceTree = "<group>"; };
@@ -799,6 +807,7 @@
 		BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsFiltersViewController.swift; sourceTree = "<group>"; };
 		C01A5E7D0000000000000001 /* CoinPackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinPackStore.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7F /* MomentLikesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentLikesViewController.swift; sourceTree = "<group>"; };
+		C4E5F60718293A4B5C6D8A1 /* MomentsSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentsSocketService.swift; sourceTree = "<group>"; };
 		C3D5E7F9A1B2C4D6E8F0A1B2 /* ProfilePhotoViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoViewModel.swift; sourceTree = "<group>"; };
 		C3FC9CAFE8E1533E620EC0AB /* CoinsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewModel.swift; sourceTree = "<group>"; };
 		C8D8C1764A0A49E79D364978 /* CoinsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinsViewController.swift; sourceTree = "<group>"; };
@@ -1403,7 +1412,6 @@
 		E3E888903078C1AA0026295C /* ChatDataModel_v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChatDataModel_v3.xcdatamodel; sourceTree = "<group>"; };
 		E3FF37F9308232C0001EC8C2 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E5F7A9B1C3D4E6F8A0B2C3D4 /* DiscoveryAPIModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoveryAPIModels.swift; sourceTree = "<group>"; };
-		A2F1L1M1T000000000000001 /* FreeTierLimits.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreeTierLimits.swift; sourceTree = "<group>"; };
 		E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppTokenStore.swift; sourceTree = "<group>"; };
 		E712EC1C8BC567E850631512 /* SubscriptionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionModel.swift; sourceTree = "<group>"; };
 		EACE1EEEF5559B5C0C6FFD4E /* AppBackendClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppBackendClient.swift; sourceTree = "<group>"; };
@@ -1610,6 +1618,7 @@
 			isa = PBXGroup;
 			children = (
 				84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */,
+				7C91A0B2E4D84F6A9E1C2B0D /* QuickMomentsPagerViewController.swift */,
 				67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */,
 				5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */,
 				49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */,
@@ -2162,10 +2171,19 @@
 			children = (
 				E3A2D75230776627008D1551 /* Cell */,
 				E3A2D75430776627008D1551 /* Model */,
+				C4E5F60718293A4B5C6D8A3 /* Services */,
 				E3A2D75930776627008D1551 /* View */,
 				E3A2D75E30776627008D1551 /* ViewModel */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		C4E5F60718293A4B5C6D8A3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C4E5F60718293A4B5C6D8A1 /* MomentsSocketService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		E3A2D76830776627008D1551 /* Cell */ = {
@@ -3231,6 +3249,8 @@
 				E3E888883078C1AA0026295C /* BetterUserDefaults.swift */,
 				E3E888893078C1AA0026295C /* BlockedUsersManager.swift */,
 				E3E8888A3078C1AA0026295C /* CallKitManager.swift */,
+				B2C0V0IP0000000000000002 /* VoIPPushManager.swift */,
+				B2C0V0IP0000000000000004 /* IncomingCallPushRouter.swift */,
 				E3E8888B3078C1AA0026295C /* SwiftyJSON.swift */,
 			);
 			path = Support;
@@ -3916,6 +3936,8 @@
 				E3E889343078C1AA0026295C /* BetterUserDefaults.swift in Sources */,
 				E3E889353078C1AA0026295C /* BlockedUsersManager.swift in Sources */,
 				E3E889363078C1AA0026295C /* CallKitManager.swift in Sources */,
+				B2C0V0IP0000000000000001 /* VoIPPushManager.swift in Sources */,
+				B2C0V0IP0000000000000003 /* IncomingCallPushRouter.swift in Sources */,
 				E3E889373078C1AA0026295C /* SwiftyJSON.swift in Sources */,
 				E3A2DA1030776627008D1551 /* AttributesViewModel.swift in Sources */,
 				E3A2DA1130776627008D1551 /* ImageCollectionViewCell.swift in Sources */,
@@ -3967,6 +3989,7 @@
 				E3A2DA3930776627008D1551 /* MomentsUploadViewModel.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5D /* MomentAPIModels.swift in Sources */,
 				C3D4E5F60718293A4B5C6D7E /* MomentLikesViewController.swift in Sources */,
+				C4E5F60718293A4B5C6D8A2 /* MomentsSocketService.swift in Sources */,
 				E3A2DA3A30776627008D1551 /* MomentCollectionViewCell.swift in Sources */,
 				E3A2DA3B30776627008D1551 /* MoreAboutMeTableViewCell.swift in Sources */,
 				E3A2DA3D30776627008D1551 /* UserInterestCollectionViewCell.swift in Sources */,
@@ -4032,6 +4055,7 @@
 				C05D3201EB78D6CC7EF6D9F5 /* FilterModel+Moments.swift in Sources */,
 				97EAC81079DCE02E6FAA0FBE /* MomentsProfile.swift in Sources */,
 				AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */,
+				7C91A0B2E4D84F6A9E1C2B0E /* QuickMomentsPagerViewController.swift in Sources */,
 				C57E2A295829D18EE05B7CD6 /* WhyMomentsDetailsViewController.swift in Sources */,
 				E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */,
 				A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */,
@@ -4134,6 +4158,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
+				INFOPLIST_KEY_NSVoIPUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
@@ -4182,6 +4207,7 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
+				INFOPLIST_KEY_NSVoIPUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;

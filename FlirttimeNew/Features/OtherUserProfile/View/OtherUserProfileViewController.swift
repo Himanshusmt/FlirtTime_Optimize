@@ -28,6 +28,8 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
     private static let photoAspectRatio: CGFloat = 230 / 165
     /// Resting height of the cover photo; it grows past this while the profile is pulled down.
     private static let coverHeight: CGFloat = 270
+    /// Same size as the own-profile badge next to the 26pt name.
+    private static let verifiedBadgeSize: CGFloat = 20
     /// Moment tiles shown before the "See all" tile takes the next slot.
     static let momentsGridLimit = 8
 
@@ -160,6 +162,7 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                                        forCellWithReuseIdentifier: OtherUserSeeAllMomentsCell.identifier)
         details = makeDetails()
         lockHeaderImageSizes()
+        lockVerifiedBadgeSize()
         disableCollectionSelfSizing()
         applyPreviewImages()
         configurePullToRefresh()
@@ -216,6 +219,19 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
             imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         }
+    }
+
+    /// The verify asset is a 32pt SVG over a 256px image, so it will blow past the name without a hard size.
+    private func lockVerifiedBadgeSize() {
+        verifiedImageView.contentMode = .scaleAspectFit
+        verifiedImageView.clipsToBounds = true
+        verifiedImageView.setContentHuggingPriority(.required, for: .horizontal)
+        verifiedImageView.setContentHuggingPriority(.required, for: .vertical)
+        verifiedImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        verifiedImageView.setContentCompressionResistancePriority(.required, for: .vertical)
+        verifiedImageView.constraints
+            .filter { $0.firstAttribute == .width || $0.firstAttribute == .height }
+            .forEach { $0.constant = Self.verifiedBadgeSize }
     }
 
     /// iOS self-sizes flow-layout cells from the image, which looks stretched until the next layout pass.
@@ -597,7 +613,9 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         let action = details?.myAction?.lowercased()
         let hasSuperLiked = action == "super_like"
         let hasLiked = action == "like" || hasSuperLiked
-        MomentsProfileActionButton.applyIcon(to: superLikeButton)
+        MomentsProfileActionButton.applyStyle(.notInterested, to: dislikeButton, size: 60)
+        MomentsProfileActionButton.applyStyle(.superLike, to: superLikeButton, size: 72)
+        MomentsProfileActionButton.applyStyle(.like, to: likeButton, size: 60)
         dislikeButton.isHidden = false
         likeButton.isHidden = hasLiked
         superLikeButton.isHidden = hasSuperLiked

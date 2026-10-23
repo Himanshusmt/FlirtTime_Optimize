@@ -1133,15 +1133,22 @@ final class SessionManager {
         ]
         var meta = metadata ?? [:]
 
-        let resolvedContent = [contentURL, body, mediaIds?.first]
+        // OneVibe: image messages are created with `mediaIds`, not a re-uploaded file.
+        if let mediaIds, !mediaIds.isEmpty { params["mediaIds"] = mediaIds }
+
+        let resolvedContent = [contentURL, body]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty }
 
         switch messageType.lowercased() {
         case "image":
-            if let resolvedContent { params["content"] = resolvedContent }
+            if let resolvedContent,
+               resolvedContent.lowercased().hasPrefix("http://")
+                || resolvedContent.lowercased().hasPrefix("https://") {
+                params["content"] = resolvedContent
+            }
             if meta["source"] == nil { meta["source"] = "photo" }
-            params["metadata"] = meta
+            if !meta.isEmpty { params["metadata"] = meta }
         case "audio", "voice":
             if let resolvedContent { params["content"] = resolvedContent }
             if !meta.isEmpty { params["metadata"] = meta }

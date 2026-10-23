@@ -22,6 +22,17 @@ final class QuickMomentViewController: UIViewController {
     /// Other people's moments: a reply to the moment at the index.
     var onReply: ((Int, String) -> Void)?
     var onDismiss: (() -> Void)?
+    /// Tray viewer: last moment finished — move to the next user's Quick Moments.
+    var onAdvanceUser: (() -> Void)?
+    /// Tray viewer: first moment went back — move to the previous user's Quick Moments.
+    var onRewindUser: (() -> Void)?
+    /// Pause horizontal user-swiping while holding, typing, or showing a sheet.
+    var onChromeLockChanged: ((Bool) -> Void)?
+    /// Another user's Quick Moments sit before this one in the tray.
+    var canPageToPreviousUser = false
+    /// Another user's Quick Moments sit after this one in the tray.
+    var canPageToNextUser = false
+    var analyticsProfileID: Int { profile.id }
 
     private enum PauseReason { case holding, typing, sheet, background }
 
@@ -37,6 +48,7 @@ final class QuickMomentViewController: UIViewController {
     private var lastTimestamp: CFTimeInterval?
     private var displayLink: CADisplayLink?
     private var pauseReasons = Set<PauseReason>()
+    private var isLeavingUser = false
 
     private let imageView = UIImageView()
     private let textBackground = MomentsGradientView(colors: MomentsTheme.brandGradient)
@@ -52,13 +64,16 @@ final class QuickMomentViewController: UIViewController {
     private let replyField = UITextField()
     private let sendButton = UIButton(type: .system)
     private let bottomStack = UIStackView()
+    private let incomingReactionsLayer = UIView()
     private lazy var previousButton = arrowButton("chevron.left", label: "Previous moment") { [weak self] in self?.go(by: -1) }
     private lazy var nextButton = arrowButton("chevron.right", label: "Next moment") { [weak self] in self?.go(by: 1) }
 
     private var progressBars: [MomentProgressBar] { progressStack.arrangedSubviews.compactMap { $0 as? MomentProgressBar } }
     private var currentBar: MomentProgressBar? { progressBars.indices.contains(index) ? progressBars[index] : nil }
     private var currentMoment: MomentsStory? { profile.moments.indices.contains(index) ? profile.moments[index] : nil }
-    private var chromeViews: [UIView] { [progressStack, header, previousButton, nextButton, captionStack, bottomStack] }
+    private var chromeViews: [UIView] { [progressStack, header, previousButton, nextButton, captionStack, bottomStack, incomingReactionsLayer] }
+    private var incomingReactionToken = 0
+    private var incomingFloater: InstantReactionFloater?
 
     init(profile: MomentsProfile, startIndex: Int, isOwnMoments: Bool = false) {
         self.profile = profile
@@ -138,6 +153,11 @@ final class QuickMomentViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview($0)
         }
+        incomingReactionsLayer.isUserInteractionEnabled = false
+        incomingReactionsLayer.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(incomingReactionsLayer)
+        incomingReactionsLayer.pinEdges(to: view)
+
         bottomStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomStack)
 
@@ -188,16 +208,22 @@ final class QuickMomentViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // displayLink is nil after paging away; keep progress if we only presented a sheet.
+        if displayLink == nil {
+            prepareForVisiblePlayback()
+        }
         guard displayLink == nil else { return }
         let link = CADisplayLink(target: self, selector: #selector(tick(_:)))
         link.add(to: .main, forMode: .common)
-        displayLink = link    }
+        displayLink = link
+    }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         guard presentedViewController == nil else { return }
         displayLink?.invalidate()
         displayLink = nil
+        clearIncomingReactions()
         if isBeingDismissed { onDismiss?() }
     }
 
@@ -397,9 +423,9 @@ final class QuickMomentViewController: UIViewController {
     @objc private func tick(_ link: CADisplayLink) {
         defer { lastTimestamp = link.timestamp }
         if pauseReasons.contains(.sheet), presentedViewController == nil, !isBeingDismissed {
-            pauseReasons.remove(.sheet)
+            resume(.sheet)
         }
-        guard let last = lastTimestamp, pauseReasons.isEmpty, !UIAccessibility.isVoiceOverRunning else { return }
+        guard !isLeavingUser, let last = lastTimestamp, pauseReasons.isEmpty, !UIAccessibility.isVoiceOverRunning else { return }
         elapsed += link.timestamp - last
         if elapsed >= Self.momentDuration {
             go(by: 1)
@@ -408,8 +434,22 @@ final class QuickMomentViewController: UIViewController {
         }
     }
 
-    private func pause(_ reason: PauseReason) { pauseReasons.insert(reason) }
-    private func resume(_ reason: PauseReason) { pauseReasons.remove(reason) }
+    private func pause(_ reason: PauseReason) {
+        pauseReasons.insert(reason)
+        notifyChromeLock()
+    }
+
+    private func resume(_ reason: PauseReason) {
+        pauseReasons.remove(reason)
+        notifyChromeLock()
+    }
+
+    private func notifyChromeLock() {
+        let locked = pauseReasons.contains(.holding)
+            || pauseReasons.contains(.typing)
+            || pauseReasons.contains(.sheet)
+        onChromeLockChanged?(locked)
+    }
 
     @objc private func appWillResignActive() { pause(.background) }
     @objc private func appDidBecomeActive() { resume(.background) }
@@ -447,16 +487,53 @@ final class QuickMomentViewController: UIViewController {
         let target = index + delta
         guard profile.moments.indices.contains(target) else {
             if target >= profile.moments.count {
-                pause(.sheet)
-                dismiss(animated: true)
+                leaveCurrentUser(forward: true)
             } else {
-                elapsed = 0
-                currentBar?.progress = 0
+                leaveCurrentUser(forward: false)
             }
             return
         }
         index = target
         update(animated: true)
+    }
+
+    private func leaveCurrentUser(forward: Bool) {
+        if forward {
+            guard !isLeavingUser else { return }
+            isLeavingUser = true
+            // Keep the last segment visually complete, but clear the timer so a
+            // swipe-back cannot immediately auto-advance again.
+            elapsed = 0
+            lastTimestamp = nil
+            if onAdvanceUser != nil {
+                onAdvanceUser?()
+            } else {
+                pause(.sheet)
+                dismiss(animated: true)
+            }
+        } else if canPageToPreviousUser, onRewindUser != nil {
+            onRewindUser?()
+        } else {
+            elapsed = 0
+            currentBar?.progress = 0
+        }
+    }
+
+    /// Used when the next user's first moment goes back: land on this user's last story.
+    func jumpToLastMoment() {
+        guard !profile.moments.isEmpty else { return }
+        index = profile.moments.count - 1
+        update(animated: false)
+        prepareForVisiblePlayback()
+    }
+
+    /// Restart the current story's timer when this user becomes visible again.
+    /// Already-watched earlier segments stay filled.
+    func prepareForVisiblePlayback() {
+        isLeavingUser = false
+        lastTimestamp = nil
+        elapsed = 0
+        currentBar?.progress = 0
     }
 
     private func update(animated: Bool) {
@@ -487,14 +564,15 @@ final class QuickMomentViewController: UIViewController {
         captionLabel.isHidden = moment.caption == nil || moment.isText
         locationLabel.text = profile.city.map { "📍 \($0)" }
         locationLabel.isHidden = profile.city == nil
-        previousButton.isHidden = index == 0
-        nextButton.isHidden = index >= profile.moments.count - 1
+        previousButton.isHidden = index == 0 && !canPageToPreviousUser
+        nextButton.isHidden = index >= profile.moments.count - 1 && !canPageToNextUser
         if isOwnMoments {
             let activity = activityText(for: moment)
             activityButton.configuration?.attributedTitle = AttributedString(activity, attributes: AttributeContainer([
                 .font: MomentsFont.scaled(.medium, 14, style: .subheadline)
             ]))
             activityButton.accessibilityLabel = activity + ". Show activity"
+            playIncomingReactions(for: moment)
         }
         if !isOwnMoments { onMomentShown?(index) }
         imageView.isAccessibilityElement = true
@@ -540,6 +618,51 @@ final class QuickMomentViewController: UIViewController {
         view.endEditing(true)
         showConfirmation("Reply sent to \(profile.displayName)")
         onReply?(index, text)
+    }
+
+    /// Instagram-style: as soon as you open your own moment, received reactions float up.
+    private func playIncomingReactions(for moment: MomentsStory) {
+        incomingReactionToken += 1
+        let token = incomingReactionToken
+        let momentIndex = index
+        clearIncomingReactions()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.incomingReactionToken == token, self.index == momentIndex else { return }
+            self.startIncomingReactions(for: moment)
+        }
+    }
+
+    private func startIncomingReactions(for moment: MomentsStory) {
+        let palette = moment.topReactions.filter { !$0.isEmpty }
+        let reactionCount = moment.reactionsCount ?? 0
+        guard isOwnMoments, reactionCount > 0 || !palette.isEmpty else { return }
+
+        view.layoutIfNeeded()
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        pulseActivityButton()
+        UIAccessibility.post(notification: .announcement, argument: activityText(for: moment))
+
+        let floater = InstantReactionFloater(
+            in: incomingReactionsLayer,
+            emojis: palette.isEmpty ? ["❤️"] : palette
+        )
+        incomingFloater = floater
+        floater.start()
+    }
+
+    private func pulseActivityButton() {
+        guard isOwnMoments else { return }
+        UIView.animate(withDuration: 0.18, animations: {
+            self.activityButton.transform = CGAffineTransform(scaleX: 1.08, y: 1.08)
+        }) { _ in
+            UIView.animate(withDuration: 0.22) { self.activityButton.transform = .identity }
+        }
+    }
+
+    private func clearIncomingReactions() {
+        incomingFloater?.stop()
+        incomingFloater = nil
+        incomingReactionsLayer.subviews.forEach { $0.removeFromSuperview() }
     }
 
     private func floatEmoji(_ emoji: String, from source: UIView) {
@@ -633,6 +756,145 @@ extension QuickMomentViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         sendReply()
         return false
+    }
+}
+
+/// Instagram Instant-style stream: emojis rise from the bottom, sway, grow, and fade at the top.
+private final class InstantReactionFloater {
+    private struct Particle {
+        let view: UILabel
+        let originX: CGFloat
+        let startY: CGFloat
+        let endY: CGFloat
+        let amplitude: CGFloat
+        let frequency: CGFloat
+        let phase: CGFloat
+        let duration: CFTimeInterval
+        let born: CFTimeInterval
+        let startScale: CGFloat
+        let endScale: CGFloat
+        let spin: CGFloat
+    }
+
+    private weak var host: UIView?
+    private let emojis: [String]
+    private let totalCount: Int
+    private let spawnWindow: CFTimeInterval
+    private var particles: [Particle] = []
+    private var displayLink: CADisplayLink?
+    private var startedAt: CFTimeInterval?
+    private var spawned = 0
+
+    init(in host: UIView, emojis: [String]) {
+        self.host = host
+        self.emojis = emojis
+        if UIAccessibility.isReduceMotionEnabled {
+            totalCount = 12
+            spawnWindow = 0.3
+        } else {
+            totalCount = 56
+            spawnWindow = 2.0
+        }
+    }
+
+    func start() {
+        stop()
+        let link = CADisplayLink(target: self, selector: #selector(tick(_:)))
+        link.add(to: .main, forMode: .common)
+        displayLink = link
+    }
+
+    func stop() {
+        displayLink?.invalidate()
+        displayLink = nil
+        startedAt = nil
+        spawned = 0
+        particles.forEach { $0.view.removeFromSuperview() }
+        particles.removeAll()
+    }
+
+    @objc private func tick(_ link: CADisplayLink) {
+        if startedAt == nil { startedAt = link.timestamp }
+        guard let host, let startedAt else { return }
+
+        let elapsed = link.timestamp - startedAt
+        let target = min(totalCount, Int((elapsed / spawnWindow) * Double(totalCount)) + 2)
+        while spawned < target {
+            spawn(at: link.timestamp, in: host)
+            spawned += 1
+        }
+
+        var alive: [Particle] = []
+        alive.reserveCapacity(particles.count)
+        for particle in particles {
+            let t = CGFloat((link.timestamp - particle.born) / particle.duration)
+            if t >= 1 {
+                particle.view.removeFromSuperview()
+                continue
+            }
+            let rise = 1 - pow(1 - min(max(t, 0), 1), 1.55)
+            let y = particle.startY + (particle.endY - particle.startY) * rise
+            let sway = sin((link.timestamp * particle.frequency) + particle.phase) * particle.amplitude * (0.25 + t)
+            let scale = particle.startScale + (particle.endScale - particle.startScale) * rise
+            let alpha: CGFloat
+            if t < 0.07 {
+                alpha = t / 0.07
+            } else if t > 0.78 {
+                alpha = max(0, 1 - (t - 0.78) / 0.22)
+            } else {
+                alpha = 1
+            }
+            particle.view.center = CGPoint(x: particle.originX + sway, y: y)
+            particle.view.alpha = alpha
+            particle.view.transform = CGAffineTransform(rotationAngle: particle.spin * t).scaledBy(x: scale, y: scale)
+            alive.append(particle)
+        }
+        particles = alive
+
+        if spawned >= totalCount && particles.isEmpty {
+            stop()
+        }
+    }
+
+    private func spawn(at time: CFTimeInterval, in host: UIView) {
+        let width = max(host.bounds.width, 1)
+        let height = max(host.bounds.height, 1)
+        let label = UILabel()
+        label.text = emojis[spawned % emojis.count]
+        label.font = .systemFont(ofSize: 26)
+        label.sizeToFit()
+        label.isAccessibilityElement = false
+        label.layer.shadowColor = UIColor.black.cgColor
+        label.layer.shadowOpacity = 0.3
+        label.layer.shadowRadius = 3
+        label.layer.shadowOffset = .zero
+        label.alpha = 0
+        host.addSubview(label)
+
+        // Denser toward the center, like Instant's heart cloud.
+        let centered = (CGFloat.random(in: 0...1) + CGFloat.random(in: 0...1)) / 2
+        let originX = width * (0.07 + centered * 0.86)
+        let startY = height - CGFloat.random(in: 18...78)
+        let endY = height * CGFloat.random(in: 0.07...0.18)
+        let startScale = CGFloat.random(in: 0.16...0.32)
+        let endScale = CGFloat.random(in: 1.05...1.55)
+        label.center = CGPoint(x: originX, y: startY)
+        label.transform = CGAffineTransform(scaleX: startScale, y: startScale)
+
+        particles.append(Particle(
+            view: label,
+            originX: originX,
+            startY: startY,
+            endY: endY,
+            amplitude: UIAccessibility.isReduceMotionEnabled ? 0 : CGFloat.random(in: 10...28),
+            frequency: CGFloat.random(in: 1.6...2.8),
+            phase: CGFloat.random(in: 0...(2 * .pi)),
+            duration: CFTimeInterval.random(in: 2.5...3.6),
+            born: time,
+            startScale: startScale,
+            endScale: endScale,
+            spin: CGFloat.random(in: -0.35...0.35)
+        ))
     }
 }
 

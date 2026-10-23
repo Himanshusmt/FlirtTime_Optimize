@@ -92,9 +92,11 @@ final class ExploreSegmentHeaderView: UIView {
 
     private func setUp() {
         backgroundColor = .clear
+        clipsToBounds = false
 
         stackView.axis = .horizontal
         stackView.distribution = .fillEqually
+        stackView.clipsToBounds = false
         stackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stackView)
 
@@ -218,6 +220,7 @@ final class ExploreSegmentItemView: UIControl {
     }
 
     private func setUp() {
+        clipsToBounds = false
         iconView.image = UIImage(systemName: tab.iconName, withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold))
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
@@ -241,14 +244,18 @@ final class ExploreSegmentItemView: UIControl {
         badgeLabel.textColor = .white
         badgeLabel.textAlignment = .center
         badgeLabel.backgroundColor = AppColor.Punch
-        badgeLabel.layer.cornerRadius = 8
+        badgeLabel.layer.cornerRadius = 9
         badgeLabel.layer.borderWidth = 1.5
         badgeLabel.layer.borderColor = UIColor.white.cgColor
         badgeLabel.clipsToBounds = true
         badgeLabel.isHidden = true
         badgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        badgeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        badgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         addSubview(badgeLabel)
 
+        let badgeCenterX = badgeLabel.centerXAnchor.constraint(equalTo: iconView.trailingAnchor)
+        badgeCenterX.priority = .defaultHigh
         NSLayoutConstraint.activate([
             iconView.heightAnchor.constraint(equalToConstant: 22),
             iconView.widthAnchor.constraint(equalToConstant: 24),
@@ -258,10 +265,12 @@ final class ExploreSegmentItemView: UIControl {
             contentStack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 2),
             contentStack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -2),
 
-            badgeLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: -8),
-            badgeLabel.bottomAnchor.constraint(equalTo: iconView.topAnchor, constant: 10),
-            badgeLabel.heightAnchor.constraint(equalToConstant: 16),
-            badgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 16)
+            badgeCenterX,
+            badgeLabel.centerYAnchor.constraint(equalTo: iconView.topAnchor, constant: 2),
+            badgeLabel.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
+            badgeLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -1),
+            badgeLabel.heightAnchor.constraint(equalToConstant: 18),
+            badgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 18)
         ])
 
         isAccessibilityElement = true
@@ -280,6 +289,7 @@ final class ExploreSegmentItemView: UIControl {
     func setCount(_ count: Int) {
         badgeLabel.text = count > 99 ? "99+" : "\(count)"
         badgeLabel.isHidden = count <= 0
+        badgeLabel.invalidateIntrinsicContentSize()
         accessibilityValue = count > 0 ? "\(count)" : nil
     }
 

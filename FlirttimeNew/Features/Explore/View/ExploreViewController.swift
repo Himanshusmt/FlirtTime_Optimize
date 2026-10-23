@@ -27,7 +27,10 @@ class ExploreViewController: BaseViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        notificationButton.bindNotificationBadge(inset: 7)
+        notificationButton.clipsToBounds = false
+        notificationButton.superview?.clipsToBounds = false
+        vwTopBar.clipsToBounds = false
+        notificationButton.bindNotificationBadge(inset: 6)
         self.setUpSegmentHeader()
         self.setUpPager()
         self.setUpBinding()

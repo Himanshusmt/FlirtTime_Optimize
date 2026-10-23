@@ -90,7 +90,7 @@ final class ChatListNavigator: ObservableObject {
     var onOpenCoinShop: (() -> Void)?
     var onOpenNotifications: (() -> Void)?
     var onAddQuickMoment: (() -> Void)?
-    var onOpenQuickMoment: ((QuickMomentTrayItem, Bool) -> Void)?
+    var onOpenQuickMoment: ((QuickMomentTrayItem, Bool, QuickMomentTray?) -> Void)?
     /// Same gallery avatar Profile uses for the Quick Moments “Add new” bubble.
     @Published var ownAvatarPath: String?
 
