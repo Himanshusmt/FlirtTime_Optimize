@@ -15,26 +15,49 @@ import Swinject
 /// Parses NEW (`success`) and OLD (`status`) Socket.IO ack envelopes.
 enum SocketAckParser {
     static func isSuccess(_ payload: [String: Any]) -> Bool {
-        for key in ["success", "status"] {
+        for key in ["success", "status", "ok"] {
             if let b = payload[key] as? Bool { return b }
             if let i = payload[key] as? Int { return i == 1 }
             if let n = payload[key] as? NSNumber { return n.boolValue }
+            if let s = payload[key] as? String {
+                let lower = s.lowercased()
+                if ["success", "ok", "true", "1"].contains(lower) { return true }
+                if ["false", "0", "error", "failure", "failed"].contains(lower) { return false }
+            }
         }
+        // FlirtTime `chat:message_sent` is often the raw message (`id` + `status: "read"`).
+        if hasMessageId(payload) { return true }
+        if let data = payload["data"] as? [String: Any], hasMessageId(data) { return true }
+        if let message = payload["message"] as? [String: Any], hasMessageId(message) { return true }
         return false
     }
 
-    /// Prefer nested `data`; otherwise treat the payload itself as the message.
+    /// Prefer nested `data` / `message`; otherwise treat the payload itself as the message.
     static func messagePayload(from ack: [String: Any]) -> [String: Any]? {
-        if let data = ack["data"] as? [String: Any] { return data }
-        if ack["id"] != nil { return ack }
+        if let data = ack["data"] as? [String: Any] {
+            if let message = data["message"] as? [String: Any], hasMessageId(message) { return message }
+            if hasMessageId(data) { return data }
+        }
+        if let message = ack["message"] as? [String: Any], hasMessageId(message) { return message }
+        if hasMessageId(ack) { return ack }
         return nil
     }
 
     static func parseMessage(from data: [Any]) -> ConversationMessage? {
-        guard let ack = data.first as? [String: Any],
-              isSuccess(ack),
-              let messageData = messagePayload(from: ack) else { return nil }
+        var first: Any? = data.first
+        if let nested = first as? [Any] { first = nested.first }
+        guard let ack = first as? [String: Any] else { return nil }
+        if let success = ack["success"] as? Bool, !success { return nil }
+        guard isSuccess(ack) || messagePayload(from: ack) != nil,
+              let messageData = messagePayload(from: ack),
+              hasMessageId(messageData) else { return nil }
         return ConversationMessage.fromDictionary(messageData)
+    }
+
+    private static func hasMessageId(_ dict: [String: Any]) -> Bool {
+        stringValue(from: dict["id"]) != nil
+            || stringValue(from: dict["messageId"]) != nil
+            || stringValue(from: dict["message_id"]) != nil
     }
 
     /// Socket / JSON often encode ids as `NSNumber` — `as? String` alone fails.

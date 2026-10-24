@@ -52,6 +52,14 @@ struct MomentsMedia: Codable {
     let fileType: String?
     /// 400x400 thumbnail, for grids.
     var thumbnailPath: String? = nil
+
+    var resolvedFileURL: URL? { Self.url(from: filePath) }
+    var resolvedThumbnailURL: URL? { Self.url(from: thumbnailPath) }
+
+    private static func url(from path: String?) -> URL? {
+        guard let path, !path.isEmpty else { return nil }
+        return URL(string: path.hasPrefix("http") ? path : ApiName.imgBaseURL + path)
+    }
 }
 
 struct MomentsAuthor: Codable {
