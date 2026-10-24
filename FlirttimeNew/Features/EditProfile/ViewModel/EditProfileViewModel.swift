@@ -199,16 +199,23 @@ class EditProfileViewModel{
 
     /// Backend PUT allows 3–5 keys. A 6th slot is the profile photo, saved separately.
     private func saveGalleryKeys(_ keys: [String]) -> Single<Void> {
+        let persist: Single<Void>
         if keys.count <= 5 {
-            return sessionManager.setGalleryPhotos(imageKeys: keys)
+            persist = sessionManager.setGalleryPhotos(imageKeys: keys)
+        } else {
+            let extras = Array(keys.dropFirst())
+            let primary = keys[0]
+            persist = sessionManager.setGalleryPhotos(imageKeys: extras)
+                .flatMap { [weak self] _ -> Single<Void> in
+                    guard let self else { return .error(APIError.apiError("Unable to update photos. Please try again.")) }
+                    return self.sessionManager.setProfilePhoto(imageKey: primary).map { _ in () }
+                }
         }
-        let extras = Array(keys.dropFirst())
-        let primary = keys[0]
-        return sessionManager.setGalleryPhotos(imageKeys: extras)
-            .flatMap { [weak self] _ -> Single<Void> in
-                guard let self else { return .error(APIError.apiError("Unable to update photos. Please try again.")) }
-                return self.sessionManager.setProfilePhoto(imageKey: primary).map { _ in () }
+        return persist.do(onSuccess: {
+            if let primary = keys.first {
+                UserDataManager.shared.storeAvatarPath(primary)
             }
+        })
     }
 
     func getProfileImagePrimary(id:Int) {

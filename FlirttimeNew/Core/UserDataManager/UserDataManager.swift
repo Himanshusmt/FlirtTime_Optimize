@@ -45,9 +45,9 @@ final class UserDataManager {
         set { defaults.set(newValue, forKey: "userAvtarImage") }
     }
 
-    /// Signed-in user's real photo. Skips bundled mock assets such as `mock-me-0`.
+    /// Signed-in user's real photo. Latest stored path wins over the login `appUser` snapshot.
     var avatarPath: String? {
-        [appUser?.profilePicture, userAvtarImage]
+        [userAvtarImage, appUser?.profilePicture]
             .compactMap(Self.remotePhotoPath)
             .first
     }

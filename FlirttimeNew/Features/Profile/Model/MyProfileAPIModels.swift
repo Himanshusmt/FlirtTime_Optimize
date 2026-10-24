@@ -29,6 +29,7 @@ struct MyProfileData: Codable {
 
 struct MyProfileInfo: Codable {
     let id: String?
+    let username: String?
     let displayName: String?
     let age: Int?
     let bio: String?
@@ -44,6 +45,7 @@ struct MyProfileInfo: Codable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
         id = c.string("id", "userId")
+        username = c.string("username", "userName")
         displayName = c.string("displayName", "nickName", "name")
         age = c.int("age")
         bio = c.string("bio", "about")
