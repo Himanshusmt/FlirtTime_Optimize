@@ -18,6 +18,7 @@ class StartProfileVerificationViewController: BaseViewController,Instantiable {
     var methodSelection:PhotoSelectionType?
     var directRedirection:Bool? = false
     private let viewModel = ProfilePhotoViewModel()
+    private var nextStep: OnboardingStep = .gesture
 
     static var storyboardName: StringConvertible {
         return StoryboardName.signUp
@@ -26,12 +27,14 @@ class StartProfileVerificationViewController: BaseViewController,Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.bindViewModel()
+        viewModel.reportScreenOpened()
         self.imageViewGif.setGifImage(name:"pablita-face-id")
         self.labelMakeYourIdentity.setAttriibutText(text1: "Mark your identity\nwith a ", text2: "profile picture.", color: AppColor.Punch, multipleLine: false)
     }
 
     private func bindViewModel() {
-        viewModel.onUploaded = { [weak self] in
+        viewModel.onUploaded = { [weak self] step in
+            self?.nextStep = step
             self?.aFlirtCustomPopUp.completeUpload()
         }
         viewModel.onError = { [weak self] message in
@@ -124,9 +127,17 @@ extension StartProfileVerificationViewController {
     }
 
     func navigateToNextScreen(){
-        let aEndProfileVerificationViewController:EndProfileVerificationViewController = EndProfileVerificationViewController.instantiateFromStoryboard()
-        aEndProfileVerificationViewController.userImage = self.userImage
-        self.navigationController?.pushViewController(aEndProfileVerificationViewController, animated: true)
+        switch nextStep {
+        case .basicInfo, .photos:
+            return
+        case .gesture:
+            let confirmation = EndProfileVerificationViewController.instantiateFromStoryboard()
+            confirmation.userImage = userImage
+            navigationController?.pushViewController(confirmation, animated: true)
+        case .completed:
+            let done = VerificationDoneViewController.instantiateFromStoryboard()
+            navigationController?.pushViewController(done, animated: true)
+        }
     }
 }
 

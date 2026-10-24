@@ -520,6 +520,7 @@
 		E3A2DA5930776627008D1551 /* VerifyOTPViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D79E30776627008D1551 /* VerifyOTPViewController.swift */; };
 		E3A2DA5A30776627008D1551 /* PermissionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D7A030776627008D1551 /* PermissionViewController.swift */; };
 		E3A2DA5B30776627008D1551 /* SplashScreenVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D7A230776627008D1551 /* SplashScreenVC.swift */; };
+		A9C1E4B27D6F48A0B3C5D7E2 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C1E4B27D6F48A0B3C5D7E1 /* OnboardingFlow.swift */; };
 		E3A2DA5C30776627008D1551 /* UserDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D7A830776627008D1551 /* UserDetailsViewController.swift */; };
 		E3A2DA5D30776627008D1551 /* EndProfileVerificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D7AA30776627008D1551 /* EndProfileVerificationViewController.swift */; };
 		E3A2DA5E30776627008D1551 /* FaceVerificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A2D7AB30776627008D1551 /* FaceVerificationViewController.swift */; };
@@ -956,6 +957,7 @@
 		E3A2D79E30776627008D1551 /* VerifyOTPViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyOTPViewController.swift; sourceTree = "<group>"; };
 		E3A2D7A030776627008D1551 /* PermissionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionViewController.swift; sourceTree = "<group>"; };
 		E3A2D7A230776627008D1551 /* SplashScreenVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenVC.swift; sourceTree = "<group>"; };
+		A9C1E4B27D6F48A0B3C5D7E1 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
 		E3A2D7A430776627008D1551 /* Login.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Login.storyboard; sourceTree = "<group>"; };
 		E3A2D7A530776627008D1551 /* SignUp.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = SignUp.storyboard; sourceTree = "<group>"; };
 		E3A2D7A630776627008D1551 /* SplashScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -2477,6 +2479,7 @@
 		E3A2D7B130776627008D1551 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				A9C1E4B27D6F48A0B3C5D7E1 /* OnboardingFlow.swift */,
 				E3A2D79330776627008D1551 /* CountryList */,
 				E3A2D79730776627008D1551 /* Intro */,
 				E3A2D79A30776627008D1551 /* Login */,
@@ -4034,6 +4037,7 @@
 				E3A2DA5930776627008D1551 /* VerifyOTPViewController.swift in Sources */,
 				E3A2DA5A30776627008D1551 /* PermissionViewController.swift in Sources */,
 				E3A2DA5B30776627008D1551 /* SplashScreenVC.swift in Sources */,
+				A9C1E4B27D6F48A0B3C5D7E2 /* OnboardingFlow.swift in Sources */,
 				E3A2DA5C30776627008D1551 /* UserDetailsViewController.swift in Sources */,
 				E3A2DA5D30776627008D1551 /* EndProfileVerificationViewController.swift in Sources */,
 				E3A2DA5E30776627008D1551 /* FaceVerificationViewController.swift in Sources */,

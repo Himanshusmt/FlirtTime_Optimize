@@ -23,6 +23,7 @@ class GestureVerificationViewController: BaseViewController,Instantiable {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.bindViewModel()
+        viewModel.reportScreenOpened()
         self.lablePose.setAttriibutText(text1: Constants.gesture.pose, text2: Constants.gesture.photo, color: AppColor.Punch, multipleLine: false)
 //        self.labelPrivacy.setAttriibutText(text1: Constants.gesture.moreInfo, text2: Constants.gesture.privacyPolicy, color: AppColor.Punch, multipleLine: true)
         self.labelPrivacy.setAttributedTextWithLink(

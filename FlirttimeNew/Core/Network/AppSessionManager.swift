@@ -127,7 +127,7 @@ final class AppSessionManager {
     }
 
     /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "non-binary" | "other".
-    /// The backend requires `fullName`.
+    /// The backend requires `fullName`. Do not send `step`; the server advances `currentStep` to `photos`.
     func updateProfile(fullName: String,
                        nickName: String,
                        dateOfBirth: String,
@@ -135,7 +135,7 @@ final class AppSessionManager {
                        about: String) -> Single<AppUser> {
         let params: [String: Any] = [
             "fullName": fullName,
-            "nickName": nickName,
+            "username": nickName,
             "dateOfBirth": dateOfBirth,
             "gender": gender,
             "about": about
@@ -265,6 +265,31 @@ final class AppSessionManager {
         return backendClient.upload(endPoint: .profilePhotoUpload, fields: [:], files: [file])
     }
 
+    // MARK: - Onboarding progress
+
+    /// `currentStep` is `basicInfo`, `photos`, `gesture`, or `completed`.
+    func onboardingProgress() -> Single<OnboardingProgress> {
+        backendClient.loadJSON(request: AppApiRequest(method: .get, endPoint: .onboardingProgress))
+            .map { OnboardingProgress(json: $0) }
+    }
+
+    /// Where the user is before that step is saved. Allowed values are the four onboarding steps.
+    func updateOnboardingStep(_ step: OnboardingStep) -> Single<Void> {
+        backendClient.loadJSON(request: AppApiRequest(method: .patch, endPoint: .onboardingStep,
+                                                      parameters: ["step": step.rawValue]))
+            .map { _ in () }
+    }
+
+    /// Bookkeeping when an onboarding screen opens. Skipped after the profile is complete so
+    /// Edit Profile and notification re-verify don't move `currentStep` backwards.
+    func reportOnboardingScreen(_ step: OnboardingStep) -> Single<Void> {
+        if UserDataManager.shared.appUser?.isProfileComplete == true
+            || UserDataManager.shared.isHomePageRedirect == true {
+            return .just(())
+        }
+        return updateOnboardingStep(step)
+    }
+
     /// The backend compares the selfie against the user's primary profile photo. Max 5 MB.
     func uploadGestureSelfie(imageData: Data) -> Single<GestureVerification> {
         let file = AppMultipartFile(name: "selfie_image", fileName: "selfie.jpg", mimeType: "image/jpeg", data: imageData)
@@ -295,10 +320,11 @@ final class AppSessionManager {
     }
 
     /// Makes an uploaded S3 photo (folder "photos") the main profile photo.
-    func setProfilePhoto(imageKey: String) -> Single<Void> {
+    /// The server moves `currentStep` to `gesture`. Do not send `step` in this body.
+    func setProfilePhoto(imageKey: String) -> Single<OnboardingProgress> {
         backendClient.loadJSON(request: AppApiRequest(method: .post, endPoint: .profilePhotoUpload,
                                                       parameters: ["imageKey": imageKey]))
-            .map { _ in () }
+            .map { OnboardingProgress(json: $0) }
     }
 
     /// Replaces the gallery with 3–5 S3 keys (folder "photos"), in display order.

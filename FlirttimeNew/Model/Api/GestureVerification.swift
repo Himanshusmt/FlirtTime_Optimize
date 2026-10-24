@@ -19,6 +19,9 @@ struct GestureVerification: Codable {
     let reasonCode: String?
     let reasonMessage: String?
     let rejectionReason: String?
+    /// `completed` when the gesture passes. Unchanged (`gesture`) when it is rejected.
+    let currentStep: String?
+    let isProfileComplete: Bool?
     let liveness: Liveness?
     let quality: Quality?
 

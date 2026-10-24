@@ -207,7 +207,7 @@ class EditProfileViewModel{
         return sessionManager.setGalleryPhotos(imageKeys: extras)
             .flatMap { [weak self] _ -> Single<Void> in
                 guard let self else { return .error(APIError.apiError("Unable to update photos. Please try again.")) }
-                return self.sessionManager.setProfilePhoto(imageKey: primary)
+                return self.sessionManager.setProfilePhoto(imageKey: primary).map { _ in () }
             }
     }
 
@@ -227,12 +227,12 @@ class EditProfileViewModel{
     }
 
     /// Only `about_me` changes from this screen; the backend requires the full body
-    /// (`fullName`, `nickName`, `dateOfBirth`, `gender`) on every PATCH, so the loaded values are sent back as-is.
+    /// (`fullName`, `username`, `dateOfBirth`, `gender`) on every PATCH, so the loaded values are sent back as-is.
     func callSaveUserDetailsAPI(filteredData:[String:Any]) {
         let appUser = UserDataManager.shared.appUser
         var params: [String: Any] = [
             "fullName": profileFullName ?? appUser?.fullName ?? "",
-            "nickName": profileNickName ?? appUser?.nickName ?? ""
+            "username": profileNickName ?? appUser?.username ?? appUser?.nickName ?? ""
         ]
         if let dateOfBirth = profileDateOfBirth ?? appUser?.dateOfBirth {
             params["dateOfBirth"] = dateOfBirth

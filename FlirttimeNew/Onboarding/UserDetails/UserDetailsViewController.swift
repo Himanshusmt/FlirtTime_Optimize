@@ -56,6 +56,7 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         self.firstNameTextField.maxLength = 50
         self.nickNameTextField.maxLength = 50
         self.bindViewModel()
+        viewModel.reportScreenOpened()
     }
 
     private func bindViewModel() {
@@ -65,9 +66,9 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         viewModel.onError = { [weak self] message in
             self?.aCustomToastView.show(message: message)
         }
-        viewModel.onProfileUpdated = { [weak self] in
+        viewModel.onProfileUpdated = { [weak self] step in
             UserDataManager.shared.displayName = self?.nickNameTextField.text?.trimmText()
-            self?.navigateToNextScreen()
+            self?.navigateToNextScreen(step)
         }
         viewModel.onUsernameResult = { [weak self] available, message in
             guard let self else { return }
@@ -165,10 +166,19 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         return self.validNickName
     }
 
-    func navigateToNextScreen(){
-        //UserDataManager.shared.removeUserPrefillIntroData() -- code comment by Abhishek Tiwari
-        let aStartProfileVerificationVC = StartProfileVerificationViewController.instantiateFromStoryboard()
-        self.navigationController?.pushViewController(aStartProfileVerificationVC, animated: true)
+    func navigateToNextScreen(_ step: OnboardingStep){
+        let viewController: UIViewController
+        switch step {
+        case .basicInfo:
+            return
+        case .photos:
+            viewController = StartProfileVerificationViewController.instantiateFromStoryboard()
+        case .gesture:
+            viewController = GestureVerificationViewController.instantiateFromStoryboard()
+        case .completed:
+            viewController = VerificationDoneViewController.instantiateFromStoryboard()
+        }
+        navigationController?.pushViewController(viewController, animated: true)
     }
     
     @IBAction func calenderButtonTapped(_ sender: UIButton) {

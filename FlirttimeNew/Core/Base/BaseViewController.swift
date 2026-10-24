@@ -8,6 +8,8 @@
 
 import UIKit
 import SafariServices
+import RxSwift
+import Swinject
 
 class BaseViewController: UIViewController {
     
@@ -21,6 +23,7 @@ class BaseViewController: UIViewController {
     var aDeleteCustomPopUp = DeleteCustomPopUp()
     var aCustomToastView = CustomToastView()
     var aActivityIndicator = ActivityIndicator()
+    private let onboardingDisposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,17 +45,39 @@ class BaseViewController: UIViewController {
         }
     }
 
-    /// Existing users with a completed profile go home; everyone else continues onboarding.
+    /// Completed profiles go home. Everyone else resumes at `currentStep` from onboarding progress.
     func routeAfterLogin(isProfileComplete: Bool, signUpOption: SignUpOption) {
         UserDataManager.shared.isOTPVerificationDone = true
         if isProfileComplete {
-            UserDataManager.shared.isHomePageRedirect = true
+            showOnboardingStep(.completed, signUpOption: signUpOption)
+            return
+        }
+        let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+        setLoading(true)
+        sessionManager.onboardingProgress()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] progress in
+                self?.setLoading(false)
+                self?.showOnboardingStep(progress.resolvedStep, signUpOption: signUpOption)
+            }, onFailure: { [weak self] _ in
+                self?.setLoading(false)
+                self?.showOnboardingStep(.basicInfo, signUpOption: signUpOption)
+            })
+            .disposed(by: onboardingDisposeBag)
+    }
+
+    private func showOnboardingStep(_ step: OnboardingStep, signUpOption: SignUpOption) {
+        UserDataManager.shared.isHomePageRedirect = step == .completed
+        if step == .completed {
             guard let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate else { return }
             sceneDelegate.changeRootViewController(AppTabBarController.instantiateFromStoryboard())
-        } else {
-            let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
-            aUserDetailsViewController.signUpOption = signUpOption
-            navigationController?.pushViewController(aUserDetailsViewController, animated: true)
+            return
+        }
+        let viewController = OnboardingFlow.viewController(for: step, signUpOption: signUpOption)
+        if let navigationController {
+            navigationController.pushViewController(viewController, animated: true)
+        } else if let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate {
+            sceneDelegate.changeRootViewController(viewController)
         }
     }
 

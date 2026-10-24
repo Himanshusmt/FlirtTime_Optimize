@@ -79,6 +79,10 @@ enum AppEndPoint: CustomStringConvertible {
     // Profile photo — StartProfileVerificationViewController
     case profilePhotoUpload
 
+    // Onboarding resume — SplashScreenVC. Save APIs advance the step themselves.
+    case onboardingProgress
+    case onboardingStep
+
     // Discover — DiscoverViewModel
     case discoveryPeople
     case discoveryAction
@@ -192,6 +196,8 @@ enum AppEndPoint: CustomStringConvertible {
         case .onboardingPhotoPrimary(let photoId): return "api/v1/onboarding/photos/\(photoId)/primary"
         case .gestureUpload: return "api/v1/gesture-upload"
         case .profilePhotoUpload: return "api/v1/onboarding/profile-photo"
+        case .onboardingProgress: return "api/v1/onboarding/progress"
+        case .onboardingStep: return "api/v1/onboarding/step"
         case .discoveryPeople: return "api/v1/discovery/people"
         case .discoveryAction: return "api/v1/discovery/actions"
         case .userLimits(let userId): return "api/v1/users/\(userId)/limits"
@@ -267,6 +273,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .me, .logout, .updateProfile, .myProfile, .deleteAccount, .voiceIntro, .usernameAvailability,
              .profileEmailRequestOTP, .profileEmailVerifyOTP, .profileEmailResendOTP,
              .profilePhoneRequestOTP, .profilePhoneVerifyOTP, .profilePhoneResendOTP, .gestureUpload, .profilePhotoUpload,
+             .onboardingProgress, .onboardingStep,
              .moreAboutMe, .onboardingInterests, .onboardingPhoto, .onboardingPhotoPrimary,
              .discoveryPeople, .discoveryAction, .userLimits, .interestsCatalog,
              .discoveryFilterOptions, .discoveryFilters, .discoveryFiltersReset, .discoverySearch, .connectionRequest,

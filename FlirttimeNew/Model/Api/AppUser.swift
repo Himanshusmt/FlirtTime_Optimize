@@ -36,6 +36,8 @@ struct AppUser: Codable {
     let isFaceVerified: Bool?
     let faceVerifiedAt: String?
     let isProfileComplete: Bool?
+    /// Set by onboarding saves. One of `basicInfo`, `photos`, `gesture`, `completed`.
+    let currentStep: String?
     /// Server Premium flag from `auth/me` when present.
     let isSubscribed: Bool?
     let createdAt: String?

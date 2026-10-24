@@ -103,17 +103,59 @@ class SplashScreenVC: UIViewController,Instantiable {
             .subscribe(onSuccess: { [weak self] _ in
                 DeviceTokenManager.shared.registerIfNeeded(force: true)
                 Task { @MainActor in
-                    self?.routeByLocalStateIfNoCall()
+                    self?.routeByOnboardingProgressIfNoCall()
                 }
             }, onFailure: { [weak self] error in
                 if httpStatusCode(from: error) == 401 {
                     sessionManager.logout()
+                    Task { @MainActor in
+                        self?.routeByLocalStateIfNoCall()
+                    }
+                    return
                 }
+                Task { @MainActor in
+                    self?.routeByOnboardingProgressIfNoCall()
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Logged-in resume. `currentStep` picks the screen; a failed progress call keeps the old local route.
+    @MainActor
+    private func routeByOnboardingProgressIfNoCall() {
+        if AgoraCallService.shared.hasActiveCallSession || CallKitManager.shared.hasReportedIncomingCall {
+            AppLogger.killCall("Splash defer root swap — call still live")
+            navigateToNextScreen()
+            return
+        }
+        let sessionManager = Container.appContainer.resolve(AppSessionManager.self)!
+        guard sessionManager.isLoggedIn else {
+            routeByLocalState()
+            return
+        }
+        sessionManager.onboardingProgress()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] progress in
+                Task { @MainActor in
+                    self?.routeToOnboardingStep(progress.resolvedStep)
+                }
+            }, onFailure: { [weak self] _ in
                 Task { @MainActor in
                     self?.routeByLocalStateIfNoCall()
                 }
             })
             .disposed(by: disposeBag)
+    }
+
+    @MainActor
+    private func routeToOnboardingStep(_ step: OnboardingStep) {
+        if AgoraCallService.shared.hasActiveCallSession || CallKitManager.shared.hasReportedIncomingCall {
+            AppLogger.killCall("Splash defer root swap — call still live")
+            navigateToNextScreen()
+            return
+        }
+        UserDataManager.shared.isHomePageRedirect = step == .completed
+        navigateToViewController(OnboardingFlow.viewController(for: step))
     }
 
     @MainActor

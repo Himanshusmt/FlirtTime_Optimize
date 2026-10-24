@@ -24,6 +24,13 @@ final class GestureVerificationViewModel {
         self.sessionManager = sessionManager
     }
 
+    /// Screen is open and the gesture is not saved yet.
+    func reportScreenOpened() {
+        sessionManager.reportOnboardingScreen(.gesture)
+            .subscribe(onSuccess: { _ in }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
     func uploadGesture(image: UIImage) {
         guard let imageData = image.fixedOrientation().jpegData(maxBytes: Self.maxImageBytes) else {
             onError?("Unable to process the photo. Please try again.")
@@ -35,12 +42,18 @@ final class GestureVerificationViewModel {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] verification in
                 self?.onLoading?(false)
-                guard verification.isApproved else {
+                let step = OnboardingStep.resolve(currentStep: verification.currentStep,
+                                                  isProfileComplete: nil,
+                                                  fallback: verification.isApproved ? .completed : .gesture)
+                guard step == .completed else {
                     if verification.faceDetected == false {
                         self?.onFaceNotDetected?(verification.reasonMessage
+                                                 ?? verification.rejectionReason
                                                  ?? "No face detected. Please take a clear photo showing your face.")
                     } else {
-                        self?.onError?(verification.reasonMessage ?? "Verification failed. Please try again.")
+                        self?.onError?(verification.reasonMessage
+                                       ?? verification.rejectionReason
+                                       ?? "Verification failed. Please try again.")
                     }
                     return
                 }

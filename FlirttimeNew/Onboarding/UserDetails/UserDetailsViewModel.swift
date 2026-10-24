@@ -14,7 +14,7 @@ final class UserDetailsViewModel {
 
     var onLoading: ((Bool) -> Void)?
     var onError: ((String) -> Void)?
-    var onProfileUpdated: (() -> Void)?
+    var onProfileUpdated: ((OnboardingStep) -> Void)?
     var onUsernameResult: ((_ available: Bool, _ message: String?) -> Void)?
     private var lastRequestedUsername: String?
 
@@ -44,6 +44,13 @@ final class UserDetailsViewModel {
             .disposed(by: disposeBag)
     }
 
+    /// Screen is open and the profile is not saved yet.
+    func reportScreenOpened() {
+        sessionManager.reportOnboardingScreen(.basicInfo)
+            .subscribe(onSuccess: { _ in }, onFailure: { _ in })
+            .disposed(by: disposeBag)
+    }
+
     /// Matches `FlirtCustomPopUp.genderOptions` ids.
     static func genderValue(for genderID: Int?) -> String {
         switch genderID {
@@ -69,9 +76,12 @@ final class UserDetailsViewModel {
                                      dateOfBirth: Self.dobFormatter.string(from: dateOfBirth),
                                      gender: Self.genderValue(for: genderID),
                                      about: about)
-            .subscribe(onSuccess: { [weak self] _ in
+            .subscribe(onSuccess: { [weak self] user in
                 self?.onLoading?(false)
-                self?.onProfileUpdated?()
+                let step = OnboardingStep.resolve(currentStep: user.currentStep,
+                                                  isProfileComplete: user.isProfileComplete,
+                                                  fallback: .photos)
+                self?.onProfileUpdated?(step)
             }, onFailure: { [weak self] error in
                 self?.onLoading?(false)
                 self?.onError?(parseError(error) ?? "Something went wrong")

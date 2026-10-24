@@ -92,12 +92,8 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
             self?.wrongOTPPopUp.isHidden = false
         }
         viewModel.onVerified = { [weak self] isProfileComplete in
-            UserDataManager.shared.isOTPVerificationDone = true
-            if isProfileComplete {
-                self?.navigateToHome()
-            } else {
-                self?.navigateToNextScreen()
-            }
+            self?.stopTimer()
+            self?.routeAfterLogin(isProfileComplete: isProfileComplete, signUpOption: self?.signUpOption ?? .phoneNumber)
         }
         viewModel.onResent = { [weak self] resendAfter in
             if let resendAfter {
@@ -216,22 +212,6 @@ class VerifyOTPViewController: BaseViewController,Instantiable {
         self.setResendButtonInteration(isHide: false)
     }
 
-    private func navigateToNextScreen(){
-        self.stopTimer()
-        let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()
-        aUserDetailsViewController.signUpOption = self.signUpOption
-        aUserDetailsViewController.emailID = self.emailID
-        aUserDetailsViewController.phoneNumber = self.phoneNumber
-        aUserDetailsViewController.phoneCode = self.phoneCode
-        self.navigationController?.pushViewController(aUserDetailsViewController, animated: true)
-    }
-
-    private func navigateToHome() {
-        self.stopTimer()
-        UserDataManager.shared.isHomePageRedirect = true
-        guard let sceneDelegate = self.view.window?.windowScene?.delegate as? SceneDelegate else { return }
-        sceneDelegate.changeRootViewController(AppTabBarController.instantiateFromStoryboard())
-    }
 }
 
 extension VerifyOTPViewController: OTPFieldViewDelegate {
