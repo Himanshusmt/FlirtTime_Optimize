@@ -67,20 +67,34 @@ final class ChatNotificationState: ObservableObject {
 
     // MARK: - Notification Payload Parsing Helpers
 
-    private static func extractConversationId(from userInfo: [AnyHashable: Any]) -> String? {
-        if let topLevel = userInfo["conversationId"] as? String, !topLevel.isEmpty {
-            return topLevel
+    static func extractConversationId(from userInfo: [AnyHashable: Any]) -> String? {
+        let topLevelKeys = ["conversationId", "conversation_id", "channelId", "channel_id"]
+        for key in topLevelKeys {
+            if let value = userInfo[key] as? String, !value.isEmpty {
+                return value
+            }
         }
 
-        // Try structured data field first (NEW camelCase + OLD snake_case)
-        if let dataString = userInfo["data"] as? String,
-           let data = dataString.data(using: .utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+        let nestedJSON: [String: Any]?
+        if let data = userInfo["data"] as? [String: Any] {
+            nestedJSON = data
+        } else if let dataString = userInfo["data"] as? String,
+                  let data = dataString.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            nestedJSON = json
+        } else {
+            nestedJSON = nil
+        }
+
+        if let json = nestedJSON {
             if let meta = json["meta"] as? [String: Any] {
                 if let convId = meta["conversationId"] as? String, !convId.isEmpty {
                     return convId
                 }
                 if let convId = meta["conversation_id"] as? String, !convId.isEmpty {
+                    return convId
+                }
+                if let convId = meta["channelId"] as? String, !convId.isEmpty {
                     return convId
                 }
                 if let messageDict = meta["message"] as? [String: Any] {
@@ -90,6 +104,11 @@ final class ChatNotificationState: ObservableObject {
                     if let convId = messageDict["conversation_id"] as? String, !convId.isEmpty {
                         return convId
                     }
+                }
+            }
+            for key in ["conversationId", "conversation_id", "channelId", "channel_id"] {
+                if let convId = json[key] as? String, !convId.isEmpty {
+                    return convId
                 }
             }
             if let link = json["link"] as? String {
@@ -112,12 +131,32 @@ final class ChatNotificationState: ObservableObject {
     }
 
     private static func pushType(from userInfo: [AnyHashable: Any]) -> String? {
+        if let type = userInfo["type"] as? String, !type.isEmpty {
+            return type
+        }
+        if let type = userInfo["notify_type"] as? String, !type.isEmpty {
+            return type
+        }
         if let dataString = userInfo["data"] as? String,
            let data = dataString.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            return json["type"] as? String
+            return json["type"] as? String ?? json["notify_type"] as? String
+        }
+        if let data = userInfo["data"] as? [String: Any] {
+            return data["type"] as? String ?? data["notify_type"] as? String
         }
         return nil
+    }
+
+    private static func isChatMessageNotification(_ userInfo: [AnyHashable: Any]) -> Bool {
+        if NotificationType(from: userInfo) == .message { return true }
+        let nested = pushType(from: userInfo)?.lowercased() ?? ""
+        switch nested {
+        case "message", "new_message", "chat_message", "chat":
+            return true
+        default:
+            return extractConversationId(from: userInfo) != nil && nested.isEmpty
+        }
     }
 
     func setPendingBanner(_ banner: InAppChatBannerData, messageId: String = "") {
@@ -142,7 +181,34 @@ final class ChatNotificationState: ObservableObject {
 
     func isViewingConversation(_ conversationId: String) -> Bool {
         guard let active = activeConversationId, !active.isEmpty else { return false }
-        return active == conversationId
+        return active.caseInsensitiveCompare(conversationId) == .orderedSame
+    }
+
+    /// Hide system banners/sounds while the user is already in chat.
+    /// Incoming calls still present so they are not missed.
+    func shouldSuppressForegroundPresentation(userInfo: [AnyHashable: Any]) -> Bool {
+        let type = NotificationType(from: userInfo)
+        if type == .call { return false }
+
+        if let conversationId = Self.extractConversationId(from: userInfo),
+           isViewingConversation(conversationId) {
+            AppLogger.debug("[NotificationSuppress] hiding banner for open conversation=\(conversationId)")
+            return true
+        }
+
+        // Inside a thread: keep the conversation uninterrupted.
+        if isShowingChatDetail {
+            AppLogger.debug("[NotificationSuppress] hiding banner while chatting type=\(type.rawValue)")
+            return true
+        }
+
+        // Chat list already updates live — skip extra message banners there.
+        if isInChatModule, Self.isChatMessageNotification(userInfo) {
+            AppLogger.debug("[NotificationSuppress] hiding message banner on chat list")
+            return true
+        }
+
+        return false
     }
 
     @MainActor

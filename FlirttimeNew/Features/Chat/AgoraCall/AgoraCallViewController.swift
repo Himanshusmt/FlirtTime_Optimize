@@ -83,7 +83,7 @@ final class AgoraCallViewController: UIViewController {
 
     /// Ringing (incoming/outgoing): blurred caller/peer photo behind chrome.
     private let incomingBackgroundImageView = UIImageView()
-    private let incomingBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+    private let incomingBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let incomingDimView = UIView()
     private let incomingNameLabel = UILabel()
     private let incomingStatusLabel = UILabel()
@@ -1126,10 +1126,11 @@ final class AgoraCallViewController: UIViewController {
         view.addSubview(incomingBackgroundImageView)
 
         incomingBlurView.isHidden = true
+        incomingBlurView.alpha = 0.72
         incomingBlurView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(incomingBlurView)
 
-        incomingDimView.backgroundColor = UIColor.black.withAlphaComponent(0.42)
+        incomingDimView.backgroundColor = UIColor.black.withAlphaComponent(0.22)
         incomingDimView.isHidden = true
         incomingDimView.isUserInteractionEnabled = false
         incomingDimView.translatesAutoresizingMaskIntoConstraints = false

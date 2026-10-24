@@ -164,18 +164,31 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        if PhoneOTPProofService.shared.handleSilentPush(notification.request.content.userInfo) {
+        let userInfo = notification.request.content.userInfo
+        if PhoneOTPProofService.shared.handleSilentPush(userInfo) {
             completionHandler([])
             return
         }
         if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(
-            userInfo: notification.request.content.userInfo,
+            userInfo: userInfo,
             source: "willPresent"
         ) {
             completionHandler([])
             return
         }
-        completionHandler([.banner, .sound, .badge])
+
+        let applyPresentation: () -> Void = {
+            if ChatNotificationState.shared.shouldSuppressForegroundPresentation(userInfo: userInfo) {
+                completionHandler([])
+            } else {
+                completionHandler([.banner, .sound, .badge])
+            }
+        }
+        if Thread.isMainThread {
+            applyPresentation()
+        } else {
+            DispatchQueue.main.async(execute: applyPresentation)
+        }
     }
 
     func userNotificationCenter(

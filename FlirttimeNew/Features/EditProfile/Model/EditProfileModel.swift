@@ -53,6 +53,7 @@ struct EditProfileImageModel{
     var status:Int?
     //1 Verified, 2 Pending, 3 Rejected
     var isPrimary:Bool?
+    var photoKey:String? = nil
 }
 
 struct VerifyEmailData: Codable {

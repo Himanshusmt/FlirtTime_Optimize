@@ -7,7 +7,7 @@
 
 import UIKit
 
-class ImageCollectionViewCell: UICollectionViewCell {
+class ImageCollectionViewCell: UICollectionViewCell, UIGestureRecognizerDelegate {
 
     static let identifier = "ImageCollectionViewCell"
     @IBOutlet weak var backgroundImage: UIImageView!
@@ -21,10 +21,57 @@ class ImageCollectionViewCell: UICollectionViewCell {
     var editAction:(()-> Void)?
     var imageID:Int?
     var deleteAction:(()-> Void)?
+    private var slotTapRecognizer: UITapGestureRecognizer?
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
+        userProfileImage.clipsToBounds = true
+        backgroundImage.clipsToBounds = true
+        disableDecorativeTouches()
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleSlotTap))
+        tap.cancelsTouchesInView = false
+        tap.delegate = self
+        contentView.addGestureRecognizer(tap)
+        slotTapRecognizer = tap
+        contentView.bringSubviewToFront(imageDeleButton)
+        if let editImage1View {
+            contentView.bringSubviewToFront(editImage1View)
+        }
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        completion = nil
+        editAction = nil
+        deleteAction = nil
+        imageID = nil
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard let view = touch.view else { return true }
+        if view is UIButton { return false }
+        if let imageDeleButton, view.isDescendant(of: imageDeleButton) { return false }
+        if let editImage1View, view.isDescendant(of: editImage1View) { return false }
+        if let editOtherImagesView, view.isDescendant(of: editOtherImagesView) { return false }
+        return true
+    }
+
+    @objc private func handleSlotTap() {
+        editAction?()
+    }
+
+    private func disableDecorativeTouches() {
+        backgroundImage?.isUserInteractionEnabled = false
+        userProfileImage?.isUserInteractionEnabled = false
+        imgProfile?.isUserInteractionEnabled = false
+        contentView.subviews.forEach { subview in
+            if subview is UIButton { return }
+            if subview === editImage1View || subview === editOtherImagesView { return }
+            subview.isUserInteractionEnabled = false
+        }
+        imageDeleButton?.isUserInteractionEnabled = true
+        editImage1View?.isUserInteractionEnabled = true
+        editOtherImagesView?.isUserInteractionEnabled = true
     }
 
     func setAboutYouUI(image:AboutYouImageModel?,width:CGFloat,noOfitemsInRow:CGFloat){
@@ -48,20 +95,29 @@ class ImageCollectionViewCell: UICollectionViewCell {
 
     func setAddImageUI(image:EditProfileImageModel?,index:Int?){
         self.editImage1View.isHidden = image != nil ? !(index == 0) : true
-        self.imageDeleButton.isHidden = image != nil ? (index == 0) : true
-       // self.editOtherImagesView.isHidden = image != nil ? index == 0 : true
+        self.imageDeleButton.isHidden = image == nil || index == 0
         if let image = image {
             self.imageID = image.id
-            self.backgroundImage.image = image.image
-            self.userProfileImage.image = image.image
-            self.userProfileImage.contentMode = .scaleAspectFit
+            [self.userProfileImage, self.backgroundImage].forEach { imageView in
+                imageView?.contentMode = .scaleAspectFill
+                imageView?.clipsToBounds = true
+                if imageView?.image !== image.image {
+                    imageView?.image = image.image
+                }
+            }
         }else{
+            self.imageID = nil
             let placeHolderImage = UIImage(named: "imageSelectPlaceHolder")
             [self.userProfileImage,self.backgroundImage].forEach { image in
                 image.image = placeHolderImage
                 image.contentMode = .scaleToFill
                 image.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             }
+        }
+        disableDecorativeTouches()
+        contentView.bringSubviewToFront(imageDeleButton)
+        if let editImage1View {
+            contentView.bringSubviewToFront(editImage1View)
         }
     }
 
@@ -83,13 +139,6 @@ class ImageCollectionViewCell: UICollectionViewCell {
             }
         }
     }
-    
-//    func setAddInterestPlaceholderImageUI(){
-//        let placeHolderImage = UIImage(named: "addInterestPlaceHolderImage")
-//        self.userProfileImage.image = placeHolderImage
-////        self.userProfileImage.image = placeHolderImage?.resizePlaceHolderImage(width: width, height: height,noOfitemsInRow: noOfitemsInRow)
-//        self.userProfileImage.contentMode = .scaleAspectFit
-//    }
 
     @IBAction func edit1stImageButtonTapped(_ sender: UIButton) {
         if let editAction {
@@ -110,6 +159,10 @@ class ImageCollectionViewCell: UICollectionViewCell {
     }
     
     @IBAction func deleteImageButtonTapped(_ sender: UIButton) {
+        if let deleteAction {
+            deleteAction()
+            return
+        }
         guard let action = completion else { return }
         action(imageID)
     }

@@ -60,6 +60,9 @@ class ImageSelectionMethodVC: BaseViewController,UIGestureRecognizerDelegate,Ins
             self.takePhotoGalleryButton.isHidden = true
             self.deletePictureButton.isHidden = !canDeletePhoto
             self.stack2.isHidden = !canDeletePhoto
+            if let actionsStack = stack1.superview as? UIStackView {
+                actionsStack.isHidden = false
+            }
         } else if self.fromEditProfileScreen ?? false && self.selectImageType == .addCoverImage {
             self.deletePictureButton.isHidden = true
             self.stack1.isHidden = false

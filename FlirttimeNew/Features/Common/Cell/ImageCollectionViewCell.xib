@@ -31,7 +31,7 @@
                             </userDefinedRuntimeAttribute>
                         </userDefinedRuntimeAttributes>
                     </imageView>
-                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2lC-6p-BTL">
+                    <view userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2lC-6p-BTL">
                         <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Jwk-3Y-ARt" customClass="BlurView" customModule="FlirttimeNew" customModuleProvider="target">
@@ -57,7 +57,7 @@
                             </userDefinedRuntimeAttribute>
                         </userDefinedRuntimeAttributes>
                     </view>
-                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="imageSelectPlaceHolder" translatesAutoresizingMaskIntoConstraints="NO" id="exW-Xy-CoP">
+                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="imageSelectPlaceHolder" translatesAutoresizingMaskIntoConstraints="NO" id="exW-Xy-CoP">
                         <rect key="frame" x="0.0" y="0.0" width="188" height="195"/>
                         <userDefinedRuntimeAttributes>
                             <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
