@@ -181,8 +181,8 @@ private extension MomentSocketUpdate {
                 ?? int(momentDict?["likesCount"]) ?? int(momentDict?["likeCount"]),
             commentsCount: int(body["commentsCount"]) ?? int(body["commentCount"]) ?? int(body["totalComments"])
                 ?? int(momentDict?["commentsCount"]) ?? int(momentDict?["commentCount"]),
-            giftsCount: int(body["giftsCount"]) ?? int(body["giftCount"]) ?? int(body["totalMomentGifts"])
-                ?? int(momentDict?["giftsCount"]) ?? int(momentDict?["giftCount"]),
+            giftsCount: int(body["totalMomentGifts"]) ?? int(body["giftsCount"]) ?? int(body["giftCount"])
+                ?? int(momentDict?["totalMomentGifts"]) ?? int(momentDict?["giftsCount"]) ?? int(momentDict?["giftCount"]),
             sharesCount: int(body["sharesCount"]) ?? int(body["shareCount"])
                 ?? int(momentDict?["sharesCount"]) ?? int(momentDict?["shareCount"]),
             viewerHasLiked: viewerHasLiked,

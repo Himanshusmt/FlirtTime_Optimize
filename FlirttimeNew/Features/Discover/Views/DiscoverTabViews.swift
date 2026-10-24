@@ -67,6 +67,14 @@ final class DiscoverMomentsView: UIView {
     /// Called with the tapped user's tray entry and whether it's the signed-in user's own.
     var onOpenStories: ((QuickMomentTrayItem, Bool) -> Void)?
 
+    private enum Grid {
+        static let columns: CGFloat = 3
+        static let visibleRows: CGFloat = 4
+        static let spacing: CGFloat = 8
+        static let sideInset: CGFloat = 12
+        static let verticalInset: CGFloat = 8
+    }
+
     private enum Item {
         case add
         case story(QuickMomentTrayItem, isMine: Bool)
@@ -74,15 +82,17 @@ final class DiscoverMomentsView: UIView {
 
     private var items: [Item] = []
     private var ownAvatarPath: String?
+    private var lastGridSize: CGSize = .zero
     private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 12
-        layout.minimumLineSpacing = 12
-        layout.sectionInset = UIEdgeInsets(top: 4, left: 16, bottom: 24, right: 16)
+        layout.minimumInteritemSpacing = Grid.spacing
+        layout.minimumLineSpacing = Grid.spacing
+        layout.sectionInset = UIEdgeInsets(top: Grid.verticalInset, left: Grid.sideInset, bottom: Grid.verticalInset, right: Grid.sideInset)
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
         view.backgroundColor = .clear
         view.showsVerticalScrollIndicator = false
+        view.contentInsetAdjustmentBehavior = .never
         view.dataSource = self
         view.delegate = self
         view.register(QuickMomentAddCell.self, forCellWithReuseIdentifier: QuickMomentAddCell.reuseID)
@@ -107,10 +117,20 @@ final class DiscoverMomentsView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateGridLayoutIfNeeded()
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        lastGridSize = .zero
+        updateGridLayoutIfNeeded()
+    }
+
     func configure(tray: QuickMomentTray?) {
         ownAvatarPath = tray?.me?.user?.photo
-            ?? UserDataManager.shared.userAvtarImage
-            ?? UserDataManager.shared.appUser?.profilePicture
+            ?? UserDataManager.shared.avatarPath
         var items: [Item] = [.add]
         if let me = tray?.me, me.hasActive {
             items.append(.story(me, isMine: true))
@@ -119,6 +139,19 @@ final class DiscoverMomentsView: UIView {
         self.items = items
         emptyLabel.isHidden = true
         collectionView.reloadData()
+    }
+
+    private func updateGridLayoutIfNeeded() {
+        let size = collectionView.bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        let bottomInset = Grid.verticalInset + collectionView.safeAreaInsets.bottom
+        let inset = UIEdgeInsets(top: Grid.verticalInset, left: Grid.sideInset, bottom: bottomInset, right: Grid.sideInset)
+        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        if size != lastGridSize || layout.sectionInset != inset {
+            lastGridSize = size
+            layout.sectionInset = inset
+            layout.invalidateLayout()
+        }
     }
 }
 
@@ -142,8 +175,13 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
     }
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = floor((collectionView.bounds.width - 16 * 2 - 12) / 2)
-        return CGSize(width: width, height: width * 1.4)
+        let bounds = collectionView.bounds
+        guard bounds.width > 0, bounds.height > 0 else { return CGSize(width: 100, height: 140) }
+        let inset = (layout as? UICollectionViewFlowLayout)?.sectionInset
+            ?? UIEdgeInsets(top: Grid.verticalInset, left: Grid.sideInset, bottom: Grid.verticalInset, right: Grid.sideInset)
+        let width = floor((bounds.width - inset.left - inset.right - Grid.spacing * (Grid.columns - 1)) / Grid.columns)
+        let height = floor((bounds.height - inset.top - inset.bottom - Grid.spacing * (Grid.visibleRows - 1)) / Grid.visibleRows)
+        return CGSize(width: max(width, 1), height: max(height, 1))
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -157,20 +195,20 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
 }
 
 /// First-grid cell: same card as other users, with the signed-in user's photo, a light red wash,
-/// a plus in the avatar circle, and “Add new” in place of the name.
+/// a plus in the center and beside “Add new”.
 private final class QuickMomentAddCell: UICollectionViewCell {
 
     static let reuseID = "QuickMomentAddCell"
     private static let avatarSize: CGFloat = 28
+    private static let centerPlusSize: CGFloat = 56
     private static let ringSize: CGFloat = 36
 
     private let avatar = UIImageView()
-    private let plusCircle = UIView()
     private let nameLabel = UILabel.vibeLabel(.bold, 14, style: .subheadline, color: .white)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.layer.cornerRadius = 20
+        contentView.layer.cornerRadius = 16
         contentView.layer.cornerCurve = .continuous
         contentView.clipsToBounds = true
         contentView.backgroundColor = AppColor.AthensGray
@@ -192,45 +230,61 @@ private final class QuickMomentAddCell: UICollectionViewCell {
         contentView.addSubview(shade)
         shade.pinEdges(to: contentView)
 
-        plusCircle.backgroundColor = AppColor.Punch
-        plusCircle.layer.cornerRadius = Self.avatarSize / 2
-        plusCircle.layer.borderWidth = 2
-        plusCircle.layer.borderColor = UIColor.white.cgColor
-        plusCircle.translatesAutoresizingMaskIntoConstraints = false
+        let centerPlus = Self.makePlusCircle(size: Self.centerPlusSize, symbolSize: 26)
+        contentView.addSubview(centerPlus)
 
-        let plus = UIImageView(
-            image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold))
-        )
-        plus.tintColor = .white
-        plus.contentMode = .center
-        plusCircle.addSubview(plus)
-        plus.pinEdges(to: plusCircle)
-
+        let plusCircle = Self.makePlusCircle()
         let avatarWrap = UIView()
         avatarWrap.translatesAutoresizingMaskIntoConstraints = false
         avatarWrap.addSubview(plusCircle)
 
         nameLabel.text = "Add new"
+        nameLabel.adjustsFontSizeToFitWidth = true
+        nameLabel.minimumScaleFactor = 0.75
         let row = UIStackView(arrangedSubviews: [avatarWrap, nameLabel])
-        row.spacing = 8
+        row.spacing = 6
         row.alignment = .center
         row.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(row)
 
         NSLayoutConstraint.activate([
+            centerPlus.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            centerPlus.centerYAnchor.constraint(equalTo: contentView.centerYAnchor, constant: -10),
             avatarWrap.widthAnchor.constraint(equalToConstant: Self.ringSize),
             avatarWrap.heightAnchor.constraint(equalToConstant: Self.ringSize),
-            plusCircle.widthAnchor.constraint(equalToConstant: Self.avatarSize),
-            plusCircle.heightAnchor.constraint(equalToConstant: Self.avatarSize),
             plusCircle.centerXAnchor.constraint(equalTo: avatarWrap.centerXAnchor),
             plusCircle.centerYAnchor.constraint(equalTo: avatarWrap.centerYAnchor),
-            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
-            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
+            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -8),
+            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
         ])
         isAccessibilityElement = true
         accessibilityTraits = .button
         accessibilityLabel = "Add a moment"
+    }
+
+    private static func makePlusCircle(size: CGFloat = avatarSize, symbolSize: CGFloat = 13) -> UIView {
+        let circle = UIView()
+        circle.backgroundColor = AppColor.Punch
+        circle.layer.cornerRadius = size / 2
+        circle.layer.borderWidth = 2
+        circle.layer.borderColor = UIColor.white.cgColor
+        circle.translatesAutoresizingMaskIntoConstraints = false
+        circle.isUserInteractionEnabled = false
+
+        let plus = UIImageView(
+            image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: symbolSize, weight: .bold))
+        )
+        plus.tintColor = .white
+        plus.contentMode = .center
+        circle.addSubview(plus)
+        plus.pinEdges(to: circle)
+
+        NSLayoutConstraint.activate([
+            circle.widthAnchor.constraint(equalToConstant: size),
+            circle.heightAnchor.constraint(equalToConstant: size)
+        ])
+        return circle
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -260,7 +314,7 @@ private final class MomentCell: UICollectionViewCell {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.layer.cornerRadius = 20
+        contentView.layer.cornerRadius = 16
         contentView.layer.cornerCurve = .continuous
         contentView.clipsToBounds = true
         contentView.backgroundColor = AppColor.AthensGray
@@ -309,17 +363,19 @@ private final class MomentCell: UICollectionViewCell {
             avatar.centerYAnchor.constraint(equalTo: avatarWrap.centerYAnchor)
         ])
 
+        nameLabel.adjustsFontSizeToFitWidth = true
+        nameLabel.minimumScaleFactor = 0.75
         let texts = UIStackView(arrangedSubviews: [nameLabel, timeLabel])
         texts.axis = .vertical
         let row = UIStackView(arrangedSubviews: [avatarWrap, texts])
-        row.spacing = 8
+        row.spacing = 6
         row.alignment = .center
         row.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(row)
         NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -10),
-            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
+            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -8),
+            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
         ])
         isAccessibilityElement = true
         accessibilityTraits = .button

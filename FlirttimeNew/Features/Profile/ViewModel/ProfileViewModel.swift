@@ -57,7 +57,7 @@ class ProfileViewModel {
             }
             self.aUserProfileModel = data.data
             UserDataManager.shared.saveUserInfo = data
-            UserDataManager.shared.userAvtarImage = data.data?.userInfo?.avatar
+            UserDataManager.shared.storeAvatarPath(data.data?.userInfo?.avatar)
             UserDataManager.shared.displayName = data.data?.userInfo?.displayName
         }
     }
@@ -68,6 +68,7 @@ class ProfileViewModel {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] profile in
                 self?.myProfile = profile
+                UserDataManager.shared.storeAvatarPath(profile.profile?.avatarURL)
                 self?.endRequest()
             }, onFailure: { [weak self] error in
                 self?.errorMessage = parseError(error) ?? "Unable to load profile"

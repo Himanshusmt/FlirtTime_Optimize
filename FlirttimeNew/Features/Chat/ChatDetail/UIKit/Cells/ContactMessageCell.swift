@@ -88,9 +88,8 @@ final class ContactMessageCell: BaseMessageCell {
     // MARK: - Configure
 
     override func configureContent(with model: MessageCellModel) {
-        let meta = model.message.metadata
-        let contactName = meta?["contactName"]?.value as? String ?? ""
-        let contactPhone = meta?["contactPhone"]?.value as? String ?? ""
+        let contactName = model.message.sharedContactName
+        let contactPhone = model.message.sharedContactPhone
 
         nameLabel.text = contactName.isEmpty ? ChatStrings.chat_contact.localizedString() : contactName
         initialsLabel.text = String((contactName.isEmpty ? "?" : contactName).prefix(1)).uppercased()
@@ -131,8 +130,8 @@ final class ContactMessageCell: BaseMessageCell {
 
     @objc private func handleContactTap() {
         guard let model = cellModel else { return }
-        guard let phone = model.message.metadata?["contactPhone"]?.value as? String, !phone.isEmpty,
-              let presenter = UIApplication.shared.topViewController() else {
+        let phone = model.message.sharedContactPhone
+        guard !phone.isEmpty, let presenter = UIApplication.shared.topViewController() else {
             actionsDelegate?.cellDidTapMessage(self, model: model)
             return
         }

@@ -101,15 +101,10 @@ class UserInteractionCVC: UICollectionViewCell {
         contentView.clipsToBounds = false
         clipsToBounds = false
 
-        let star = UIImage(systemName: "star.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold))
-        superLikeImgView.image = star
-        superLikeImgView.tintColor = UIColor(red: 0.96, green: 0.65, blue: 0.14, alpha: 1)
-        superLikeImgView.contentMode = .center
-        superLikeImgView.backgroundColor = .white
-        superLikeImgView.layer.cornerRadius = 16
+        superLikeImgView.image = UIImage(named: MomentsProfileActionButton.imageName)
+        superLikeImgView.contentMode = .scaleAspectFit
+        superLikeImgView.backgroundColor = .clear
         superLikeImgView.clipsToBounds = true
-        superLikeImgView.layer.borderWidth = 0.5
-        superLikeImgView.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
         superLikeImgView.isHidden = true
         superLikeImgView.translatesAutoresizingMaskIntoConstraints = false
 

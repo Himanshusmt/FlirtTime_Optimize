@@ -1162,6 +1162,7 @@ final class SessionManager {
             }
             params["metadata"] = meta
         case "contact":
+            if let resolvedContent { params["content"] = resolvedContent }
             params["metadata"] = meta
         default:
             if let resolvedContent { params["content"] = resolvedContent }

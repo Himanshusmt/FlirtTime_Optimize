@@ -297,13 +297,18 @@ extension ChatDetailViewModel {
         }
 
         // Preserve contact metadata if server response doesn't include it
-        if let tempMsg = tempMessageMapping[tempId],
-           tempMsg.metadata?["isContact"]?.value as? Bool == true {
-            if updatedServerMessage.metadata?["isContact"] == nil {
-                updatedServerMessage.metadata?["isContact"] = tempMsg.metadata?["isContact"]
-                updatedServerMessage.metadata?["contactName"] = tempMsg.metadata?["contactName"]
-                updatedServerMessage.metadata?["contactPhone"] = tempMsg.metadata?["contactPhone"]
+        if let tempMsg = tempMessageMapping[tempId], tempMsg.isContactShare {
+            var merged = updatedServerMessage.metadata ?? [:]
+            merged["isContact"] = AnyCodable(true)
+            if ConversationMessage.stringValue(merged["contactName"]?.value) == nil,
+               !tempMsg.sharedContactName.isEmpty {
+                merged["contactName"] = AnyCodable(tempMsg.sharedContactName)
             }
+            if ConversationMessage.stringValue(merged["contactPhone"]?.value) == nil,
+               !tempMsg.sharedContactPhone.isEmpty {
+                merged["contactPhone"] = AnyCodable(tempMsg.sharedContactPhone)
+            }
+            updatedServerMessage.metadata = merged
         }
 
         // Preserve mention userIds so @mentions stay bold after REST ack omits metadata

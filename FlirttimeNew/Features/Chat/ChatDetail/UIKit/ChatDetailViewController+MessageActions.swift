@@ -455,7 +455,7 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
 
         let msgType = (message.messageType ?? message.type ?? "").lowercased()
         let isTextMessage = msgType == "text" || msgType.isEmpty
-        let isContactMsg = message.metadata?["isContact"]?.value as? Bool == true
+        let isContactMsg = message.isContactShare
         let canEdit  = !model.isIncoming && !isContactMsg && isTextMessage
         let canDel   = viewModel.canDeleteForEveryone(message: message)
         let canForward = !isPollMessage(message)

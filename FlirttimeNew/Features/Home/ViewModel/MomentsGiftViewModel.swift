@@ -83,8 +83,8 @@ final class MomentsGiftViewModel {
     }
 
     /// Sends each selected gift as its own request, in order; stops at the first failure.
-    /// On success returns how many gifts were sent so the feed can bump the moment's gift count.
-    func sendSelectedGifts(completion: @escaping (Result<Int, MomentsError>) -> Void) {
+    /// On success returns how many were sent plus the server's `totalMomentGifts` when present.
+    func sendSelectedGifts(completion: @escaping (Result<(sent: Int, totalGifts: Int?), MomentsError>) -> Void) {
         guard !selectedGiftIds.isEmpty, !isSending else { return }
         guard canAffordSelection else {
             completion(.failure(MomentsError(message: "You don't have enough coins for these gifts")))
@@ -97,6 +97,7 @@ final class MomentsGiftViewModel {
         var sentCount = 0
         var spent = 0
         var lastBalance: Int?
+        var lastTotalGifts: Int?
         let requests = selected.map { gift in
             sessionManager.sendMomentGift(momentId: vibeId, giftCode: gift.code ?? "")
                 .asObservable()
@@ -104,6 +105,7 @@ final class MomentsGiftViewModel {
                     sentCount += 1
                     spent += gift.amount ?? 0
                     if let balance = data?.coinBalance { lastBalance = balance }
+                    if let total = data?.giftsCount { lastTotalGifts = total }
                 })
         }
         let startBalance = coinBalance
@@ -119,7 +121,7 @@ final class MomentsGiftViewModel {
                 guard let self else { return }
                 self.finishSending(sent: sentCount, balance: lastBalance ?? startBalance - spent)
                 self.selectedGiftIds.removeAll()
-                completion(.success(sentCount))
+                completion(.success((sentCount, lastTotalGifts)))
             })
             .disposed(by: disposeBag)
     }

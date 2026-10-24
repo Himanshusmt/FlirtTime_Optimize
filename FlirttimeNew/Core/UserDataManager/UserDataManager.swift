@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import UIKit
 
 extension Notification.Name {
     static let userSubscriptionStatusDidChange = Notification.Name("UserDataManager.userSubscriptionStatusDidChange")
@@ -42,6 +43,28 @@ final class UserDataManager {
     var userAvtarImage: String? {
         get { defaults.string(forKey: "userAvtarImage") }
         set { defaults.set(newValue, forKey: "userAvtarImage") }
+    }
+
+    /// Signed-in user's real photo. Skips bundled mock assets such as `mock-me-0`.
+    var avatarPath: String? {
+        [appUser?.profilePicture, userAvtarImage]
+            .compactMap(Self.remotePhotoPath)
+            .first
+    }
+
+    /// Keeps a real photo from `users/profile` / `auth/me` and ignores local mock filenames.
+    func storeAvatarPath(_ path: String?) {
+        guard let path = Self.remotePhotoPath(path) else { return }
+        userAvtarImage = path
+    }
+
+    /// `nil` for empty paths and bundled mock gallery names (`mock-me-0`, `delete-9`, …).
+    static func remotePhotoPath(_ path: String?) -> String? {
+        guard let path = path?.trimmingCharacters(in: .whitespacesAndNewlines), !path.isEmpty else { return nil }
+        if !path.hasPrefix("http"), !path.contains("/"), UIImage(named: path) != nil {
+            return nil
+        }
+        return path
     }
 
     var isHomeVerificationDone: Bool? {

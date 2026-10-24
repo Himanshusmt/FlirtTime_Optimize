@@ -7,6 +7,15 @@
 
 import Foundation
 
+// MARK: - Shared Contact Card
+
+struct SharedChatContact: Codable {
+    let name: String?
+    let phoneNumber: String?
+    let email: String?
+    let sharedByUserId: String?
+}
+
 // MARK: - Individual Message
 struct ConversationMessage: Codable {
     let id: String
@@ -75,6 +84,7 @@ struct ConversationMessage: Codable {
         case clientMessageId, clientMsgId
         case receiptStatus, messageStatus
         case isMine, isRead, isDelivered, seen, recipientId
+        case contact, contactName, phoneNumber
     }
     
     init(from decoder: Decoder) throws {
@@ -246,6 +256,20 @@ struct ConversationMessage: Codable {
         }
         media = resolvedMedia
         thumbnail = resolvedThumbnail
+
+        let nestedContact = try? container.decodeIfPresent(SharedChatContact.self, forKey: .contact)
+        let topContactName = try? container.decodeIfPresent(String.self, forKey: .contactName)
+        let topPhoneNumber = try? container.decodeIfPresent(String.self, forKey: .phoneNumber)
+        if let hydrated = Self.normalizedContactMetadata(
+            existing: metadata,
+            messageType: messageType ?? type,
+            contact: nestedContact,
+            topLevelName: topContactName,
+            topLevelPhone: topPhoneNumber,
+            content: content
+        ) {
+            metadata = hydrated
+        }
 
         if serverLocation?.lat == nil || serverLocation?.lng == nil {
             let lat = Self.coordinateValue(metadata?["latitude"]?.value ?? metadata?["lat"]?.value)
@@ -576,6 +600,7 @@ struct ConversationMessage: Codable {
             let jsonData = try JSONSerialization.data(withJSONObject: modifiedDictionary, options: [])
             var conversationMessage = try JSONDecoder().decode(ConversationMessage.self, from: jsonData)
             conversationMessage.hydrateLocationFromMetadata()
+            conversationMessage.hydrateContactFromMetadata()
             return conversationMessage
         } catch {
             AppLogger.debug("Error creating ConversationMessage from dictionary: \(error)")
@@ -598,6 +623,19 @@ struct ConversationMessage: Codable {
         }
     }
     
+    mutating func hydrateContactFromMetadata() {
+        if let hydrated = Self.normalizedContactMetadata(
+            existing: metadata,
+            messageType: messageType ?? type,
+            contact: nil,
+            topLevelName: nil,
+            topLevelPhone: nil,
+            content: content
+        ) {
+            metadata = hydrated
+        }
+    }
+
     mutating func hydrateLocationFromMetadata() {
         if serverLocation?.lat != nil, serverLocation?.lng != nil { return }
         let lat = Self.coordinateValue(metadata?["latitude"]?.value ?? metadata?["lat"]?.value)
@@ -652,6 +690,98 @@ struct ConversationMessage: Codable {
         default:
             return nil
         }
+    }
+
+    static func normalizedContactMetadata(
+        existing: [String: AnyCodable]?,
+        messageType: String?,
+        contact: SharedChatContact?,
+        topLevelName: String?,
+        topLevelPhone: String?,
+        content: String?
+    ) -> [String: AnyCodable]? {
+        var meta = existing ?? [:]
+        let type = (messageType ?? "").lowercased()
+        if type == "location" { return existing }
+
+        let nestedFromMeta: SharedChatContact? = {
+            guard let dict = meta["contact"]?.value as? [String: AnyCodable] else { return nil }
+            return SharedChatContact(
+                name: stringValue(dict["name"]?.value),
+                phoneNumber: stringValue(dict["phoneNumber"]?.value) ?? stringValue(dict["phone"]?.value),
+                email: stringValue(dict["email"]?.value),
+                sharedByUserId: stringValue(dict["sharedByUserId"]?.value)
+            )
+        }()
+
+        let flagged: Bool = {
+            switch meta["isContact"]?.value {
+            case let flag as Bool: return flag
+            case let number as NSNumber: return number.boolValue
+            case let text as String: return ["true", "1", "yes"].contains(text.lowercased())
+            default: return false
+            }
+        }()
+
+        let hasTopLevelContact = contact != nil
+            || !(topLevelName ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !(topLevelPhone ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let isContact = flagged || type == "contact" || hasTopLevelContact || nestedFromMeta != nil
+        guard isContact else { return existing }
+
+        let name = [
+            contact?.name,
+            nestedFromMeta?.name,
+            topLevelName,
+            stringValue(meta["contactName"]?.value),
+            stringValue(meta["name"]?.value),
+            contactNameFromContent(content)
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .first { !$0.isEmpty }
+
+        let phone = [
+            contact?.phoneNumber,
+            nestedFromMeta?.phoneNumber,
+            topLevelPhone,
+            stringValue(meta["contactPhone"]?.value),
+            stringValue(meta["phoneNumber"]?.value),
+            stringValue(meta["phone"]?.value),
+            contactPhoneFromContent(content)
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .first { !$0.isEmpty }
+
+        meta["isContact"] = AnyCodable(true)
+        if let name { meta["contactName"] = AnyCodable(name) }
+        if let phone { meta["contactPhone"] = AnyCodable(phone) }
+        return meta
+    }
+
+    static func contactNameFromContent(_ content: String?) -> String? {
+        guard let raw = content?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        if raw.lowercased().hasPrefix("contact:") {
+            let firstLine = raw.components(separatedBy: .newlines).first ?? raw
+            let name = firstLine.replacingOccurrences(of: "Contact:", with: "", options: .caseInsensitive)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return name.isEmpty ? nil : name
+        }
+        let stripped = raw
+            .replacingOccurrences(of: "👤", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return stripped.isEmpty ? nil : stripped
+    }
+
+    static func contactPhoneFromContent(_ content: String?) -> String? {
+        guard let raw = content?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.lowercased().hasPrefix("phone:") else { continue }
+            let phone = trimmed.replacingOccurrences(of: "Phone:", with: "", options: .caseInsensitive)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return phone.isEmpty ? nil : phone
+        }
+        return nil
     }
 
     static func coordinateValue(_ value: Any?) -> Double? {
@@ -1000,6 +1130,12 @@ extension ConversationMessage {
         let type = (messageType ?? type ?? "").lowercased()
         if type == "call" || type.contains("call") {
             return Self.callPreviewText(content: content, messageType: type)
+        }
+        if type == "contact" || isContactShare {
+            let contactName = sharedContactName
+            return contactName.isEmpty
+                ? Self.messageTypeDisplayName("contact")
+                : contactName
         }
         let name = Self.messageTypeDisplayName(type)
         if name.isEmpty {
@@ -1447,6 +1583,31 @@ extension ConversationMessage {
     var isPinSystemEvent: Bool {
         guard isSystemMessage, let action = systemAction else { return false }
         return action == "pinned" || action == "unpinned"
+    }
+
+    var isContactShare: Bool {
+        if metadata?["isContact"]?.value as? Bool == true { return true }
+        switch metadata?["isContact"]?.value {
+        case let number as NSNumber where number.boolValue: return true
+        default: break
+        }
+        return (messageType ?? type ?? "").lowercased() == "contact"
+    }
+
+    var sharedContactName: String {
+        let keys = ["contactName", "name"]
+        for key in keys {
+            if let value = Self.stringValue(metadata?[key]?.value) { return value }
+        }
+        return Self.contactNameFromContent(content) ?? ""
+    }
+
+    var sharedContactPhone: String {
+        let keys = ["contactPhone", "phoneNumber", "phone"]
+        for key in keys {
+            if let value = Self.stringValue(metadata?[key]?.value) { return value }
+        }
+        return Self.contactPhoneFromContent(content) ?? ""
     }
 
     var originalContentForDisplay: String {

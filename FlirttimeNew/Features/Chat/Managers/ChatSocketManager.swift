@@ -528,6 +528,10 @@ enum SocketEvent: String, CaseIterable {
     case momentCommentLikeUpdated = "moment:comment_like_updated"
     case momentGiftSent = "moment:gift_sent"
     case momentDeleted = "moment:deleted"
+
+    // MARK: Notifications
+    /// Server push of the current unread notification total for the signed-in user.
+    case notificationCount = "notification:count"
 }
 
 class ChatSocketManager {
@@ -1355,6 +1359,7 @@ final class ChatSocketSessionCoordinator {
         ChatListSocketService.shared.setupSocketListeners()
         ChannelSocketService.shared.setupSocketListeners()
         MomentsSocketService.shared.setupSocketListeners()
+        NotificationBadgeStore.shared.setupSocketListeners()
         print("[SocketSession] Ensuring socket connection (\(reason))")
         ChatSocketManager.shared.establishConnection()
         Self.syncInboxDelivered()
@@ -1386,6 +1391,7 @@ final class ChatSocketSessionCoordinator {
         ChatListSocketService.shared.invalidateSocketListeners()
         ChannelSocketService.shared.invalidateSocketListeners()
         MomentsSocketService.shared.invalidateSocketListeners()
+        NotificationBadgeStore.shared.invalidateSocketListeners()
         ChatSocketManager.shared.clearSocialRoomTracking()
         ChatSocketManager.shared.closeConnection()
         ChatSocketManager.shared.clearSocketListeners()

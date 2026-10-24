@@ -34,7 +34,7 @@ final class QuickMomentViewController: UIViewController {
     var canPageToNextUser = false
     var analyticsProfileID: Int { profile.id }
 
-    private enum PauseReason { case holding, typing, sheet, background }
+    private enum PauseReason { case holding, typing, sheet, background, dismissing }
 
     private static let momentDuration: CFTimeInterval = 5
     private static let reactions = ["😍", "🔥", "😂", "😮", "👏", "❤️"]
@@ -65,8 +65,11 @@ final class QuickMomentViewController: UIViewController {
     private let sendButton = UIButton(type: .system)
     private let bottomStack = UIStackView()
     private let incomingReactionsLayer = UIView()
+    private let storyContainer = UIView()
     private lazy var previousButton = arrowButton("chevron.left", label: "Previous moment") { [weak self] in self?.go(by: -1) }
     private lazy var nextButton = arrowButton("chevron.right", label: "Next moment") { [weak self] in self?.go(by: 1) }
+    private var dismissDimView: UIView?
+    private var clearedBackgrounds: [(UIView, UIColor?, Bool)] = []
 
     private var progressBars: [MomentProgressBar] { progressStack.arrangedSubviews.compactMap { $0 as? MomentProgressBar } }
     private var currentBar: MomentProgressBar? { progressBars.indices.contains(index) ? progressBars[index] : nil }
@@ -80,7 +83,7 @@ final class QuickMomentViewController: UIViewController {
         self.isOwnMoments = isOwnMoments
         self.index = min(max(0, startIndex), max(0, profile.moments.count - 1))
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .fullScreen
+        modalPresentationStyle = .overFullScreen
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -92,12 +95,11 @@ final class QuickMomentViewController: UIViewController {
         view.backgroundColor = .black
         view.maximumContentSizeCategory = .accessibilityMedium
 
-        let container = UIView()
-        container.layer.cornerRadius = 24
-        container.layer.cornerCurve = .continuous
-        container.clipsToBounds = true
-        container.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(container)
+        storyContainer.layer.cornerRadius = 24
+        storyContainer.layer.cornerCurve = .continuous
+        storyContainer.clipsToBounds = true
+        storyContainer.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(storyContainer)
 
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
@@ -108,19 +110,23 @@ final class QuickMomentViewController: UIViewController {
         tap.require(toFail: hold)
         imageView.addGestureRecognizer(tap)
         imageView.addGestureRecognizer(hold)
-        container.addSubview(imageView)
-        imageView.pinEdges(to: container)
 
-        container.addSubview(textBackground)
-        textBackground.pinEdges(to: container)
+        let dismissPan = UIPanGestureRecognizer(target: self, action: #selector(handleDismissPan(_:)))
+        dismissPan.delegate = self
+        view.addGestureRecognizer(dismissPan)
+        storyContainer.addSubview(imageView)
+        imageView.pinEdges(to: storyContainer)
+
+        storyContainer.addSubview(textBackground)
+        textBackground.pinEdges(to: storyContainer)
         textMomentLabel.textAlignment = .center
         textMomentLabel.isAccessibilityElement = false
         textMomentLabel.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(textMomentLabel)
+        storyContainer.addSubview(textMomentLabel)
         NSLayoutConstraint.activate([
-            textMomentLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -30),
-            textMomentLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 64),
-            textMomentLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -64)
+            textMomentLabel.centerYAnchor.constraint(equalTo: storyContainer.centerYAnchor, constant: -30),
+            textMomentLabel.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor, constant: 64),
+            textMomentLabel.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor, constant: -64)
         ])
 
         let topShade = MomentsGradientView(colors: [UIColor.black.withAlphaComponent(0.5), .clear],
@@ -130,7 +136,7 @@ final class QuickMomentViewController: UIViewController {
         [topShade, bottomShade].forEach {
             $0.isUserInteractionEnabled = false
             $0.translatesAutoresizingMaskIntoConstraints = false
-            container.addSubview($0)
+            storyContainer.addSubview($0)
         }
 
         progressStack.spacing = 4
@@ -151,7 +157,7 @@ final class QuickMomentViewController: UIViewController {
 
         [progressStack, header, previousButton, nextButton, captionStack].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
-            container.addSubview($0)
+            storyContainer.addSubview($0)
         }
         incomingReactionsLayer.isUserInteractionEnabled = false
         incomingReactionsLayer.translatesAutoresizingMaskIntoConstraints = false
@@ -162,40 +168,40 @@ final class QuickMomentViewController: UIViewController {
         view.addSubview(bottomStack)
 
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            container.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            container.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            container.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            storyContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            storyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            storyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            storyContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
 
-            topShade.topAnchor.constraint(equalTo: container.topAnchor),
-            topShade.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            topShade.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            topShade.topAnchor.constraint(equalTo: storyContainer.topAnchor),
+            topShade.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor),
+            topShade.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor),
             topShade.heightAnchor.constraint(equalToConstant: 140),
-            bottomShade.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            bottomShade.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            bottomShade.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            bottomShade.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.5),
+            bottomShade.bottomAnchor.constraint(equalTo: storyContainer.bottomAnchor),
+            bottomShade.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor),
+            bottomShade.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor),
+            bottomShade.heightAnchor.constraint(equalTo: storyContainer.heightAnchor, multiplier: 0.5),
 
-            progressStack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
-            progressStack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            progressStack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            progressStack.topAnchor.constraint(equalTo: storyContainer.topAnchor, constant: 10),
+            progressStack.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor, constant: 12),
+            progressStack.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor, constant: -12),
             progressStack.heightAnchor.constraint(equalToConstant: 3),
 
             header.topAnchor.constraint(equalTo: progressStack.bottomAnchor, constant: 12),
-            header.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 14),
-            header.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
+            header.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor, constant: 14),
+            header.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor, constant: -10),
 
-            previousButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            previousButton.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -40),
-            nextButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            previousButton.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor, constant: 12),
+            previousButton.centerYAnchor.constraint(equalTo: storyContainer.centerYAnchor, constant: -40),
+            nextButton.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor, constant: -12),
             nextButton.centerYAnchor.constraint(equalTo: previousButton.centerYAnchor),
 
             bottomStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
             bottomStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
             bottomStack.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor, constant: -12),
 
-            captionStack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 18),
-            captionStack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18),
+            captionStack.leadingAnchor.constraint(equalTo: storyContainer.leadingAnchor, constant: 18),
+            captionStack.trailingAnchor.constraint(equalTo: storyContainer.trailingAnchor, constant: -18),
             captionStack.bottomAnchor.constraint(equalTo: bottomStack.topAnchor, constant: -16)
         ])
 
@@ -448,6 +454,7 @@ final class QuickMomentViewController: UIViewController {
         let locked = pauseReasons.contains(.holding)
             || pauseReasons.contains(.typing)
             || pauseReasons.contains(.sheet)
+            || pauseReasons.contains(.dismissing)
         onChromeLockChanged?(locked)
     }
 
@@ -465,6 +472,7 @@ final class QuickMomentViewController: UIViewController {
     }
 
     @objc private func imageHeld(_ hold: UILongPressGestureRecognizer) {
+        guard !pauseReasons.contains(.dismissing) else { return }
         switch hold.state {
         case .began:
             pause(.holding)
@@ -475,6 +483,94 @@ final class QuickMomentViewController: UIViewController {
         default:
             break
         }
+    }
+
+    /// The presented viewer (this screen, or the tray pager that hosts it).
+    private var presentationRoot: UIViewController {
+        var root: UIViewController = self
+        while let parent = root.parent { root = parent }
+        return root
+    }
+
+    @objc private func handleDismissPan(_ pan: UIPanGestureRecognizer) {
+        let host = presentationRoot
+        let translationY = pan.translation(in: view).y
+        switch pan.state {
+        case .began:
+            pause(.dismissing)
+            setChromeHidden(true)
+            beginTransparentDismiss(host: host)
+        case .changed:
+            let y = max(0, translationY)
+            applySwipeDismiss(offset: y, dimAlpha: max(0, 1 - y / 420))
+        case .ended:
+            let velocityY = pan.velocity(in: view).y
+            if translationY > 120 || velocityY > 900 {
+                finishSwipeDismiss(host: host)
+            } else {
+                cancelSwipeDismiss()
+            }
+        case .cancelled, .failed:
+            cancelSwipeDismiss()
+        default:
+            break
+        }
+    }
+
+    private var swipeContentViews: [UIView] { [storyContainer, bottomStack, incomingReactionsLayer] }
+
+    private func beginTransparentDismiss(host: UIViewController) {
+        guard dismissDimView == nil else { return }
+        let dim = UIView(frame: host.view.bounds)
+        dim.backgroundColor = .black
+        dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        dim.isUserInteractionEnabled = false
+        host.view.insertSubview(dim, at: 0)
+        dismissDimView = dim
+
+        var node: UIView? = view
+        while let current = node {
+            clearedBackgrounds.append((current, current.backgroundColor, current.isOpaque))
+            current.backgroundColor = .clear
+            current.isOpaque = false
+            if current === host.view { break }
+            node = current.superview
+        }
+    }
+
+    private func applySwipeDismiss(offset: CGFloat, dimAlpha: CGFloat) {
+        let transform = CGAffineTransform(translationX: 0, y: offset)
+        swipeContentViews.forEach { $0.transform = transform }
+        dismissDimView?.alpha = dimAlpha
+    }
+
+    private func finishSwipeDismiss(host: UIViewController) {
+        UIView.animate(withDuration: 0.22, delay: 0, options: .curveEaseIn, animations: {
+            self.applySwipeDismiss(offset: host.view.bounds.height, dimAlpha: 0)
+        }, completion: { _ in
+            host.dismiss(animated: false)
+        })
+    }
+
+    private func cancelSwipeDismiss() {
+        resume(.dismissing)
+        setChromeHidden(false)
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseOut, animations: {
+            self.applySwipeDismiss(offset: 0, dimAlpha: 1)
+        }, completion: { _ in
+            self.endTransparentDismiss()
+        })
+    }
+
+    private func endTransparentDismiss() {
+        for (view, color, isOpaque) in clearedBackgrounds {
+            view.backgroundColor = color
+            view.isOpaque = isOpaque
+        }
+        clearedBackgrounds.removeAll()
+        dismissDimView?.removeFromSuperview()
+        dismissDimView = nil
+        swipeContentViews.forEach { $0.transform = .identity }
     }
 
     private func setChromeHidden(_ hidden: Bool) {
@@ -739,6 +835,16 @@ final class QuickMomentViewController: UIViewController {
         sheet.addAction(UIAlertAction(title: Constants.AlertButtons.cancel, style: .cancel))
         sheet.popoverPresentationController?.sourceView = sourceView
         present(sheet, animated: true)
+    }
+}
+
+extension QuickMomentViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
+        guard presentedViewController == nil, !replyField.isFirstResponder else { return false }
+        guard pauseReasons.isDisjoint(with: [.typing, .sheet]) else { return false }
+        let velocity = pan.velocity(in: view)
+        return velocity.y > 0 && abs(velocity.y) > abs(velocity.x)
     }
 }
 
