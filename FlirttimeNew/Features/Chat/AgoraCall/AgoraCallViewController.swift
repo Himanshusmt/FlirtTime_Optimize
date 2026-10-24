@@ -371,7 +371,6 @@ final class AgoraCallViewController: UIViewController {
     func reloadFromService() {
         guard let service else { return }
         let call = service.call
-        let peer = call?.peer(relativeTo: service.meId)
         let isGroup = service.isGroupCall
         let isIncomingPhase = service.phase == .incoming
         let isOutgoingPhase = service.phase == .outgoing
@@ -382,14 +381,10 @@ final class AgoraCallViewController: UIViewController {
         updateOneToOneRemoteMuteBadge()
 
         let avatarURLString: String? = {
-            if isIncomingPhase {
-                return caller?.profilePicture ?? peer?.profilePicture ?? service.avatarURLOverride
+            if isGroup, !isIncomingPhase, !isOutgoingPhase {
+                return service.avatarURLOverride
             }
-            if isOutgoingPhase {
-                return peer?.profilePicture ?? call?.callee?.profilePicture ?? service.avatarURLOverride
-            }
-            if isGroup { return service.avatarURLOverride }
-            return peer?.profilePicture ?? service.avatarURLOverride
+            return service.resolvedRemoteAvatarURL
         }()
 
         if isRingingPhase {
@@ -412,7 +407,7 @@ final class AgoraCallViewController: UIViewController {
             clearRingBackgroundImage()
         } else {
             applyCallAvatar(
-                urlString: peer?.profilePicture ?? service.avatarURLOverride,
+                urlString: service.resolvedRemoteAvatarURL,
                 placeholder: UIImage(systemName: "person.circle.fill")
             )
             clearRingBackgroundImage()
@@ -612,9 +607,9 @@ final class AgoraCallViewController: UIViewController {
             avatarImageView.tintColor = .systemGreen
         } else if !avatarImageView.isHidden, isVideo, isActive, !useVideoGrid, !useAvatarGrid {
             // Full-bleed placeholder matches whoever is full-screen after swap.
-            let fullBleedAvatar = pipShowsRemote
-                ? service.localAvatarURL
-                : (peer?.profilePicture ?? service.avatarURLOverride)
+                let fullBleedAvatar = pipShowsRemote
+                    ? service.localAvatarURL
+                    : service.resolvedRemoteAvatarURL
             applyCallAvatar(
                 urlString: fullBleedAvatar,
                 placeholder: UIImage(systemName: "person.circle.fill")
@@ -736,7 +731,7 @@ final class AgoraCallViewController: UIViewController {
         let urlKey = urlString ?? ""
         guard configuredLocalPipAvatarURL != urlKey else { return }
         configuredLocalPipAvatarURL = urlKey
-        if let urlString, !urlString.isEmpty, let url = URL(string: urlString) {
+        if let resolved = AgoraCallMediaURL.resolve(urlString), let url = URL(string: resolved) {
             localPipAvatarView.setChatImage(
                 with: url,
                 placeholderImage: UIImage(systemName: "person.circle.fill")
@@ -748,8 +743,7 @@ final class AgoraCallViewController: UIViewController {
     }
 
     private func remotePeerAvatarURL(from service: AgoraCallService) -> String? {
-        let peer = service.call?.peer(relativeTo: service.meId)
-        return peer?.profilePicture ?? service.avatarURLOverride
+        service.resolvedRemoteAvatarURL
     }
 
     private func isOneToOneRemoteMuted(_ service: AgoraCallService) -> Bool {
@@ -2081,7 +2075,7 @@ final class AgoraCallViewController: UIViewController {
     }
 
     private func applyCallAvatar(urlString: String?, placeholder: UIImage?) {
-        guard let urlString, !urlString.isEmpty, let url = URL(string: urlString) else {
+        guard let resolved = AgoraCallMediaURL.resolve(urlString), let url = URL(string: resolved) else {
             avatarImageView.image = placeholder
             return
         }
@@ -2089,7 +2083,7 @@ final class AgoraCallViewController: UIViewController {
     }
 
     private func updateRingBackgroundImage(urlString: String?) {
-        guard let urlString, !urlString.isEmpty, let url = URL(string: urlString) else {
+        guard let resolved = AgoraCallMediaURL.resolve(urlString), let url = URL(string: resolved) else {
             incomingBackgroundImageView.image = nil
             incomingBackgroundImageView.backgroundColor = UIColor(white: 0.12, alpha: 1)
             return

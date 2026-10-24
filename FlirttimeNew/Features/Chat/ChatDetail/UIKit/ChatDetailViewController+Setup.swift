@@ -94,6 +94,93 @@ extension ChatDetailViewController {
             bar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 66),
         ])
         navBar = bar
+        publishVisiblePeerProfileForCalls()
+    }
+
+    /// Name + photo already painted on this conversation — the call screen should reuse these.
+    func visibleCallPeerProfile() -> (name: String?, avatarURL: String?) {
+        if isGroupChat || isChannel {
+            let title = (navBar?.displayedPeerName
+                ?? (viewModel.groupTitle.isEmpty ? groupTitle : viewModel.groupTitle))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let avatar = AgoraCallMediaURL.resolve(
+                navBar?.displayedPeerAvatarURL
+                    ?? viewModel.conversationAvatarURL
+                    ?? groupAvatarUrl
+            )
+            return (title.isEmpty ? nil : title, avatar)
+        }
+
+        let fallbackUser = viewModel.headerUserData ?? user ?? viewModel.user
+        var name = navBar?.displayedPeerName
+            ?? fallbackUser?.fullName
+            ?? fallbackUser?.userName
+            ?? viewModel.otherUserProfileData?.fullName
+            ?? viewModel.otherUserProfileData?.userName
+        name = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name?.isEmpty == true || name == "--" { name = nil }
+
+        let avatar = AgoraCallMediaURL.resolve(
+            navBar?.displayedPeerAvatarURL
+                ?? fallbackUser?.profilePictureDetails?.filePath
+                ?? fallbackUser?.profilePicture
+                ?? viewModel.otherUserProfileData?.profileImage
+        )
+        return (name, avatar)
+    }
+
+    /// Keep the open chat header available for incoming calls (User B side).
+    func publishVisiblePeerProfileForCalls() {
+        let conversationId = viewModel.selectedId.isEmpty ? selectedId : viewModel.selectedId
+        guard !conversationId.isEmpty, !isChannel else { return }
+        let profile = visibleCallPeerProfile()
+        ConversationPresentationStore.shared.update(
+            conversationId: conversationId,
+            title: profile.name,
+            avatarURL: profile.avatarURL
+        )
+    }
+
+    static func openConversation(matching conversationId: String) -> ChatDetailViewController? {
+        let target = conversationId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return nil }
+
+        func matches(_ chat: ChatDetailViewController) -> Bool {
+            let ids = [chat.viewModel.selectedId, chat.selectedId]
+            return ids.contains { !$0.isEmpty && $0.caseInsensitiveCompare(target) == .orderedSame }
+        }
+
+        func search(_ vc: UIViewController?) -> ChatDetailViewController? {
+            guard let vc else { return nil }
+            if let chat = vc as? ChatDetailViewController, matches(chat) { return chat }
+            if let nav = vc as? UINavigationController {
+                for child in nav.viewControllers.reversed() {
+                    if let found = search(child) { return found }
+                }
+            }
+            if let tab = vc as? UITabBarController {
+                if let found = search(tab.selectedViewController) { return found }
+                for child in tab.viewControllers ?? [] {
+                    if let found = search(child) { return found }
+                }
+            }
+            if let found = search(vc.presentedViewController) { return found }
+            for child in vc.children {
+                if let found = search(child) { return found }
+            }
+            return nil
+        }
+
+        if let top = UIApplication.shared.topViewController(), let found = search(top) {
+            return found
+        }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        for scene in scenes {
+            for window in scene.windows where !window.isHidden {
+                if let found = search(window.rootViewController) { return found }
+            }
+        }
+        return nil
     }
 
     /// Same Agora flow as FollowersProfileViewController call buttons.
@@ -130,30 +217,10 @@ extension ChatDetailViewController {
                     return
                 }
 
-                let peerUser = self.viewModel.headerUserData ?? self.user
-                let displayName: String? = {
-                    if self.isGroupChat {
-                        let title = self.viewModel.groupTitle.isEmpty ? self.groupTitle : self.viewModel.groupTitle
-                        return title.isEmpty ? "Group Call" : title
-                    }
-                    let full = peerUser?.fullName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    if !full.isEmpty { return full }
-                    let user = peerUser?.userName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    return user.isEmpty ? nil : user
-                }()
-
-                let avatarURL: String? = {
-                    if self.isGroupChat {
-                        let url = (self.viewModel.conversationAvatarURL ?? self.groupAvatarUrl)
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-                        return url.isEmpty ? nil : url
-                    }
-                    let path = peerUser?.profilePictureDetails?.filePath
-                        ?? peerUser?.profilePicture
-                        ?? ""
-                    let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return trimmed.isEmpty ? nil : trimmed
-                }()
+                self.publishVisiblePeerProfileForCalls()
+                let visiblePeer = self.visibleCallPeerProfile()
+                let displayName = visiblePeer.name
+                let avatarURL = visiblePeer.avatarURL
 
                 let meId = ChatAuthStore.shared.currentUser?.userId ?? ""
                 let groupMembers: [AgoraCallGridParticipant] = self.isGroupChat

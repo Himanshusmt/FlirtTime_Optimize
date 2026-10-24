@@ -497,6 +497,18 @@ final class AgoraCallSignaling {
                 ?? defaultType.rawValue
             callDict["type"] = sessionType
         }
+        if callDict["caller"] == nil, let caller = dict["caller"] {
+            callDict["caller"] = caller
+        }
+        if callDict["callee"] == nil, let callee = dict["callee"] {
+            callDict["callee"] = callee
+        }
+        if let caller = callDict["caller"] as? [String: Any] {
+            callDict["caller"] = AgoraCallUserSummary.sanitizedDictionary(caller)
+        }
+        if let callee = callDict["callee"] as? [String: Any] {
+            callDict["callee"] = AgoraCallUserSummary.sanitizedDictionary(callee)
+        }
         guard let call = Self.decode(AgoraCallDto.self, from: callDict), !call.id.isEmpty else { return }
         remember(type: call.type, callId: call.id)
         handler(call)

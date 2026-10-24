@@ -269,6 +269,21 @@ enum AgoraRejoinableGroupCallStore {
     }
 }
 
+/// Absolute URL for chat / call avatars (server often returns a relative media key).
+enum AgoraCallMediaURL {
+    static func resolve(_ raw: String?) -> String? {
+        let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return nil }
+        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+            return trimmed
+        }
+        let base = ChatConfig.mediaBaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let path = trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !base.isEmpty else { return trimmed }
+        return "\(base)/\(path)"
+    }
+}
+
 struct AgoraCallUserSummary: Decodable, Equatable {
     let id: String
     let username: String?
@@ -277,20 +292,43 @@ struct AgoraCallUserSummary: Decodable, Equatable {
     let isVerified: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case id, username, fullName, name, profilePicture, avatarUrl, isVerified
+        case id, userId, username, userName, fullName, name, displayName
+        case profilePicture, profileImage, avatarUrl, avatar, image
+        case profilePictureDetails
+        case isVerified
+    }
+
+    init(
+        id: String,
+        username: String? = nil,
+        fullName: String? = nil,
+        profilePicture: String? = nil,
+        isVerified: Bool? = nil
+    ) {
+        self.id = id
+        self.username = username
+        self.fullName = fullName
+        self.profilePicture = AgoraCallMediaURL.resolve(profilePicture)
+        self.isVerified = isVerified
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decodeIfPresent(String.self, forKey: .id) ?? ""
-        username = try c.decodeIfPresent(String.self, forKey: .username)
-        fullName = try c.decodeIfPresent(String.self, forKey: .fullName)
-            ?? c.decodeIfPresent(String.self, forKey: .name)
-        profilePicture = try c.decodeIfPresent(String.self, forKey: .profilePicture)
-            ?? c.decodeIfPresent(String.self, forKey: .avatarUrl)
-        if let b = try c.decodeIfPresent(Bool.self, forKey: .isVerified) {
+        let decodedId = Self.decodeFlexibleString(c, keys: [.id, .userId])
+        id = decodedId ?? ""
+        username = Self.decodeFlexibleString(c, keys: [.username, .userName])
+        fullName = Self.decodeFlexibleString(c, keys: [.fullName, .name, .displayName])
+        var picture = Self.decodeFlexibleString(c, keys: [
+            .profilePicture, .profileImage, .avatarUrl, .avatar, .image
+        ])
+        if picture == nil || picture?.isEmpty == true,
+           let details = try? c.decodeIfPresent(ProfilePictureDetails.self, forKey: .profilePictureDetails) {
+            picture = details.filePath
+        }
+        profilePicture = AgoraCallMediaURL.resolve(picture)
+        if let b = try? c.decodeIfPresent(Bool.self, forKey: .isVerified) {
             isVerified = b
-        } else if let i = try c.decodeIfPresent(Int.self, forKey: .isVerified) {
+        } else if let i = try? c.decodeIfPresent(Int.self, forKey: .isVerified) {
             isVerified = i != 0
         } else {
             isVerified = nil
@@ -303,6 +341,68 @@ struct AgoraCallUserSummary: Decodable, Equatable {
         let user = username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !user.isEmpty { return user }
         return "Unknown"
+    }
+
+    /// Flatten FlirtTime caller/callee dictionaries so nested picture + id aliases survive JSON decode.
+    static func sanitizedDictionary(_ dict: [String: Any]) -> [String: Any] {
+        var out = dict
+        let fields = resolvedFields(from: dict)
+        if !fields.id.isEmpty { out["id"] = fields.id }
+        if !fields.name.isEmpty { out["fullName"] = fields.name }
+        if !fields.avatar.isEmpty { out["profilePicture"] = fields.avatar }
+        return out
+    }
+
+    static func resolvedFields(from dict: [String: Any]) -> (id: String, name: String, avatar: String) {
+        let id = stringValue(dict["id"])
+            ?? stringValue(dict["userId"])
+            ?? stringValue(dict["user_id"])
+            ?? ""
+        let name = stringValue(dict["fullName"])
+            ?? stringValue(dict["name"])
+            ?? stringValue(dict["displayName"])
+            ?? stringValue(dict["username"])
+            ?? stringValue(dict["userName"])
+            ?? ""
+        var avatar = stringValue(dict["profilePicture"])
+            ?? stringValue(dict["profileImage"])
+            ?? stringValue(dict["avatarUrl"])
+            ?? stringValue(dict["avatar"])
+            ?? stringValue(dict["image"])
+            ?? ""
+        if avatar.isEmpty, let details = dict["profilePictureDetails"] as? [String: Any] {
+            avatar = stringValue(details["filePath"])
+                ?? stringValue(details["url"])
+                ?? stringValue(details["path"])
+                ?? ""
+        }
+        return (id, name, AgoraCallMediaURL.resolve(avatar) ?? avatar)
+    }
+
+    private static func decodeFlexibleString(
+        _ c: KeyedDecodingContainer<CodingKeys>,
+        keys: [CodingKeys]
+    ) -> String? {
+        for key in keys {
+            if let s = try? c.decodeIfPresent(String.self, forKey: key) {
+                let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+            }
+            if let i = try? c.decodeIfPresent(Int.self, forKey: key) {
+                return String(i)
+            }
+        }
+        return nil
+    }
+
+    private static func stringValue(_ any: Any?) -> String? {
+        if let s = any as? String {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        if let i = any as? Int { return String(i) }
+        if let n = any as? NSNumber { return n.stringValue }
+        return nil
     }
 }
 
@@ -355,11 +455,11 @@ struct AgoraCallDto: Decodable, Equatable {
         channelName = Self.decodeString(c, forKey: .channelName) ?? ""
         callerId = Self.decodeString(c, forKey: .callerId) ?? ""
         calleeId = Self.decodeString(c, forKey: .calleeId) ?? ""
-        caller = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .caller)
-        callee = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .callee)
-        user = try c.decodeIfPresent(AgoraCallUserSummary.self, forKey: .user)
+        caller = Self.decodeUser(c, forKey: .caller)
+        callee = Self.decodeUser(c, forKey: .callee)
+        user = Self.decodeUser(c, forKey: .user)
         direction = try c.decodeIfPresent(String.self, forKey: .direction)
-        participants = try c.decodeIfPresent([AgoraCallUserSummary].self, forKey: .participants)
+        participants = (try? c.decodeIfPresent([AgoraCallUserSummary].self, forKey: .participants)) ?? nil
         appId = Self.decodeString(c, forKey: .appId)
         startedAt = try c.decodeIfPresent(String.self, forKey: .startedAt)
         endedAt = try c.decodeIfPresent(String.self, forKey: .endedAt)
@@ -400,16 +500,54 @@ struct AgoraCallDto: Decodable, Equatable {
         return nil
     }
 
+    /// Object, or a bare id string — never fail the whole CallDto if caller/callee shape is messy.
+    private static func decodeUser(_ c: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) -> AgoraCallUserSummary? {
+        if let user = try? c.decode(AgoraCallUserSummary.self, forKey: key) {
+            return user
+        }
+        if let id = decodeString(c, forKey: key), !id.isEmpty {
+            return AgoraCallUserSummary(id: id)
+        }
+        return nil
+    }
+
+    private static func isSameUser(_ lhs: String, _ rhs: String) -> Bool {
+        let a = lhs.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = rhs.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        return a.caseInsensitiveCompare(b) == .orderedSame
+    }
+
     var resolvedIsGroup: Bool {
         if let isGroup { return isGroup }
         if let participants, participants.count > 2 { return true }
         return false
     }
 
+    /// The other person on a 1:1 call — never the current user.
     func peer(relativeTo meId: String) -> AgoraCallUserSummary? {
-        if let user { return user }
-        if callerId == meId { return callee }
-        return caller ?? callee
+        let me = meId.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        func notMe(_ candidate: AgoraCallUserSummary?) -> AgoraCallUserSummary? {
+            guard let candidate else { return nil }
+            if Self.isSameUser(candidate.id, me) { return nil }
+            return candidate
+        }
+
+        if Self.isSameUser(callerId, me) {
+            return notMe(callee)
+                ?? notMe(user)
+                ?? participants?.first(where: { !Self.isSameUser($0.id, me) })
+        }
+        if Self.isSameUser(calleeId, me) {
+            return notMe(caller)
+                ?? notMe(user)
+                ?? participants?.first(where: { !Self.isSameUser($0.id, me) })
+        }
+        return notMe(user)
+            ?? notMe(caller)
+            ?? notMe(callee)
+            ?? participants?.first(where: { !Self.isSameUser($0.id, me) })
     }
 
     func displayTitle(relativeTo meId: String, fallback: String? = nil) -> String {
@@ -462,6 +600,12 @@ struct AgoraCallSession: Equatable {
         if callDict["type"] == nil, callDict["callType"] == nil,
            let sessionType = root["type"] ?? dict["type"] {
             callDict["type"] = sessionType
+        }
+        if let caller = callDict["caller"] as? [String: Any] {
+            callDict["caller"] = AgoraCallUserSummary.sanitizedDictionary(caller)
+        }
+        if let callee = callDict["callee"] as? [String: Any] {
+            callDict["callee"] = AgoraCallUserSummary.sanitizedDictionary(callee)
         }
         guard let callData = try? JSONSerialization.data(withJSONObject: callDict),
               let call = try? JSONDecoder().decode(AgoraCallDto.self, from: callData),
