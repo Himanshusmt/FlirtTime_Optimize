@@ -323,7 +323,8 @@ extension ChatDetailViewModel {
         if let tempMsg = tempMessageMapping[tempId] {
             let tempType = (tempMsg.messageType ?? tempMsg.type ?? "").lowercased()
             let serverType = (updatedServerMessage.messageType ?? updatedServerMessage.type ?? "").lowercased()
-            if tempType == "audio" || serverType == "audio" {
+            let isAudio = ["audio", "voice"].contains(tempType) || ["audio", "voice"].contains(serverType)
+            if isAudio {
                 var merged = updatedServerMessage.metadata ?? [:]
                 let keysToPreserve = ["audio_duration", "audioDuration", "waveSeed", "filename", "filesize"]
                 for key in keysToPreserve {
@@ -344,6 +345,34 @@ extension ChatDetailViewModel {
                 let serverId = updatedServerMessage.id
                 if !serverId.isEmpty, serverId != tempId {
                     _ = MediaStorageManager.shared.copyMedia(from: tempId, to: serverId, type: .audio)
+                }
+            }
+
+            // Empty-type stubs would flip ChatAudioMessageCell → TextMessageCell.
+            if ["audio", "voice"].contains(tempType) {
+                let missingType = serverType.isEmpty || serverType == "text" || serverType == "unknown"
+                let missingMedia = updatedServerMessage.media?.isEmpty ?? true
+                let missingContent = (updatedServerMessage.content ?? "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                if missingType || missingMedia || missingContent,
+                   let encoded = try? JSONEncoder().encode(updatedServerMessage),
+                   var dict = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] {
+                    if missingType {
+                        dict["messageType"] = tempMsg.messageType ?? tempMsg.type ?? "audio"
+                        dict["type"] = tempMsg.type ?? tempMsg.messageType ?? "audio"
+                    }
+                    if missingContent, let content = tempMsg.content, !content.isEmpty {
+                        dict["content"] = content
+                    }
+                    if missingMedia,
+                       let tempEncoded = try? JSONEncoder().encode(tempMsg),
+                       let tempDict = try? JSONSerialization.jsonObject(with: tempEncoded) as? [String: Any],
+                       let media = tempDict["media"] {
+                        dict["media"] = media
+                    }
+                    if let preserved = ConversationMessage.fromDictionary(dict) {
+                        updatedServerMessage = preserved
+                    }
                 }
             }
         }
@@ -374,16 +403,17 @@ extension ChatDetailViewModel {
            !tempContent.isEmpty {
             let tempType = (tempMessageMapping[tempId]?.messageType
                 ?? tempMessageMapping[tempId]?.type ?? "").lowercased()
-            if tempType.isEmpty || tempType == "text" || tempType == "poll" || tempType == "location" {
+            if tempType.isEmpty || tempType == "text" || tempType == "poll"
+                || tempType == "location" || tempType == "audio" || tempType == "voice" {
                 updatedServerMessage.content = tempMessageMapping[tempId]?.content
             }
         }
 
         var fileWasCopied = false
 
-        let serverId = serverMessage.id
+        let serverId = updatedServerMessage.id
         if !serverId.isEmpty {
-            let messageType = (serverMessage.messageType ?? serverMessage.type ?? "").lowercased()
+            let messageType = (updatedServerMessage.messageType ?? updatedServerMessage.type ?? "").lowercased()
             AppLogger.debug("   Final messageType (lowercased): \(messageType)")
 
             if messageType == "image" {

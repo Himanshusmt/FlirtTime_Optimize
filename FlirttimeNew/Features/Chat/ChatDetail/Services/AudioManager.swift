@@ -356,7 +356,7 @@ final class AudioManager {
             let started = ctx.messageService.sendViaREST(
                 conversationId: ctx.selectedId,
                 type: "audio",
-                body: nil as String?,
+                body: displayURL,
                 mediaIds: [mediaId],
                 location: nil as [String: Any]?,
                 poll: nil as [String: Any]?,

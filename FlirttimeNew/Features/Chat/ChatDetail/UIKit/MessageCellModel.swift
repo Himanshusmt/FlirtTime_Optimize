@@ -222,18 +222,12 @@ struct MessageCellModel: Hashable {
 
         let deliveryStatus = DeliveryStatus.from(message: message, currentUserId: currentUserId)
 
-        // Spinner over outgoing image/video until the message actually leaves "sending".
-        // Also keep it if the background uploader is still active (race before status updates).
+        // Overlay spinner only while the file upload is in flight.
+        // Delivery ticks (clock/sent) are separate — don't keep the overlay after
+        // the recipient already has the image if status is still catching up.
         let isOutgoingVisualMedia = !isIncoming && (kind == .image || kind == .video)
-        let isUploading: Bool
-        if isOutgoingVisualMedia && deliveryStatus == .sending {
-            isUploading = true
-        } else if isOutgoingVisualMedia {
-            isUploading = MainActor.assumeIsolated {
-                BackgroundUploadService.shared.isActive(tempId: message.stableId)
-            }
-        } else {
-            isUploading = false
+        let isUploading = isOutgoingVisualMedia && MainActor.assumeIsolated {
+            BackgroundUploadService.shared.isActive(tempId: message.stableId)
         }
         let replyPreview = message.replyToId.map { reply -> ReplyPreviewModel in
             var preview = ReplyPreviewModel.from(reply)
