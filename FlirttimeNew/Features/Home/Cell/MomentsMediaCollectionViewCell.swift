@@ -10,6 +10,8 @@ final class MomentsMediaCollectionViewCell: UICollectionViewCell {
 
     static let identifier = "MomentsMediaCollectionViewCell"
 
+    var previewImageView: UIImageView { imageView }
+
     private let imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
@@ -45,7 +47,31 @@ final class MomentsMediaCollectionViewCell: UICollectionViewCell {
         InstaImageZoom.shared.gestureStateChanged(gesture, withZoomImageView: imageView)
     }
 
-    func configure(path: String?) {
-        imageView.loadImage(path: path)
+    /// Shows the thumbnail immediately, then swaps in the full-size photo when it arrives.
+    func configure(thumbnailPath: String?, filePath: String?) {
+        let thumbnail = thumbnailPath?.isEmpty == false ? thumbnailPath : nil
+        let full = filePath?.isEmpty == false ? filePath : nil
+
+        if let full, let url = Self.imageURL(for: full), ImageLoader.shared.cachedImage(for: url) != nil {
+            imageView.loadImage(path: full)
+            return
+        }
+
+        guard let full, full != thumbnail else {
+            imageView.loadImage(path: thumbnail ?? full)
+            return
+        }
+
+        if let thumbnail {
+            imageView.loadImage(path: thumbnail) { [weak self] _ in
+                self?.imageView.loadImage(path: full)
+            }
+        } else {
+            imageView.loadImage(path: full)
+        }
+    }
+
+    private static func imageURL(for path: String) -> URL? {
+        URL(string: path.hasPrefix("http") ? path : ApiName.imgBaseURL + path)
     }
 }

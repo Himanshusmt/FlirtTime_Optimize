@@ -917,8 +917,8 @@ final class SessionManager {
                 }
                 return message
             }
-            .catch { _ in
-                self.decodeSentMessage(request: apiRequest)
+            .catch { error -> Single<ConversationMessage> in
+                self.decodeSentMessageIfShapeMismatch(error: error, request: apiRequest)
             }
     }
 
@@ -954,8 +954,8 @@ final class SessionManager {
                 }
                 return message
             }
-            .catch { _ in
-                self.decodeSentMessage(request: apiRequest)
+            .catch { error -> Single<ConversationMessage> in
+                self.decodeSentMessageIfShapeMismatch(error: error, request: apiRequest)
             }
     }
 
@@ -1150,7 +1150,14 @@ final class SessionManager {
             if meta["source"] == nil { meta["source"] = "photo" }
             if !meta.isEmpty { params["metadata"] = meta }
         case "audio", "voice":
-            if let resolvedContent { params["content"] = resolvedContent }
+            // FlirtTime requires `content` (public URL or storage key). Live audio
+            // often only has mediaIds / metadata after the presigned upload.
+            let audioContent = resolvedContent
+                ?? mediaIds?.first
+                ?? Self.stringParam(meta["mediaUrl"])
+                ?? Self.stringParam(meta["cachedS3Key"])
+                ?? Self.stringParam(meta["mediaId"])
+            if let audioContent { params["content"] = audioContent }
             if !meta.isEmpty { params["metadata"] = meta }
         case "location":
             if let location {
@@ -1182,13 +1189,13 @@ final class SessionManager {
         )
         return backendClient.loadChatData(request: apiRequest)
             .map { (data: SendChatMessageAPIData) -> ConversationMessage in
-                guard let message = data.message else {
+                guard let message = data.message, Self.isUsableSentMessage(message) else {
                     throw APIError.apiError("sendChatMessage: missing message in response")
                 }
                 return message
             }
-            .catch { _ in
-                self.decodeSentMessage(request: apiRequest)
+            .catch { error -> Single<ConversationMessage> in
+                self.decodeSentMessageIfShapeMismatch(error: error, request: apiRequest)
             }
     }
 
@@ -1280,14 +1287,45 @@ final class SessionManager {
         return decodeSentMessage(request: apiRequest)
     }
 
+    /// Only retry as a 2xx shape fallback. HTTP / validation failures must stay failures.
+    private func decodeSentMessageIfShapeMismatch(
+        error: Error,
+        request: ApiRequest
+    ) -> Single<ConversationMessage> {
+        if error is APIHTTPError {
+            return .error(error)
+        }
+        let status = error.statusCode
+        if status > 0 && !(200..<300).contains(status) {
+            return .error(error)
+        }
+        return decodeSentMessage(request: request)
+    }
+
     private func decodeSentMessage(request: ApiRequest) -> Single<ConversationMessage> {
         backendClient.loadDataRequest(request: request)
             .map { response -> ConversationMessage in
+                let statusCode = response.response?.statusCode ?? 0
                 guard let data = response.data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     throw APIError.apiError("sendChatMessage: empty response")
                 }
-                guard let message = Self.conversationMessage(fromSendJSON: json) else {
+                if statusCode > 0 && !(200..<300).contains(statusCode) {
+                    let message = (json["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    throw APIHTTPError(
+                        statusCode: statusCode,
+                        message: (message?.isEmpty == false ? message : nil) ?? "sendChatMessage failed"
+                    )
+                }
+                if Self.isFailedAPIEnvelope(json) {
+                    let message = (json["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    throw APIHTTPError(
+                        statusCode: statusCode > 0 ? statusCode : 400,
+                        message: (message?.isEmpty == false ? message : nil) ?? "Validation failed"
+                    )
+                }
+                guard let message = Self.conversationMessage(fromSendJSON: json),
+                      Self.isUsableSentMessage(message) else {
                     throw APIError.apiError("sendChatMessage: missing message in response")
                 }
                 return message
@@ -1295,8 +1333,10 @@ final class SessionManager {
     }
 
     private static func conversationMessage(fromSendJSON json: [String: Any]) -> ConversationMessage? {
+        if isFailedAPIEnvelope(json) { return nil }
         let payload = (json["data"] as? [String: Any]) ?? json
         if let messageDict = payload["message"] as? [String: Any] {
+            guard hasRealMessageId(messageDict) else { return nil }
             return ConversationMessage.fromDictionary(messageDict)
         }
         if let results = payload["results"] as? [[String: Any]] {
@@ -1307,13 +1347,52 @@ final class SessionManager {
                        let cid = row["conversationId"] as? String {
                         messageDict["conversationId"] = cid
                     }
+                    guard hasRealMessageId(messageDict) else { continue }
                     if let message = ConversationMessage.fromDictionary(messageDict) {
                         return message
                     }
                 }
             }
         }
+        guard hasRealMessageId(payload) else { return nil }
         return ConversationMessage.fromDictionary(payload)
+    }
+
+    private static func isFailedAPIEnvelope(_ json: [String: Any]) -> Bool {
+        if let success = json["success"] as? Bool { return !success }
+        if let success = json["success"] as? NSNumber { return !success.boolValue }
+        if let status = json["status"] as? Bool { return !status }
+        if let status = json["status"] as? String {
+            let lower = status.lowercased()
+            if ["false", "0", "error", "failure", "failed"].contains(lower) { return true }
+        }
+        return false
+    }
+
+    private static func hasRealMessageId(_ dict: [String: Any]) -> Bool {
+        let keys = ["id", "messageId", "message_id"]
+        for key in keys {
+            if let value = stringParam(dict[key]) { return true }
+        }
+        return false
+    }
+
+    private static func isUsableSentMessage(_ message: ConversationMessage) -> Bool {
+        guard !message.id.isEmpty else { return false }
+        let type = (message.messageType ?? message.type ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = (message.content ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !type.isEmpty || !content.isEmpty { return true }
+        if let media = message.media, !media.isEmpty { return true }
+        return message.serverLocation != nil || message.poll != nil
+    }
+
+    private static func stringParam(_ value: Any?) -> String? {
+        if let s = value as? String {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        if let n = value as? NSNumber { return n.stringValue }
+        return nil
     }
 
     /// FlirtTime — POST `/api/v1/chats/{id}/messages/{messageId}/pin` `{ isPinned, scope? }`

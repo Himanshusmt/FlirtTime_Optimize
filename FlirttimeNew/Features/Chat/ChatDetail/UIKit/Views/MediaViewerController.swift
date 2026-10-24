@@ -64,9 +64,16 @@ final class MediaViewerPage: UIViewController, UIScrollViewDelegate {
 
         if let local = item.localMediaURL(type: .image), let image = UIImage(contentsOfFile: local.path) {
             imageView.image = image
+        } else if let cached = ImageLoader.shared.cachedImage(for: item.url) {
+            imageView.image = cached
         } else {
-            imageView.kf.indicatorType = .activity
-            imageView.setChatImage(with: item.url, placeholderImage: UIImage(named: ChatAssets.imagePlaceholder), options: [.retryFailed, .highPriority])
+            let thumbnail = item.thumbnailURL.flatMap { ImageLoader.shared.cachedImage(for: $0) }
+            imageView.kf.indicatorType = thumbnail == nil ? .activity : .none
+            imageView.setChatImage(
+                with: item.url,
+                placeholderImage: thumbnail ?? UIImage(named: ChatAssets.imagePlaceholder),
+                options: [.retryFailed, .highPriority]
+            )
         }
 
         let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))

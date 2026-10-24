@@ -534,6 +534,7 @@ class ChatMessageService: ChatMessageServiceProtocol {
                 clientMessageId: clientMessageId
             )
         } else {
+            let isAudio = resolvedType.lowercased() == "audio" || resolvedType.lowercased() == "voice"
             send = sessionManager.sendChatMessage(
                 conversationId: conversationId,
                 body: body,
@@ -544,6 +545,7 @@ class ChatMessageService: ChatMessageServiceProtocol {
                 postId: nil,
                 clientMessageId: clientMessageId,
                 replyToId: replyToId,
+                contentURL: isAudio ? (body ?? mediaIds?.first) : nil,
                 metadata: metadata
             )
         }

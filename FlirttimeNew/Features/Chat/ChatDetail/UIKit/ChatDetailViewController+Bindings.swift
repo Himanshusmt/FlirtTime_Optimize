@@ -634,12 +634,11 @@ extension ChatDetailViewController {
                 var itemsToReconfigure: [ChatMessageCellItem] = []
                 for item in snapshot.itemIdentifiers {
                     guard var model = self.dataSource?.modelCache[item.stableId] else { continue }
-                    // Spinner while still sending, or while the uploader is active for this bubble
+                    // Overlay spinner tracks the uploader only, not delivery ticks
                     let isOutgoingVisualMedia = !model.isIncoming
                         && (model.kind == .image || model.kind == .video)
                     let shouldShowUpload = isOutgoingVisualMedia
-                        && (model.deliveryStatus == .sending
-                            || uploadingIds.contains(item.stableId))
+                        && uploadingIds.contains(item.stableId)
                     guard model.isUploading != shouldShowUpload else { continue }
                     model.isUploading = shouldShowUpload
                     self.dataSource?.modelCache[item.stableId] = model

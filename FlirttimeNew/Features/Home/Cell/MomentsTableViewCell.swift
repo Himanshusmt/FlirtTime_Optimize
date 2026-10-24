@@ -16,6 +16,7 @@ protocol MomentsTableViewCellDelegate: AnyObject {
     func vibeCellDidTapMore(_ cell: MomentsTableViewCell)
     func vibeCellDidTapProfile(_ cell: MomentsTableViewCell)
     func vibeCellDidToggleCaption(_ cell: MomentsTableViewCell)
+    func vibeCellDidTapMedia(_ cell: MomentsTableViewCell, at index: Int, sourceImageView: UIImageView?)
 }
 
 final class MomentsTableViewCell: UITableViewCell {
@@ -248,6 +249,11 @@ final class MomentsTableViewCell: UITableViewCell {
         doubleTap.cancelsTouchesInView = false
         mediaCollectionView.addGestureRecognizer(doubleTap)
 
+        let singleTap = UITapGestureRecognizer(target: self, action: #selector(mediaTapped(_:)))
+        singleTap.numberOfTapsRequired = 1
+        singleTap.require(toFail: doubleTap)
+        mediaCollectionView.addGestureRecognizer(singleTap)
+
         [avatarImageView, contentStack, separatorView, pageIndicator, imageCounterLabel, overlayActionStack].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview($0)
@@ -446,6 +452,14 @@ final class MomentsTableViewCell: UITableViewCell {
         delegate?.vibeCellDidDoubleTapLike(self)
     }
 
+    @objc private func mediaTapped(_ gesture: UITapGestureRecognizer) {
+        let point = gesture.location(in: mediaCollectionView)
+        guard let indexPath = mediaCollectionView.indexPathForItem(at: point),
+              media.indices.contains(indexPath.item) else { return }
+        let source = (mediaCollectionView.cellForItem(at: indexPath) as? MomentsMediaCollectionViewCell)?.previewImageView
+        delegate?.vibeCellDidTapMedia(self, at: indexPath.item, sourceImageView: source)
+    }
+
     /// Location under the name when the author shares one, otherwise the relative time.
     private static func metaText(location: String?, createdAt: String?) -> String {
         let place = (location ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -622,8 +636,7 @@ extension MomentsTableViewCell: UICollectionViewDataSource, UICollectionViewDele
             return UICollectionViewCell()
         }
         let item = media[indexPath.item]
-        let thumbnail = item.thumbnailPath?.isEmpty == false ? item.thumbnailPath : nil
-        cell.configure(path: thumbnail ?? item.filePath)
+        cell.configure(thumbnailPath: item.thumbnailPath, filePath: item.filePath)
         return cell
     }
 

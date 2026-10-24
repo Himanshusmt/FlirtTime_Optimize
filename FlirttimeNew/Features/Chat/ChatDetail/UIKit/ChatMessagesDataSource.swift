@@ -329,6 +329,9 @@ final class ChatMessagesDataSource: NSObject {
 
             guard seen.insert(stableId).inserted,
                   let liveItem = liveByStableId[stableId] else { continue }
+            // Reconfigure keeps the existing cell class. A kind change must be
+            // a snapshot replace (delete + insert), not reconfigure.
+            if liveItem.kind != mutableModel.kind { continue }
             itemsToReconfigure.append(liveItem)
         }
 
@@ -499,9 +502,10 @@ struct ChatMessageCellItem: Hashable {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(stableId)
+        hasher.combine(kind)
     }
 
     static func == (lhs: ChatMessageCellItem, rhs: ChatMessageCellItem) -> Bool {
-        lhs.stableId == rhs.stableId
+        lhs.stableId == rhs.stableId && lhs.kind == rhs.kind
     }
 }

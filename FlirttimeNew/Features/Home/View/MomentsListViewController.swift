@@ -221,8 +221,48 @@ final class MomentsListViewController: BaseViewController, Instantiable {
     }
 
     @IBAction private func scrollToTopTapped(_ sender: UIButton) {
+        scrollFeedToTop()
+    }
+
+    /// Moments tab tap: same animated scroll-up as the floating button, then reload the first page.
+    func scrollToTopAndRefresh() {
+        guard scope == .everyone, isViewLoaded else { return }
+
+        presentedViewController?.dismiss(animated: false)
+        scrollFeedToTop { [weak self] in
+            self?.refreshFeedFromTab()
+        }
+    }
+
+    private func refreshFeedFromTab() {
+        guard !viewModel.isLoading else { return }
+        loadFeed(showLoader: false)
+    }
+
+    private func scrollFeedToTop(completion: (() -> Void)? = nil) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        tableView.setContentOffset(CGPoint(x: 0, y: -tableView.adjustedContentInset.top), animated: true)
+        let top = CGPoint(x: 0, y: -tableView.adjustedContentInset.top)
+        guard tableView.contentOffset.y > top.y + 1 else {
+            completion?()
+            return
+        }
+
+        // Drive the offset ourselves. `setContentOffset(animated: true)` plus a
+        // mid-scroll `reloadData` (or self-sizing height fixes) stops after 1–2 rows.
+        tableView.layer.removeAllAnimations()
+        UIView.animate(
+            withDuration: 0.35,
+            delay: 0,
+            options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState],
+            animations: {
+                self.tableView.setContentOffset(top, animated: false)
+            },
+            completion: { _ in
+                let settled = CGPoint(x: 0, y: -self.tableView.adjustedContentInset.top)
+                self.tableView.setContentOffset(settled, animated: false)
+                completion?()
+            }
+        )
     }
 
     // MARK: - Upload progress
@@ -543,6 +583,34 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
             if cellTop < self.tableView.contentOffset.y + self.tableView.adjustedContentInset.top {
                 self.tableView.scrollToRow(at: indexPath, at: .top, animated: true)
             }
+        }
+    }
+
+    func vibeCellDidTapMedia(_ cell: MomentsTableViewCell, at index: Int, sourceImageView: UIImageView?) {
+        guard let row = tableView.indexPath(for: cell)?.row,
+              viewModel.vibes.indices.contains(row) else { return }
+        let vibe = viewModel.vibes[row]
+        let gallery = Self.galleryItems(from: vibe)
+        guard !gallery.isEmpty else { return }
+        let start = gallery.indices.contains(index) ? index : 0
+        let viewer = MediaViewerController(items: gallery, initialIndex: start, sourceView: sourceImageView)
+        present(viewer, animated: false)
+    }
+
+    private static func galleryItems(from vibe: MomentsPost) -> [GalleryMediaItem] {
+        (vibe.media ?? []).enumerated().compactMap { offset, item in
+            guard let url = item.resolvedFileURL else { return nil }
+            let isVideo = (item.fileType ?? "").localizedCaseInsensitiveContains("video")
+            return GalleryMediaItem(
+                id: item.id ?? "\(vibe.id)-\(offset)",
+                url: url,
+                s3Path: nil,
+                isVideo: isVideo,
+                messageId: vibe.id,
+                senderName: vibe.author?.displayName,
+                timestamp: MomentsDate.date(from: vibe.createdAt),
+                thumbnailURL: item.resolvedThumbnailURL
+            )
         }
     }
 

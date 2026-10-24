@@ -129,6 +129,32 @@ class AppTabBarController: UITabBarController, Instantiable {
 extension AppTabBarController: UITabBarControllerDelegate {
     func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
         // TODO: restore the profile-verification gating from FlirtTime once the verification API is integrated.
+        if isMomentsTab(viewController) {
+            // Re-tap of the already selected Moments tab: `didSelect` is not always called.
+            if tabBarController.selectedViewController === viewController {
+                refreshMomentsFeed(from: viewController)
+            } else {
+                // Switching here from another tab — wait until Moments is visible, then jump + refresh.
+                DispatchQueue.main.async { [weak self] in
+                    self?.refreshMomentsFeed(from: viewController)
+                }
+            }
+        }
         return true
+    }
+
+    private func isMomentsTab(_ viewController: UIViewController) -> Bool {
+        let root = (viewController as? UINavigationController)?.viewControllers.first ?? viewController
+        return root is MomentsListViewController
+    }
+
+    /// Instant scroll-to-top + feed reload, matching One Vibe's Moments tab tap.
+    private func refreshMomentsFeed(from viewController: UIViewController) {
+        guard let nav = viewController as? UINavigationController,
+              let moments = nav.viewControllers.first as? MomentsListViewController else { return }
+        if nav.viewControllers.count > 1 {
+            nav.popToRootViewController(animated: false)
+        }
+        moments.scrollToTopAndRefresh()
     }
 }
