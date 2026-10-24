@@ -153,24 +153,22 @@ final class AgoraCallPipOverlay: UIView {
         applyElapsedStatusText(service: service, isGroup: isGroup)
 
         if isGroup {
-            if let pic = service.avatarURLOverride, !pic.isEmpty {
+            if let pic = AgoraCallMediaURL.resolve(service.avatarURLOverride),
+               let url = URL(string: pic) {
                 avatarImageView.setChatImage(
-                    with: URL(string: pic),
+                    with: url,
                     placeholderImage: UIImage(systemName: "person.3.fill")
                 )
             } else {
                 avatarImageView.image = UIImage(systemName: "person.3.fill")
             }
+        } else if let pic = service.resolvedRemoteAvatarURL, let url = URL(string: pic) {
+            avatarImageView.setChatImage(
+                with: url,
+                placeholderImage: UIImage(systemName: "person.circle.fill")
+            )
         } else {
-            let peer = service.call?.peer(relativeTo: service.meId)
-            if let pic = peer?.profilePicture ?? service.avatarURLOverride, !pic.isEmpty {
-                avatarImageView.setChatImage(
-                    with: URL(string: pic),
-                    placeholderImage: UIImage(systemName: "person.circle.fill")
-                )
-            } else {
-                avatarImageView.image = UIImage(systemName: "person.circle.fill")
-            }
+            avatarImageView.image = UIImage(systemName: "person.circle.fill")
         }
 
         // Group video with 2+ remotes → mini WhatsApp grid (same as full-screen).

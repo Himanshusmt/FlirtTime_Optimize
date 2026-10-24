@@ -610,10 +610,18 @@ class CallKitManager: NSObject {
         let conversationId = (payload["conversationId"] as? String)
             ?? (payload["conversation_id"] as? String)
             ?? ""
-        let callerId = (payload["callerId"] as? String)
+        var callerId = (payload["callerId"] as? String)
             ?? (payload["caller_id"] as? String)
             ?? ""
-        let minimal: [String: Any] = [
+        var callerAvatar = (payload["callerAvatar"] as? String)
+            ?? (payload["caller_avatar"] as? String)
+            ?? ""
+        if let callerDict = payload["caller"] as? [String: Any] {
+            let fields = AgoraCallUserSummary.resolvedFields(from: callerDict)
+            if callerId.isEmpty { callerId = fields.id }
+            if callerAvatar.isEmpty { callerAvatar = fields.avatar }
+        }
+        var minimal: [String: Any] = [
             "id": callId,
             "conversationId": conversationId,
             "type": hasVideo ? "video" : "audio",
@@ -623,6 +631,12 @@ class CallKitManager: NSObject {
             "calleeId": payload["calleeId"] as? String ?? "",
             "appId": payload["appId"] as? String ?? ""
         ]
+        if !callerId.isEmpty || !callerName.isEmpty {
+            var caller: [String: Any] = ["id": callerId]
+            if !callerName.isEmpty { caller["fullName"] = callerName }
+            if !callerAvatar.isEmpty { caller["profilePicture"] = callerAvatar }
+            minimal["caller"] = caller
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: minimal),
               let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) else {
             return nil

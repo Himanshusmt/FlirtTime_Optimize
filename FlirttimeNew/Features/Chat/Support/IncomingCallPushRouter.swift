@@ -474,12 +474,12 @@ enum IncomingCallPushRouter {
     private static func sanitizeCallDict(_ dict: [String: Any]) -> [String: Any] {
         var out = dict
         if let caller = dict["caller"] as? [String: Any] {
-            var user = caller
+            var user = AgoraCallUserSummary.sanitizedDictionary(caller)
             if let n = caller["isVerified"] as? NSNumber { user["isVerified"] = n.boolValue }
             out["caller"] = user
         }
         if let callee = dict["callee"] as? [String: Any] {
-            var user = callee
+            var user = AgoraCallUserSummary.sanitizedDictionary(callee)
             if let n = callee["isVerified"] as? NSNumber { user["isVerified"] = n.boolValue }
             out["callee"] = user
         }
@@ -497,15 +497,21 @@ enum IncomingCallPushRouter {
         let conversationId = (dict["conversationId"] as? String)
             ?? (dict["conversation_id"] as? String)
             ?? ""
-        let callerId = (dict["callerId"] as? String)
+        var callerId = (dict["callerId"] as? String)
             ?? (dict["caller_id"] as? String)
             ?? ""
-        let callerName = (dict["callerName"] as? String)
+        var callerName = (dict["callerName"] as? String)
             ?? (dict["caller"] as? String)
             ?? ""
-        let callerAvatar = (dict["callerAvatar"] as? String)
+        var callerAvatar = (dict["callerAvatar"] as? String)
             ?? (dict["caller_avatar"] as? String)
             ?? ""
+        if let callerDict = dict["caller"] as? [String: Any] {
+            let fields = AgoraCallUserSummary.resolvedFields(from: callerDict)
+            if callerId.isEmpty { callerId = fields.id }
+            if callerName.isEmpty { callerName = fields.name }
+            if callerAvatar.isEmpty { callerAvatar = fields.avatar }
+        }
         let conversationTitle = (dict["conversationTitle"] as? String)
             ?? (dict["conversation_title"] as? String)
             ?? (dict["title"] as? String)

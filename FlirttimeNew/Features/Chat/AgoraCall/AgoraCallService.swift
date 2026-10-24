@@ -202,10 +202,36 @@ final class AgoraCallService: NSObject {
     }
 
     var callDisplayTitle: String {
+        if !isGroupCall {
+            let fromChat = displayNameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !fromChat.isEmpty { return fromChat }
+        }
         if let call {
             return call.displayTitle(relativeTo: meId, fallback: displayNameOverride)
         }
         return displayNameOverride ?? "Calling…"
+    }
+
+    /// 1:1 remote avatar: chat-seeded override, then the other person on the call (never self).
+    var resolvedRemoteAvatarURL: String? {
+        if let pic = AgoraCallMediaURL.resolve(avatarURLOverride) {
+            return pic
+        }
+        guard !isGroupCall else { return nil }
+        if let pic = AgoraCallMediaURL.resolve(call?.peer(relativeTo: meId)?.profilePicture) {
+            return pic
+        }
+        if phase == .incoming || !isCallOwner {
+            if let pic = AgoraCallMediaURL.resolve(call?.caller?.profilePicture) {
+                return pic
+            }
+        }
+        if phase == .outgoing || isCallOwner {
+            if let pic = AgoraCallMediaURL.resolve(call?.callee?.profilePicture) {
+                return pic
+            }
+        }
+        return nil
     }
 
     /// Banner when the remote peer has dropped off the network (User A view of User B).
@@ -468,7 +494,7 @@ final class AgoraCallService: NSObject {
         isGroupCall = isGroup
         isCallOwner = true
         displayNameOverride = displayName
-        avatarURLOverride = avatarURL
+        avatarURLOverride = AgoraCallMediaURL.resolve(avatarURL)
         muted = false
         videoEnabled = (type == .video)
         // Loudspeaker while dialing so ringback + early Agora prejoin share one route.
@@ -526,13 +552,10 @@ final class AgoraCallService: NSObject {
             if session.call.resolvedIsGroup {
                 isGroupCall = true
             }
-            if let title = session.call.conversationTitle, !title.isEmpty {
+            if isGroupCall, let title = session.call.conversationTitle, !title.isEmpty {
                 displayNameOverride = title
             }
-            // Prefer server peer avatar when present; keep chat-seeded URL otherwise.
-            if let peerPic = session.call.peer(relativeTo: meId)?.profilePicture, !peerPic.isEmpty {
-                avatarURLOverride = peerPic
-            }
+            applyLocalConversationHints(for: session.call)
             if isGroupCall {
                 cacheProfilesFromCallDTO(session.call)
                 seedMemberProfileCache(from: [], conversationId: session.call.conversationId.isEmpty ? conversationId : session.call.conversationId)
@@ -1183,7 +1206,7 @@ final class AgoraCallService: NSObject {
         phase = .incoming
         isCallOwner = false
         isGroupCall = call.resolvedIsGroup || isGroupCall
-        if let title = call.conversationTitle, !title.isEmpty {
+        if isGroupCall, let title = call.conversationTitle, !title.isEmpty {
             displayNameOverride = title
         }
         applyLocalConversationHints(for: call)
@@ -1225,11 +1248,18 @@ final class AgoraCallService: NSObject {
     /// Supports backend flat payload: `type=incoming_call` + `callType=audio|video`.
     @discardableResult
     func seedIncomingFromPushPayload(_ payload: [String: Any]) -> Bool {
-        if let callDict = payload["call"] as? [String: Any],
-           let data = try? JSONSerialization.data(withJSONObject: callDict),
-           let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) {
-            seedIncomingFromPush(call: decoded)
-            return true
+        if var callDict = payload["call"] as? [String: Any] {
+            if let caller = callDict["caller"] as? [String: Any] {
+                callDict["caller"] = AgoraCallUserSummary.sanitizedDictionary(caller)
+            }
+            if let callee = callDict["callee"] as? [String: Any] {
+                callDict["callee"] = AgoraCallUserSummary.sanitizedDictionary(callee)
+            }
+            if let data = try? JSONSerialization.data(withJSONObject: callDict),
+               let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) {
+                seedIncomingFromPush(call: decoded)
+                return true
+            }
         }
 
         let callId = (payload["callId"] as? String)
@@ -1246,15 +1276,21 @@ final class AgoraCallService: NSObject {
         let conversationId = (payload["conversationId"] as? String)
             ?? (payload["conversation_id"] as? String)
             ?? ""
-        let callerId = (payload["callerId"] as? String)
+        var callerId = (payload["callerId"] as? String)
             ?? (payload["caller_id"] as? String)
             ?? ""
-        let callerName = (payload["callerName"] as? String)
+        var callerName = (payload["callerName"] as? String)
             ?? (payload["caller"] as? String)
             ?? ""
-        let callerAvatar = (payload["callerAvatar"] as? String)
+        var callerAvatar = (payload["callerAvatar"] as? String)
             ?? (payload["caller_avatar"] as? String)
             ?? ""
+        if let callerDict = payload["caller"] as? [String: Any] {
+            let fields = AgoraCallUserSummary.resolvedFields(from: callerDict)
+            if callerId.isEmpty { callerId = fields.id }
+            if callerName.isEmpty { callerName = fields.name }
+            if callerAvatar.isEmpty { callerAvatar = fields.avatar }
+        }
         let conversationTitle = (payload["conversationTitle"] as? String)
             ?? (payload["conversation_title"] as? String)
             ?? (payload["title"] as? String)
@@ -1362,7 +1398,7 @@ final class AgoraCallService: NSObject {
         phase = .incoming
         isCallOwner = false
         isGroupCall = call.resolvedIsGroup || isGroupCall
-        if let title = call.conversationTitle, !title.isEmpty {
+        if isGroupCall, let title = call.conversationTitle, !title.isEmpty {
             displayNameOverride = title
         }
         applyLocalConversationHints(for: call)
@@ -1442,27 +1478,49 @@ final class AgoraCallService: NSObject {
     /// Foreground: seed from push dict and show in-app UI (never CallKit).
     @discardableResult
     func presentIncomingFromPushPayload(_ payload: [String: Any]) -> Bool {
-        if let callDict = payload["call"] as? [String: Any],
-           let data = try? JSONSerialization.data(withJSONObject: callDict),
-           let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) {
-            presentIncomingInApp(call: decoded)
-            return true
+        if var callDict = payload["call"] as? [String: Any] {
+            if let caller = callDict["caller"] as? [String: Any] {
+                callDict["caller"] = AgoraCallUserSummary.sanitizedDictionary(caller)
+            }
+            if let callee = callDict["callee"] as? [String: Any] {
+                callDict["callee"] = AgoraCallUserSummary.sanitizedDictionary(callee)
+            }
+            if let data = try? JSONSerialization.data(withJSONObject: callDict),
+               let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) {
+                presentIncomingInApp(call: decoded)
+                return true
+            }
         }
 
         let id = (payload["callId"] as? String) ?? (payload["id"] as? String) ?? ""
         guard !id.isEmpty else { return false }
         let typeRaw = (payload["type"] as? String) ?? (payload["callType"] as? String) ?? "audio"
         let normalizedType = typeRaw.lowercased().contains("video") ? "video" : "audio"
-        let minimal: [String: Any] = [
+        var callerId = (payload["callerId"] as? String) ?? ""
+        var callerName = (payload["callerName"] as? String) ?? (payload["caller"] as? String) ?? ""
+        var callerAvatar = (payload["callerAvatar"] as? String) ?? ""
+        if let callerDict = payload["caller"] as? [String: Any] {
+            let fields = AgoraCallUserSummary.resolvedFields(from: callerDict)
+            if callerId.isEmpty { callerId = fields.id }
+            if callerName.isEmpty { callerName = fields.name }
+            if callerAvatar.isEmpty { callerAvatar = fields.avatar }
+        }
+        var minimal: [String: Any] = [
             "id": id,
             "conversationId": payload["conversationId"] as? String ?? "",
             "type": normalizedType,
             "status": "ringing",
             "channelName": payload["channelName"] as? String ?? "",
-            "callerId": payload["callerId"] as? String ?? "",
+            "callerId": callerId,
             "calleeId": payload["calleeId"] as? String ?? "",
             "appId": payload["appId"] as? String ?? ""
         ]
+        if !callerId.isEmpty || !callerName.isEmpty {
+            var caller: [String: Any] = ["id": callerId]
+            if !callerName.isEmpty { caller["fullName"] = callerName }
+            if !callerAvatar.isEmpty { caller["profilePicture"] = callerAvatar }
+            minimal["caller"] = caller
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: minimal),
               let decoded = try? JSONDecoder().decode(AgoraCallDto.self, from: data) else {
             return false
@@ -1699,15 +1757,15 @@ final class AgoraCallService: NSObject {
         try? await Task.sleep(nanoseconds: 400_000_000)
 
         // Seed the new incoming call explicitly (avoid presentIncoming early-return races).
-        applyLocalConversationHints(for: next)
         call = next
         callId = next.id
         phase = .incoming
         isCallOwner = false
         isGroupCall = next.resolvedIsGroup || isGroupCall
-        if let title = next.conversationTitle, !title.isEmpty {
+        if isGroupCall, let title = next.conversationTitle, !title.isEmpty {
             displayNameOverride = title
         }
+        applyLocalConversationHints(for: next)
         videoEnabled = (next.type == .video)
         muted = false
         speakerOn = (next.type == .video)
@@ -1935,9 +1993,14 @@ final class AgoraCallService: NSObject {
         AgoraCallSignaling.shared.notifyRinging(callId: callId, type: call?.type)
     }
 
-    /// If server payload omits group flags, infer from local conversation cache.
+    /// If server payload omits group flags or 1:1 name/avatar, infer from local conversation cache.
     private func applyLocalConversationHints(for incoming: AgoraCallDto) {
-        guard !incoming.conversationId.isEmpty else { return }
+        if incoming.conversationId.isEmpty {
+            if !incoming.resolvedIsGroup {
+                applyOneToOnePeerHints(for: incoming)
+            }
+            return
+        }
         if incoming.resolvedIsGroup {
             isGroupCall = true
             if displayNameOverride == nil, let title = incoming.conversationTitle, !title.isEmpty {
@@ -1957,7 +2020,101 @@ final class AgoraCallService: NSObject {
             }
             seedMemberProfileCache(from: [], conversationId: incoming.conversationId)
             cacheProfilesFromCallDTO(incoming)
+            return
         }
+        applyOneToOnePeerHints(for: incoming)
+    }
+
+    /// Fill 1:1 name + photo for the other person (who is calling / being called).
+    /// Conversation header comes first — that screen already has the correct name and photo.
+    private func applyOneToOnePeerHints(for call: AgoraCallDto) {
+        guard !isGroupCall, !call.resolvedIsGroup else { return }
+
+        let peerId = preferredOneToOnePeerId(from: call)
+        let conversationId = call.conversationId
+
+        if !conversationId.isEmpty,
+           let openChat = ChatDetailViewController.openConversation(matching: conversationId) {
+            openChat.publishVisiblePeerProfileForCalls()
+            let visible = openChat.visibleCallPeerProfile()
+            applyPeerProfileIfNeeded(name: visible.name, avatar: visible.avatarURL, peerId: peerId)
+        }
+
+        if !conversationId.isEmpty,
+           let snap = ConversationPresentationStore.shared.snapshot(for: conversationId) {
+            applyPeerProfileIfNeeded(name: snap.title, avatar: snap.avatarURL, peerId: peerId)
+        }
+
+        if !conversationId.isEmpty,
+           let row = ConversationRepository().getConversationListSync()
+            .first(where: { $0.id == conversationId }),
+           !row.isGroup,
+           let details = row.getUserDetails() {
+            applyPeerProfileIfNeeded(
+                name: details.fullName ?? details.userName,
+                avatar: details.profilePicture,
+                peerId: details.userId ?? peerId
+            )
+        }
+
+        if !peerId.isEmpty, let cached = UserProfileCache.shared.get(forUserId: peerId) {
+            applyPeerProfileIfNeeded(
+                name: cached.fullName ?? cached.userName,
+                avatar: cached.profileImage,
+                peerId: peerId
+            )
+        }
+
+        let peer = call.peer(relativeTo: meId)
+        let remote: AgoraCallUserSummary? = {
+            if phase == .incoming || !isCallOwner {
+                if let caller = call.caller, !Self.isSameUserId(caller.id, meId) { return caller }
+            } else if let callee = call.callee, !Self.isSameUserId(callee.id, meId) {
+                return callee
+            }
+            return peer
+        }()
+        applyPeerProfileIfNeeded(
+            name: remote?.displayName,
+            avatar: remote?.profilePicture,
+            peerId: remote?.id ?? peerId
+        )
+    }
+
+    private func preferredOneToOnePeerId(from call: AgoraCallDto) -> String {
+        if let id = call.peer(relativeTo: meId)?.id, !id.isEmpty { return id }
+        if !call.callerId.isEmpty, !Self.isSameUserId(call.callerId, meId) { return call.callerId }
+        if !call.calleeId.isEmpty, !Self.isSameUserId(call.calleeId, meId) { return call.calleeId }
+        return ""
+    }
+
+    private func applyPeerProfileIfNeeded(name: String?, avatar: String?, peerId: String?) {
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedName.isEmpty, trimmedName != "Unknown" {
+            let current = displayNameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if current.isEmpty {
+                displayNameOverride = trimmedName
+            }
+        }
+        if let resolved = AgoraCallMediaURL.resolve(avatar) {
+            let current = avatarURLOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if current.isEmpty {
+                avatarURLOverride = resolved
+            }
+        }
+        if let peerId, !peerId.isEmpty {
+            let cachedName = (!trimmedName.isEmpty && trimmedName != "Unknown") ? trimmedName : (displayNameOverride ?? "Member")
+            if memberProfileCache[peerId] == nil {
+                memberProfileCache[peerId] = (cachedName, AgoraCallMediaURL.resolve(avatar) ?? avatarURLOverride)
+            }
+        }
+    }
+
+    private static func isSameUserId(_ lhs: String, _ rhs: String) -> Bool {
+        let a = lhs.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = rhs.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        return a.caseInsensitiveCompare(b) == .orderedSame
     }
 
     // MARK: - Attended-only avatar grid
@@ -2015,6 +2172,12 @@ final class AgoraCallService: NSObject {
             let id = caller.id.isEmpty ? call.callerId : caller.id
             if !id.isEmpty {
                 memberProfileCache[id] = (caller.displayName, caller.profilePicture)
+            }
+        }
+        if let callee = call.callee {
+            let id = callee.id.isEmpty ? call.calleeId : callee.id
+            if !id.isEmpty {
+                memberProfileCache[id] = (callee.displayName, callee.profilePicture)
             }
         }
         if let participants = call.participants {
@@ -2699,9 +2862,10 @@ final class AgoraCallService: NSObject {
         if merged.call.resolvedIsGroup {
             isGroupCall = true
         }
-        if let title = merged.call.conversationTitle, !title.isEmpty {
+        if isGroupCall, let title = merged.call.conversationTitle, !title.isEmpty {
             displayNameOverride = title
         }
+        applyLocalConversationHints(for: merged.call)
         let wasAlreadyJoined = didJoinRtc
         phase = .active
         outgoingDialState = .calling
