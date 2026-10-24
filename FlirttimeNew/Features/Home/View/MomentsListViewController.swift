@@ -601,10 +601,19 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         }
 
         let giftViewController = MomentsGiftViewController(vibe: vibe)
-        giftViewController.onGiftsSent = { [weak self] sentCount in
+        giftViewController.onSendStarted = { [weak self] in
+            self?.viewModel.markLocalEdit(id: vibe.id)
+        }
+        giftViewController.onGiftsSent = { [weak self] sentCount, totalGifts in
             guard let self else { return }
             self.viewModel.markLocalEdit(id: vibe.id)
-            let row = self.viewModel.updateVibe(id: vibe.id) { $0.giftCount = ($0.giftCount ?? 0) + sentCount }
+            let row = self.viewModel.updateVibe(id: vibe.id) { vibe in
+                if let totalGifts {
+                    vibe.giftCount = totalGifts
+                } else {
+                    vibe.giftCount = (vibe.giftCount ?? 0) + sentCount
+                }
+            }
             self.refreshCounts(at: row)
             self.aCustomToastView.show(message: sentCount > 1 ? "\(sentCount) gifts sent 🎉" : "Gift sent 🎉")
         }

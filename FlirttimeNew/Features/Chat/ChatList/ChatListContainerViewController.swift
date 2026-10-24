@@ -127,8 +127,7 @@ final class ChatListContainerViewController: BaseViewController {
     }
 
     private func bindOwnAvatar() {
-        navigator.ownAvatarPath = UserDataManager.shared.userAvtarImage
-            ?? UserDataManager.shared.appUser?.profilePicture
+        navigator.ownAvatarPath = UserDataManager.shared.avatarPath
         profileViewModel.$myProfile
             .receive(on: DispatchQueue.main)
             .sink { [weak self] profile in

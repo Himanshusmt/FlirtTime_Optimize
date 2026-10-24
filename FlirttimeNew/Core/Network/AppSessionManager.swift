@@ -84,6 +84,7 @@ final class AppSessionManager {
         return request.map { response in
             if let user = response.user {
                 UserDataManager.shared.appUser = user
+                UserDataManager.shared.storeAvatarPath(user.profilePicture)
                 UserDataManager.shared.applySubscriptionStatus(user.isSubscribed)
             }
             return response.user
@@ -95,6 +96,7 @@ final class AppSessionManager {
         backendClient.load(request: AppApiRequest(method: .get, endPoint: .myProfile))
             .do(onSuccess: { data in
                 UserDataManager.shared.applySubscriptionStatus(data.isSubscribed)
+                UserDataManager.shared.storeAvatarPath(data.profile?.avatarURL)
             })
     }
 
@@ -884,7 +886,10 @@ final class AppSessionManager {
             }
             AppTokenStore.shared.update(accessToken: token, refreshToken: auth.refreshToken)
             UserDefaults.standard.set(true, forKey: "isUserLogIn")
-            if let user = auth.user { UserDataManager.shared.appUser = user }
+            if let user = auth.user {
+                UserDataManager.shared.appUser = user
+                UserDataManager.shared.storeAvatarPath(user.profilePicture)
+            }
             DeviceTokenManager.shared.registerPushTokensAfterLogin(reason: "login")
             CoinWallet.shared.refresh()
             FreeTierLimitsStore.shared.refresh()

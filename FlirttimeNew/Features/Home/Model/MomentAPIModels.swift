@@ -43,6 +43,8 @@ struct MomentItem: Codable {
     let commentsCount: Int?
     let commentCount: Int?
     let giftsCount: Int?
+    let giftCount: Int?
+    let totalMomentGifts: Int?
     let sharesCount: Int?
     let hasReacted: Bool?
     let isLiked: Bool?
@@ -118,7 +120,7 @@ extension MomentsAuthor {
         return MomentsAuthor(userId: user?.id,
                           userName: username.isEmpty ? user?.nickName : username,
                           fullName: user?.fullName ?? "You",
-                          profilePicture: user?.profilePicture,
+                          profilePicture: UserDataManager.shared.avatarPath,
                           verified: user?.isFaceVerified,
                           location: user?.city)
     }
@@ -178,7 +180,7 @@ extension MomentItem {
                     media: vibeMedia,
                     likesCount: likesCount ?? likeCount,
                     commentsCount: commentsCount ?? commentCount,
-                    giftCount: giftsCount,
+                    giftCount: giftsCount ?? giftCount ?? totalMomentGifts,
                     hasLiked: isLiked ?? hasReacted ?? (viewerReaction != nil),
                     createdAt: createdAt ?? publishedAt,
                     author: author)

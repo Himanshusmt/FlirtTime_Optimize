@@ -8,7 +8,8 @@ import RxSwift
 import Swinject
 import UIKit
 
-/// Unread notification count (`GET notifications/counts`) shared by every bell button.
+/// Unread notification count shared by every bell button.
+/// Source of truth is `GET notifications/counts`, kept live by `notification:count`.
 final class NotificationBadgeStore {
 
     static let shared = NotificationBadgeStore()
@@ -17,6 +18,8 @@ final class NotificationBadgeStore {
 
     private let sessionManager: AppSessionManager
     private var request: Disposable?
+    private var listenerIds: [UUID] = []
+    private var areListenersConfigured = false
 
     private init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
@@ -36,7 +39,66 @@ final class NotificationBadgeStore {
     }
 
     func set(unread: Int) {
-        unreadCount = max(0, unread)
+        let next = max(0, unread)
+        if Thread.isMainThread {
+            unreadCount = next
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.unreadCount = next
+            }
+        }
+    }
+
+    func setupSocketListeners() {
+        guard !areListenersConfigured else { return }
+        areListenersConfigured = true
+
+        let id = ChatSocketManager.shared.listenToEvent(SocketEvent.notificationCount.rawValue) { [weak self] data in
+            self?.applySocketPayload(data)
+        }
+        listenerIds.append(id)
+        refresh()
+    }
+
+    func invalidateSocketListeners() {
+        for id in listenerIds {
+            ChatSocketManager.shared.offEventById(id)
+        }
+        listenerIds.removeAll()
+        areListenersConfigured = false
+        request?.dispose()
+        request = nil
+    }
+
+    private func applySocketPayload(_ data: [Any]) {
+        let parsed = Self.parseCount(from: data)
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if let parsed {
+                AppLogger.debug("[NotificationBadge] notification:count unread=\(parsed)")
+                self.set(unread: parsed)
+            } else {
+                AppLogger.debug("[NotificationBadge] notification:count missing total — bump + REST confirm")
+                self.set(unread: self.unreadCount + 1)
+                self.refresh()
+            }
+        }
+    }
+
+    private static func parseCount(from data: [Any]) -> Int? {
+        if let number = data.first as? NSNumber { return number.intValue }
+        if let value = data.first as? Int { return value }
+        if let string = data.first as? String, let value = Int(string) { return value }
+
+        let root: [String: Any]
+        if let dict = data.first as? [String: Any] {
+            root = dict
+        } else if let array = data.first as? [Any], let dict = array.first as? [String: Any] {
+            root = dict
+        } else {
+            return nil
+        }
+        return NotificationCounts.unread(from: root)
     }
 }
 

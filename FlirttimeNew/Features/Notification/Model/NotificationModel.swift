@@ -152,9 +152,24 @@ struct NotificationCounts {
     let unread: Int
 
     init(json: [String: Any]) {
-        let data = json["data"] as? [String: Any] ?? json
-        unread = JSONValue.int(data["unreadCount"]) ?? JSONValue.int(data["unread"])
-            ?? JSONValue.int(data["count"]) ?? JSONValue.int(data["total"]) ?? 0
+        unread = Self.unread(from: json) ?? 0
+    }
+
+    /// Unread total from REST or `notification:count`. `nil` when no count key is present.
+    static func unread(from json: [String: Any]) -> Int? {
+        let nested = json["data"] as? [String: Any]
+        let counts = json["counts"] as? [String: Any]
+        for dict in [json, nested, counts].compactMap({ $0 }) {
+            if let value = JSONValue.int(dict["unreadCount"])
+                ?? JSONValue.int(dict["unread"])
+                ?? JSONValue.int(dict["count"])
+                ?? JSONValue.int(dict["total"])
+                ?? JSONValue.int(dict["notificationCount"])
+                ?? JSONValue.int(dict["unread_count"]) {
+                return value
+            }
+        }
+        return nil
     }
 }
 

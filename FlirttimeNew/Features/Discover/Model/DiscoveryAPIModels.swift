@@ -65,6 +65,9 @@ struct DiscoveryPerson: Codable {
         isVerified = c.bool("isVerified", "isFaceVerified")
         isOnline = c.bool("isOnline")
         profilePhoto = c.string("profilePhotoUrl", "profilePhoto", "profilePicture", "primaryPhotoUrl")
+            ?? c.mediaURL("profilePhoto")
+            ?? c.mediaURL("profilePicture")
+            ?? c.mediaURL("profilePhotoUrl")
         interestTags = c.first([DiscoveryTag].self, "interests", "interestTags")
         sharedInterests = c.first([DiscoveryTag].self, "sharedInterests")
         commonInterestsCount = c.int("commonInterestsCount")
@@ -230,6 +233,21 @@ struct DiscoverySearchPhoto: Codable {
     let thumbnailUrl: String?
     let isPrimary: Bool?
     let displayOrder: Int?
+
+    init(from decoder: Decoder) throws {
+        if let url = try? decoder.singleValueContainer().decode(String.self) {
+            self.url = url
+            thumbnailUrl = nil
+            isPrimary = false
+            displayOrder = nil
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        url = c.string("url", "imageUrl", "photoUrl", "image")
+        thumbnailUrl = c.string("thumbnailUrl", "thumbnail")
+        isPrimary = c.bool("isPrimary", "is_primary")
+        displayOrder = c.int("displayOrder", "order", "position")
+    }
 }
 
 struct DiscoverySearchProfile: Codable {
@@ -285,8 +303,11 @@ struct DiscoverySearchProfile: Codable {
         location = c.string("fullLocation", "location")
         city = c.string("city")
         lookingFor = c.string("lookingFor")
-        primaryPhotoUrl = c.string("primaryPhotoUrl")
+        primaryPhotoUrl = c.string("primaryPhotoUrl") ?? c.mediaURL("primaryPhotoUrl")
         profilePhotoUrl = c.string("profilePhotoUrl", "profilePhoto", "profilePicture")
+            ?? c.mediaURL("profilePhoto")
+            ?? c.mediaURL("profilePicture")
+            ?? c.mediaURL("profilePhotoUrl")
         about = c.string("about", "bio")
         photos = c.first([DiscoverySearchPhoto].self, "photos")
         interests = c.first([DiscoveryTag].self, "interests", "interestTags")
@@ -662,7 +683,7 @@ struct OtherUserMoment: Codable {
         likesCount = c.int("likesCount", "likeCount")
         commentsCount = c.int("commentsCount", "commentCount")
         sharesCount = c.int("sharesCount")
-        giftsCount = c.int("giftsCount")
+        giftsCount = c.int("giftsCount", "giftCount", "totalMomentGifts", "totalGifts")
         isLiked = c.bool("isLiked", "hasLiked")
     }
 
