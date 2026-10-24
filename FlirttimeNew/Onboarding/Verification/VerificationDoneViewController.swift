@@ -15,6 +15,7 @@ class VerificationDoneViewController: BaseViewController, Instantiable {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        UserDataManager.shared.isHomePageRedirect = true
     }
 
 

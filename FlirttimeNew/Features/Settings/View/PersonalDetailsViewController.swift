@@ -225,11 +225,20 @@ final class PersonalDetailsViewController: BaseViewController, Instantiable {
             guard let self else { return }
             let username = (alert?.textFields?.first?.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard username != current else { return }
-            guard let error = Self.usernameValidationError(username) else {
-                self.save(["username": username], message: "Username updated")
+            if let error = Self.usernameValidationError(username) {
+                self.showNewAlertPopUp(Title: "Username", Msg: error, isSuccess: false) { _ in }
                 return
             }
-            self.showNewAlertPopUp(Title: "Username", Msg: error, isSuccess: false) { _ in }
+            self.setLoading(true)
+            self.viewModel.checkUsernameAvailability(username) { [weak self] available, message in
+                guard let self else { return }
+                self.setLoading(false)
+                if available {
+                    self.save(["username": username], message: "Username updated")
+                } else {
+                    self.showNewAlertPopUp(Title: "Username", Msg: message ?? "This username is already taken", isSuccess: false) { _ in }
+                }
+            }
         })
         present(alert, animated: true)
     }

@@ -128,7 +128,9 @@ class SplashScreenVC: UIViewController,Instantiable {
 
     private func routeByLocalState() {
         if UserDataManager.shared.isOTPVerificationDone == true {
-            if UserDataManager.shared.isHomePageRedirect == true {
+            if UserDataManager.shared.isHomePageRedirect == true
+                || UserDataManager.shared.appUser?.isProfileComplete == true {
+                UserDataManager.shared.isHomePageRedirect = true
                 navigateToViewController(AppTabBarController.instantiateFromStoryboard())
             } else {
                 let aUserDetailsViewController = UserDetailsViewController.instantiateFromStoryboard()

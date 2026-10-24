@@ -132,6 +132,13 @@ final class NotificationManager {
                        data: [AnyHashable: Any],
                        tabBar: AppTabBarController,
                        from viewController: BaseViewController? = nil) {
+        switch notificationType {
+        case .gestureVerified, .imageVerified, .profileImageVerified:
+            return
+        default:
+            break
+        }
+
         tabBar.presentedViewController?.dismiss(animated: false)
         if let outerNav = tabBar.navigationController {
             outerNav.popToViewController(tabBar, animated: false)
@@ -146,9 +153,6 @@ final class NotificationManager {
             default: exploreTab = .likes
             }
             openExplore(tabBar, tab: exploreTab)
-
-        case .gestureVerified, .imageVerified, .profileImageVerified:
-            select(tabBar, .home)
 
         case .gestureUnverified:
             select(tabBar, .home)

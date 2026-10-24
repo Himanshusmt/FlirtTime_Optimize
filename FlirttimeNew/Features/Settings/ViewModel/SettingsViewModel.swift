@@ -54,6 +54,17 @@ final class SettingsViewModel {
             .disposed(by: disposeBag)
     }
 
+    func checkUsernameAvailability(_ username: String, completion: @escaping (_ available: Bool, _ message: String?) -> Void) {
+        sessionManager.checkUsernameAvailability(username: username)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { available in
+                completion(available, available ? nil : "This username is already taken")
+            }, onFailure: { error in
+                completion(false, parseError(error) ?? "Unable to check username")
+            })
+            .disposed(by: disposeBag)
+    }
+
     /// Sends only `fields` (e.g. `fullName`, `nickName`, `dateOfBirth`), then reloads the account.
     func updateProfile(_ fields: [String: Any], completion: @escaping (Bool) -> Void) {
         let sessionManager = self.sessionManager
