@@ -61,6 +61,7 @@ enum Constants{
         static let firstName = "Full Name"
         static let lastName = "Last Name"
         static let nickName = "Display Name"
+        static let usernameTaken = "This display name is already taken"
         static let dob = "Date of Birth"
         static let gender = "Gender"
         static let aboutYou = "About you"

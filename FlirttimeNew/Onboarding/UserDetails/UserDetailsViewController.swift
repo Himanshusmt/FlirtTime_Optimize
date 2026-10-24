@@ -68,6 +68,14 @@ class UserDetailsViewController: BaseViewController,Instantiable{
             UserDataManager.shared.displayName = self?.nickNameTextField.text?.trimmText()
             self?.navigateToNextScreen()
         }
+        viewModel.onUsernameResult = { [weak self] available, message in
+            guard let self else { return }
+            self.validNickName = available
+            self.errorLabel.text = message
+            self.errorLabel.isHidden = message == nil
+            self.updateTextFieldUI(self.nickNameTextField)
+            self.setContinueButtonUI()
+        }
     }
 
     func setTextFieldUI(){
@@ -101,9 +109,10 @@ class UserDetailsViewController: BaseViewController,Instantiable{
 //        }
 
         [firstNameTextField,lastNameTextField,nickNameTextField,genderTextField,birthDateTextField].forEach { textField in
+            textField.containerRadius = 12
             textField.setNormalLabelColor(AppColor.Bombay, for: .normal)
-            textField.setTextColor(AppColor.Punch, for: .normal)
-            textField.setTextColor(AppColor.Punch, for: .editing)
+            textField.setTextColor(AppColor.MineShaft, for: .normal)
+            textField.setTextColor(AppColor.MineShaft, for: .editing)
             textField.setFloatingLabelColor(AppColor.Punch, for: .editing)
             textField.setFloatingLabelColor(AppColor.Bombay, for: .normal)
             textField.setOutlineColor(AppColor.Punch, for: .editing)
@@ -141,11 +150,10 @@ class UserDetailsViewController: BaseViewController,Instantiable{
     
     @IBAction func calenderButtonTapped(_ sender: UIButton) {
         view.endEditing(true)
-        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.birthDayText,buttonTitle: [Constants.AlertButtons.save], popUpType: .birthdayDate, completion1: { date in
-            let selectedDOB = date as? Date
-            self.birthDateTextField.text = selectedDOB?.convertDateToddMMYYYY()
-//            self.calenderImage.tintColor = self.birthDateTextField.text != "" ? AppColor.Punch :  AppColor.Bombay
+        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.birthDayText,buttonTitle: [Constants.AlertButtons.save], popUpType: .birthdayDate, preselectedDate: selectedDOB, completion1: { date in
+            guard let selectedDOB = date as? Date else { return }
             self.selectedDOB = selectedDOB
+            self.birthDateTextField.applyValue(selectedDOB.convertDateToddMMYYYY() ?? "")
             self.updateTextFieldUI(self.birthDateTextField)
             self.setContinueButtonUI()
         })
@@ -153,10 +161,10 @@ class UserDetailsViewController: BaseViewController,Instantiable{
 
     @IBAction func genderButtonTapped(_ sender: UIButton) {
         view.endEditing(true)
-        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.genderText,buttonTitle: [Constants.AlertButtons.save], popUpType: .gender,completion3: { gender, genderId in
-            let selectedGender = gender
-            self.genderTextField.text = selectedGender
+        self.aFlirtCustomPopUp.show(text:Constants.CustomPopUp.genderText,buttonTitle: [Constants.AlertButtons.save], popUpType: .gender, preselectedGenderID: genderID, completion3: { gender, genderId in
+            guard !gender.trimmText().isEmpty, genderId > 0 else { return }
             self.genderID = genderId
+            self.genderTextField.applyValue(gender.trimmText().capitalized)
             self.updateTextFieldUI(self.genderTextField)
             self.setContinueButtonUI()
         })
@@ -223,17 +231,14 @@ extension UserDetailsViewController: UITextFieldDelegate {
         print("TEXT FIELD TAG :", textField.tag)
         if textField.tag != 2 {
             textField.setNormalLabelColor(AppColor.Bombay, for: .normal)
-            textField.setTextColor(AppColor.Bombay, for: .normal)
+            textField.setTextColor(AppColor.MineShaft, for: .normal)
             textField.setFloatingLabelColor(AppColor.Bombay, for: .normal)
             textField.setOutlineColor(AppColor.Iron, for: .normal)
-//            if textField == birthDateTextField {
-//                self.calenderImage.tintColor = AppColor.Bombay
-//            }
         } else {
            
             if errorLabel.isHidden == true {
                 textField.setNormalLabelColor(AppColor.Bombay, for: .normal)
-                textField.setTextColor(AppColor.Bombay, for: .normal)
+                textField.setTextColor(AppColor.MineShaft, for: .normal)
                 textField.setFloatingLabelColor(AppColor.Bombay, for: .normal)
                 textField.setOutlineColor(AppColor.Iron, for: .normal)
             } else {
@@ -246,7 +251,7 @@ extension UserDetailsViewController: UITextFieldDelegate {
 
     func setEmptyTextFieldUI(_ textField: OutlinedTextField){
         textField.setNormalLabelColor(AppColor.Bombay, for: .normal)
-        textField.setTextColor(AppColor.Punch, for: .normal)
+        textField.setTextColor(AppColor.MineShaft, for: .normal)
         textField.setFloatingLabelColor(AppColor.Bombay, for: .normal)
         textField.setOutlineColor(AppColor.Iron, for: .normal)
     }
@@ -267,11 +272,27 @@ extension UserDetailsViewController: UITextFieldDelegate {
 
     func validateNickName(nickName:String){
         apiCallWorkItem?.cancel()
+        validNickName = false
+        guard !nickName.isEmpty else {
+            errorLabel.isHidden = true
+            errorLabel.text = nil
+            updateTextFieldUI(nickNameTextField)
+            setContinueButtonUI()
+            return
+        }
+        if nickName.count < 3 {
+            errorLabel.text = "Display name must be at least 3 characters"
+            errorLabel.isHidden = false
+            updateTextFieldUI(nickNameTextField)
+            setContinueButtonUI()
+            return
+        }
+        errorLabel.isHidden = true
+        errorLabel.text = nil
+        updateTextFieldUI(nickNameTextField)
+        setContinueButtonUI()
         let newWorkItem = DispatchWorkItem { [weak self] in
-            self?.validNickName = !nickName.isEmpty
-            self?.errorLabel.isHidden = true
-            self?.setContinueButtonUI()
-            
+            self?.viewModel.checkUsername(nickName)
         }
         apiCallWorkItem = newWorkItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: newWorkItem)
@@ -282,7 +303,7 @@ extension UserDetailsViewController: UITextViewDelegate {
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.textColor == AppColor.Bombay {
             textView.text = nil
-            textView.textColor = AppColor.Punch
+            textView.textColor = AppColor.MineShaft
             self.lblCountAboutMe.textColor = AppColor.Punch
             self.labelTextViewTitle.textColor = AppColor.Punch
             self.countAboutMe = 0
@@ -358,7 +379,7 @@ extension UserDetailsViewController: UITextViewDelegate {
             self.viewTextView.borderWidth = 1
             self.labelTextViewTitle.isHidden = false
             self.labelTextViewTitle.textColor = AppColor.Bombay
-            self.aboutTextView.textColor = AppColor.Bombay
+            self.aboutTextView.textColor = AppColor.MineShaft
             self.lblCountAboutMe.textColor = AppColor.Bombay
         }
     }

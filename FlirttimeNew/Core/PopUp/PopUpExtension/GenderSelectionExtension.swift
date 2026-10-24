@@ -11,6 +11,18 @@ import UIKit
 
 extension FlirtCustomPopUp {
 
+    func applyPreselectedGender() {
+        guard let id = pendingPreselectedGenderID, id > 0 else {
+            setSaveButtonUI()
+            return
+        }
+        switch id {
+        case 1: setMaleSelectionUI()
+        case 2: setFemaleSelectionUI()
+        default: setOtherSelectionUI()
+        }
+    }
+
     func setMaleSelectionUI(){
         self.maleImageView.layer.borderWidth = 2
         self.maleImageView.addShadow(color: AppColor.BlueRibbon, opacity: 1.0, offset: CGSize(width: 0, height: 1.0))

@@ -15,6 +15,8 @@ final class UserDetailsViewModel {
     var onLoading: ((Bool) -> Void)?
     var onError: ((String) -> Void)?
     var onProfileUpdated: (() -> Void)?
+    var onUsernameResult: ((_ available: Bool, _ message: String?) -> Void)?
+    private var lastRequestedUsername: String?
 
     private static let dobFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -26,6 +28,20 @@ final class UserDetailsViewModel {
 
     init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
+    }
+
+    func checkUsername(_ username: String) {
+        lastRequestedUsername = username
+        sessionManager.checkUsernameAvailability(username: username)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] available in
+                guard let self, self.lastRequestedUsername == username else { return }
+                self.onUsernameResult?(available, available ? nil : Constants.UserDetails.usernameTaken)
+            }, onFailure: { [weak self] error in
+                guard let self, self.lastRequestedUsername == username else { return }
+                self.onUsernameResult?(false, parseError(error) ?? "Unable to check display name")
+            })
+            .disposed(by: disposeBag)
     }
 
     /// Matches `FlirtCustomPopUp.genderOptions` ids.

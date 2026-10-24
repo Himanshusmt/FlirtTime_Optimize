@@ -97,7 +97,19 @@ class OutlinedTextField: UITextField {
     }
 
     override var text: String? {
-        didSet { refreshAppearance() }
+        get { super.text }
+        set {
+            super.text = newValue
+            refreshAppearance()
+        }
+    }
+
+    func applyValue(_ value: String) {
+        text = value
+        sendActions(for: .editingChanged)
+        refreshAppearance()
+        setNeedsLayout()
+        layoutIfNeeded()
     }
 
     override var font: UIFont? {

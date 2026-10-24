@@ -41,3 +41,32 @@ struct AppUser: Codable {
     let createdAt: String?
     let updatedAt: String?
 }
+
+/// `data` of GET `auth/username/availability`.
+struct UsernameAvailability: Codable {
+    let available: Bool?
+
+    init(from decoder: Decoder) throws {
+        if let single = try? decoder.singleValueContainer(), let flag = try? single.decode(Bool.self) {
+            available = flag
+            return
+        }
+        let c = try decoder.container(keyedBy: QMKey.self)
+        if let flag = c.first(Bool.self, "available", "isAvailable", "is_available") {
+            available = flag
+            return
+        }
+        if let taken = c.first(Bool.self, "taken", "exists", "isTaken") {
+            available = !taken
+            return
+        }
+        available = nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: QMKey.self)
+        try c.encodeIfPresent(available, forKey: QMKey("available"))
+    }
+
+    var isAvailable: Bool { available ?? false }
+}

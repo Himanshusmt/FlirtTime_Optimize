@@ -77,6 +77,8 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
     var selectedGenderID:Int? = nil
     let genderOptions: [(id: Int, title: String)] = [(1, "Male"), (2, "Female"), (3, "other")]
     var isFromHome:Bool? = false
+    var pendingPreselectedDate: Date?
+    var pendingPreselectedGenderID: Int?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -86,8 +88,13 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
         super.init(coder: aDecoder)
     }
 
-    func show(text: String,buttonTitle1:String? = nil,buttonTitle:[String],popUpType:PopUpType,image:UIImage? = nil,isVerticalButtonHide:Bool? = true,isFromHome:Bool? = false,completion1:((Any)->Void)? = nil,completion2:((PopUpType)->Void)? = nil,completion3:((String,Int)->Void)? = nil) {
+    func show(text: String,buttonTitle1:String? = nil,buttonTitle:[String],popUpType:PopUpType,image:UIImage? = nil,isVerticalButtonHide:Bool? = true,isFromHome:Bool? = false,preselectedDate: Date? = nil, preselectedGenderID: Int? = nil,completion1:((Any)->Void)? = nil,completion2:((PopUpType)->Void)? = nil,completion3:((String,Int)->Void)? = nil) {
         self.isFromHome = isFromHome
+        self.pendingPreselectedDate = preselectedDate
+        self.pendingPreselectedGenderID = preselectedGenderID
+        self.selectedGender = nil
+        self.selectedGenderID = nil
+        self.selectedDOB = preselectedDate
         if let window = UIApplication.shared.windows.first {
             window.addSubview(self)
         }
@@ -179,6 +186,7 @@ class FlirtCustomPopUp: UIView,UIGestureRecognizerDelegate {
         case .gender:
             self.genderView.isHidden = false
             self.genderImageViewHeight.constant = (self.contentView.frame.width - 108) * 0.331
+            self.applyPreselectedGender()
         case .pictureUploading:
             self.uploadPhoto()
         case .picUploadingFailed:

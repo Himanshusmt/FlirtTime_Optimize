@@ -46,6 +46,7 @@ extension FlirtCustomPopUp:UICalendarViewDelegate, UICalendarSelectionSingleDate
 
     func createCalender(){
         if #available(iOS 16.0, *) {
+            self.calenderView.subviews.forEach { $0.removeFromSuperview() }
             let calenderViews = UICalendarView()
             calenderViews.translatesAutoresizingMaskIntoConstraints = false
             calenderViews.calendar = .current
@@ -54,10 +55,12 @@ extension FlirtCustomPopUp:UICalendarViewDelegate, UICalendarSelectionSingleDate
             calenderViews.delegate = self
             calenderViews.tintColor = AppColor.Punch
             let dateSelection = UICalendarSelectionSingleDate(delegate: self)
-            // Set the initial selected date to a date 18 years ago from today
             let eighteenYearsAgo = Calendar.current.date(byAdding: .year, value: -18, to: Date()) ?? Date()
-            dateSelection.selectedDate = Calendar.current.dateComponents([.year, .month, .day], from: eighteenYearsAgo)
-            self.selectedDOB = eighteenYearsAgo
+            let initialDate = pendingPreselectedDate ?? eighteenYearsAgo
+            let initialComponents = Calendar.current.dateComponents([.year, .month, .day], from: initialDate)
+            dateSelection.selectedDate = initialComponents
+            calenderViews.visibleDateComponents = Calendar.current.dateComponents([.year, .month], from: initialDate)
+            self.selectedDOB = initialDate
             calenderViews.selectionBehavior = dateSelection
             self.calenderView.addSubview(calenderViews)
             NSLayoutConstraint.activate([
@@ -67,7 +70,8 @@ extension FlirtCustomPopUp:UICalendarViewDelegate, UICalendarSelectionSingleDate
                 calenderViews.heightAnchor.constraint(equalToConstant: 410),
             ])
             self.calenderView.layoutIfNeeded()
-            self.selectedDateCompoent = Calendar.current.dateComponents([.year, .month], from: Date())
+            self.selectedDateCompoent = initialComponents
+            self.setSelectedDate(newDateComponents: initialComponents)
         } else {
             // Fallback on earlier versions
         }

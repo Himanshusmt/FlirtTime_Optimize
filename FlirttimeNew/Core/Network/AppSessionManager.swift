@@ -115,6 +115,15 @@ final class AppSessionManager {
         backendClient.loadJSON(request: AppApiRequest(method: .delete, endPoint: .voiceIntro)).map { _ in () }
     }
 
+    /// GET /api/v1/auth/username/availability?username=
+    func checkUsernameAvailability(username: String) -> Single<Bool> {
+        backendClient.load(request: AppApiRequest(method: .get,
+                                                  endPoint: .usernameAvailability,
+                                                  parameters: ["username": username],
+                                                  encoding: URLEncoding.queryString))
+            .map { (data: UsernameAvailability) in data.isAvailable }
+    }
+
     /// `dateOfBirth` is "yyyy-MM-dd", `gender` is "male" | "female" | "non-binary" | "other".
     /// The backend requires `fullName`.
     func updateProfile(fullName: String,
