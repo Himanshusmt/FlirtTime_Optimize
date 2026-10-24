@@ -13,6 +13,8 @@ final class QuickMomentsListViewController: BaseViewController {
     var onAdd: (() -> Void)?
     /// Called with the tapped user's tray entry and whether it's the signed-in user's own.
     var onOpenStories: ((QuickMomentTrayItem, Bool) -> Void)?
+    /// Pull-to-refresh; the host reloads the tray and calls `configure` / `endRefreshing`.
+    var onRefresh: (() -> Void)?
 
     private var tray: QuickMomentTray?
     private let momentsView = DiscoverMomentsView()
@@ -45,6 +47,7 @@ final class QuickMomentsListViewController: BaseViewController {
         view.backgroundColor = AppColor.AppWhite
         momentsView.onAdd = { [weak self] in self?.onAdd?() }
         momentsView.onOpenStories = { [weak self] item, isMine in self?.onOpenStories?(item, isMine) }
+        momentsView.onRefresh = { [weak self] in self?.onRefresh?() }
         setUI()
         momentsView.configure(tray: tray)
     }
@@ -57,6 +60,10 @@ final class QuickMomentsListViewController: BaseViewController {
     func configure(tray: QuickMomentTray?) {
         self.tray = tray
         if isViewLoaded { momentsView.configure(tray: tray) }
+    }
+
+    func endRefreshing() {
+        momentsView.endRefreshing()
     }
 
     private func setUI() {

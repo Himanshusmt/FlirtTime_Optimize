@@ -137,16 +137,19 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         let superLike = MomentsProfileActionButton.make(kind: .superLike, size: 72) { [weak self] in
             self?.superLikeTapped()
         }
-        let stack = UIStackView(arrangedSubviews: [
-            actionButton(title: "Not interested", symbol: "xmark", size: 58, background: AppColor.AppWhite, tint: AppColor.MineShaft,
-                         hint: "Same as swiping left") { [weak self] in self?.cardStack.perform(.notMyVibe) },
-            labeledAction(title: "Super like", color: AppColor.Punch, hint: "Send a Super Like", button: superLike),
-            actionButton(title: "Like", symbol: "heart.fill", size: 58, background: AppColor.Lavenderblush, tint: AppColor.Punch,
-                         hint: "Same as swiping right") { [weak self] in self?.cardStack.perform(.interested) }
-        ])
+        let notInterested = actionButton(title: "Not interested", symbol: "xmark", size: 58, background: AppColor.AppWhite, tint: AppColor.MineShaft,
+                                         hint: "Same as swiping left") { [weak self] in self?.cardStack.perform(.notMyVibe) }
+        let superLikeColumn = labeledAction(title: "Super like", color: AppColor.Punch, hint: "Send a Super Like", button: superLike)
+        let like = actionButton(title: "Like", symbol: "heart.fill", size: 58, background: AppColor.Lavenderblush, tint: AppColor.Punch,
+                                hint: "Same as swiping right") { [weak self] in self?.cardStack.perform(.interested) }
+        let stack = UIStackView(arrangedSubviews: [notInterested, superLikeColumn, like])
         stack.axis = .horizontal
-        stack.alignment = .bottom
+        stack.alignment = .center
         stack.spacing = 36
+        // Equal side columns keep Super Like on the screen's vertical center line.
+        NSLayoutConstraint.activate([
+            notInterested.widthAnchor.constraint(equalTo: like.widthAnchor)
+        ])
         return stack
     }()
 
@@ -390,6 +393,11 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
         listVC.hidesBottomBarWhenPushed = true
         listVC.onAdd = { [weak self] in self?.openAddQuickMoment() }
         listVC.onOpenStories = { [weak self] item, isMine in self?.openQuickMoments(of: item, isMine: isMine) }
+        listVC.onRefresh = { [weak self, weak listVC] in
+            self?.viewModel.loadQuickMomentTray { [weak listVC] in
+                listVC?.endRefreshing()
+            }
+        }
         quickMomentsList = listVC
         navigationController?.pushViewController(listVC, animated: true)
         viewModel.loadQuickMomentTray()

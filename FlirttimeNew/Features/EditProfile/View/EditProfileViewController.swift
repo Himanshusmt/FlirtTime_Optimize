@@ -89,6 +89,7 @@ class EditProfileViewController: BaseViewController, Instantiable {
     var strOTP:String?
     private let voiceIntroView = ProfileVoiceIntroView(style: .editor)
     private var photosGeneration = 0
+    private var photoBeforeUpload: (slot: Int, image: EditProfileImageModel?)?
 
     static var storyboardName: StringConvertible {
         return StoryboardName.editProfile
@@ -506,33 +507,51 @@ class EditProfileViewController: BaseViewController, Instantiable {
     func getUIImageFromImageURL(){
         photosGeneration += 1
         let generation = photosGeneration
-        aEditProfileViewModel.images = Array(repeating: nil, count: 6)
-        imageCollectionView.reloadData()
 
         let avatarImg = userDetailInfo?.user_images?.filter { $0.isPrimary == true && $0.filefor == "gallery" } ?? []
         let userImg = userDetailInfo?.user_images?.filter { $0.isPrimary == false && $0.filefor == "gallery" } ?? []
 
-        func apply(image: UIImage?, id: Int?, status: Int?, isPrimary: Bool?, slot: Int) {
-            guard generation == photosGeneration, let image, (0..<6).contains(slot) else { return }
-            aEditProfileViewModel.images[slot] = EditProfileImageModel(image: image, id: id, status: status, isPrimary: isPrimary)
-            imageCollectionView.reloadData()
+        func syncSlot(id: Int?, status: Int?, isPrimary: Bool?, slot: Int, url: URL?) {
+            guard generation == photosGeneration, (0..<6).contains(slot) else { return }
+            let key = aEditProfileViewModel.keyForPhoto(id: id, filename: url?.absoluteString)
+            if var current = aEditProfileViewModel.images[slot], current.image != nil {
+                current.id = id
+                current.status = status
+                current.isPrimary = isPrimary
+                if current.photoKey == nil { current.photoKey = key }
+                aEditProfileViewModel.images[slot] = current
+                return
+            }
+            guard let url else { return }
+            downloadImage(from: url) { [weak self] image in
+                guard let self, generation == self.photosGeneration, let image else { return }
+                self.aEditProfileViewModel.images[slot] = EditProfileImageModel(
+                    image: image, id: id, status: status, isPrimary: isPrimary, photoKey: key
+                )
+                self.reloadPhotoSlots([slot])
+            }
         }
 
         if let avatar = avatarImg.first {
             let img = Self.mediaURL(avatar.filename)
-            if let imageUrl = URL(string: img) {
-                downloadImage(from: imageUrl) { image in
-                    apply(image: image, id: avatar.id, status: avatar.status, isPrimary: avatar.isPrimary, slot: 0)
-                }
-            }
+            syncSlot(id: avatar.id, status: avatar.status, isPrimary: avatar.isPrimary, slot: 0, url: URL(string: img))
         }
         for (index, item) in userImg.prefix(5).enumerated() {
             let img = Self.mediaURL(item.filename)
-            if let imageUrl = URL(string: img) {
-                downloadImage(from: imageUrl) { image in
-                    apply(image: image, id: item.id, status: item.status, isPrimary: item.isPrimary, slot: index + 1)
-                }
+            syncSlot(id: item.id, status: item.status, isPrimary: item.isPrimary, slot: index + 1, url: URL(string: img))
+        }
+    }
+
+    private func reloadPhotoSlots(_ slots: [Int]) {
+        let indexPaths = slots.filter { (0..<6).contains($0) }.map { IndexPath(item: $0, section: 0) }
+        guard !indexPaths.isEmpty else { return }
+        UIView.performWithoutAnimation {
+            if imageCollectionView.numberOfItems(inSection: 0) == 6 {
+                imageCollectionView.reloadItems(at: indexPaths)
+            } else {
+                imageCollectionView.reloadData()
             }
+            imageCollectionView.layoutIfNeeded()
         }
     }
 
@@ -824,8 +843,8 @@ class EditProfileViewController: BaseViewController, Instantiable {
         
         self.aEditProfileViewModel.$aUploadProfilePhotoResponseModel.receive(on: DispatchQueue.main).sink { model in
             if model != nil {
+                self.photoBeforeUpload = nil
                 self.aActivityIndicator.hide()
-                self.imageCollectionView.reloadData()
             }
         }.store(in: &desposeBag)
         
@@ -886,19 +905,11 @@ class EditProfileViewController: BaseViewController, Instantiable {
             guard let self = self else {return}
             if error != nil {
                 self.aActivityIndicator.hide()
-                if error == Constants.ImageErrorTypes.errorUserImage || error == Constants.ImageErrorTypes.errorBannerImage {
-                    if self.aEditProfileViewModel.showErrorMsg != "" {
-                        self.showImageAlertPopUp(TitleMsg: "Nude explicit content is not allowed.", TitleBtn: "Discard")
-                    } else {
-                        self.showImageAlertPopUp(TitleMsg: "Picture upload failed", TitleBtn: "Discard")
-                    }
-                } else {
-                    self.showNewAlertPopUp(Title: "Error", Msg: error ?? "", isSuccess: false, CompletionHandler: {(success) -> Void in
-                        
-                    })
+                if let preview = self.photoBeforeUpload {
+                    self.aEditProfileViewModel.images[preview.slot] = preview.image
+                    self.reloadPhotoSlots([preview.slot])
+                    self.photoBeforeUpload = nil
                 }
-                
-                
             }
         }.store(in: &desposeBag)
         
@@ -1084,55 +1095,59 @@ class EditProfileViewController: BaseViewController, Instantiable {
         self.imageCollectionView.register(UINib(nibName: ImageCollectionViewCell.identifier, bundle: nil), forCellWithReuseIdentifier: ImageCollectionViewCell.identifier)
         self.imageCollectionView.delegate = self
         self.imageCollectionView.dataSource = self
+        self.imageCollectionView.allowsSelection = true
+        self.imageCollectionView.isUserInteractionEnabled = true
         let gesture = UILongPressGestureRecognizer(target:self , action:#selector(handLongPressGestrue(_:)))
+        gesture.cancelsTouchesInView = false
+        gesture.delaysTouchesBegan = false
+        gesture.minimumPressDuration = 0.45
         self.imageCollectionView.addGestureRecognizer(gesture)
         self.imageCollectionView.reloadData()
     }
 
     func createAddImageCollectionLayout() -> UICollectionViewLayout {
+        let spacing: CGFloat = 8
+
         let firstItemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.7), heightDimension: .fractionalHeight(1.0))
         let firstItem = NSCollectionLayoutItem(layoutSize: firstItemSize)
-        firstItem.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 0, bottom: 7.5, trailing: 15)
+        firstItem.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: spacing, trailing: spacing)
 
         let otherItemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.5))
         let otherItem = NSCollectionLayoutItem(layoutSize: otherItemSize)
-        otherItem.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 0, bottom: 7.5, trailing: 0)
+        otherItem.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: spacing, trailing: 0)
 
         let other1ItemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.5))
         let other1Item = NSCollectionLayoutItem(layoutSize: other1ItemSize)
-        other1Item.contentInsets = NSDirectionalEdgeInsets(top: 2.5, leading: 0, bottom:7.5, trailing: 0)
+        other1Item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: spacing, trailing: 0)
 
         let otherGroupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.3), heightDimension: .fractionalHeight(1.0))
-        let otherGroup = NSCollectionLayoutGroup.vertical(layoutSize: otherGroupSize, subitems: [otherItem,other1Item])
-
+        let otherGroup = NSCollectionLayoutGroup.vertical(layoutSize: otherGroupSize, subitems: [otherItem, other1Item])
 
         let otherItemSize1 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1.0))
         let otherItem1 = NSCollectionLayoutItem(layoutSize: otherItemSize1)
-        otherItem1.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 15)
+        otherItem1.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: spacing)
 
         let otherItemSize2 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1.0))
         let otherItem2 = NSCollectionLayoutItem(layoutSize: otherItemSize2)
-        otherItem2.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 15)
+        otherItem2.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: spacing)
 
         let otherItemSize3 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.3), heightDimension: .fractionalHeight(1.0))
         let otherItem3 = NSCollectionLayoutItem(layoutSize: otherItemSize3)
-        otherItem3.contentInsets = NSDirectionalEdgeInsets(top: 5, leading:0, bottom: 5, trailing:0)
+        otherItem3.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
 
         let otherGroupSize12 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.7), heightDimension: .fractionalHeight(1))
-        let otherGroup12 = NSCollectionLayoutGroup.horizontal(layoutSize: otherGroupSize12, subitems: [otherItem1,otherItem2])
+        let otherGroup12 = NSCollectionLayoutGroup.horizontal(layoutSize: otherGroupSize12, subitems: [otherItem1, otherItem2])
 
-        let otherGroupSize3 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.33))
-        let otherGroup3 = NSCollectionLayoutGroup.horizontal(layoutSize: otherGroupSize3, subitems: [otherGroup12,otherItem3])
+        let otherGroupSize3 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.36))
+        let otherGroup3 = NSCollectionLayoutGroup.horizontal(layoutSize: otherGroupSize3, subitems: [otherGroup12, otherItem3])
 
-
-        let mainGroupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.67))
+        let mainGroupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.64))
         let mainGroup = NSCollectionLayoutGroup.horizontal(layoutSize: mainGroupSize, subitems: [firstItem, otherGroup])
 
         let mainGroupSize1 = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
         let mainGroup1 = NSCollectionLayoutGroup.vertical(layoutSize: mainGroupSize1, subitems: [mainGroup, otherGroup3])
 
         let section = NSCollectionLayoutSection(group: mainGroup1)
-
         return UICollectionViewCompositionalLayout(section: section)
     }
 
@@ -1200,13 +1215,23 @@ class EditProfileViewController: BaseViewController, Instantiable {
         aEditProfileViewModel.images.compactMap { $0 }.count
     }
 
+    /// Filled tile → that index. Empty tile → first empty slot so photos stay packed.
+    private func targetPhotoSlot(for tapped: Int) -> Int {
+        if (0..<6).contains(tapped), aEditProfileViewModel.images[tapped] != nil {
+            return tapped
+        }
+        return aEditProfileViewModel.images.firstIndex(where: { $0 == nil }) ?? tapped
+    }
+
     private func openPhotoPicker(at slot: Int) {
-        let existing = slot < aEditProfileViewModel.images.count ? aEditProfileViewModel.images[slot] : nil
+        if presentedViewController != nil || navigationController?.presentedViewController != nil { return }
+        let target = targetPhotoSlot(for: slot)
+        let existing = target < aEditProfileViewModel.images.count ? aEditProfileViewModel.images[target] : nil
         if existing == nil && filledPhotoCount() >= 6 {
             aCustomToastView.show(message: "You can add up to 6 photos")
             return
         }
-        imageSelectedIndex = slot
+        imageSelectedIndex = target
         selectImageType = .addSelfImage
         deleteImageID = existing?.id
         openImageSelectionMethodPopUp()
@@ -1218,16 +1243,13 @@ class EditProfileViewController: BaseViewController, Instantiable {
             aCustomToastView.show(message: "Your profile photo can't be deleted. Choose a new one to replace it.")
             return
         }
-        if filledPhotoCount() <= 3 {
-            aCustomToastView.show(message: "Keep at least 3 photos")
-            return
-        }
         deleteImageID = id
         imageSelectedIndex = slot
         aDeleteCustomPopUp.show(message: Constants.AddMoment.deleteImage + "?",
                                 button1Text: Constants.AlertButtons.cancel,
                                 button2Text: Constants.AlertButtons.yesDelete) { [weak self] in
-            self?.aEditProfileViewModel.deleteImageAPI(id: id ?? 0)
+            self?.aActivityIndicator.show()
+            self?.aEditProfileViewModel.deleteImage(at: slot, fallbackID: id)
         }
     }
 
@@ -1242,7 +1264,6 @@ class EditProfileViewController: BaseViewController, Instantiable {
         aImageSelectionMethodVC.canDeletePhoto = self.selectImageType == .addSelfImage
             && slot != 0
             && slotImage != nil
-            && self.filledPhotoCount() > 3
         if slotImage != nil && self.selectImageType == .addSelfImage {
             aImageSelectionMethodVC.isShowImage = true
             aImageSelectionMethodVC.isShowAvatarImage = slot == 0
@@ -1260,10 +1281,10 @@ class EditProfileViewController: BaseViewController, Instantiable {
             }
         }
         aImageSelectionMethodVC.deletePictureCallBack = { [weak self] _ in
-            self?.confirmDeletePhoto(id: self?.deleteImageID)
+            self?.confirmDeletePhoto(id: self?.deleteImageID, slot: self?.imageSelectedIndex)
         }
         aImageSelectionMethodVC.modalPresentationStyle = .overCurrentContext
-        self.navigationController?.present(aImageSelectionMethodVC, animated: true, completion: nil)
+        (self.navigationController ?? self).present(aImageSelectionMethodVC, animated: true, completion: nil)
     }
 }
 
@@ -1430,6 +1451,9 @@ extension EditProfileViewController: UICollectionViewDataSource, UICollectionVie
                 cell.setAddImageUI(image: self.aEditProfileViewModel.images[indexPath.item] ?? nil, index: indexPath.item)
                 cell.editAction = { [weak self] in
                     self?.openPhotoPicker(at: indexPath.item)
+                }
+                cell.deleteAction = { [weak self] in
+                    self?.confirmDeletePhoto(id: self?.aEditProfileViewModel.images[indexPath.item]?.id, slot: indexPath.item)
                 }
                 cell.completion = { [weak self] id in
                     self?.confirmDeletePhoto(id: id, slot: indexPath.item)
@@ -1698,11 +1722,24 @@ extension EditProfileViewController {
             self.aEditProfileViewModel.uploadCoverPhotoAPI(image: imgPic)
         }else{
             upLoadedImg = [imgPic]
-            let slot = self.imageSelectedIndex ?? 0
+            let slot = targetPhotoSlot(for: self.imageSelectedIndex ?? 0)
+            imageSelectedIndex = slot
             let existing = slot < self.aEditProfileViewModel.images.count ? self.aEditProfileViewModel.images[slot] : nil
             self.aEditProfileViewModel.uploadProfilePhotoAPI(image: imgPic,
+                                                             slot: slot,
                                                              replacing: existing?.id,
-                                                             asPrimary: existing != nil && slot == 0)
+                                                             asPrimary: slot == 0)
+            if (0..<6).contains(slot) {
+                photoBeforeUpload = (slot, existing)
+                aEditProfileViewModel.images[slot] = EditProfileImageModel(
+                    image: imgPic,
+                    id: existing?.id,
+                    status: existing?.status ?? 1,
+                    isPrimary: slot == 0,
+                    photoKey: existing?.photoKey
+                )
+                reloadPhotoSlots([slot])
+            }
         }
     }
 }
@@ -1762,9 +1799,15 @@ extension EditProfileViewController {
         let remaining = aEditProfileViewModel.images.compactMap { $0 }
         aEditProfileViewModel.images = Array(repeating: nil, count: 6)
         for (index, image) in remaining.enumerated() where index < 6 {
-            aEditProfileViewModel.images[index] = image
+            var packed = image
+            packed.isPrimary = index == 0
+            aEditProfileViewModel.images[index] = packed
         }
-        imageCollectionView.reloadData()
+        UIView.performWithoutAnimation {
+            imageCollectionView.reloadData()
+            imageCollectionView.layoutIfNeeded()
+        }
+        aActivityIndicator.hide()
         aEditProfileViewModel.callCheckExistingData()
     }
 }

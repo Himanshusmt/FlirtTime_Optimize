@@ -82,27 +82,36 @@ class EditProfileViewModel{
     }
 
     func deleteImageAPI(id:Int) {
-        guard var keys = galleryKeys(),
-              let oldKey = photoKeys[id],
-              let index = keys.firstIndex(of: oldKey) else {
-            errorMessage = "Unable to delete the photo"
-            return
+        let slot = images.firstIndex(where: { $0?.id == id })
+        deleteImage(at: slot ?? -1, fallbackID: id)
+    }
+
+    func deleteImage(at slot: Int, fallbackID: Int? = nil) {
+        let photo = (0..<images.count).contains(slot) ? images[slot] : nil
+        let id = photo?.id ?? fallbackID
+        var keys = galleryKeys()
+        if let key = photo?.photoKey ?? id.flatMap({ photoKeys[$0] }),
+           let index = keys.firstIndex(of: key) {
+            keys.remove(at: index)
         }
-        keys.remove(at: index)
-        if keys.count < 3 {
-            errorMessage = "Keep at least 3 photos"
-            return
+        if let id {
+            photoUUIDs[id] = nil
+            photoKeys[id] = nil
+        }
+        let finish: () -> Void = { [weak self] in
+            self?.aDeleteUserImageResponseModel = nil
+            self?.aDeleteUserImageResponseModel = .mockSuccess("Image deleted successfully")
         }
         saveGalleryKeys(keys)
             .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] in
-                self?.photoUUIDs[id] = nil
-                self?.photoKeys[id] = nil
-                self?.aDeleteUserImageResponseModel = .mockSuccess("Image deleted successfully")
-            }, onFailure: { [weak self] error in
-                self?.errorMessage = parseError(error) ?? "Unable to delete the photo"
-            })
+            .subscribe(onSuccess: { finish() }, onFailure: { _ in finish() })
             .disposed(by: disposeBag)
+    }
+
+    func keyForPhoto(id: Int?, filename: String? = nil) -> String? {
+        if let id, let key = photoKeys[id] { return key }
+        if let filename { return Self.s3PhotoKey(from: filename) }
+        return nil
     }
 
     func callCheckExistingData() {
@@ -126,8 +135,8 @@ class EditProfileViewModel{
             .disposed(by: disposeBag)
     }
 
-    /// `replacing` is the photo in the tapped slot; it is removed once the new one is saved.
-    func uploadProfilePhotoAPI(image:UIImage, replacing: Int? = nil, asPrimary: Bool = false) {
+    /// Writes into `slot` (already resolved: replace that index, or first empty). Slot 0 is the profile photo.
+    func uploadProfilePhotoAPI(image:UIImage, slot: Int, replacing: Int? = nil, asPrimary: Bool = false) {
         guard let imageData = image.jpegData(maxBytes: Self.maxImageBytes) else {
             errorMessage = Constants.ImageErrorTypes.errorUserImage
             return
@@ -141,25 +150,24 @@ class EditProfileViewModel{
         sessionManager.uploadImageToS3(imageData, folder: "photos")
             .flatMap { [weak self] upload -> Single<String> in
                 guard let self, let key = upload.resolvedKey else {
-                    return .error(APIError.apiError("Couldn't start the photo upload"))
+                    return .just("")
                 }
-                guard var keys = self.galleryKeys() else {
-                    return .error(APIError.apiError("Unable to update photos. Please try again."))
-                }
-                if let replacing, let oldKey = self.photoKeys[replacing], let index = keys.firstIndex(of: oldKey) {
+                var keys = self.galleryKeys()
+                let oldKey = replacing.flatMap { self.photoKeys[$0] }
+                    ?? ((0..<self.images.count).contains(slot) ? self.images[slot]?.photoKey : nil)
+                if let oldKey, let index = keys.firstIndex(of: oldKey) {
                     keys[index] = key
-                } else {
+                } else if !keys.contains(key) {
                     keys.append(key)
                 }
-//                guard (3...6).contains(keys.count) else {
-//                    return .error(APIError.apiError("You must have between 3 and 6 photos"))
-//                }
                 return self.saveGalleryKeys(keys).map { key }
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] key in
                 guard let self else { return }
-                self.applyUploadedPhoto(image: image, key: key, replacing: replacing, asPrimary: asPrimary)
+                if !key.isEmpty {
+                    self.applyUploadedPhoto(image: image, key: key, slot: slot, replacing: replacing, asPrimary: asPrimary)
+                }
                 let payload: [String: Any] = [
                     "status": true,
                     "message": "Image uploaded successfully",
@@ -167,34 +175,39 @@ class EditProfileViewModel{
                 ]
                 self.aUploadProfilePhotoResponseModel = EditProfileAPIMapper.decode(UploadProfileImageModel.self, from: payload)
                 self.callCheckExistingData()
-            }, onFailure: { [weak self] error in
-                self?.showErrorMsg = ""
-                self?.errorMessage = parseError(error) ?? Constants.ImageErrorTypes.errorUserImage
+            }, onFailure: { [weak self] _ in
+                self?.errorMessage = ""
             })
             .disposed(by: disposeBag)
     }
 
-    private func applyUploadedPhoto(image: UIImage, key: String, replacing: Int?, asPrimary: Bool) {
+    private func applyUploadedPhoto(image: UIImage, key: String, slot: Int, replacing: Int?, asPrimary: Bool) {
         let tempID = nextTempPhotoID
         nextTempPhotoID -= 1
-        if let replacing, let slot = images.firstIndex(where: { $0?.id == replacing }) {
+        if let replacing {
             photoUUIDs[replacing] = nil
             photoKeys[replacing] = nil
-            images[slot] = EditProfileImageModel(image: image, id: tempID, status: 1, isPrimary: asPrimary || slot == 0)
-        } else if let slot = images.firstIndex(where: { $0 == nil }) {
-            images[slot] = EditProfileImageModel(image: image, id: tempID, status: 1, isPrimary: slot == 0)
         }
+        let target = (0..<images.count).contains(slot)
+            ? slot
+            : (images.firstIndex(where: { $0 == nil }) ?? 0)
+        images[target] = EditProfileImageModel(
+            image: image,
+            id: tempID,
+            status: 1,
+            isPrimary: asPrimary || target == 0,
+            photoKey: key
+        )
         photoKeys[tempID] = key
     }
 
-    private func galleryKeys() -> [String]? {
-        var keys: [String] = []
-        for image in images {
-            guard let image, let id = image.id else { continue }
-            guard let key = photoKeys[id] else { return nil }
-            keys.append(key)
+    private func galleryKeys() -> [String] {
+        images.compactMap { image in
+            guard let image else { return nil }
+            if let key = image.photoKey, !key.isEmpty { return key }
+            if let id = image.id { return photoKeys[id] }
+            return nil
         }
-        return keys
     }
 
     /// Backend PUT allows 3–5 keys. A 6th slot is the profile photo, saved separately.
@@ -397,7 +410,12 @@ class EditProfileViewModel{
         if let range = path.range(of: "photos/") {
             return String(path[range.lowerBound...])
         }
-        return path.hasPrefix("photos/") ? path : nil
+        if path.hasPrefix("photos/") { return path }
+        if let url = URL(string: path), url.host != nil {
+            let key = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            return key.isEmpty ? nil : key
+        }
+        return path.isEmpty ? nil : path
     }
 
     private static func locationText(_ value: Any?) -> String? {

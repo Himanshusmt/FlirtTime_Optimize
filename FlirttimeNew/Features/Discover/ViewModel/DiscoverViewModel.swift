@@ -418,12 +418,15 @@ final class DiscoverViewModel {
 
     // MARK: - Quick Moments
 
-    func loadQuickMomentTray() {
+    func loadQuickMomentTray(completion: (() -> Void)? = nil) {
         sessionManager.quickMomentsTray()
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] tray in
                 self?.quickMomentTray = tray
-            }, onFailure: { _ in })
+                completion?()
+            }, onFailure: { _ in
+                completion?()
+            })
             .disposed(by: disposeBag)
     }
 

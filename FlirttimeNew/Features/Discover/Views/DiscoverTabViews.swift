@@ -66,6 +66,8 @@ final class DiscoverMomentsView: UIView {
     var onAdd: (() -> Void)?
     /// Called with the tapped user's tray entry and whether it's the signed-in user's own.
     var onOpenStories: ((QuickMomentTrayItem, Bool) -> Void)?
+    /// Pull-to-refresh on the grid; the host reloads `GET quick-moments/tray`.
+    var onRefresh: (() -> Void)?
 
     private enum Grid {
         static let columns: CGFloat = 3
@@ -84,6 +86,7 @@ final class DiscoverMomentsView: UIView {
     private var ownAvatarPath: String?
     private var lastGridSize: CGSize = .zero
     private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
+    private let refreshControl = UIRefreshControl()
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = Grid.spacing
@@ -92,6 +95,7 @@ final class DiscoverMomentsView: UIView {
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
         view.backgroundColor = .clear
         view.showsVerticalScrollIndicator = false
+        view.alwaysBounceVertical = true
         view.contentInsetAdjustmentBehavior = .never
         view.dataSource = self
         view.delegate = self
@@ -104,6 +108,9 @@ final class DiscoverMomentsView: UIView {
         super.init(frame: frame)
         addSubview(collectionView)
         collectionView.pinEdges(to: self)
+        refreshControl.tintColor = AppColor.Punch
+        refreshControl.addTarget(self, action: #selector(refreshPulled), for: .valueChanged)
+        collectionView.refreshControl = refreshControl
         emptyLabel.text = "No Moments to show right now."
         emptyLabel.textAlignment = .center
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -139,6 +146,15 @@ final class DiscoverMomentsView: UIView {
         self.items = items
         emptyLabel.isHidden = true
         collectionView.reloadData()
+        endRefreshing()
+    }
+
+    func endRefreshing() {
+        refreshControl.endRefreshing()
+    }
+
+    @objc private func refreshPulled() {
+        onRefresh?()
     }
 
     private func updateGridLayoutIfNeeded() {

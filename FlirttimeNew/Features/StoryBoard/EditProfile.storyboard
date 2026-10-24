@@ -134,10 +134,10 @@
                                                         </subviews>
                                                     </stackView>
                                                     <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="UhH-4U-AEY">
-                                                        <rect key="frame" x="0.0" y="48.666666666666657" width="361" height="350"/>
+                                                        <rect key="frame" x="0.0" y="48.666666666666657" width="361" height="400"/>
                                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                         <constraints>
-                                                            <constraint firstAttribute="height" constant="350" id="u0O-6V-tUc"/>
+                                                            <constraint firstAttribute="height" constant="400" id="u0O-6V-tUc"/>
                                                         </constraints>
                                                         <collectionViewFlowLayout key="collectionViewLayout" automaticEstimatedItemSize="YES" minimumLineSpacing="10" minimumInteritemSpacing="10" id="MRK-zS-icK">
                                                             <size key="itemSize" width="128" height="128"/>

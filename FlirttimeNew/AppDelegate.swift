@@ -159,14 +159,27 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let userInfo = notification.request.content.userInfo
         if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(
-            userInfo: notification.request.content.userInfo,
+            userInfo: userInfo,
             source: "willPresent"
         ) {
             completionHandler([])
             return
         }
-        completionHandler([.banner, .sound, .badge])
+
+        let applyPresentation: () -> Void = {
+            if ChatNotificationState.shared.shouldSuppressForegroundPresentation(userInfo: userInfo) {
+                completionHandler([])
+            } else {
+                completionHandler([.banner, .sound, .badge])
+            }
+        }
+        if Thread.isMainThread {
+            applyPresentation()
+        } else {
+            DispatchQueue.main.async(execute: applyPresentation)
+        }
     }
 
     func userNotificationCenter(
