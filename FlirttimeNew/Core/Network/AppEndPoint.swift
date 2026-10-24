@@ -35,6 +35,7 @@ enum AppEndPoint: CustomStringConvertible {
     case phoneRequestOTP
     case phoneVerifyOTP
     case phoneResendOTP
+    case phoneIOSVerifyClient
 
     // Sign in with Apple — LoginOptionsViewController / LoginViewController
     case appleLogin
@@ -177,6 +178,7 @@ enum AppEndPoint: CustomStringConvertible {
         case .phoneRequestOTP: return "api/v1/auth/phone/request-otp"
         case .phoneVerifyOTP: return "api/v1/auth/phone/verify-otp"
         case .phoneResendOTP: return "api/v1/auth/phone/resend-otp"
+        case .phoneIOSVerifyClient: return "api/v1/auth/phone/ios/verify-client"
         case .appleLogin: return "api/v1/auth/apple"
         case .usernameAvailability: return "api/v1/auth/username/availability"
         case .me: return "api/v1/auth/me"
@@ -267,7 +269,7 @@ enum AppEndPoint: CustomStringConvertible {
         switch self {
         case .health,
              .emailRequestOTP, .emailVerifyOTP, .emailResendOTP,
-             .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP,
+             .phoneRequestOTP, .phoneVerifyOTP, .phoneResendOTP, .phoneIOSVerifyClient,
              .appleLogin:
             return true
         case .me, .logout, .updateProfile, .myProfile, .deleteAccount, .voiceIntro, .usernameAvailability,

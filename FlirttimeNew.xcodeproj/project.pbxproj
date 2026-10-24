@@ -84,6 +84,8 @@
 		AA10000000000000000000A1 /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA10000000000000000000A3 /* IQKeyboardManagerSwift */; };
 		AA8A87203B42CD1AAC86E678 /* CoinWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E53BEB9AA765FB4DA1D25A /* CoinWallet.swift */; };
 		AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */; };
+		C3A91B0E2F4A11F0B8D21C02 /* PhoneIOSClientVerification.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91B0E2F4A11F0B8D21C01 /* PhoneIOSClientVerification.swift */; };
+		C3A91B0E2F4A11F0B8D21C04 /* PhoneOTPProofService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91B0E2F4A11F0B8D21C03 /* PhoneOTPProofService.swift */; };
 		ABA8E3131442FE3510E2B568 /* Settings.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BABCADFABF14A0789D8A669B /* Settings.storyboard */; };
 		AEEC82DD04625E1B999859FA /* QuickMomentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C58F9AEB80C2E007644784 /* QuickMomentViewController.swift */; };
 		7C91A0B2E4D84F6A9E1C2B0E /* QuickMomentsPagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C91A0B2E4D84F6A9E1C2B0D /* QuickMomentsPagerViewController.swift */; };
@@ -815,6 +817,8 @@
 		CB73B3EEE6298AF5EF1478CB /* CoinViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinViews.swift; sourceTree = "<group>"; };
 		CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthResponse.swift; sourceTree = "<group>"; };
 		CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OTPResponse.swift; sourceTree = "<group>"; };
+		C3A91B0E2F4A11F0B8D21C01 /* PhoneIOSClientVerification.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneIOSClientVerification.swift; sourceTree = "<group>"; };
+		C3A91B0E2F4A11F0B8D21C03 /* PhoneOTPProofService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneOTPProofService.swift; sourceTree = "<group>"; };
 		CE92159FE181945F42B69FC0 /* MomentsStoryComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentsStoryComponents.swift; sourceTree = "<group>"; };
 		D2353406368B559954CF0295 /* AppSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSessionManager.swift; sourceTree = "<group>"; };
 		D4E6F8A0B2C3D5E7F9A1B2C3 /* ProfilePhotoUpload.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfilePhotoUpload.swift; sourceTree = "<group>"; };
@@ -1457,6 +1461,7 @@
 			isa = PBXGroup;
 			children = (
 				CDBF85335AFAAFDDD9B58047 /* OTPResponse.swift */,
+				C3A91B0E2F4A11F0B8D21C01 /* PhoneIOSClientVerification.swift */,
 				CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */,
 				7FB6A6E2D71BF2706C814A73 /* AppUser.swift */,
 				B8E4D3F2AC5E6B7D9F102E3C /* GestureVerification.swift */,
@@ -1645,6 +1650,7 @@
 			children = (
 				71062EDEABB6B5E423FA27B1 /* NotificationManager.swift */,
 				A1F0C0DE0000000000000002 /* DeviceTokenManager.swift */,
+				C3A91B0E2F4A11F0B8D21C03 /* PhoneOTPProofService.swift */,
 			);
 			path = NotificationManager;
 			sourceTree = "<group>";
@@ -4101,6 +4107,8 @@
 				56B772FECAEE2594A2CE2691 /* VerifyOTPViewModel.swift in Sources */,
 				9760561C64B9DD5687BDF5E9 /* UserDetailsViewModel.swift in Sources */,
 				AB97BD870E2A824932BB8D12 /* OTPResponse.swift in Sources */,
+				C3A91B0E2F4A11F0B8D21C02 /* PhoneIOSClientVerification.swift in Sources */,
+				C3A91B0E2F4A11F0B8D21C04 /* PhoneOTPProofService.swift in Sources */,
 				4C5B70B537E0CD5E7D48ED7B /* AppleSignInManager.swift in Sources */,
 				C172033731DA4BDE0C92A93F /* AppleLoginViewModel.swift in Sources */,
 				329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */,

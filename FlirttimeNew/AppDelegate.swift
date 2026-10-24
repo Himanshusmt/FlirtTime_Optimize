@@ -103,6 +103,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
+        DeviceTokenManager.shared.update(apnsToken: deviceToken)
         #if DEBUG
         let apns = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("APNs device token: \(apns)")
@@ -120,6 +121,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
+        if PhoneOTPProofService.shared.handleSilentPush(userInfo) {
+            completionHandler(.newData)
+            return
+        }
         if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(userInfo: userInfo, source: "remoteNotification") {
             completionHandler(.newData)
             return
@@ -159,6 +164,10 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if PhoneOTPProofService.shared.handleSilentPush(notification.request.content.userInfo) {
+            completionHandler([])
+            return
+        }
         if IncomingCallPushRouter.handleIncomingCallPushIfNeeded(
             userInfo: notification.request.content.userInfo,
             source: "willPresent"

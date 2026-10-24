@@ -44,10 +44,30 @@ final class AppSessionManager {
 
     // MARK: - Phone OTP
 
+    /// Starts Firebase iOS app verification. `data.receipt` is the real `iosReceipt`.
+    func verifyPhoneIOSClient(apnsToken: String, isSandbox: Bool, bundleId: String) -> Single<PhoneIOSClientVerification> {
+        let params: [String: Any] = [
+            "apnsToken": apnsToken,
+            "isSandbox": isSandbox,
+            "iosBundleId": bundleId
+        ]
+        return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneIOSVerifyClient, parameters: params))
+    }
+
     /// `countryCode` must include the plus sign, e.g. "+91".
+    /// `iosReceipt` is `verify-client` receipt; `iosSecret` is the silent-push secret.
     func requestPhoneOTP(countryCode: String, phone: String) -> Single<OTPResponse> {
-        let params: [String: Any] = ["countryCode": countryCode, "phone": phone]
-        return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneRequestOTP, parameters: params))
+        PhoneOTPProofService.shared.collectProof()
+            .flatMap { [backendClient] proof in
+                let params: [String: Any] = [
+                    "countryCode": countryCode,
+                    "phone": phone,
+                    "platform": "ios",
+                    "iosReceipt": proof.receipt,
+                    "iosSecret": proof.secret
+                ]
+                return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneRequestOTP, parameters: params))
+            }
     }
 
     func verifyPhoneOTP(verificationId: String, otp: String) -> Single<AuthResponse> {
@@ -55,9 +75,18 @@ final class AppSessionManager {
         return authenticate(AppApiRequest(method: .post, endPoint: .phoneVerifyOTP, parameters: params))
     }
 
+    /// Same `verificationId`, with a new verify-client receipt and silent-push secret.
     func resendPhoneOTP(verificationId: String) -> Single<OTPResponse> {
-        let params: [String: Any] = ["verificationId": verificationId]
-        return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneResendOTP, parameters: params))
+        PhoneOTPProofService.shared.collectProof()
+            .flatMap { [backendClient] proof in
+                let params: [String: Any] = [
+                    "verificationId": verificationId,
+                    "platform": "ios",
+                    "iosReceipt": proof.receipt,
+                    "iosSecret": proof.secret
+                ]
+                return backendClient.load(request: AppApiRequest(method: .post, endPoint: .phoneResendOTP, parameters: params))
+            }
     }
 
     // MARK: - Apple

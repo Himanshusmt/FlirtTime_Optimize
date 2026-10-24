@@ -15,6 +15,7 @@ final class DeviceTokenManager {
 
     private static let fcmTokenKey = "fcmDeviceToken"
     private static let voipTokenKey = "voipDeviceToken"
+    private static let apnsTokenKey = "apnsDeviceToken"
     private static let registeredTokenKey = "fcmRegisteredDeviceToken"
 
     private let defaults = UserDefaults.standard
@@ -33,6 +34,12 @@ final class DeviceTokenManager {
     private(set) var voipToken: String? {
         get { defaults.string(forKey: Self.voipTokenKey) }
         set { defaults.set(newValue, forKey: Self.voipTokenKey) }
+    }
+
+    /// Hex APNs device token for `verify-client`. Empty on simulator until permission is granted.
+    private(set) var apnsToken: String? {
+        get { defaults.string(forKey: Self.apnsTokenKey) }
+        set { defaults.set(newValue, forKey: Self.apnsTokenKey) }
     }
 
     /// Fingerprint of the last FCM+VoIP pair accepted by the backend.
@@ -61,6 +68,12 @@ final class DeviceTokenManager {
             registeredToken = nil
         }
         registerIfNeeded()
+    }
+
+    func update(apnsToken token: Data) {
+        let hex = token.map { String(format: "%02.2hhx", $0) }.joined()
+        guard !hex.isEmpty else { return }
+        apnsToken = hex
     }
 
     func clearVoIPToken() {
