@@ -301,7 +301,7 @@
                                                                                         <rect key="frame" x="0.0" y="0.0" width="331" height="122"/>
                                                                                         <subviews>
                                                                                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Osl-Lt-yWq">
-                                                                                                <rect key="frame" x="8" y="15" width="308" height="75.5"/>
+                                                                                                <rect key="frame" x="8" y="8" width="308" height="82.5"/>
                                                                                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                                                                 <color key="textColor" name="#D92B2B"/>
                                                                                                 <fontDescription key="fontDescription" name="Fredoka-Regular" family="Fredoka" pointSize="15"/>
@@ -319,7 +319,7 @@
                                                                                             <constraint firstAttribute="trailing" secondItem="Osl-Lt-yWq" secondAttribute="trailing" constant="15" id="DCo-Xa-7ek"/>
                                                                                             <constraint firstAttribute="bottom" secondItem="amo-Sx-GgK" secondAttribute="bottom" constant="15.5" id="K83-GJ-ct4"/>
                                                                                             <constraint firstAttribute="height" constant="122" id="U2W-yJ-Yvt"/>
-                                                                                            <constraint firstItem="Osl-Lt-yWq" firstAttribute="top" secondItem="UGa-jF-bMG" secondAttribute="top" constant="15" id="W1K-ds-jSa"/>
+                                                                                            <constraint firstItem="Osl-Lt-yWq" firstAttribute="top" secondItem="UGa-jF-bMG" secondAttribute="top" constant="8" id="W1K-ds-jSa"/>
                                                                                             <constraint firstAttribute="trailing" secondItem="amo-Sx-GgK" secondAttribute="trailing" constant="15" id="X4W-5f-7MA"/>
                                                                                             <constraint firstItem="Osl-Lt-yWq" firstAttribute="leading" secondItem="UGa-jF-bMG" secondAttribute="leading" constant="8" id="ZQR-71-eav"/>
                                                                                             <constraint firstItem="amo-Sx-GgK" firstAttribute="top" secondItem="Osl-Lt-yWq" secondAttribute="bottom" constant="1" id="f4D-CV-06U"/>

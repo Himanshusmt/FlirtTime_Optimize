@@ -50,6 +50,7 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         self.dateOfBirthNoteLabel.setAttriibutText(text1: Constants.UserDetails.dateOfBirthNote, text2: Constants.UserDetails.note,pattern: false, color: AppColor.AppBlack)
         self.genderNoteLabel.setAttriibutText(text1: Constants.UserDetails.genderNote, text2: Constants.UserDetails.note,pattern: false, color: AppColor.AppBlack)
         self.yourStoryNoteLabel.setAttriibutText(text1: Constants.UserDetails.tellYourStoryNote, text2: Constants.UserDetails.note,pattern: false, color: AppColor.AppBlack)
+        [dateOfBirthNoteLabel, genderNoteLabel, yourStoryNoteLabel].forEach { applyNoteStyle($0) }
         self.setTextFieldUI()
         
         self.firstNameTextField.maxLength = 50
@@ -93,6 +94,8 @@ class UserDetailsViewController: BaseViewController,Instantiable{
         self.genderTextField.label.text = Constants.UserDetails.gender
         self.aboutTextView.text = Constants.UserDetails.aboutYouPlaceHolder
         self.aboutTextView.textColor = AppColor.Bombay
+        self.aboutTextView.textContainerInset = UIEdgeInsets(top: 6, left: 8, bottom: 4, right: 8)
+        self.aboutTextView.textContainer.lineFragmentPadding = 0
         
         self.nickNameTextField.keyboardType = .default
         
@@ -118,9 +121,29 @@ class UserDetailsViewController: BaseViewController,Instantiable{
             textField.setOutlineColor(AppColor.Punch, for: .editing)
             textField.setOutlineColor(AppColor.Iron, for: .normal)
         }
+        calenderImage.isHidden = true
+        setTrailingIcon(on: birthDateTextField, image: UIImage(named: "calender")?.withRenderingMode(.alwaysTemplate))
+        setTrailingIcon(on: genderTextField, image: UIImage(systemName: "person.2", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .regular)))
         IQKeyboardManager.shared.enableAutoToolbar = true
         IQKeyboardManager.shared.resignOnTouchOutside = true
         //self.setPrefillData()
+    }
+
+    private func setTrailingIcon(on textField: OutlinedTextField, image: UIImage?) {
+        let icon = UIImageView(image: image)
+        icon.tintColor = AppColor.Bombay
+        icon.contentMode = .scaleAspectFit
+        icon.frame = CGRect(x: 0, y: 0, width: 20, height: 20)
+        textField.trailingView = icon
+        textField.trailingViewMode = .always
+    }
+
+    private func applyNoteStyle(_ label: UILabel) {
+        label.numberOfLines = 0
+        guard let attributed = label.attributedText else { return }
+        let styled = NSMutableAttributedString(attributedString: attributed)
+        styled.addAttribute(.font, value: UIFont.fredoka(.regular, size: 11), range: NSRange(location: 0, length: styled.length))
+        label.attributedText = styled
     }
 
     func setContinueButtonUI(){
