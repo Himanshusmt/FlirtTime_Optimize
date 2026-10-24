@@ -328,7 +328,7 @@ final class MomentsTableViewCell: UITableViewCell {
         let location = taggedPlace.isEmpty ? vibe.author?.location : taggedPlace
         metaLabel.text = Self.metaText(location: location, createdAt: vibe.createdAt)
         metaLabel.isHidden = (metaLabel.text ?? "").isEmpty
-        avatarImageView.loadImage(path: vibe.author?.profilePicture, placeholder: UIImage(named: "dummy_Profile"))
+        avatarImageView.loadImage(path: Self.avatarPath(for: vibe), placeholder: UIImage(named: "dummy_Profile"))
 
         caption = (vibe.caption ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         captionLabel.isHidden = caption.isEmpty
@@ -458,6 +458,16 @@ final class MomentsTableViewCell: UITableViewCell {
               media.indices.contains(indexPath.item) else { return }
         let source = (mediaCollectionView.cellForItem(at: indexPath) as? MomentsMediaCollectionViewCell)?.previewImageView
         delegate?.vibeCellDidTapMedia(self, at: indexPath.item, sourceImageView: source)
+    }
+
+    /// Own posts use the latest cached avatar so a profile photo change shows without a feed refetch.
+    private static func avatarPath(for vibe: MomentsPost) -> String? {
+        let currentId = UserDataManager.shared.appUser?.id
+        let isMine = currentId != nil && (vibe.author?.userId == currentId || vibe.userId == currentId)
+        if isMine {
+            return MomentsAuthor.currentUser.profilePicture ?? vibe.author?.profilePicture
+        }
+        return vibe.author?.profilePicture
     }
 
     /// Location under the name when the author shares one, otherwise the relative time.

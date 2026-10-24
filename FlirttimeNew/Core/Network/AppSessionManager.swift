@@ -141,6 +141,14 @@ final class AppSessionManager {
             "about": about
         ]
         return backendClient.load(request: AppApiRequest(method: .patch, endPoint: .updateProfile, parameters: params))
+            .do(onSuccess: { user in
+                UserDataManager.shared.appUser = user
+                UserDataManager.shared.storeAvatarPath(user.profilePicture)
+                UserDataManager.shared.applySubscriptionStatus(user.isSubscribed)
+                if let username = user.username?.trimmingCharacters(in: .whitespacesAndNewlines), !username.isEmpty {
+                    UserDataManager.shared.displayName = username
+                }
+            })
     }
 
     // MARK: - Edit Profile

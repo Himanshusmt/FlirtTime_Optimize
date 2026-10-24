@@ -146,16 +146,21 @@ extension MomentItem {
     func vibe(fallbackAuthor: MomentsAuthor? = nil) -> MomentsPost? {
         guard let id = momentId ?? id, !id.isEmpty else { return nil }
         let place = locationLabel ?? location?.name
+        let current = MomentsAuthor.currentUser
         let author: MomentsAuthor
         if let creator {
-            author = MomentsAuthor(userId: creator.userId ?? creator.id,
+            let creatorId = creator.userId ?? creator.id
+            let isMine = creatorId != nil && creatorId == current.userId
+            author = MomentsAuthor(userId: creatorId,
                                 userName: creator.username ?? creator.name,
                                 fullName: creator.fullName ?? creator.name,
-                                profilePicture: creator.profilePicture ?? creator.profilePhoto,
+                                profilePicture: isMine
+                                    ? (current.profilePicture ?? creator.profilePicture ?? creator.profilePhoto)
+                                    : (creator.profilePicture ?? creator.profilePhoto),
                                 verified: creator.isVerified ?? creator.isFaceVerified,
                                 location: place)
         } else {
-            let fallback = fallbackAuthor ?? .currentUser
+            let fallback = fallbackAuthor ?? current
             author = MomentsAuthor(userId: creatorId ?? fallback.userId, userName: fallback.userName, fullName: fallback.fullName,
                                 profilePicture: fallback.profilePicture, verified: fallback.verified,
                                 location: place ?? fallback.location)

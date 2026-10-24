@@ -236,11 +236,14 @@ class ProfileViewController: BaseViewController {
         aProfileViewModel.myProfile?.profile?.avatarURL
     }
 
-    /// The username from `auth/me`; `users/profile` only sends the nickname as `displayName`.
+    /// Live `users/profile` first so onboarding's Display Name shows before `auth/me` is refreshed.
     private var headerName: String {
-        let username = UserDataManager.shared.appUser?.username?.trimmingCharacters(in: .whitespaces) ?? ""
-        if !username.isEmpty { return username }
-        return (aProfileViewModel.myProfile?.profile?.displayName ?? "").firstLetterCapitalized
+        let profile = aProfileViewModel.myProfile?.profile
+        let live = [profile?.username, profile?.displayName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+        if let live { return live }
+        return UserDataManager.shared.appUser?.username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
     private func setMyProfile(_ data: MyProfileData) {
