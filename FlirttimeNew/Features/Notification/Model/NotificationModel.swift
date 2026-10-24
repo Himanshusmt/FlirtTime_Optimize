@@ -45,12 +45,16 @@ struct AppNotification {
         var payload: [AnyHashable: Any] = data
         let navigation = json["navigation"] as? [String: Any] ?? data["navigation"] as? [String: Any]
         if let navigation {
+            payload["navigation"] = navigation
             payload["target_id"] = JSONValue.string(navigation["targetId"])
             if let navType = JSONValue.string(navigation["type"]) {
                 payload["navType"] = navType
             }
         }
-        if let type, payload["notify_type"] == nil { payload["notify_type"] = type }
+        if let type {
+            if payload["type"] == nil { payload["type"] = type }
+            if payload["notify_type"] == nil { payload["notify_type"] = type }
+        }
         if payload["user_id"] == nil, let actorId = JSONValue.string(actor?["id"]) ?? JSONValue.string(actor?["_id"]) {
             payload["user_id"] = actorId
         }

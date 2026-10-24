@@ -154,7 +154,11 @@ struct ChatListView: View {
         .onChange(of: viewModel.lastUnarchivedChatId) { _ in
             selectedTab = .allChats
         }
+        .onChange(of: navigator.requestedInboxSection) { section in
+            applyRequestedInboxSection(section)
+        }
         .onAppear {
+            applyRequestedInboxSection(navigator.requestedInboxSection)
             viewModel.onAppear()
             if inboxSection == .calls {
                 viewModel.loadCallHistoryIfNeeded()
@@ -476,6 +480,15 @@ struct ChatListView: View {
         viewModel.unmuteChat(id: chatId)
     }
     
+    private func applyRequestedInboxSection(_ section: ChatInboxSection?) {
+        guard let section else { return }
+        inboxSection = section
+        navigator.requestedInboxSection = nil
+        if section == .calls {
+            viewModel.loadCallHistoryIfNeeded()
+        }
+    }
+
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }

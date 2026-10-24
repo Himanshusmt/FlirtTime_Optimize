@@ -166,6 +166,11 @@ final class ChatListContainerViewController: BaseViewController {
         hostingController = hosting
     }
 
+    func openCallsFromNotification() {
+        navigationController?.popToViewController(self, animated: false)
+        navigator.openCalls()
+    }
+
     /// Used by push-notification / in-app banner navigation.
     func openChatDetailFromNotification(navData: ChatNavigationData) {
         pushChatDetail(navData: navData)

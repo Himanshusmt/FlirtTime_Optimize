@@ -93,6 +93,12 @@ final class ChatListNavigator: ObservableObject {
     var onOpenQuickMoment: ((QuickMomentTrayItem, Bool, QuickMomentTray?) -> Void)?
     /// Same gallery avatar Profile uses for the Quick Moments “Add new” bubble.
     @Published var ownAvatarPath: String?
+    /// Set to open Chats or Calls from a notification tap.
+    @Published var requestedInboxSection: ChatInboxSection?
+
+    func openCalls() {
+        requestedInboxSection = .calls
+    }
 
     private(set) var currentNavigationData: ChatNavigationData?
     

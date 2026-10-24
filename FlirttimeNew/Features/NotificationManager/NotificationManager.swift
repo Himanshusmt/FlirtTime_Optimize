@@ -48,6 +48,8 @@ struct NotificationType: Equatable {
     private static let aliases: [String: NotificationType] = [
         "super_like": .favorite, "superlike": .favorite, "super-like": .favorite,
         "new_match": .match, "new_message": .message, "chat_message": .message, "chat": .message,
+        "incoming_call": .call, "incoming-call": .call,
+        "voice_call": .call, "video_call": .call,
         "missed_call": .missedCall, "profile_verified": .profileImageVerified,
         "photo_approved": .imageVerified, "photo_rejected": .imageUnverified,
         "photo_not_approved": .imageUnverified, "profile_incomplete": .incomplete,
@@ -214,8 +216,8 @@ final class NotificationManager {
         case .profileVisit:
             openProfileVisit(tabBar, data: data)
 
-        case .missedCall:
-            presenter(from: viewController, tabBar: tabBar)?.showComingSoon("Calls")
+        case .call, .missedCall:
+            openCalls(tabBar)
 
         default:
             break
@@ -277,6 +279,14 @@ final class NotificationManager {
         let exploreVC = exploreNav.viewControllers.first as? ExploreViewController
         exploreVC?.openFromNotification(tab)
         tabBar.selectedIndex = Tab.explore.rawValue
+    }
+
+    private func openCalls(_ tabBar: AppTabBarController) {
+        select(tabBar, .messages)
+        guard let chatNav = tabBar.viewControllers?[Tab.messages.rawValue] as? UINavigationController,
+              let container = chatNav.viewControllers.first as? ChatListContainerViewController else { return }
+        container.openCallsFromNotification()
+        _ = container.view
     }
 
     private func openChat(_ tabBar: AppTabBarController, data: [AnyHashable: Any]) {
