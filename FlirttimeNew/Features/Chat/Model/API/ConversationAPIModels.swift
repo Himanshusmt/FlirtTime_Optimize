@@ -688,7 +688,7 @@ struct SendChatMessageAPIData: Codable {
     }
 
     private enum DecodeKeys: String, CodingKey {
-        case message, results
+        case message, messages, results
     }
 
     init(from decoder: Decoder) throws {
@@ -699,6 +699,11 @@ struct SendChatMessageAPIData: Codable {
             }
             if let results = try? c.decodeIfPresent([DirectChatSendResult].self, forKey: .results),
                let msg = results.first(where: { ($0.status ?? "success").lowercased() != "failure" })?.message {
+                message = msg
+                return
+            }
+            if let messages = try? c.decodeIfPresent([ConversationMessage].self, forKey: .messages),
+               let msg = messages.first {
                 message = msg
                 return
             }

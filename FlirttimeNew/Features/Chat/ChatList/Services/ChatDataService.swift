@@ -795,6 +795,9 @@ class ChatDataService: ObservableObject {
                 messageType: msgType
             )
         }
+        if msgType == "contact" || message.isContactShare {
+            return message.displayPreviewText()
+        }
         if let content = message.content?.trimmingCharacters(in: .whitespacesAndNewlines), !content.isEmpty {
             // Prefer body for text / system; for media types use the type label
             if msgType.isEmpty || msgType == "text" || msgType == "system" {

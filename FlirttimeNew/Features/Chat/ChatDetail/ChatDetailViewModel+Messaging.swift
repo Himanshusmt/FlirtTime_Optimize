@@ -34,7 +34,12 @@ extension ChatDetailViewModel {
         }
 
         let tempId = UUID().uuidString
-        var tempMessage = createTemporaryTextMessage(tempId: tempId, content: text, replyTo: replyingToMessage)
+        var tempMessage = createTemporaryTextMessage(
+            tempId: tempId,
+            content: text,
+            replyTo: replyingToMessage,
+            messageType: isContact ? "contact" : "text"
+        )
 
         if !mentions.isEmpty {
             var meta = tempMessage.metadata ?? [:]
@@ -1074,12 +1079,12 @@ extension ChatDetailViewModel {
         return messages.last?.id == message.id
     }
     
-    func createTemporaryTextMessage(tempId: String, content: String, replyTo: ConversationMessage?) -> ConversationMessage {
+    func createTemporaryTextMessage(tempId: String, content: String, replyTo: ConversationMessage?, messageType: String = "text") -> ConversationMessage {
         var messageDict: [String: Any] = [
             "id": tempId,
             "conversationId": selectedId,
             "content": content,
-            "messageType": "text",
+            "messageType": messageType,
             "senderId": getCurrentUserId(),
             "createdAt": isoFormatter.string(from: Date()),
             "updatedAt": isoFormatter.string(from: Date()),
@@ -1103,7 +1108,7 @@ extension ChatDetailViewModel {
         }
 
         return ConversationMessage.fromDictionary(messageDict)
-            ?? ConversationMessage(id: tempId, type: "text", content: content,
+            ?? ConversationMessage(id: tempId, type: messageType, messageType: messageType, content: content,
                                    createdAt: isoFormatter.string(from: Date()),
                                    senderId: getCurrentUserId())
     }

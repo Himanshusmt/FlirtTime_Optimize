@@ -20,7 +20,7 @@ enum MessageKind: Equatable, Hashable {
 
     static func kind(for message: ConversationMessage) -> MessageKind {
         switch rawKind(for: message) {
-        case .contact, .post, .vibe, .reel, .story, .poll:
+        case .post, .vibe, .reel, .story, .poll:
             return .unknown
         case let kind:
             return kind
@@ -29,13 +29,14 @@ enum MessageKind: Equatable, Hashable {
 
     private static func rawKind(for message: ConversationMessage) -> MessageKind {
         if message.isSystemMessage { return .system }
-        if message.metadata?["isContact"]?.value as? Bool == true { return .contact }
+        if message.isContactShare { return .contact }
 
         let msgType = (message.messageType ?? message.type ?? "").lowercased()
 
         // Shared content / special types must win over media-album heuristics
         // (a shared carousel post can include multiple media entries).
         switch msgType {
+        case "contact": return .contact
         case "post": return Self.postOrVibe(for: message)
         case "reel": return .reel
         case "story": return .story
@@ -268,14 +269,13 @@ struct MessageCellModel: Hashable {
                 : serverContent
         }
         // Contact messages: reconstruct full display text from metadata if content was truncated
-        if message.metadata?["isContact"]?.value as? Bool == true,
-           !visibleTranslation {
-            let contactName = message.metadata?["contactName"]?.value as? String
-            let contactPhone = message.metadata?["contactPhone"]?.value as? String
-            if let name = contactName, !name.isEmpty {
-                let phone = contactPhone ?? ""
-                let reconstructed = "Contact: \(name)\nPhone: \(phone)"
-                // Only use reconstructed version if it's more complete than what the server returned
+        if message.isContactShare, !visibleTranslation {
+            let contactName = message.sharedContactName
+            let contactPhone = message.sharedContactPhone
+            if !contactName.isEmpty {
+                let reconstructed = contactPhone.isEmpty
+                    ? contactName
+                    : "Contact: \(contactName)\nPhone: \(contactPhone)"
                 if !displayContent.contains("\n") || displayContent.count < reconstructed.count {
                     displayContent = reconstructed
                 }

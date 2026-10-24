@@ -104,7 +104,7 @@ final class QuickMomentsPagerViewController: UIViewController {
         self.currentIndex = min(max(0, startIndex), max(0, pages.count - 1))
         self.initialStories = initialStories
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .fullScreen
+        modalPresentationStyle = .overFullScreen
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

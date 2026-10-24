@@ -6,6 +6,8 @@
 //
 
 import UIKit
+import RxSwift
+import Swinject
 
 final class MomentsConnectionViewController: UIViewController {
 
@@ -30,6 +32,8 @@ final class MomentsConnectionViewController: UIViewController {
 
     private let mode: Mode
     private let reaction: MomentsReaction?
+    private let disposeBag = DisposeBag()
+    private weak var currentUserImageView: UIImageView?
     private let backgroundView = MomentsGradientView(colors: [AppColor.AppWhite, MomentsTheme.blushGradient[1]],
                                                   start: CGPoint(x: 0.5, y: 0), end: CGPoint(x: 0.5, y: 1))
     private let photosView = UIView()
@@ -102,10 +106,10 @@ final class MomentsConnectionViewController: UIViewController {
 
     private func buildPhotos() {
         let size: CGFloat = 128
-        let theirs = avatar(path: mode.profile.photos.first, size: size)
+        let theirs = avatar(path: matchedUserPhotoPath, size: size)
         photosView.addSubview(theirs)
         if mode.isMatch {
-            let mine = avatar(path: MockDataStore.shared.currentUserResponse()?.data?.userInfo?.avatar, size: size)
+            let mine = avatar(path: UserDataManager.shared.avatarPath, size: size, tracksCurrentUser: true)
             photosView.insertSubview(mine, belowSubview: theirs)
             avatars = [mine, theirs]
             NSLayoutConstraint.activate([
@@ -114,6 +118,9 @@ final class MomentsConnectionViewController: UIViewController {
                 theirs.leadingAnchor.constraint(equalTo: photosView.centerXAnchor, constant: -18),
                 theirs.centerYAnchor.constraint(equalTo: photosView.centerYAnchor)
             ])
+            if UserDataManager.shared.avatarPath == nil {
+                loadCurrentUserPhoto()
+            }
         } else {
             avatars = [theirs]
             NSLayoutConstraint.activate([
@@ -140,7 +147,29 @@ final class MomentsConnectionViewController: UIViewController {
         ])
     }
 
-    private func avatar(path: String?, size: CGFloat) -> UIView {
+    /// The matched person's photo from the Discover / profile card, never mock gallery names.
+    private var matchedUserPhotoPath: String? {
+        if case .photo(let index) = reaction?.target, mode.profile.photos.indices.contains(index) {
+            return UserDataManager.remotePhotoPath(mode.profile.photos[index]) ?? mode.profile.photos[index]
+        }
+        return mode.profile.photos.compactMap(UserDataManager.remotePhotoPath).first
+            ?? mode.profile.photos.first
+    }
+
+    private func loadCurrentUserPhoto() {
+        guard let session = Container.appContainer.resolve(AppSessionManager.self) else { return }
+        session.myProfile()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] data in
+                let path = data.profile?.avatarURL
+                UserDataManager.shared.storeAvatarPath(path)
+                self?.currentUserImageView?.loadImage(path: UserDataManager.shared.avatarPath ?? path,
+                                                      placeholder: UIImage(named: "ProfileBlur"))
+            })
+            .disposed(by: disposeBag)
+    }
+
+    private func avatar(path: String?, size: CGFloat, tracksCurrentUser: Bool = false) -> UIView {
         let image = UIImageView()
         image.translatesAutoresizingMaskIntoConstraints = false
         image.contentMode = .scaleAspectFill
@@ -151,6 +180,7 @@ final class MomentsConnectionViewController: UIViewController {
         image.backgroundColor = AppColor.AthensGray
         image.loadImage(path: path, placeholder: UIImage(named: "ProfileBlur"))
         image.isAccessibilityElement = false
+        if tracksCurrentUser { currentUserImageView = image }
         NSLayoutConstraint.activate([
             image.widthAnchor.constraint(equalToConstant: size),
             image.heightAnchor.constraint(equalToConstant: size)

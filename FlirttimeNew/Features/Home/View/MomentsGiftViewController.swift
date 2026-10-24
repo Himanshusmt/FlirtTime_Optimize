@@ -12,8 +12,10 @@ final class MomentsGiftViewController: BaseViewController {
 
     static let preferredSheetHeight: CGFloat = 480
 
-    /// Called with the number of gifts sent.
-    var onGiftsSent: ((Int) -> Void)?
+    /// Called when the send request starts, so the feed can ignore the socket echo.
+    var onSendStarted: (() -> Void)?
+    /// `sentCount` is how many gifts went through; `totalGifts` is the server's `totalMomentGifts`.
+    var onGiftsSent: ((_ sentCount: Int, _ totalGifts: Int?) -> Void)?
 
     private let viewModel: MomentsGiftViewModel
     private let receiverName: String
@@ -233,14 +235,15 @@ final class MomentsGiftViewController: BaseViewController {
     }
 
     @objc private func sendTapped() {
+        onSendStarted?()
         viewModel.sendSelectedGifts { [weak self] result in
             guard let self else { return }
             self.refreshState()
             switch result {
-            case .success(let sentCount):
+            case .success(let outcome):
                 let onGiftsSent = self.onGiftsSent
                 self.dismiss(animated: true) {
-                    onGiftsSent?(sentCount)
+                    onGiftsSent?(outcome.sent, outcome.totalGifts)
                 }
             case .failure(let error):
                 self.aCustomToastView.show(message: error.message)
