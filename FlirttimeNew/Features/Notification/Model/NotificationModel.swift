@@ -43,8 +43,12 @@ struct AppNotification {
         image = imageCandidates.lazy.compactMap(JSONValue.string).first
 
         var payload: [AnyHashable: Any] = data
-        if let navigation = json["navigation"] as? [String: Any] {
+        let navigation = json["navigation"] as? [String: Any] ?? data["navigation"] as? [String: Any]
+        if let navigation {
             payload["target_id"] = JSONValue.string(navigation["targetId"])
+            if let navType = JSONValue.string(navigation["type"]) {
+                payload["navType"] = navType
+            }
         }
         if let type, payload["notify_type"] == nil { payload["notify_type"] = type }
         if payload["user_id"] == nil, let actorId = JSONValue.string(actor?["id"]) ?? JSONValue.string(actor?["_id"]) {

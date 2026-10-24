@@ -65,16 +65,31 @@ struct NotificationType: Equatable {
     ]
 
     init(from userInfo: [AnyHashable: Any]) {
-        let rawType = (userInfo["notify_type"] ?? userInfo["type"] ?? userInfo["navType"] ?? userInfo["action"]) as? String
-        guard let rawType else {
-            self = .unknown
-            return
+        let navigation = userInfo["navigation"] as? [String: Any]
+        let candidates = [
+            userInfo["navType"] as? String,
+            navigation?["type"] as? String,
+            userInfo["notify_type"] as? String,
+            userInfo["type"] as? String,
+            userInfo["action"] as? String
+        ].compactMap { $0 }
+
+        var resolved = NotificationType.unknown
+        for raw in candidates {
+            let normalized = raw.lowercased()
+            let mapped = NotificationType.allTypes.first(where: { $0.rawValue.lowercased() == normalized })
+                ?? Self.aliases[normalized]
+                ?? Self.aliases[normalized.replacingOccurrences(of: "-", with: "_")]
+            guard let mapped else { continue }
+            if mapped == .profileImageVerified || mapped == .gestureVerified || mapped == .imageVerified {
+                self = mapped
+                return
+            }
+            if resolved == .unknown {
+                resolved = mapped
+            }
         }
-        let normalized = rawType.lowercased()
-        self = NotificationType.allTypes.first(where: { $0.rawValue.lowercased() == normalized })
-            ?? Self.aliases[normalized]
-            ?? Self.aliases[normalized.replacingOccurrences(of: "-", with: "_")]
-            ?? .unknown
+        self = resolved
     }
 }
 
@@ -132,13 +147,6 @@ final class NotificationManager {
                        data: [AnyHashable: Any],
                        tabBar: AppTabBarController,
                        from viewController: BaseViewController? = nil) {
-        switch notificationType {
-        case .gestureVerified, .imageVerified, .profileImageVerified:
-            return
-        default:
-            break
-        }
-
         tabBar.presentedViewController?.dismiss(animated: false)
         if let outerNav = tabBar.navigationController {
             outerNav.popToViewController(tabBar, animated: false)
@@ -153,6 +161,9 @@ final class NotificationManager {
             default: exploreTab = .likes
             }
             openExplore(tabBar, tab: exploreTab)
+
+        case .gestureVerified, .imageVerified, .profileImageVerified:
+            select(tabBar, .profile)
 
         case .gestureUnverified:
             select(tabBar, .home)
