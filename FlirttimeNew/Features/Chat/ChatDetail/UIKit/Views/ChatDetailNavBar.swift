@@ -715,4 +715,27 @@ final class ChatDetailNavBar: UIView {
         userStatus = statusText
         updateSubtitle()
     }
+
+    /// Name currently shown in the conversation header (same text the user already sees).
+    var displayedPeerName: String {
+        let onScreen = titleLabel.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !onScreen.isEmpty { return onScreen }
+        if isGroupChat || isChannel {
+            return groupTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return resolvedDisplayName
+    }
+
+    /// Avatar URL currently shown in the conversation header.
+    var displayedPeerAvatarURL: String? {
+        if let url = currentAvatarURLString?.trimmingCharacters(in: .whitespacesAndNewlines), !url.isEmpty {
+            return url
+        }
+        if isGroupChat { return nil }
+        let displayUser = headerUserData ?? user
+        let path = displayUser?.profilePictureDetails?.filePath
+            ?? displayUser?.profilePicture
+        let trimmed = path?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }

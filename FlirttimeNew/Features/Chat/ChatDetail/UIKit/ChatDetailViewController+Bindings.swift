@@ -439,6 +439,7 @@ extension ChatDetailViewController {
             .sink { [weak self] userData in
                 guard let self, let navBar = self.navBar else { return }
                 navBar.updateHeader(userData: userData)
+                self.publishVisiblePeerProfileForCalls()
                 // Direct chats: refresh reply/sender names once peer profile arrives
                 guard !self.viewModel.isGroupChat,
                       !self.viewModel.isChannel,
