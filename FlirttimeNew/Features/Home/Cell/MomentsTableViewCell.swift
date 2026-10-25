@@ -28,12 +28,19 @@ final class MomentsTableViewCell: UITableViewCell {
     private static let contentLeadingGap: CGFloat = 6
     private static let contentTrailing: CGFloat = 16
     private static let mediaHeight: CGFloat = 400
+    /// Height of the photo on the feed card. The cropper cannot go smaller than this.
+    static let displayMediaHeight: CGFloat = 425
     private static let mediaCornerRadius: CGFloat = 12
 
     /// Photo area of a feed row that is `rowWidth` wide. Add Moment crops photos to this shape.
     static func mediaSize(forRowWidth rowWidth: CGFloat) -> CGSize {
         let width = rowWidth - avatarLeading - avatarSize - contentLeadingGap - contentTrailing
         return CGSize(width: max(width, 1), height: mediaHeight)
+    }
+
+    /// Size of the photo as shown on the feed. The crop window cannot be smaller than this.
+    static func displayMediaSize(forRowWidth rowWidth: CGFloat) -> CGSize {
+        CGSize(width: mediaSize(forRowWidth: rowWidth).width, height: displayMediaHeight)
     }
     /// Longer captions are cut here with a "more" toggle.
     static let captionPreviewLength = 250
@@ -259,7 +266,7 @@ final class MomentsTableViewCell: UITableViewCell {
             contentView.addSubview($0)
         }
 
-        mediaHeightConstraint = mediaCardView.heightAnchor.constraint(equalToConstant: MomentsTableViewCell.mediaHeight)
+        mediaHeightConstraint = mediaCardView.heightAnchor.constraint(equalToConstant: MomentsTableViewCell.displayMediaHeight)
         let bottom = separatorView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         bottom.priority = .defaultHigh
 
@@ -337,7 +344,7 @@ final class MomentsTableViewCell: UITableViewCell {
         media = vibe.media ?? []
         mediaCardView.isHidden = media.isEmpty
         mediaCollectionView.isHidden = media.isEmpty
-        mediaHeightConstraint.constant = media.isEmpty ? 0 : MomentsTableViewCell.mediaHeight
+        mediaHeightConstraint.constant = media.isEmpty ? 0 : MomentsTableViewCell.displayMediaHeight
         mediaCollectionView.reloadData()
         mediaCollectionView.setContentOffset(.zero, animated: false)
         pageIndicator.numberOfPages = media.count

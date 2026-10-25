@@ -388,7 +388,7 @@ extension AddMomentViewController: PHPickerViewControllerDelegate {
 
 extension AddMomentViewController {
 
-    /// Camera and gallery photos are cropped to the feed's photo shape before being added.
+    /// Camera and gallery photos are cropped (resizable window) before being added.
     private func cropPickedImages(_ images: [UIImage]) {
         let room = maxImages - addMomentArray.count
         guard room > 0, !images.isEmpty else { return }
