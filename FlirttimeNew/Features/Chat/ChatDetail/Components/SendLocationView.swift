@@ -15,6 +15,7 @@ struct SendLocationView: View {
     @StateObject private var locationService = LocationService.shared
     @State private var isLocationLoading = false
     @State private var isLocationReady = false
+    @State private var isSending = false
     @State private var showingPermissionAlert = false
     @State private var locationError: String?
     @State private var pulseAnimation = false
@@ -208,8 +209,8 @@ struct SendLocationView: View {
                         .fill(Color.chatPrimarySoft)
                 )
             }
-            .disabled(!isLocationReady || isLocationLoading)
-            .opacity(isLocationReady ? 1.0 : 0.5)
+            .disabled(!isLocationReady || isLocationLoading || isSending)
+            .opacity(isLocationReady && !isSending ? 1.0 : 0.5)
 
             Spacer()
         }
@@ -281,6 +282,7 @@ struct SendLocationView: View {
     }
 
     private func sendCurrentLocation() {
+        guard !isSending else { return }
         if let location = locationService.currentLocation, location.horizontalAccuracy >= 0 {
             sendLocation(location)
             return
@@ -296,12 +298,15 @@ struct SendLocationView: View {
                 } else {
                     locationError = error?.localizedDescription ?? ChatStrings.chat_unableGetLocation.localizedString()
                     isLocationReady = false
+                    isSending = false
                 }
             }
         }
     }
 
     private func sendLocation(_ location: CLLocation) {
+        guard !isSending else { return }
+        isSending = true
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
         isLocationLoading = true

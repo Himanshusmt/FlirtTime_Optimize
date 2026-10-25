@@ -520,6 +520,11 @@ extension ChatDetailViewModel {
             return true
         }
 
+        if serverMessageType == "location",
+           matchLocationTemporaryMessage(with: serverMessage) {
+            return true
+        }
+
         if ["image", "video", "audio"].contains(serverMessageType) {
             AppLogger.debug("   Media type detected, checking metadata...")
             AppLogger.debug("   metadata: \(serverMessage.metadata ?? [:])")
@@ -614,6 +619,57 @@ extension ChatDetailViewModel {
         return false
     }
 
+    /// Location socket/REST echoes often omit `clientTempId`. Match the in-flight
+    /// pin by sender + coordinates so the echo replaces the optimistic row
+    /// instead of inserting a second map card.
+    private func matchLocationTemporaryMessage(with serverMessage: ConversationMessage) -> Bool {
+        let serverLat = ConversationMessage.coordinateValue(
+            serverMessage.metadata?["latitude"]?.value
+                ?? serverMessage.metadata?["lat"]?.value
+                ?? serverMessage.locationData?.latitude
+        )
+        let serverLng = ConversationMessage.coordinateValue(
+            serverMessage.metadata?["longitude"]?.value
+                ?? serverMessage.metadata?["lng"]?.value
+                ?? serverMessage.locationData?.longitude
+        )
+        guard let serverLat, let serverLng else { return false }
+
+        let serverSenderId = serverMessage.senderId ?? serverMessage.sender?.id
+        let serverConversationId = serverMessage.conversationId
+
+        for (tempId, tempMessage) in tempMessageMapping {
+            let tempType = (tempMessage.messageType ?? tempMessage.type ?? "").lowercased()
+            guard tempType == "location" else { continue }
+            let tempSenderId = tempMessage.senderId ?? tempMessage.sender?.id
+            guard tempSenderId == serverSenderId else { continue }
+            if !serverConversationId.isEmpty,
+               !tempMessage.conversationId.isEmpty,
+               serverConversationId != tempMessage.conversationId {
+                continue
+            }
+
+            let tempLat = ConversationMessage.coordinateValue(
+                tempMessage.metadata?["latitude"]?.value ?? tempMessage.metadata?["lat"]?.value
+            )
+            let tempLng = ConversationMessage.coordinateValue(
+                tempMessage.metadata?["longitude"]?.value ?? tempMessage.metadata?["lng"]?.value
+            )
+            guard let tempLat, let tempLng else { continue }
+            guard abs(tempLat - serverLat) < 0.0001, abs(tempLng - serverLng) < 0.0001 else { continue }
+
+            AppLogger.debug("Matched location temp \(tempId) by coordinates → serverId: \(serverMessage.id)")
+            replaceTemporaryMessage(tempId: tempId, with: serverMessage)
+            if lastFailedMessageId == tempId || currentError == .messageUploadFailed {
+                lastFailedMessageId = nil
+                currentError = nil
+                canRetryLastError = false
+            }
+            return true
+        }
+        return false
+    }
+
     private func retryTextSocketEmit(tempId: String, content: String, message: ConversationMessage) {
         let started = messageService.sendViaREST(
             conversationId: selectedId,
@@ -656,24 +712,13 @@ extension ChatDetailViewModel {
                 "address": address
             ]
         }
-        let started = messageService.sendViaREST(
+        let started = messageService.sendLocationViaSocket(
             conversationId: selectedId,
-            type: "location",
             body: contentText,
-            mediaIds: nil,
             location: locationPayload,
-            poll: nil,
             clientMessageId: tempId,
             replyToId: message.replyToId?.id
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let serverMessage):
-                self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
-            case .failure:
-                self.markMessageAsFailed(tempId: tempId)
-            }
-        }
+        )
         if !started {
             markMessageAsFailed(tempId: tempId)
         }

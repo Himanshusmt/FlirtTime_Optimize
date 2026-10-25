@@ -29,6 +29,7 @@ final class ChatDataPreloader: ObservableObject {
     private(set) var preloadedConversationIds: Set<String> = []
     
     private var inFlightPreloads: Set<String> = []
+    private var warmCheckedIds: Set<String> = []
 
     private var pinnedMessageCache: [String: ConversationMessage?] = [:]
 
@@ -267,7 +268,7 @@ final class ChatDataPreloader: ObservableObject {
 
         var candidateIds: [String] = []
         for id in conversationIds.prefix(10) {
-            if !inFlightPreloads.contains(id) {
+            if !inFlightPreloads.contains(id), !warmCheckedIds.contains(id) {
                 candidateIds.append(id)
             }
         }
@@ -287,7 +288,11 @@ final class ChatDataPreloader: ObservableObject {
             }
 
             guard !idsToFetch.isEmpty else {
-                AppLogger.debug("[ChatDataPreloader] CoreData warm for candidates — skipping network preload")
+                await MainActor.run {
+                    for id in candidateIds {
+                        self.warmCheckedIds.insert(id)
+                    }
+                }
                 return
             }
             

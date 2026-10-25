@@ -176,11 +176,11 @@ class ProfileViewController: BaseViewController {
 
         aProfileViewModel.$myMoments.receive(on: DispatchQueue.main).sink { [weak self] vibes in
             guard let self, let vibes else { return }
-            self.momentsGrid.configure(vibes: vibes)
             let total = self.aProfileViewModel.myMomentsTotal
+            self.momentsGrid.configure(vibes: vibes, total: total)
             self.momentsSeeAllButton.isHidden = vibes.isEmpty
             self.momentsSeeAllButton.configuration?.attributedTitle = AttributedString(
-                total > vibes.count ? "See all (\(total))" : "See all",
+                "See all (\(total))",
                 attributes: AttributeContainer([.font: MomentsFont.scaled(.medium, 14, style: .subheadline)]))
         }.store(in: &desposeBag)
 
@@ -610,6 +610,7 @@ class ProfileViewController: BaseViewController {
         header.alignment = .center
 
         momentsGrid.onSelect = { [weak self] vibe in self?.openMyMoments(focusing: vibe.id) }
+        momentsGrid.onSeeAll = { [weak self] in self?.openMyMoments() }
         momentsGrid.onAdd = { [weak self] in self?.openAddMoment() }
 
         let stack = UIStackView(arrangedSubviews: [header, momentsGrid])

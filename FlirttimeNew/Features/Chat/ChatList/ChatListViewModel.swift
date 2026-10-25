@@ -1158,9 +1158,8 @@ class ChatListViewModel: ObservableObject {
         // FE: `conversation:updated` / `chat:inbox:refresh` → scheduleRefresh()
         ChatListSocketService.shared.inboxRefreshNeeded
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] reason in
-                AppLogger.debug("ChatListViewModel: inbox:refresh reason=\(reason ?? "nil") → forceRefreshChats")
-                self?.forceRefreshChats()
+            .sink { [weak self] _ in
+                self?.scheduleRealtimeSync(forceRefresh: true)
             }
             .store(in: &cancellables)
 

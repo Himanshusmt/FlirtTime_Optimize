@@ -23,7 +23,18 @@ public enum AppLogger {
 
     public static func debug(_ message: @autoclosure () -> String) {
         guard isEnabled else { return }
-        print(message())
+        let text = message()
+        guard !isSocketConsoleLog(text) else { return }
+        print(text)
+    }
+
+    /// Socket transport / event traces stay out of the Xcode console; API logs still print.
+    private static func isSocketConsoleLog(_ text: String) -> Bool {
+        text.hasPrefix("[SOCKET")
+            || text.hasPrefix("[Socket")
+            || text.hasPrefix("[MomentsSocket]")
+            || text.hasPrefix("ChatSocketService")
+            || text.hasPrefix("ChatListSocketService")
     }
 
     /// Always-on kill-state / CallKit diagnostics (Xcode + Console.app when app is killed).

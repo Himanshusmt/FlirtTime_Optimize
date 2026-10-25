@@ -414,7 +414,7 @@ private final class MomentCell: UICollectionViewCell {
         textLabel.text = latest?.text ?? tray.previewText
         textLabel.isHidden = photo != nil
 
-        avatar.loadImage(path: tray.user?.photo, placeholder: UIImage(named: "ProfileBlur"))
+        avatar.loadImage(path: tray.profilePhotoPath, placeholder: UIImage(named: "ProfileBlur"))
         let segments = tray.statusRingSegmentViewed(isMine: isMine)
         statusRing.configure(segmentViewed: segments)
         let name = isMine ? "My story" : (tray.user?.name ?? tray.user?.fullName ?? "Someone")

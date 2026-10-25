@@ -109,6 +109,7 @@ struct ChatListView: View {
                             ownPhotoURL: navigator.ownAvatarPath
                                 ?? UserDataManager.shared.userAvtarImage
                                 ?? UserDataManager.shared.appUser?.profilePicture,
+                            inboxPhotos: inboxProfilePhotos,
                             onlineUserIds: viewModel.onlineUserIds,
                             onAdd: { navigator.onAddQuickMoment?() },
                             onOpen: { item, isMine in navigator.onOpenQuickMoment?(item, isMine, viewModel.quickMomentTray) }
@@ -251,6 +252,18 @@ struct ChatListView: View {
         }
     }
     
+    private var inboxProfilePhotos: [String: String] {
+        var map: [String: String] = [:]
+        for chat in viewModel.chats {
+            guard let details = chat.getUserDetails(),
+                  let id = details.userId?.trimmingCharacters(in: .whitespacesAndNewlines), !id.isEmpty,
+                  let pic = details.profilePicture?.trimmingCharacters(in: .whitespacesAndNewlines), !pic.isEmpty
+            else { continue }
+            map[id] = pic
+        }
+        return map
+    }
+
     private var activeUsersSection: some View {
         ActiveUsersView(
             users: activeUsers,

@@ -26,7 +26,12 @@ class ProfileViewModel {
     @Published private(set) var isFetching = false
     private var pendingRequests = 0
 
-    static let myMomentsPreviewLimit = 4
+    /// Full 3×3 grid of moment tiles. Overflow "+N" only appears when there are more than this.
+    static let myMomentsGridLimit = 9
+    /// When overflowing, 8 moments + the "+N" tile fill the same 3×3 grid.
+    static let myMomentsOverflowVisibleCount = 8
+    /// Fetch one extra so the overflow tile can preview the next moment.
+    static let myMomentsPreviewLimit = myMomentsGridLimit + 1
 
     private lazy var sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!
     private let disposeBag = DisposeBag()

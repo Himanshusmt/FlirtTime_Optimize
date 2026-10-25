@@ -2,8 +2,9 @@
 //  ProfileMomentsGridView.swift
 //  FlirttimeNew
 //
-//  "My Moments" on the Profile tab: FlirtTime's two-column grid of the user's moments, each
-//  showing its first photo. Shows an empty state and an upload strip while a moment posts.
+//  "My Moments" on the Profile tab: three-column grid matching other-user profile. Shows up
+//  to 9 moments, then a last-cell "+N" tile only when the user has more than 9. Also shows
+//  an empty state and an upload strip while a moment posts.
 //
 
 import UIKit
@@ -12,9 +13,14 @@ final class ProfileMomentsGridView: UIView {
 
     /// Height / width of a card, as in FlirtTime's moment grid.
     private static let cardAspect: CGFloat = 1.3048
-    private static let spacing: CGFloat = 12
+    private static let sectionSpacing: CGFloat = 12
+    /// Same gutter as other-user profile moments.
+    private static let spacing: CGFloat = 8
+    private static let columns = 3
+    private static let gridLimit = ProfileViewModel.myMomentsGridLimit
 
     var onSelect: ((MomentsPost) -> Void)?
+    var onSeeAll: (() -> Void)?
     var onAdd: (() -> Void)?
 
     private let stack = UIStackView()
@@ -27,7 +33,7 @@ final class ProfileMomentsGridView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         stack.axis = .vertical
-        stack.spacing = Self.spacing
+        stack.spacing = Self.sectionSpacing
         addSubview(stack)
         stack.pinEdges(to: self)
 
@@ -44,20 +50,31 @@ final class ProfileMomentsGridView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(vibes: [MomentsPost]) {
+    func configure(vibes: [MomentsPost], total: Int? = nil) {
         grid.arrangedSubviews.forEach { $0.removeFromSuperview() }
         emptyView.isHidden = !vibes.isEmpty
         grid.isHidden = vibes.isEmpty
 
-        for start in stride(from: 0, to: vibes.count, by: 2) {
+        let totalCount = max(total ?? vibes.count, vibes.count)
+        let showsSeeAll = totalCount > Self.gridLimit
+        let visibleCount = min(vibes.count, showsSeeAll ? ProfileViewModel.myMomentsOverflowVisibleCount : Self.gridLimit)
+        var items: [UIView] = (0..<visibleCount).map {
+            makeCard(for: vibes[$0], index: $0, total: totalCount)
+        }
+        if showsSeeAll {
+            let preview = vibes.indices.contains(visibleCount) ? vibes[visibleCount] : nil
+            items.append(makeSeeAllCard(remaining: totalCount - visibleCount, preview: preview))
+        }
+
+        for start in stride(from: 0, to: items.count, by: Self.columns) {
             let row = UIStackView()
             row.spacing = Self.spacing
             row.distribution = .fillEqually
             row.alignment = .top
-            for index in start..<min(start + 2, vibes.count) {
-                row.addArrangedSubview(makeCard(for: vibes[index], index: index, total: vibes.count))
+            for index in start..<min(start + Self.columns, items.count) {
+                row.addArrangedSubview(items[index])
             }
-            if row.arrangedSubviews.count == 1 {
+            while row.arrangedSubviews.count < Self.columns {
                 row.addArrangedSubview(UIView())
             }
             grid.addArrangedSubview(row)
@@ -161,6 +178,61 @@ final class ProfileMomentsGridView: UIView {
             + (text.isEmpty ? "" : ". \(text)")
             + ". \(vibe.likesCount ?? 0) likes, \(vibe.commentsCount ?? 0) comments"
         card.addAction(UIAction { [weak self] _ in self?.onSelect?(vibe) }, for: .touchUpInside)
+        return card
+    }
+
+    /// Last tile when the user has more moments than the grid shows — same as other-user profile.
+    private func makeSeeAllCard(remaining: Int, preview: MomentsPost?) -> UIView {
+        let card = MomentCardButton()
+        card.backgroundColor = AppColor.Punch
+        card.layer.cornerRadius = 18
+        card.layer.cornerCurve = .continuous
+        card.clipsToBounds = true
+        card.heightAnchor.constraint(equalTo: card.widthAnchor, multiplier: Self.cardAspect).isActive = true
+
+        let photo = (preview?.media ?? []).compactMap { $0.thumbnailPath ?? $0.filePath }.first { !$0.isEmpty }
+        if let photo {
+            let image = UIImageView()
+            image.contentMode = .scaleAspectFill
+            image.clipsToBounds = true
+            image.isUserInteractionEnabled = false
+            image.loadImage(path: photo, placeholder: UIImage(named: "failed-image-placeholder"))
+            card.addSubview(image)
+            image.pinEdges(to: card)
+
+            let dim = UIView()
+            dim.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+            dim.isUserInteractionEnabled = false
+            card.addSubview(dim)
+            dim.pinEdges(to: card)
+        }
+
+        let count = UILabel.vibeLabel(.bold, 26, style: .title2, color: .white)
+        count.text = "+\(max(remaining, 1))"
+        count.textAlignment = .center
+
+        let title = UILabel.vibeLabel(.medium, 15, style: .subheadline, color: .white)
+        title.text = "See all"
+        title.textAlignment = .center
+
+        let labels = UIStackView(arrangedSubviews: [count, title])
+        labels.axis = .vertical
+        labels.spacing = 2
+        labels.alignment = .center
+        labels.isUserInteractionEnabled = false
+        labels.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(labels)
+        NSLayoutConstraint.activate([
+            labels.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            labels.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            labels.leadingAnchor.constraint(greaterThanOrEqualTo: card.leadingAnchor, constant: 8),
+            labels.trailingAnchor.constraint(lessThanOrEqualTo: card.trailingAnchor, constant: -8)
+        ])
+
+        card.isAccessibilityElement = true
+        card.accessibilityTraits = .button
+        card.accessibilityLabel = "See all moments, \(max(remaining, 1)) more"
+        card.addAction(UIAction { [weak self] _ in self?.onSeeAll?() }, for: .touchUpInside)
         return card
     }
 

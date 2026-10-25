@@ -612,7 +612,6 @@ class ChatSocketManager {
     private init() {
         keychain = Keychain()
         let url = URL(string: ChatConfig.socketURL) ?? URL(fileURLWithPath: "")
-        print("[Socket] Initialising. Base URL: \(url.absoluteString)")
         manager = SocketManager(socketURL: url, config: [.log(false)])
         socket = manager.defaultSocket
         startNetworkMonitoring()
@@ -642,44 +641,11 @@ class ChatSocketManager {
     }
 
     private func setupSocketEvents() {
-        // Catch-all: log every incoming socket event, including ones we don't handle
-        socket?.onAny { event in
-            // Engine.IO transport keepalive — ignore noise
-            if event.event == "ping" || event.event == "pong" { return }
-
-            let knownEvents = Set(SocketEvent.allCases.map { $0.rawValue })
-            let eventName = event.event
-            let isKnown = knownEvents.contains(eventName)
-            let tag = isKnown ? "HANDLED" : "UNHANDLED"
-
-            // Use String description only — Socket.IO items can contain
-            // non-JSON-serializable Swift types that crash NSJSONSerialization.
-            if let items = event.items, !items.isEmpty {
-                print("[SOCKET ALL] [\(tag)] Event: \(eventName) | Data: \(items)")
-            } else {
-                print("[SOCKET ALL] [\(tag)] Event: \(eventName) | (no data)")
-            }
-
-            if !isKnown {
-                print("[SOCKET ALL] ⚠️ UNHANDLED event '\(eventName)' — consider adding a listener for this")
-            }
-        }
-
-        socket?.on(clientEvent: .statusChange) { data, _ in
-            DispatchQueue.main.async {
-                print("[Socket] Status changed: \(data)")
-            }
-        }
-
         socket?.on(clientEvent: .connect) { [weak self] data, _ in
             DispatchQueue.main.async {
                 guard let self else { return }
                 // Ignore stale connect callbacks if the engine already dropped.
-                guard self.socket?.status == .connected else {
-                    print("[Socket] Ignoring connect callback — status is \(self.socket?.status.description ?? "nil")")
-                    return
-                }
-                print("[Socket] Connected. SID: \(self.socket?.sid ?? "unknown")")
+                guard self.socket?.status == .connected else { return }
                 self.isConnected = true
                 self.isConnecting = false
                 self.retryCount = 0
@@ -698,7 +664,6 @@ class ChatSocketManager {
         socket?.on(clientEvent: .disconnect) { [weak self] data, _ in
             DispatchQueue.main.async {
                 let reason = data.first as? String ?? "unknown"
-                print("[Socket] Disconnected. Reason: \(reason)")
                 CallInternationalDiagnostics.log("socketDisconnected reason=\(reason)")
                 self?.stopHeartbeat()
                 self?.isConnected = false
@@ -707,22 +672,9 @@ class ChatSocketManager {
             }
         }
 
-        socket?.on(clientEvent: .error) { [weak self] data, _ in
+        socket?.on(clientEvent: .error) { [weak self] _, _ in
             DispatchQueue.main.async {
-                print("[Socket] Client error: \(data)")
                 self?.isConnecting = false
-            }
-        }
-
-        socket?.on(clientEvent: .reconnect) { data, _ in
-            DispatchQueue.main.async {
-                print("[Socket] Reconnect attempt: \(data)")
-            }
-        }
-
-        socket?.on("error") { data, _ in
-            DispatchQueue.main.async {
-                print("[Socket] Server error event: \(data)")
             }
         }
     }
@@ -739,7 +691,6 @@ class ChatSocketManager {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self else { return }
                 guard !self.isConnected else { return }
-                print("[Socket] Network restored — triggering reconnect")
                 self.establishConnection()
             }
         }
@@ -774,14 +725,12 @@ class ChatSocketManager {
         if !force && !urlChanged {
             if isSocketConnected() { return }
             if isConnecting || status == .connecting {
-                print("[Socket] Already connecting — waiting. status=\(status?.description ?? "nil")")
                 return
             }
         }
 
         let token = ChatAuthStore.shared.accessToken
         guard !token.isEmpty else {
-            print("[Socket] Cannot connect — access token not found.")
             return
         }
 
@@ -794,7 +743,6 @@ class ChatSocketManager {
         socket = nil
 
         lastSocketURL = ChatConfig.socketURL
-        print("[Socket] Connecting to \(ChatConfig.socketURL) path=\(ChatConfig.socketPath) force=\(force) — token: \(String(token.prefix(20)))...")
 
         manager = buildManager(token: token)
         socket = manager.defaultSocket
@@ -804,14 +752,10 @@ class ChatSocketManager {
         isConnecting = true
         // Socket.IO v3+ auth payload (same as web: auth: { token })
         socket?.connect(withPayload: ["token": token])
-        print("[Socket] connect(withPayload:) called. Status: \(socket?.status.description ?? "nil")")
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
             guard let self else { return }
-            let currentStatus = self.socket?.status.description ?? "nil (socket deallocated)"
-            print("[Socket] 4s diagnostic — isConnected: \(self.isConnected)  socketStatus: \(currentStatus)")
             // If still stuck connecting after 4s, clear the connecting latch so callers can retry.
             if !self.isSocketConnected(), self.isConnecting {
-                print("[Socket] Still not connected after 4s — clearing isConnecting latch")
                 self.isConnecting = false
             }
         }
@@ -820,7 +764,6 @@ class ChatSocketManager {
     func closeConnection() {
         let closeAction = { [weak self] in
             guard let self else { return }
-            print("[Socket] Closing connection.")
             self.isConnecting = false
             self.isConnected = false
             self.stopHeartbeat()
@@ -863,7 +806,6 @@ class ChatSocketManager {
         if Thread.isMainThread {
             if isSocketConnected() { return }
             if isSocketConnecting() {
-                print("[Socket] ensureConnecting — handshake already in flight")
                 return
             }
             establishConnectionOnMain(force: false)
@@ -879,22 +821,15 @@ class ChatSocketManager {
     }
 
     private func retryConnection() {
-        guard retryCount < maxRetries else {
-            print("Maximum retries reached. Could not connect to socket.")
-            return
-        }
+        guard retryCount < maxRetries else { return }
 
         retryCount += 1
-        print("Retrying connection... (Attempt \(retryCount) of \(maxRetries))")
         establishConnection()
     }
 
     // Function to establish connection with retry logic
     func establishConnectionWithRetry() {
-        guard !isSocketConnected() else {
-            print("Socket is already connected.")
-            return
-        }
+        guard !isSocketConnected() else { return }
 
         establishConnection()
         retryConnection()
@@ -902,12 +837,10 @@ class ChatSocketManager {
 
     func emitMessage(_ message: String, withData data: [SocketData]) {
         if isSocketConnected() {
-            print("[SOCKET SENT] Event: \(message): \(data)")
             socket?.emit(message, with: data, completion: nil)
             return
         }
 
-        print("[SOCKET QUEUE] Not connected — queueing \(message) and reconnecting")
         pendingEmitsLock.lock()
         pendingEmits.append((event: message, data: data))
         // Keep queue bounded
@@ -938,14 +871,11 @@ class ChatSocketManager {
         ]
         let emitAction: () -> Void = { [weak self] in
             guard let self, let socket = self.socket, self.isSocketConnected() else {
-                print("[SOCKET ACK] Not connected — cannot emit \(message)")
                 self?.establishConnectionWithRetry()
                 finish([failureAck])
                 return
             }
-            print("[SOCKET SENT ACK] Event: \(message): \(data)")
             socket.emitWithAck(message, data).timingOut(after: timeout) { ackData in
-                print("[SOCKET ACK] Event: \(message): \(ackData)")
                 finish(ackData)
             }
         }
@@ -963,9 +893,7 @@ class ChatSocketManager {
         pendingEmitsLock.unlock()
 
         guard !queued.isEmpty else { return }
-        print("[SOCKET QUEUE] Flushing \(queued.count) pending emit(s)")
         for item in queued {
-            print("[SOCKET SENT] Event: \(item.event): \(item.data)")
             socket?.emit(item.event, with: item.data, completion: nil)
         }
     }
@@ -974,7 +902,7 @@ class ChatSocketManager {
 
     func joinConversationRoom(_ conversationId: String) {
         guard !conversationId.isEmpty else { return }
-        trackedConversationIds.insert(conversationId)
+        guard trackedConversationIds.insert(conversationId).inserted else { return }
         emitMessage(SocketEvent.joinConversation.rawValue, withData: [conversationId])
         AppLogger.debug("[SocketRoom] join conversation \(conversationId)")
     }
@@ -1247,7 +1175,6 @@ class ChatSocketManager {
         ) { [weak self] _ in
             self?.emitHeartbeat()
         }
-        print("[Socket] Heartbeat started — interval: \(heartbeatInterval)s")
     }
 
     private func stopHeartbeat() {
@@ -1255,7 +1182,6 @@ class ChatSocketManager {
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil
         isHeartbeatActive = false
-        print("[Socket] Heartbeat stopped")
     }
 
     // MARK: - App Lifecycle
@@ -1327,13 +1253,6 @@ class ChatSocketManager {
     private func attachRegisteredListener(_ listenerId: UUID) -> UUID? {
         guard let registration = registeredListeners[listenerId] else { return nil }
         let id = self.socket?.on(registration.eventName) { data, _ in
-//            print("[SOCKET RECEIVED] Event: \(registration.eventName)")
-//            if let jsonData = try? JSONSerialization.data(withJSONObject: data, options: [.prettyPrinted]),
-//               let jsonString = String(data: jsonData, encoding: .utf8) {
-//                print("[SOCKET DATA] \(registration.eventName): \(jsonString)")
-//            } else {
-//                print("[SOCKET DATA] \(registration.eventName): \(data)")
-//            }
             registration.callback(data)
         }
         return id
@@ -1375,15 +1294,11 @@ final class ChatSocketSessionCoordinator {
     }
 
     func activateSessionIfNeeded(reason: String) {
-        guard ChatSocketManager.shared.hasAccessToken() else {
-            print("[SocketSession] Skip connect (\(reason)) — no auth token")
-            return
-        }
+        guard ChatSocketManager.shared.hasAccessToken() else { return }
         ChatListSocketService.shared.setupSocketListeners()
         ChannelSocketService.shared.setupSocketListeners()
         MomentsSocketService.shared.setupSocketListeners()
         NotificationBadgeStore.shared.setupSocketListeners()
-        print("[SocketSession] Ensuring socket connection (\(reason))")
         ChatSocketManager.shared.establishConnection()
         Self.syncInboxDelivered()
     }

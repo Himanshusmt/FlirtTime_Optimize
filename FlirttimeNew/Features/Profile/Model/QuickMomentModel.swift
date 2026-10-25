@@ -118,7 +118,16 @@ struct QuickMomentUser: Codable {
         id = c.string("userId", "id", "_id")
         name = c.string("username", "name", "nickName", "displayName")
         fullName = c.string("fullName", "name")
-        photo = c.string("profilePhoto", "profilePicture", "avatar", "photo", "imageUrl")
+        var resolvedPhoto = c.string(
+            "profilePhoto", "profilePicture", "profileImage", "profileImageUrl",
+            "profilePhotoUrl", "avatarUrl", "avatarPath", "avatar", "photo",
+            "photoUrl", "filePath"
+        )
+        if resolvedPhoto == nil,
+           let details = try? c.decodeIfPresent(ProfilePictureDetails.self, forKey: QMKey("profilePictureDetails")) {
+            resolvedPhoto = details.filePath
+        }
+        photo = resolvedPhoto
         isVerified = c.bool("isVerified", "verified", "isFaceVerified")
         location = c.string("locationLabel", "location", "city")
     }
@@ -381,6 +390,17 @@ struct QuickMomentTrayItem: Codable {
     /// Time shown on the card, preferring the backend's own label.
     var timeText: String? {
         latestTimeAgo ?? (latestAt.map { MomentsDate.timeAgo(from: $0) }).flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    /// Profile photo for the tray avatar — never the story preview.
+    var profilePhotoPath: String? {
+        let candidates = [
+            user?.photo,
+            stories.lazy.compactMap { $0.author?.profilePicture }.first
+        ]
+        return candidates
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
     }
 }
 

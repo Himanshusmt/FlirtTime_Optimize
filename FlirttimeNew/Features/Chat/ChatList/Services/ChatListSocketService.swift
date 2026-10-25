@@ -119,6 +119,9 @@ class ChatListSocketService: ObservableObject {
     private var eventListenerIds: [UUID] = []
     private var areListenersConfigured = false
     private var isOutgoingAckQueueConfigured = false
+    private var lastInboxRefreshAt: [String: Date] = [:]
+    private var lastPresenceUserIds: Set<String> = []
+    private let inboxRefreshCooldown: TimeInterval = 1.0
 
     private init() {}
 
@@ -159,6 +162,8 @@ class ChatListSocketService: ObservableObject {
         removeAllListeners()
         areListenersConfigured = false
         isOutgoingAckQueueConfigured = false
+        lastInboxRefreshAt.removeAll()
+        lastPresenceUserIds.removeAll()
         outgoingAckPersistenceQueue.clearAll()
     }
 
@@ -540,7 +545,6 @@ class ChatListSocketService: ObservableObject {
            let message = ConversationMessage.fromDictionary(messageData) {
             let conversationId = message.conversationId
             guard !conversationId.isEmpty else { return }
-            AppLogger.debug("[InboxRefresh] legacy message payload conversation=\(conversationId)")
             let event = IncomingMessageEvent(conversationId: conversationId, message: message, rawData: messageData)
             Task { @MainActor in
                 self._messageReceivedSubject.send(event)
@@ -554,7 +558,6 @@ class ChatListSocketService: ObservableObject {
             ?? SocketAckParser.stringValue(from: nested?["conversationId"])
             ?? SocketAckParser.stringValue(from: payload["id"])
             ?? SocketAckParser.stringValue(from: nested?["id"])
-        AppLogger.debug("[InboxRefresh] \(source) reason=\(reason) conversationId=\(conversationId ?? "nil") — requesting inbox sync")
         Task { @MainActor in
             if let conversationId, !conversationId.isEmpty {
                 ChatSocketManager.shared.joinConversationRoom(conversationId)
@@ -565,6 +568,12 @@ class ChatListSocketService: ObservableObject {
                     self._unreadCountSubject.send((conversationId, applied))
                 }
             }
+            let key = conversationId ?? reason
+            let now = Date()
+            if let last = self.lastInboxRefreshAt[key], now.timeIntervalSince(last) < self.inboxRefreshCooldown {
+                return
+            }
+            self.lastInboxRefreshAt[key] = now
             self._inboxRefreshSubject.send(reason)
         }
     }
@@ -921,8 +930,10 @@ class ChatListSocketService: ObservableObject {
     func subscribePresence(userIds: [String]) {
         let ids = Array(Set(userIds.filter { !$0.isEmpty }))
         guard !ids.isEmpty else { return }
+        let uniqueIds = Set(ids)
+        guard uniqueIds != lastPresenceUserIds else { return }
+        lastPresenceUserIds = uniqueIds
         chatSocketManager.emitMessage(SocketEvent.presenceGet.rawValue, withData: [["userIds": ids]])
-        AppLogger.debug("[Presence] ChatList presence:get count=\(ids.count)")
     }
 
     private func setupGetOnlineUsersListener() {

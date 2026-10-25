@@ -107,23 +107,61 @@ enum ChatQuickMomentItem: Identifiable {
 
 struct ChatAddQuickMomentBubble: UIViewRepresentable {
     var avatarPath: String?
+    var onTap: () -> Void
 
-    func makeUIView(context: Context) -> QuickMomentAddBubbleView {
-        let view = QuickMomentAddBubbleView()
-        view.setContentHuggingPriority(.required, for: .horizontal)
-        view.setContentHuggingPriority(.required, for: .vertical)
-        view.setContentCompressionResistancePriority(.required, for: .horizontal)
-        view.setContentCompressionResistancePriority(.required, for: .vertical)
-        view.configure(avatarPath: avatarPath)
-        return view
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onTap: onTap)
     }
 
-    func updateUIView(_ uiView: QuickMomentAddBubbleView, context: Context) {
-        uiView.configure(avatarPath: avatarPath)
+    func makeUIView(context: Context) -> ChatAddQuickMomentButton {
+        let button = ChatAddQuickMomentButton()
+        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
+        button.configure(avatarPath: avatarPath)
+        return button
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: QuickMomentAddBubbleView, context: Context) -> CGSize? {
-        uiView.intrinsicContentSize
+    func updateUIView(_ button: ChatAddQuickMomentButton, context: Context) {
+        context.coordinator.onTap = onTap
+        button.configure(avatarPath: avatarPath)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: ChatAddQuickMomentButton, context: Context) -> CGSize? {
+        ChatAddQuickMomentButton.preferredSize
+    }
+
+    final class Coordinator {
+        var onTap: () -> Void
+        init(onTap: @escaping () -> Void) { self.onTap = onTap }
+        @objc func tapped() { onTap() }
+    }
+}
+
+final class ChatAddQuickMomentButton: UIButton {
+    static let preferredSize = CGSize(width: QuickMomentAddBubbleView.bubbleSize + 4, height: 96)
+
+    private let bubble = QuickMomentAddBubbleView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        accessibilityLabel = "Add a moment"
+        accessibilityTraits = .button
+        bubble.isUserInteractionEnabled = false
+        bubble.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bubble)
+        NSLayoutConstraint.activate([
+            bubble.topAnchor.constraint(equalTo: topAnchor),
+            bubble.leadingAnchor.constraint(equalTo: leadingAnchor),
+            bubble.trailingAnchor.constraint(equalTo: trailingAnchor),
+            bubble.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override var intrinsicContentSize: CGSize { Self.preferredSize }
+
+    func configure(avatarPath: String?) {
+        bubble.configure(avatarPath: avatarPath)
     }
 }
 
@@ -146,9 +184,82 @@ struct ChatQuickMomentStatusRing: UIViewRepresentable {
     }
 }
 
+/// Fixed circular profile photo. A bare UIImageView in SwiftUI stretches
+/// to the image's pixel size and looks broken in the tray.
+private final class ChatQuickMomentAvatarView: UIView {
+    static let defaultSize: CGFloat = 58
+
+    private let imageView = UIImageView()
+    private var lastPath: String?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        clipsToBounds = true
+        backgroundColor = AppColor.AthensGray
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.isUserInteractionEnabled = false
+        imageView.image = UIImage(named: "ProfileBlur")
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(imageView)
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: Self.defaultSize, height: Self.defaultSize)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let radius = min(bounds.width, bounds.height) / 2
+        layer.cornerRadius = radius
+        imageView.layer.cornerRadius = radius
+    }
+
+    func configure(path: String?) {
+        let trimmed = path?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolved = (trimmed?.isEmpty == false) ? trimmed : nil
+        guard resolved != lastPath else { return }
+        lastPath = resolved
+        imageView.loadImage(path: resolved, placeholder: UIImage(named: "ProfileBlur"))
+    }
+}
+
+private struct ChatQuickMomentAvatar: UIViewRepresentable {
+    var path: String?
+    var size: CGFloat = ChatQuickMomentAvatarView.defaultSize
+
+    func makeUIView(context: Context) -> ChatQuickMomentAvatarView {
+        let view = ChatQuickMomentAvatarView()
+        view.setContentHuggingPriority(.required, for: .horizontal)
+        view.setContentHuggingPriority(.required, for: .vertical)
+        view.setContentCompressionResistancePriority(.required, for: .horizontal)
+        view.setContentCompressionResistancePriority(.required, for: .vertical)
+        view.configure(path: path)
+        return view
+    }
+
+    func updateUIView(_ uiView: ChatQuickMomentAvatarView, context: Context) {
+        uiView.configure(path: path)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: ChatQuickMomentAvatarView, context: Context) -> CGSize? {
+        CGSize(width: size, height: size)
+    }
+}
+
 struct ChatQuickMomentsStrip: View {
     let tray: QuickMomentTray?
     var ownPhotoURL: String?
+    var inboxPhotos: [String: String] = [:]
     var onlineUserIds: Set<String> = []
     var onAdd: () -> Void
     var onOpen: (QuickMomentTrayItem, Bool) -> Void
@@ -171,6 +282,7 @@ struct ChatQuickMomentsStrip: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .frame(height: ChatAddQuickMomentButton.preferredSize.height)
         }
         .applyRTLEnvironment()
     }
@@ -190,36 +302,32 @@ struct ChatQuickMomentsStrip: View {
     private func momentCell(_ item: ChatQuickMomentItem) -> some View {
         switch item {
         case .add:
-            Button(action: onAdd) {
-                ChatAddQuickMomentBubble(avatarPath: ownPhotoURL ?? tray?.me?.user?.photo)
-                    .fixedSize()
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Add a moment")
+            ChatAddQuickMomentBubble(
+                avatarPath: photoURL(for: tray?.me, isMine: true),
+                onTap: onAdd
+            )
+            .frame(width: ChatAddQuickMomentButton.preferredSize.width,
+                   height: ChatAddQuickMomentButton.preferredSize.height)
         case .mine(let trayItem):
-            Button { onOpen(trayItem, true) } label: {
-                statusBubble(
-                    photoURL: trayItem.user?.photo ?? ownPhotoURL,
-                    title: timeLabel(for: trayItem),
-                    segments: trayItem.statusRingSegmentViewed(isMine: true),
-                    titleColor: Color(uiColor: AppColor.DoveGray),
-                    isOnline: false
-                )
-            }
-            .buttonStyle(.plain)
+            statusBubble(
+                photoURL: photoURL(for: trayItem, isMine: true),
+                title: timeLabel(for: trayItem),
+                segments: trayItem.statusRingSegmentViewed(isMine: true),
+                titleColor: Color(uiColor: AppColor.DoveGray),
+                isOnline: false
+            )
+            .overlay { ChatMomentTapCatcher { onOpen(trayItem, true) } }
         case .other(let trayItem):
             let userId = trayItem.user?.id ?? ""
             let unread = trayItem.statusRingSegmentViewed(isMine: false).contains(false)
-            Button { onOpen(trayItem, false) } label: {
-                statusBubble(
-                    photoURL: trayItem.user?.photo ?? trayItem.previewUrl,
-                    title: displayName(for: trayItem),
-                    segments: trayItem.statusRingSegmentViewed(isMine: false),
-                    titleColor: unread ? Color.chatPrimary : Color(uiColor: AppColor.DoveGray),
-                    isOnline: !userId.isEmpty && onlineUserIds.contains(userId)
-                )
-            }
-            .buttonStyle(.plain)
+            statusBubble(
+                photoURL: photoURL(for: trayItem, isMine: false),
+                title: displayName(for: trayItem),
+                segments: trayItem.statusRingSegmentViewed(isMine: false),
+                titleColor: unread ? Color.chatPrimary : Color(uiColor: AppColor.DoveGray),
+                isOnline: !userId.isEmpty && onlineUserIds.contains(userId)
+            )
+            .overlay { ChatMomentTapCatcher { onOpen(trayItem, false) } }
         }
     }
 
@@ -234,14 +342,11 @@ struct ChatQuickMomentsStrip: View {
             ZStack {
                 ChatQuickMomentStatusRing(segmentViewed: segments, lineWidth: 3)
                     .frame(width: bubbleSize, height: bubbleSize)
+                    .allowsHitTesting(false)
 
-                CachedProfileImage(
-                    userId: photoURL ?? title,
-                    urlString: photoURL,
-                    size: avatarSize,
-                    isGroup: false,
-                    fallbackName: title
-                )
+                ChatQuickMomentAvatar(path: photoURL, size: avatarSize)
+                    .frame(width: avatarSize, height: avatarSize)
+                    .allowsHitTesting(false)
 
                 if isOnline {
                     Circle()
@@ -259,6 +364,26 @@ struct ChatQuickMomentsStrip: View {
                 .lineLimit(1)
                 .frame(width: bubbleSize + 4)
         }
+        .frame(width: bubbleSize + 4)
+        .contentShape(Rectangle())
+    }
+
+    private func photoURL(for item: QuickMomentTrayItem?, isMine: Bool) -> String? {
+        let fromTray = item?.profilePhotoPath
+        if isMine {
+            return firstPhoto(fromTray, ownPhotoURL)
+        }
+        if let fromTray { return fromTray }
+        if let id = item?.user?.id, let inbox = inboxPhotos[id], !inbox.isEmpty {
+            return inbox
+        }
+        return nil
+    }
+
+    private func firstPhoto(_ paths: String?...) -> String? {
+        paths
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
     }
 
     private func timeLabel(for item: QuickMomentTrayItem) -> String {
@@ -273,5 +398,31 @@ struct ChatQuickMomentsStrip: View {
         if !fullName.isEmpty { return fullName }
         let name = item.user?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return name.isEmpty ? "—" : name
+    }
+}
+
+private struct ChatMomentTapCatcher: UIViewRepresentable {
+    var onTap: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onTap: onTap)
+    }
+
+    func makeUIView(context: Context) -> UIButton {
+        let button = UIButton(type: .custom)
+        button.backgroundColor = .clear
+        button.accessibilityTraits = .button
+        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
+        return button
+    }
+
+    func updateUIView(_ uiView: UIButton, context: Context) {
+        context.coordinator.onTap = onTap
+    }
+
+    final class Coordinator {
+        var onTap: () -> Void
+        init(onTap: @escaping () -> Void) { self.onTap = onTap }
+        @objc func tapped() { onTap() }
     }
 }

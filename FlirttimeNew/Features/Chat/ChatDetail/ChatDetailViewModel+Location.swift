@@ -12,7 +12,11 @@ extension ChatDetailViewModel {
             handleError(.userBlockedError, context: "sendLocation.blocked")
             return
         }
-        if selectedId.isEmpty && selectedUserChatID.isEmpty {
+        if isDuplicateInFlightLocation(locationRequest) {
+            AppLogger.debug("[sendLocation] ignored duplicate in-flight send")
+            return
+        }
+        if selectedId.isEmpty {
             ensureConversationReady { [weak self] success in
                 guard let self else { return }
                 if success {
@@ -92,32 +96,36 @@ extension ChatDetailViewModel {
 
         scheduleFailureTimeout(for: tempId)
 
-        let started = messageService.sendViaREST(
+        let started = messageService.sendLocationViaSocket(
             conversationId: selectedId,
-            type: "location",
             body: contentText,
-            mediaIds: nil,
             location: locationPayload,
-            poll: nil,
             clientMessageId: tempId,
-            replyToId: replyToId,
-            recipientIds: selectedId.isEmpty ? [selectedUserChatID] : nil
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let serverMessage):
-                if self.selectedId.isEmpty, !serverMessage.conversationId.isEmpty {
-                    self.selectedId = serverMessage.conversationId
-                }
-                self.replaceTemporaryMessage(tempId: tempId, with: serverMessage)
-            case .failure:
-                self.markMessageAsFailed(tempId: tempId)
-            }
-        }
+            replyToId: replyToId
+        )
+        AppLogger.debug("[sendLocation] socket chat:send_message started=\(started) tempId=\(tempId)")
 
         if !started {
             markMessageAsFailed(tempId: tempId)
         }
         replyingToMessage = nil
+    }
+
+    /// Same coordinates already sitting in a "sending" bubble — a second tap / callback.
+    private func isDuplicateInFlightLocation(_ request: SendLocationRequest) -> Bool {
+        tempMessageMapping.values.contains { message in
+            let type = (message.messageType ?? message.type ?? "").lowercased()
+            guard type == "location" else { return false }
+            let status = (message.status ?? "").lowercased()
+            guard status == "sending" || status == "pending" else { return false }
+            let lat = ConversationMessage.coordinateValue(
+                message.metadata?["latitude"]?.value ?? message.metadata?["lat"]?.value
+            )
+            let lng = ConversationMessage.coordinateValue(
+                message.metadata?["longitude"]?.value ?? message.metadata?["lng"]?.value
+            )
+            guard let lat, let lng else { return false }
+            return abs(lat - request.latitude) < 0.0001 && abs(lng - request.longitude) < 0.0001
+        }
     }
 }

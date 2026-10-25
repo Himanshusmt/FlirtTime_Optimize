@@ -35,6 +35,16 @@ protocol ChatMessageServiceProtocol {
     func loadMessagesAfter(conversationId: String, afterDate: Date, limit: Int) -> AnyPublisher<ConversationMessagesResponse, Error>
     func loadMessagesBefore(conversationId: String, beforeDate: Date, page: Int, limit: Int) -> AnyPublisher<ConversationMessagesResponse, Error>
 
+    /// Socket-only location send (`chat:send_message`). Does not POST REST.
+    @discardableResult
+    func sendLocationViaSocket(
+        conversationId: String,
+        body: String?,
+        location: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?
+    ) -> Bool
+
     /// REST send (FE `sendChatMessage`). Returns true if the request was started.
     func sendViaREST(
         conversationId: String,
@@ -608,6 +618,34 @@ class ChatMessageService: ChatMessageServiceProtocol {
             replyToId: replyToId,
             completion: nil
         )
+    }
+
+    func sendLocationViaSocket(
+        conversationId: String,
+        body: String?,
+        location: [String: Any]?,
+        clientMessageId: String?,
+        replyToId: String?
+    ) -> Bool {
+        guard sessionManager.user?.userId != nil else {
+            AppLogger.debug("[sendLocationViaSocket] User ID not available")
+            return false
+        }
+        guard !conversationId.isEmpty else {
+            AppLogger.debug("[sendLocationViaSocket] Empty conversationId")
+            return false
+        }
+        emitSendMessage(
+            conversationId: conversationId,
+            type: "location",
+            body: body,
+            mediaIds: nil,
+            location: location,
+            clientMessageId: clientMessageId,
+            replyToId: replyToId,
+            metadata: nil
+        )
+        return true
     }
 
     /// FlirtTime — emit `chat:send_message` so the peer gets `chat:message_received` live.

@@ -292,6 +292,10 @@ final class ChatListContainerViewController: BaseViewController {
         quickMomentsHost.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
             if isMine {
+                if stories.isEmpty {
+                    self.openAddQuickMoment()
+                    return
+                }
                 self.presentQuickMoments(stories, of: item, isMine: true, tray: tray)
                 return
             }
