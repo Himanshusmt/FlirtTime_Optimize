@@ -335,6 +335,13 @@ final class ChatListContainerViewController: BaseViewController {
                     sheet.detents = [.medium(), .large()]
                     sheet.prefersGrabberVisible = true
                 }
+                activity.onDelete = { [weak self, weak presenter] in
+                    presenter?.dismiss(animated: true) {
+                        self?.quickMomentsHost.deleteQuickMoment(id: stories[index].id) { message in
+                            self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
+                        }
+                    }
+                }
                 presenter.present(activity, animated: true)
             }
             viewer.onDelete = { [weak self] index in

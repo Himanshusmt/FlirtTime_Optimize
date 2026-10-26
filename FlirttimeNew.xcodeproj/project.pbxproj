@@ -19,7 +19,6 @@
 		245517BB47B75C7557C83725 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22661A208F524B403C3887C7 /* AppContainer.swift */; };
 		27E7C7E330200024DCCFFDB3 /* MomentsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C089D324A35A65DB2E3AC0 /* MomentsCardView.swift */; };
 		2B9E20ED95D20A173F99188E /* AppTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64296CB7C6A4534830FAE82 /* AppTokenStore.swift */; };
-		3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */; };
 		329F719C1372CA390D715EB8 /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA82C9D3694FA3F70B46E3E /* AuthResponse.swift */; };
 		371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */; };
 		387133DE17D2ACB96322AA39 /* PrivacySafetyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FF17A4E0395896EA3CEF5E /* PrivacySafetyViewController.swift */; };
@@ -748,7 +747,6 @@
 		3B0372CD8823486EB9C26ED8 /* OtherUserMomentCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherUserMomentCell.swift; sourceTree = "<group>"; };
 		3B09CF53249BE0B9615AAD36 /* ProfileQuickMomentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileQuickMomentsView.swift; sourceTree = "<group>"; };
 		40EFDD7680B07DEC53032CA1 /* SettingsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
-		49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuickMomentsListViewController.swift; sourceTree = "<group>"; };
 		49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiscoverPeopleListViewController.swift; sourceTree = "<group>"; };
 		4B94EF39A76377E5FBD9B1A2 /* AppleLoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleLoginViewModel.swift; sourceTree = "<group>"; };
 		4D2D4A8EFD5338BD1EEA157B /* LoginViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
@@ -1628,7 +1626,6 @@
 				7C91A0B2E4D84F6A9E1C2B0D /* QuickMomentsPagerViewController.swift */,
 				67360D7C73CE290F03AA74BB /* WhyMomentsDetailsViewController.swift */,
 				5B9E9D090F155F7826882212 /* ConnectBecauseViewController.swift */,
-				49C05D3724AFEFC56B9F6C68 /* QuickMomentsListViewController.swift */,
 				49CFC050627BED43E700F948 /* DiscoverPeopleListViewController.swift */,
 				BE0A78A4CAE59CEC71A81696 /* MomentsFiltersViewController.swift */,
 				2BCFC391ED16A1CC01A4B43D /* CardDetailViewController.swift */,
@@ -4070,7 +4067,6 @@
 				E5F7A9B1C3D4E6F8A0B2C3D5 /* DiscoveryAPIModels.swift in Sources */,
 				A2F1L1M1T000000000000002 /* FreeTierLimits.swift in Sources */,
 				9EB2C4DB823F62BA410975D2 /* ConnectBecauseViewController.swift in Sources */,
-				3162EE1C0C6F15DFA40066B2 /* QuickMomentsListViewController.swift in Sources */,
 				371C63B8F7E6F7C38B1A178B /* DiscoverPeopleListViewController.swift in Sources */,
 				F690335568303B016201193C /* MomentsFiltersViewController.swift in Sources */,
 				869C6A5140428E2EFF4CFD2F /* CardDetailViewController.swift in Sources */,

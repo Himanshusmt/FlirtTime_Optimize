@@ -806,6 +806,11 @@ class ProfileViewController: BaseViewController {
             sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
         }
+        activity.onDelete = { [weak self, weak presenter] in
+            presenter?.dismiss(animated: true) {
+                self?.deleteQuickMoment(at: index)
+            }
+        }
         presenter.present(activity, animated: true)
     }
 

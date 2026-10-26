@@ -845,6 +845,18 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
                     sheet.detents = [.medium(), .large()]
                     sheet.prefersGrabberVisible = true
                 }
+                activity.onDelete = { [weak self, weak presenter] in
+                    presenter?.dismiss(animated: true) {
+                        self?.viewModel.deleteQuickMoment(id: stories[shownIndex].id) { result in
+                            switch result {
+                            case .success:
+                                self?.aCustomToastView.show(message: "Quick moment deleted")
+                            case .failure(let error):
+                                self?.aCustomToastView.show(message: error.message)
+                            }
+                        }
+                    }
+                }
                 presenter.present(activity, animated: true)
             }
             viewer.onDelete = { [weak self] shownIndex in

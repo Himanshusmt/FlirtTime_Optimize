@@ -103,7 +103,7 @@ final class QuickMomentStatusRingView: UIView {
         didSet { applyColors() }
     }
     /// Light gray for already-seen segments (`isViewed == true`).
-    var viewedColor: UIColor = AppColor.SilverChalice {
+    var viewedColor: UIColor = AppColor.Silver {
         didSet { applyColors() }
     }
 
@@ -194,17 +194,19 @@ extension QuickMomentTrayItem {
         if isMine {
             return Array(repeating: false, count: count)
         }
-        if stories.count >= count {
-            return Array(stories.suffix(count).reversed().map(\.hasViewed))
+        if stories.isEmpty {
+            return Array(repeating: !hasUnread, count: count)
         }
-        if !stories.isEmpty {
-            // Oldest → newest among known stories, then pad unknown slots from tray unread flag.
-            var flags = stories.reversed().map(\.hasViewed)
-            let pad = count - flags.count
-            flags += Array(repeating: !hasUnread, count: pad)
-            return flags
+        // Oldest → newest, matching how the ring draws.
+        let flags = stories.reversed().map(\.hasViewed)
+        // Tray stories often omit per-story `isViewed`; then `hasUnread` is the source of truth.
+        if flags.allSatisfy({ !$0 }) {
+            return Array(repeating: !hasUnread, count: count)
         }
-        return Array(repeating: !hasUnread, count: count)
+        if flags.count >= count {
+            return Array(flags.suffix(count))
+        }
+        return flags + Array(repeating: !hasUnread, count: count - flags.count)
     }
 }
 

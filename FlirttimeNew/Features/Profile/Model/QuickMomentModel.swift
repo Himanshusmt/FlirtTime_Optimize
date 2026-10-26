@@ -450,6 +450,7 @@ extension QuickMoment {
                           textBackground: QuickMomentColors.backgroundIndex(for: backgroundColor),
                           reactionsCount: reactionsCount,
                           repliesCount: repliesCount,
+                          viewsCount: viewsCount,
                           topReactions: Array(topReactions.prefix(3)),
                           hasViewed: hasViewed)
     }

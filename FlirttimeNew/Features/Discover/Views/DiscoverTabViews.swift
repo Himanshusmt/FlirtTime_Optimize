@@ -71,10 +71,11 @@ final class DiscoverMomentsView: UIView {
 
     private enum Grid {
         static let columns: CGFloat = 3
-        static let visibleRows: CGFloat = 4
         static let spacing: CGFloat = 8
         static let sideInset: CGFloat = 12
         static let verticalInset: CGFloat = 8
+        /// Same card proportion as the previous Quick Moments list (`height = width * 1.4`).
+        static let itemAspect: CGFloat = 1.4
     }
 
     private enum Item {
@@ -84,7 +85,13 @@ final class DiscoverMomentsView: UIView {
 
     private var items: [Item] = []
     private var ownAvatarPath: String?
-    private var lastGridSize: CGSize = .zero
+    private var lastGridWidth: CGFloat = 0
+    private let titleLabel: UILabel = {
+        let label = UILabel.vibeLabel(.bold, 20, style: .headline, color: AppColor.AppBlack)
+        label.text = "Quick Moments"
+        label.accessibilityTraits = .header
+        return label
+    }()
     private let emptyLabel = UILabel.vibeLabel(.regular, 15, color: AppColor.DoveGray, lines: 0)
     private let refreshControl = UIRefreshControl()
     private lazy var collectionView: UICollectionView = {
@@ -106,17 +113,26 @@ final class DiscoverMomentsView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        addSubview(collectionView)
-        collectionView.pinEdges(to: self)
+        [titleLabel, collectionView, emptyLabel].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            addSubview($0)
+        }
         refreshControl.tintColor = AppColor.Punch
         refreshControl.addTarget(self, action: #selector(refreshPulled), for: .valueChanged)
         collectionView.refreshControl = refreshControl
         emptyLabel.text = "No Moments to show right now."
         emptyLabel.textAlignment = .center
-        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(emptyLabel)
         NSLayoutConstraint.activate([
-            emptyLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            titleLabel.topAnchor.constraint(equalTo: topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -16),
+
+            collectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            collectionView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            emptyLabel.centerYAnchor.constraint(equalTo: collectionView.centerYAnchor),
             emptyLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 32),
             emptyLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32)
         ])
@@ -131,7 +147,7 @@ final class DiscoverMomentsView: UIView {
 
     override func safeAreaInsetsDidChange() {
         super.safeAreaInsetsDidChange()
-        lastGridSize = .zero
+        lastGridWidth = 0
         updateGridLayoutIfNeeded()
     }
 
@@ -158,16 +174,10 @@ final class DiscoverMomentsView: UIView {
     }
 
     private func updateGridLayoutIfNeeded() {
-        let size = collectionView.bounds.size
-        guard size.width > 0, size.height > 0 else { return }
-        let bottomInset = Grid.verticalInset + collectionView.safeAreaInsets.bottom
-        let inset = UIEdgeInsets(top: Grid.verticalInset, left: Grid.sideInset, bottom: bottomInset, right: Grid.sideInset)
-        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
-        if size != lastGridSize || layout.sectionInset != inset {
-            lastGridSize = size
-            layout.sectionInset = inset
-            layout.invalidateLayout()
-        }
+        let width = collectionView.bounds.width
+        guard width > 0, width != lastGridWidth else { return }
+        lastGridWidth = width
+        collectionView.collectionViewLayout.invalidateLayout()
     }
 }
 
@@ -192,11 +202,11 @@ extension DiscoverMomentsView: UICollectionViewDataSource, UICollectionViewDeleg
 
     func collectionView(_ collectionView: UICollectionView, layout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let bounds = collectionView.bounds
-        guard bounds.width > 0, bounds.height > 0 else { return CGSize(width: 100, height: 140) }
+        guard bounds.width > 0 else { return CGSize(width: 100, height: 140) }
         let inset = (layout as? UICollectionViewFlowLayout)?.sectionInset
             ?? UIEdgeInsets(top: Grid.verticalInset, left: Grid.sideInset, bottom: Grid.verticalInset, right: Grid.sideInset)
         let width = floor((bounds.width - inset.left - inset.right - Grid.spacing * (Grid.columns - 1)) / Grid.columns)
-        let height = floor((bounds.height - inset.top - inset.bottom - Grid.spacing * (Grid.visibleRows - 1)) / Grid.visibleRows)
+        let height = floor(max(width, 1) * Grid.itemAspect)
         return CGSize(width: max(width, 1), height: max(height, 1))
     }
 

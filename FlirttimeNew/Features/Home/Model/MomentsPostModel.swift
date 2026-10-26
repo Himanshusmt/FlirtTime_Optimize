@@ -229,6 +229,14 @@ enum MomentsDate {
         default: return "\(seconds / 604800)w"
         }
     }
+
+    /// Full relative time ("22 minutes ago", "3 hours ago").
+    static func timeAgoLong(from string: String?) -> String {
+        guard let date = date(from: string) else { return "" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
 }
 
 extension Int {
