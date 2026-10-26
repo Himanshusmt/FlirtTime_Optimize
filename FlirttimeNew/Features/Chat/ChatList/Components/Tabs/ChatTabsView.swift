@@ -178,6 +178,7 @@ struct CallHistoryItem: Identifiable, Equatable {
 struct ChatCallsListView: View {
     @ObservedObject var viewModel: ChatListViewModel
     var searchText: String = ""
+    var onStartCall: ((CallHistoryItem) -> Void)?
 
     var body: some View {
         let rows = filteredCalls
@@ -260,7 +261,11 @@ struct ChatCallsListView: View {
                     .font(.chatRegular(size: 11))
                     .foregroundColor(Color.chatTextTertiary)
                 Button {
-                    viewModel.startCall(from: call)
+                    if let onStartCall {
+                        onStartCall(call)
+                    } else {
+                        viewModel.startCall(from: call)
+                    }
                 } label: {
                     SwiftUI.Image(systemName: call.media == .video ? "video.fill" : "phone.fill")
                         .font(.system(size: 14, weight: .semibold))

@@ -144,6 +144,10 @@ final class QuickMomentsPagerViewController: UIViewController {
             dismiss(animated: true)
             return
         }
+        guard canOpenPage(pages[next]) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         showPage(at: next, direction: .forward, preferredStart: .firstUnseen)
     }
 
@@ -191,11 +195,18 @@ final class QuickMomentsPagerViewController: UIViewController {
 
     private func show(_ host: PageHost, direction: UIPageViewController.NavigationDirection) {
         currentIndex = host.pageIndex
+        if !host.page.isMine {
+            FreeTierLimitsStore.shared.consumeQuickMomentView(userId: host.page.item.user?.id)
+        }
         view.endEditing(true)
         host.viewer?.prepareForVisiblePlayback()
         pageController.setViewControllers([host], direction: direction, animated: !UIAccessibility.isReduceMotionEnabled)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         prefetchNeighbors(of: host.pageIndex)
+    }
+
+    private func canOpenPage(_ page: QuickMomentViewerPage) -> Bool {
+        page.isMine || FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: page.item.user?.id)
     }
 
     private func prefetchNeighbors(of index: Int) {
@@ -233,6 +244,8 @@ extension QuickMomentsPagerViewController: UIPageViewControllerDataSource, UIPag
 
     func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
         guard let host = viewController as? PageHost, host.pageIndex + 1 < pages.count else { return nil }
+        let next = pages[host.pageIndex + 1]
+        guard canOpenPage(next) else { return nil }
         return self.host(at: host.pageIndex + 1, preferredStart: .firstUnseen)
     }
 

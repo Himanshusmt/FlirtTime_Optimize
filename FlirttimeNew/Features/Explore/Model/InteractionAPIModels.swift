@@ -139,7 +139,7 @@ private struct InteractionPerson: Codable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: QMKey.self)
-        userId = c.string("id", "userId")
+        userId = c.string("userId", "id", "remoteUserId", "_id")
         name = c.string("username", "name", "fullName")
         age = c.int("age")
         city = c.string("locationLabel", "city", "location")

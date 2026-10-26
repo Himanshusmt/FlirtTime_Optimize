@@ -781,6 +781,13 @@ class ProfileViewController: BaseViewController {
     }
 
     private func openAddQuickMoment() {
+        let limits = FreeTierLimitsStore.shared
+        limits.syncAddedQuickMoments(from: aProfileViewModel.quickMoments)
+        let existingToday = limits.createdTodayCount(in: aProfileViewModel.quickMoments)
+        guard limits.canAddQuickMoment(existingCreatedToday: existingToday) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         let composer = AddQuickMomentViewController()
         composer.onShare = { [weak self] text, background, image in
             guard let self else { return }
@@ -789,7 +796,9 @@ class ProfileViewController: BaseViewController {
                 guard let self else { return }
                 self.aActivityIndicator.hide()
                 switch result {
-                case .success: self.aCustomToastView.show(message: "Quick moment shared")
+                case .success:
+                    FreeTierLimitsStore.shared.consumeQuickMomentAdd()
+                    self.aCustomToastView.show(message: "Quick moment shared")
                 case .failure(let error): self.aCustomToastView.show(message: error.message)
                 }
             }

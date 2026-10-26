@@ -269,6 +269,10 @@ class ChatListViewModel: ObservableObject {
     }
 
     func startCall(from item: CallHistoryItem) {
+        guard FreeTierLimitsStore.shared.canMakeCall else {
+            errorMessage = nil
+            return
+        }
         let conversationId = item.conversationId.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !conversationId.isEmpty else { return }
         Task { @MainActor in
@@ -334,6 +338,7 @@ class ChatListViewModel: ObservableObject {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] tray in
                 self?.quickMomentTray = tray
+                FreeTierLimitsStore.shared.syncAddedQuickMoments(from: tray.me?.stories ?? [])
             }, onFailure: { _ in })
             .disposed(by: disposeBag)
     }

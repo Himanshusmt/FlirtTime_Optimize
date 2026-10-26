@@ -694,10 +694,14 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
             guard !path.isEmpty else { return nil }
             return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
         }
+        if isMatchedWithUser {
+            FreeTierLimitsStore.shared.markHasMatch(userId: chatUserID)
+        }
         ChatProfileRouter.openChat(userID: chatUserID,
                                    name: details.name,
                                    avatarPath: avatarURL,
                                    isVerified: details.isVerified,
+                                   isMatched: isMatchedWithUser,
                                    from: self)
     }
 
@@ -812,6 +816,14 @@ final class OtherUserProfileViewController: BaseViewController, Instantiable {
         // Row is newest-first; viewer plays oldest-first (same as Discover).
         let newestFirst = viewModel.quickMoments
         guard let details, newestFirst.indices.contains(index) else { return }
+        if !isOwnProfile {
+            let userId = details.remoteUserID ?? String(details.userID)
+            guard FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: userId) else {
+                presentSubscriptionPopUp(.chat)
+                return
+            }
+            FreeTierLimitsStore.shared.consumeQuickMomentView(userId: userId)
+        }
         let stories = Array(newestFirst.reversed())
         let playbackIndex = (newestFirst.count - 1) - index
         let userId = details.remoteUserID ?? String(details.userID)

@@ -45,12 +45,17 @@ final class ChatListContainerViewController: BaseViewController {
         navigator.onOpenQuickMoment = { [weak self] item, isMine, tray in
             self?.openQuickMoments(of: item, isMine: isMine, tray: tray)
         }
+        navigator.onRequireSubscription = { [weak self] type in
+            self?.presentSubscriptionPopUp(type)
+        }
         tapGesture()
         ChatMockSeeder.shared.seedIfNeeded()
         embedChatListView()
         bindInAppBanner()
         bindNetworkMonitor()
         bindOwnAvatar()
+        profileViewModel.getQuickMoments()
+        quickMomentsHost.loadQuickMomentTray()
         view.enforceRTLIfNeeded()
     }
 
@@ -58,6 +63,14 @@ final class ChatListContainerViewController: BaseViewController {
         super.viewWillAppear(animated)
         noInternetAlertShown = false
         setTabBarCenterButtonHidden(false)
+        FreeTierLimitsStore.shared.refresh()
+        profileViewModel.getQuickMoments()
+        quickMomentsHost.loadQuickMomentTray()
+        if !FreeTierLimitsStore.shared.canAccessChatModule {
+            presentSubscriptionPopUp(.chat)
+            (tabBarController as? AppTabBarController)?.setToHome()
+            return
+        }
         
         if hasPushedChatDetail {
             hasPushedChatDetail = false
@@ -167,16 +180,35 @@ final class ChatListContainerViewController: BaseViewController {
     }
 
     func openCallsFromNotification() {
+        guard FreeTierLimitsStore.shared.canMakeCall else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         navigationController?.popToViewController(self, animated: false)
         navigator.openCalls()
     }
 
     /// Used by push-notification / in-app banner navigation.
     func openChatDetailFromNotification(navData: ChatNavigationData) {
+        guard canOpenConversation(navData) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         pushChatDetail(navData: navData)
     }
 
+    private func canOpenConversation(_ navData: ChatNavigationData) -> Bool {
+        FreeTierLimitsStore.shared.canStartChat(
+            withUserIds: [navData.userChatId, navData.user?.userId, navData.user?.id],
+            isGroupOrChannel: navData.isGroupChat || navData.isChannel
+        )
+    }
+
     private func pushChatDetail(navData: ChatNavigationData) {
+        guard canOpenConversation(navData) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         guard let navController = navigationController else { return }
 
         // Instagram-style: detail always sits directly above Chats list so Back → list.
@@ -268,6 +300,17 @@ final class ChatListContainerViewController: BaseViewController {
     }
 
     private func openAddQuickMoment() {
+        let limits = FreeTierLimitsStore.shared
+        limits.syncAddedQuickMoments(from: profileViewModel.quickMoments)
+        limits.syncAddedQuickMoments(from: quickMomentsHost.quickMomentTray?.me?.stories ?? [])
+        let existingToday = max(
+            limits.createdTodayCount(in: profileViewModel.quickMoments),
+            limits.createdTodayCount(in: quickMomentsHost.quickMomentTray?.me?.stories ?? [])
+        )
+        guard limits.canAddQuickMoment(existingCreatedToday: existingToday) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         let composer = AddQuickMomentViewController()
         composer.onShare = { [weak self] text, background, image in
             guard let self else { return }
@@ -277,6 +320,7 @@ final class ChatListContainerViewController: BaseViewController {
                 self.setLoading(false)
                 switch result {
                 case .success:
+                    FreeTierLimitsStore.shared.consumeQuickMomentAdd()
                     self.aCustomToastView.show(message: "Quick moment shared")
                     self.quickMomentsHost.loadQuickMomentTray()
                     self.navigator.onChatDetailPopped?()
@@ -289,6 +333,13 @@ final class ChatListContainerViewController: BaseViewController {
     }
 
     private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool, tray: QuickMomentTray?) {
+        if !isMine {
+            let userId = item.user?.id
+            guard FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: userId) else {
+                presentSubscriptionPopUp(.chat)
+                return
+            }
+        }
         quickMomentsHost.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
             if isMine {
@@ -310,6 +361,9 @@ final class ChatListContainerViewController: BaseViewController {
 
     private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool, tray: QuickMomentTray?) {
         guard !stories.isEmpty else { return }
+        if !isMine {
+            FreeTierLimitsStore.shared.consumeQuickMomentView(userId: item.user?.id)
+        }
         let (pages, start) = QuickMomentViewerPage.sequence(tray: tray, selected: item, isMine: isMine)
         let pager = QuickMomentsPagerViewController(pages: pages, startIndex: start, initialStories: stories)
         pager.onLoadStories = { [weak self] page, done in

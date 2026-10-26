@@ -158,6 +158,9 @@ class ExploreViewController: BaseViewController {
     /// Push / in-app notification: jump to a tab even if Explore is already visible.
     func openFromNotification(_ tab: ExploreTab) {
         strSelectedLike = tab.interactionType
+        if FreeTierLimitsStore.shared.isTabLocked(tab) {
+            presentSubscriptionPopUp(tab == .compliments ? .chat : .superLike)
+        }
         guard isViewLoaded else { return }
         scrollToTab(tab, animated: false)
         loadTab(tab)

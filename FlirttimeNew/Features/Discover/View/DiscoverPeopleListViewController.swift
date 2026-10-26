@@ -593,10 +593,12 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
             guard !path.isEmpty else { return nil }
             return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
         }
+        FreeTierLimitsStore.shared.markHasMatch(userId: userID)
         ChatProfileRouter.openChat(userID: userID,
                                    name: profile.displayName,
                                    avatarPath: avatarURL,
                                    isVerified: profile.isVerified,
+                                   isMatched: true,
                                    from: self)
     }
 
@@ -667,6 +669,13 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openAddQuickMoment() {
+        let limits = FreeTierLimitsStore.shared
+        limits.syncAddedQuickMoments(from: viewModel.quickMomentTray?.me?.stories ?? [])
+        let existingToday = limits.createdTodayCount(in: viewModel.quickMomentTray?.me?.stories ?? [])
+        guard limits.canAddQuickMoment(existingCreatedToday: existingToday) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         let composer = AddQuickMomentViewController()
         composer.onShare = { [weak self] text, background, image in
             guard let self else { return }
@@ -676,6 +685,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
                 self.setLoading(false)
                 switch result {
                 case .success:
+                    FreeTierLimitsStore.shared.consumeQuickMomentAdd()
                     self.aCustomToastView.show(message: "Quick moment shared")
                 case .failure(let error):
                     self.aCustomToastView.show(message: error.message)
@@ -686,6 +696,12 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
+        if !isMine {
+            guard FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: item.user?.id) else {
+                presentSubscriptionPopUp(.chat)
+                return
+            }
+        }
         viewModel.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
             if isMine {
@@ -704,6 +720,9 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     /// `stories` arrive newest first; they play oldest first, starting at the first unseen one.
     private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
         guard !stories.isEmpty else { return }
+        if !isMine {
+            FreeTierLimitsStore.shared.consumeQuickMomentView(userId: item.user?.id)
+        }
         let (pages, start) = QuickMomentViewerPage.sequence(tray: viewModel.quickMomentTray, selected: item, isMine: isMine)
         let pager = QuickMomentsPagerViewController(pages: pages, startIndex: start, initialStories: stories)
         pager.onLoadStories = { [weak self] page, done in

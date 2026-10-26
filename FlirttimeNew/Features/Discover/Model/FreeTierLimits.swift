@@ -130,6 +130,7 @@ final class FreeTierLimitsStore {
     private init(sessionManager: AppSessionManager = Container.appContainer.resolve(AppSessionManager.self)!) {
         self.sessionManager = sessionManager
         refreshWork.disposed(by: disposeBag)
+        matchRefreshWork.disposed(by: disposeBag)
         NotificationCenter.default.addObserver(
             forName: .userSubscriptionStatusDidChange,
             object: nil,
@@ -141,8 +142,33 @@ final class FreeTierLimitsStore {
     }
 
     var isPremium: Bool {
-        limits?.isSubscribed == true || UserDataManager.shared.isUserSubscriptionDone == true
+        // Server `isSubscribed` wins once limits have loaded so a stale local flag
+        // cannot keep a free account unlocked.
+        if let subscribed = limits?.isSubscribed {
+            return subscribed
+        }
+        return UserDataManager.shared.isUserSubscriptionDone == true
     }
+
+    /// Free users with no matches cannot open the Messages tab at all.
+    var canAccessChatModule: Bool {
+        isPremium || hasMatches
+    }
+
+    /// Audio / video calling is Premium-only. Free users see the subscription sheet.
+    var canMakeCall: Bool {
+        isPremium
+    }
+
+    /// At least one mutual match. Persisted so the Messages tab can gate immediately.
+    @Published private(set) var hasMatches: Bool = FreeTierLimitsStore.loadPersistedHasMatches()
+    @Published private(set) var matchedUserIds: Set<String> = FreeTierLimitsStore.loadPersistedMatchedIds()
+
+    private static let hasMatchesKey = "ft.freeTier.hasMatches"
+    private static let matchedIdsKey = "ft.freeTier.matchedUserIds"
+    private static let dailyQuickMomentViews = 3
+    private static let dailyQuickMomentAdds = 1
+    private let matchRefreshWork = SerialDisposable()
 
     var canLike: Bool {
         if isPremium { return true }
@@ -182,6 +208,82 @@ final class FreeTierLimitsStore {
         return false
     }
 
+    /// Free users may only open a 1:1 chat with that specific matched person.
+    /// Having any match does not unlock every conversation. Groups stay Premium-only.
+    func canStartChat(withUserId userId: String?, isMatchedHint: Bool = false, isGroupOrChannel: Bool = false) -> Bool {
+        canStartChat(withUserIds: [userId], isMatchedHint: isMatchedHint, isGroupOrChannel: isGroupOrChannel)
+    }
+
+    func canStartChat(withUserIds userIds: [String?], isMatchedHint: Bool = false, isGroupOrChannel: Bool = false) -> Bool {
+        if isPremium { return true }
+        if isGroupOrChannel { return false }
+        if isMatchedHint { return true }
+        if userIds.contains(where: { isMatched(with: $0) }) { return true }
+        return canStartChat(isMatched: false)
+    }
+
+    func isMatched(with userId: String?) -> Bool {
+        possibleIds(from: userId).contains(where: { matchedUserIds.contains($0) })
+    }
+
+    func markHasMatch(userId: String? = nil) {
+        recordMatchedIds([userId])
+        hasMatches = true
+        persistHasMatches(true)
+    }
+
+    func recordMatchedIds(_ ids: [String?]) {
+        var next = matchedUserIds
+        for id in ids {
+            possibleIds(from: id).forEach { next.insert($0) }
+        }
+        guard next != matchedUserIds else { return }
+        matchedUserIds = next
+        persistMatchedIds(next)
+        if !next.isEmpty {
+            hasMatches = true
+            persistHasMatches(true)
+        }
+    }
+
+    func canViewOthersQuickMoments(userId: String?) -> Bool {
+        if isPremium { return true }
+        let id = normalizedId(userId) ?? ""
+        if !id.isEmpty, viewedQuickMomentUserIdsToday().contains(id) { return true }
+        return viewedQuickMomentUserIdsToday().count < Self.dailyQuickMomentViews
+    }
+
+    func consumeQuickMomentView(userId: String?) {
+        guard !isPremium, let userId = normalizedId(userId) else { return }
+        var ids = viewedQuickMomentUserIdsToday()
+        guard ids.insert(userId).inserted else { return }
+        UserDefaults.standard.set(Array(ids), forKey: quickMomentViewsKey())
+    }
+
+    func canAddQuickMoment(existingCreatedToday: Int = 0) -> Bool {
+        if isPremium { return true }
+        return max(addedQuickMomentsToday(), existingCreatedToday) < Self.dailyQuickMomentAdds
+    }
+
+    func consumeQuickMomentAdd() {
+        guard !isPremium else { return }
+        UserDefaults.standard.set(max(addedQuickMomentsToday() + 1, 1), forKey: quickMomentAddsKey())
+    }
+
+    /// Keeps the local daily add counter in sync with moments already on the server / tray.
+    func syncAddedQuickMoments(from moments: [QuickMoment]) {
+        let today = createdTodayCount(in: moments)
+        guard today > addedQuickMomentsToday() else { return }
+        UserDefaults.standard.set(today, forKey: quickMomentAddsKey())
+    }
+
+    func createdTodayCount(in moments: [QuickMoment]) -> Int {
+        moments.filter { moment in
+            guard let date = MomentsDate.date(from: moment.createdAt) else { return false }
+            return Calendar.current.isDateInToday(date)
+        }.count
+    }
+
     func blockReason(for action: MomentsAction) -> MomentsActionError? {
         switch action {
         case .interested:
@@ -196,8 +298,13 @@ final class FreeTierLimitsStore {
     func refresh() {
         guard sessionManager.isLoggedIn else {
             limits = nil
+            hasMatches = false
+            matchedUserIds = []
+            persistHasMatches(false)
+            persistMatchedIds([])
             return
         }
+        refreshMatchStatus()
         if let skipRefreshUntil, skipRefreshUntil > Date() { return }
         refreshWork.disposable = sessionManager.userLimits()
             .observe(on: MainScheduler.instance)
@@ -213,6 +320,23 @@ final class FreeTierLimitsStore {
             })
     }
 
+    func refreshMatchStatus() {
+        guard sessionManager.isLoggedIn else { return }
+        let counts = sessionManager.interactionCounts()
+        let matches = sessionManager.interactions(type: "matches", limit: 50)
+        matchRefreshWork.disposable = Single.zip(counts, matches)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] counts, page in
+                guard let self else { return }
+                self.recordMatchedIds(page.items.flatMap { [$0.userId, $0.id] })
+                let matched = counts.matches > 0 || (page.totalCount ?? 0) > 0 || !self.matchedUserIds.isEmpty
+                self.hasMatches = matched
+                self.persistHasMatches(matched)
+            }, onFailure: { error in
+                AppLogger.debug("[Limits] match status failed: \(parseError(error) ?? error.localizedDescription)")
+            })
+    }
+
     func apply(_ limits: UserLimits) {
         self.limits = limits
         if let subscribed = limits.isSubscribed {
@@ -221,5 +345,66 @@ final class FreeTierLimitsStore {
         if let coins = limits.superLikes?.userCoins {
             CoinWallet.shared.update(coins)
         }
+    }
+
+    private func normalizedId(_ userId: String?) -> String? {
+        possibleIds(from: userId).first
+    }
+
+    private func possibleIds(from userId: String?) -> [String] {
+        guard let raw = userId?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return []
+        }
+        var ids = [raw.lowercased()]
+        if let intValue = Int(raw) {
+            ids.append(String(intValue))
+        }
+        return Array(Set(ids))
+    }
+
+    private func persistHasMatches(_ value: Bool) {
+        UserDefaults.standard.set(value, forKey: Self.hasMatchesKey)
+    }
+
+    private func persistMatchedIds(_ ids: Set<String>) {
+        UserDefaults.standard.set(Array(ids), forKey: Self.matchedIdsKey)
+    }
+
+    private static func loadPersistedHasMatches() -> Bool {
+        UserDefaults.standard.bool(forKey: hasMatchesKey)
+    }
+
+    private static func loadPersistedMatchedIds() -> Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: matchedIdsKey) ?? [])
+    }
+
+    private func currentUserScope() -> String {
+        UserDataManager.shared.appUser?.id
+            ?? UserDataManager.shared.userID.map(String.init)
+            ?? "anon"
+    }
+
+    private func todayStamp() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+
+    private func quickMomentViewsKey() -> String {
+        "ft.qm.views.\(currentUserScope()).\(todayStamp())"
+    }
+
+    private func quickMomentAddsKey() -> String {
+        "ft.qm.adds.\(currentUserScope()).\(todayStamp())"
+    }
+
+    private func viewedQuickMomentUserIdsToday() -> Set<String> {
+        Set((UserDefaults.standard.stringArray(forKey: quickMomentViewsKey()) ?? []).compactMap(normalizedId))
+    }
+
+    private func addedQuickMomentsToday() -> Int {
+        UserDefaults.standard.integer(forKey: quickMomentAddsKey())
     }
 }

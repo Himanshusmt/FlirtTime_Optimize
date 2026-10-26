@@ -35,9 +35,13 @@ enum ChatProfileRouter {
     /// Opens the 1:1 conversation with a FlirtTime user, reusing the existing thread when there is one.
     /// A new thread is created when the first message is sent.
     /// `userID` must be the backend UUID (`POST /chats` rejects hashed numeric ids).
-    static func openChat(userID: String, name: String, avatarPath: String?, isVerified: Bool, from presenter: UIViewController) {
+    static func openChat(userID: String, name: String, avatarPath: String?, isVerified: Bool, isMatched: Bool = false, from presenter: UIViewController) {
         let chatUserID = userID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !chatUserID.isEmpty, let navigationController = presenter.navigationController else { return }
+        guard FreeTierLimitsStore.shared.canStartChat(withUserId: chatUserID, isMatchedHint: isMatched) else {
+            presenter.presentSubscriptionPopUp(.chat)
+            return
+        }
         ChatMockSeeder.shared.seedIfNeeded()
         let conversationID = ConversationRepository().findConversationIdByParticipant(userId: chatUserID) ?? ""
         let user = UserRes(
