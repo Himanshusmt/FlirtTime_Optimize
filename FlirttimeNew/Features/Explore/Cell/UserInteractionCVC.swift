@@ -20,7 +20,14 @@ class UserInteractionCVC: UICollectionViewCell {
     private let superLikeBadge = UIView()
 
     private let cardView = UIView()
-    private let gradientLayer = CAGradientLayer()
+    /// Bottom fade so the name stays readable. A view (not a raw layer) so reuse
+    /// cannot tuck it behind the photo.
+    private let shadeView = MomentsGradientView(
+        colors: [.clear, UIColor.black.withAlphaComponent(0.75)],
+        start: CGPoint(x: 0.5, y: 0),
+        end: CGPoint(x: 0.5, y: 1),
+        locations: [0.45, 1]
+    )
     private let onlineBadge = UIView()
     private let distanceRow = UIStackView()
     var blurEffectView: UIVisualEffectView?
@@ -52,9 +59,9 @@ class UserInteractionCVC: UICollectionViewCell {
         userImage.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(userImage)
 
-        gradientLayer.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.75).cgColor]
-        gradientLayer.locations = [0.45, 1]
-        cardView.layer.addSublayer(gradientLayer)
+        shadeView.isUserInteractionEnabled = false
+        shadeView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(shadeView)
 
         lblName.font = .fredoka(.bold, size: 16)
         lblName.textColor = .white
@@ -129,6 +136,11 @@ class UserInteractionCVC: UICollectionViewCell {
             userImage.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
             userImage.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
 
+            shadeView.topAnchor.constraint(equalTo: cardView.topAnchor),
+            shadeView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            shadeView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            shadeView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+
             imgVerify.widthAnchor.constraint(equalToConstant: 14),
             imgVerify.heightAnchor.constraint(equalToConstant: 14),
 
@@ -188,7 +200,6 @@ class UserInteractionCVC: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        gradientLayer.frame = cardView.bounds
         layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: 18).cgPath
         superLikeBadge.layer.shadowPath = UIBezierPath(ovalIn: superLikeBadge.bounds).cgPath
     }
@@ -240,8 +251,7 @@ class UserInteractionCVC: UICollectionViewCell {
         // Prevent multiple blur layers
         if blurEffectView == nil {
             let blurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
-            blurView.frame = cardView.bounds
-            blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            blurView.translatesAutoresizingMaskIntoConstraints = false
 
             let lockIcon = UIImageView(image: UIImage(systemName: "lock.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold)))
             lockIcon.tintColor = .white
@@ -255,12 +265,15 @@ class UserInteractionCVC: UICollectionViewCell {
             lockStack.spacing = 6
             lockStack.translatesAutoresizingMaskIntoConstraints = false
             blurView.contentView.addSubview(lockStack)
+            cardView.addSubview(blurView)
             NSLayoutConstraint.activate([
+                blurView.topAnchor.constraint(equalTo: cardView.topAnchor),
+                blurView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+                blurView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+                blurView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
                 lockStack.centerXAnchor.constraint(equalTo: blurView.contentView.centerXAnchor),
                 lockStack.centerYAnchor.constraint(equalTo: blurView.contentView.centerYAnchor)
             ])
-
-            cardView.addSubview(blurView)
             blurEffectView = blurView
         }
     }
