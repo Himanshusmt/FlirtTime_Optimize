@@ -240,18 +240,29 @@ enum MomentsDate {
 }
 
 extension Int {
-    /// Compact counter used on the moment action bar (1.2K, 3.4M).
-    var vibeCountText: String {
-        switch self {
-        case ..<1000: return "\(Swift.max(self, 0))"
-        case ..<1_000_000: return Self.compact(Double(self) / 1000, suffix: "k")
-        default: return Self.compact(Double(self) / 1_000_000, suffix: "m")
+    /// Compact counter used on the moment action bar (1.2k, 3.4m).
+    var vibeCountText: String { compactCountText }
+
+    /// Wallet amounts in headers: below 1000 stays full (`999`), 1000+ becomes `1k`, `1.5k`.
+    var coinBalanceText: String { compactCountText }
+
+    private var compactCountText: String {
+        let count = Swift.max(self, 0)
+        switch count {
+        case ..<1_000:
+            return "\(count)"
+        case ..<1_000_000:
+            return Self.compact(count, divisor: 1_000, suffix: "k")
+        default:
+            return Self.compact(count, divisor: 1_000_000, suffix: "m")
         }
     }
 
-    private static func compact(_ value: Double, suffix: String) -> String {
-        let rounded = (value * 10).rounded(.down) / 10
-        let text = rounded.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(rounded)) : String(rounded)
-        return text + suffix
+    private static func compact(_ value: Int, divisor: Int, suffix: String) -> String {
+        let tenths = value / (divisor / 10)
+        if tenths % 10 == 0 {
+            return "\(tenths / 10)\(suffix)"
+        }
+        return "\(tenths / 10).\(tenths % 10)\(suffix)"
     }
 }

@@ -81,7 +81,7 @@ struct ChatListHeader: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 22, height: 22)
-                    Text("\(wallet.balance)")
+                    Text(wallet.balance.coinBalanceText)
                         .font(.chatBold(size: 15))
                         .foregroundColor(Color.chatTextPrimary)
                     ZStack {
