@@ -187,6 +187,10 @@ extension ChatDetailViewController {
     /// Works for 1:1 and group chats (channels remain blocked).
     /// New Chat opens with an empty conversation id — create/resolve it first (like send message).
     func startAgoraCall(type: AgoraCallType) {
+        guard FreeTierLimitsStore.shared.canMakeCall else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         guard !isChannel else { return }
         if isGroupChat, !viewModel.isGroupParticipant { return }
         guard !viewModel.shouldShowBlockView else { return }

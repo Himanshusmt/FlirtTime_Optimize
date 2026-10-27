@@ -110,7 +110,7 @@ extension ChatDetailViewController {
         }
 
         var config = PHPickerConfiguration(photoLibrary: .shared())
-        config.selectionLimit = 1
+        config.selectionLimit = 10
         config.filter = .images
         config.preferredAssetRepresentationMode = .current
         let picker = PHPickerViewController(configuration: config)

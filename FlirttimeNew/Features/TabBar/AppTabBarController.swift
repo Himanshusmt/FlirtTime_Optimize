@@ -129,6 +129,10 @@ class AppTabBarController: UITabBarController, Instantiable {
 extension AppTabBarController: UITabBarControllerDelegate {
     func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
         // TODO: restore the profile-verification gating from FlirtTime once the verification API is integrated.
+        if isMessagesTab(viewController), !FreeTierLimitsStore.shared.canAccessChatModule {
+            presentSubscriptionPopUp(.chat)
+            return false
+        }
         if isMomentsTab(viewController) {
             // Re-tap of the already selected Moments tab: `didSelect` is not always called.
             if tabBarController.selectedViewController === viewController {
@@ -146,6 +150,11 @@ extension AppTabBarController: UITabBarControllerDelegate {
     private func isMomentsTab(_ viewController: UIViewController) -> Bool {
         let root = (viewController as? UINavigationController)?.viewControllers.first ?? viewController
         return root is MomentsListViewController
+    }
+
+    private func isMessagesTab(_ viewController: UIViewController) -> Bool {
+        let root = (viewController as? UINavigationController)?.viewControllers.first ?? viewController
+        return root is ChatListContainerViewController
     }
 
     /// Instant scroll-to-top + feed reload, matching One Vibe's Moments tab tap.

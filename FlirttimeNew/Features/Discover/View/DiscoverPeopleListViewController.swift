@@ -2,8 +2,7 @@
 //  DiscoverPeopleListViewController.swift
 //  FlirttimeNew
 //
-//  Discover tab: People (swipe cards) and Interest-based discovery. Quick Moments opens
-//  QuickMomentsListViewController.
+//  Discover tab: People (swipe cards), Quick Moments grid, and Interest-based discovery.
 //
 
 import UIKit
@@ -118,9 +117,9 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }()
 
     private let peopleView = UIView()
+    private let momentsView = DiscoverMomentsView()
     private let interestsView = DiscoverInterestsView()
     private var currentPage: Page = .people
-    private weak var quickMomentsList: QuickMomentsListViewController?
 
     private lazy var cardStack: MomentsCardStackView = {
         let stack = MomentsCardStackView()
@@ -236,7 +235,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
             filterBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 18)
         ])
 
-        [header, tabs, peopleView, interestsView].forEach {
+        [header, tabs, peopleView, momentsView, interestsView].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -280,12 +279,24 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
             emptyView.trailingAnchor.constraint(equalTo: peopleView.trailingAnchor, constant: -32)
         ])
         NSLayoutConstraint.activate([
+            momentsView.topAnchor.constraint(equalTo: tabs.bottomAnchor, constant: 12),
+            momentsView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            momentsView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            momentsView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: bottomInset),
+
             interestsView.topAnchor.constraint(equalTo: tabs.bottomAnchor, constant: 12),
             interestsView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             interestsView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             interestsView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: bottomInset + 20)
         ])
 
+        momentsView.onAdd = { [weak self] in self?.openAddQuickMoment() }
+        momentsView.onOpenStories = { [weak self] item, isMine in self?.openQuickMoments(of: item, isMine: isMine) }
+        momentsView.onRefresh = { [weak self] in
+            self?.viewModel.loadQuickMomentTray { [weak self] in
+                self?.momentsView.endRefreshing()
+            }
+        }
         interestsView.onSelectProfile = { [weak self] profile in self?.openProfile(profile) }
         interestsView.onSelectInterest = { [weak self] item in self?.viewModel.loadPeople(for: item) }
         interestsView.onDiscoverInterest = { [weak self] interest in
@@ -373,34 +384,16 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func show(_ page: Page) {
-        if page == .moments {
-            tabs.select(currentPage.rawValue, sendsActions: false)
-            openQuickMomentsList()
-            return
-        }
         currentPage = page
         if tabs.selectedIndex != page.rawValue {
             tabs.select(page.rawValue, sendsActions: false)
         }
         peopleView.isHidden = page != .people
+        momentsView.isHidden = page != .moments
         interestsView.isHidden = page != .interests
         if page == .interests { viewModel.loadInterestCatalog() }
+        if page == .moments { viewModel.loadQuickMomentTray() }
         UIAccessibility.post(notification: .layoutChanged, argument: nil)
-    }
-
-    private func openQuickMomentsList() {
-        let listVC = QuickMomentsListViewController(tray: viewModel.quickMomentTray)
-        listVC.hidesBottomBarWhenPushed = true
-        listVC.onAdd = { [weak self] in self?.openAddQuickMoment() }
-        listVC.onOpenStories = { [weak self] item, isMine in self?.openQuickMoments(of: item, isMine: isMine) }
-        listVC.onRefresh = { [weak self, weak listVC] in
-            self?.viewModel.loadQuickMomentTray { [weak listVC] in
-                listVC?.endRefreshing()
-            }
-        }
-        quickMomentsList = listVC
-        navigationController?.pushViewController(listVC, animated: true)
-        viewModel.loadQuickMomentTray()
     }
 
     // MARK: - Binding
@@ -428,7 +421,7 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
 
         viewModel.$quickMomentTray
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] tray in self?.quickMomentsList?.configure(tray: tray) }
+            .sink { [weak self] tray in self?.momentsView.configure(tray: tray) }
             .store(in: &cancellables)
 
         viewModel.$interestCatalog
@@ -600,10 +593,12 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
             guard !path.isEmpty else { return nil }
             return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
         }
+        FreeTierLimitsStore.shared.markHasMatch(userId: userID)
         ChatProfileRouter.openChat(userID: userID,
                                    name: profile.displayName,
                                    avatarPath: avatarURL,
                                    isVerified: profile.isVerified,
+                                   isMatched: true,
                                    from: self)
     }
 
@@ -674,27 +669,39 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     }
 
     private func openAddQuickMoment() {
-        let presenter = quickMomentsList ?? self
+        let limits = FreeTierLimitsStore.shared
+        limits.syncAddedQuickMoments(from: viewModel.quickMomentTray?.me?.stories ?? [])
+        let existingToday = limits.createdTodayCount(in: viewModel.quickMomentTray?.me?.stories ?? [])
+        guard limits.canAddQuickMoment(existingCreatedToday: existingToday) else {
+            presentSubscriptionPopUp(.chat)
+            return
+        }
         let composer = AddQuickMomentViewController()
-        composer.onShare = { [weak self, weak presenter] text, background, image in
+        composer.onShare = { [weak self] text, background, image in
             guard let self else { return }
-            presenter?.setLoading(true)
-            self.viewModel.createQuickMoment(text: text, background: background, image: image) { [weak self, weak presenter] result in
-                presenter?.setLoading(false)
+            self.setLoading(true)
+            self.viewModel.createQuickMoment(text: text, background: background, image: image) { [weak self] result in
                 guard let self else { return }
-                let toast = presenter?.aCustomToastView ?? self.aCustomToastView
+                self.setLoading(false)
                 switch result {
                 case .success:
-                    toast.show(message: "Quick moment shared")
+                    FreeTierLimitsStore.shared.consumeQuickMomentAdd()
+                    self.aCustomToastView.show(message: "Quick moment shared")
                 case .failure(let error):
-                    toast.show(message: error.message)
+                    self.aCustomToastView.show(message: error.message)
                 }
             }
         }
-        presenter.present(composer, animated: true)
+        present(composer, animated: true)
     }
 
     private func openQuickMoments(of item: QuickMomentTrayItem, isMine: Bool) {
+        if !isMine {
+            guard FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: item.user?.id) else {
+                presentSubscriptionPopUp(.chat)
+                return
+            }
+        }
         viewModel.quickMoments(of: item, isMine: isMine) { [weak self] stories in
             guard let self else { return }
             if isMine {
@@ -713,6 +720,9 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
     /// `stories` arrive newest first; they play oldest first, starting at the first unseen one.
     private func presentQuickMoments(_ stories: [QuickMoment], of item: QuickMomentTrayItem, isMine: Bool) {
         guard !stories.isEmpty else { return }
+        if !isMine {
+            FreeTierLimitsStore.shared.consumeQuickMomentView(userId: item.user?.id)
+        }
         let (pages, start) = QuickMomentViewerPage.sequence(tray: viewModel.quickMomentTray, selected: item, isMine: isMine)
         let pager = QuickMomentsPagerViewController(pages: pages, startIndex: start, initialStories: stories)
         pager.onLoadStories = { [weak self] page, done in
@@ -738,6 +748,13 @@ final class DiscoverPeopleListViewController: BaseViewController, Instantiable {
                 if let sheet = activity.sheetPresentationController {
                     sheet.detents = [.medium(), .large()]
                     sheet.prefersGrabberVisible = true
+                }
+                activity.onDelete = { [weak self, weak presenter] in
+                    presenter?.dismiss(animated: true) {
+                        self?.viewModel.deleteQuickMoment(id: stories[index].id) { message in
+                            self?.aCustomToastView.show(message: message ?? "Quick moment deleted")
+                        }
+                    }
                 }
                 presenter.present(activity, animated: true)
             }

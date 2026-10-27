@@ -120,6 +120,7 @@ struct MomentsStory: Hashable {
     /// Activity on the signed-in user's own Quick Moments; `nil` for other people's.
     var reactionsCount: Int?
     var repliesCount: Int?
+    var viewsCount: Int? = nil
     var topReactions: [String] = []
     /// Whether the signed-in visitor has already seen this Quick Moment.
     var hasViewed: Bool = false

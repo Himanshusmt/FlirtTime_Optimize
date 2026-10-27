@@ -294,6 +294,9 @@ final class DiscoverViewModel {
         request
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] isMatch in
+                if isMatch {
+                    FreeTierLimitsStore.shared.markHasMatch(userId: targetUserID)
+                }
                 if action == .interested || action == .superVibe {
                     FreeTierLimitsStore.shared.refresh()
                 }
@@ -423,6 +426,7 @@ final class DiscoverViewModel {
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] tray in
                 self?.quickMomentTray = tray
+                FreeTierLimitsStore.shared.syncAddedQuickMoments(from: tray.me?.stories ?? [])
                 completion?()
             }, onFailure: { _ in
                 completion?()

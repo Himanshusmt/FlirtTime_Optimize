@@ -33,19 +33,47 @@ private final class ChatHeaderNotifications: ObservableObject {
 struct ChatListHeader: View {
     var onCoins: () -> Void = {}
     var onNotifications: () -> Void = {}
+    var onGoLive: () -> Void = {}
 
     @StateObject private var wallet = ChatHeaderWallet()
     @StateObject private var notifications = ChatHeaderNotifications()
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 8) {
             SwiftUI.Image("FlirtTimeTitle")
                 .resizable()
                 .scaledToFit()
                 .frame(height: 24)
                 .accessibilityLabel("FlirtTime")
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 4)
+
+            Button(action: onGoLive) {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 7, height: 7)
+                    SwiftUI.Image(systemName: "video.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Go Live")
+                        .font(.chatBold(size: 13))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 38)
+                .background(
+                    LinearGradient(
+                        colors: [Color(red: 1.0, green: 0.18, blue: 0.42), Color(red: 0.95, green: 0.08, blue: 0.28)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: Color.red.opacity(0.35), radius: 6, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Go Live")
 
             Button(action: onCoins) {
                 HStack(spacing: 6) {

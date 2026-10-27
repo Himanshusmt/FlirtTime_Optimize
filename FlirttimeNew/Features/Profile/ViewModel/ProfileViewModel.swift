@@ -90,6 +90,7 @@ class ProfileViewModel {
                 self?.quickMoments = moments.sorted {
                     (MomentsDate.date(from: $0.createdAt) ?? .distantPast) > (MomentsDate.date(from: $1.createdAt) ?? .distantPast)
                 }
+                FreeTierLimitsStore.shared.syncAddedQuickMoments(from: self?.quickMoments ?? [])
                 self?.endRequest()
                 completion?()
             }, onFailure: { [weak self] _ in

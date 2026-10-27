@@ -28,7 +28,7 @@ final class MomentsTableViewCell: UITableViewCell {
     private static let contentLeadingGap: CGFloat = 6
     private static let contentTrailing: CGFloat = 16
     private static let mediaHeight: CGFloat = 400
-    private static let mediaCornerRadius: CGFloat = 12
+    static let mediaCornerRadius: CGFloat = 12
 
     /// Photo area of a feed row that is `rowWidth` wide. Add Moment crops photos to this shape.
     static func mediaSize(forRowWidth rowWidth: CGFloat) -> CGSize {
@@ -146,10 +146,10 @@ final class MomentsTableViewCell: UITableViewCell {
         return label
     }()
 
-    private let likeButton = MomentsActionButton(iconSize: 22)
-    private let commentButton = MomentsActionButton(iconSize: 20)
-    private let giftButton = MomentsActionButton(iconSize: 22)
-    private let shareButton = MomentsActionButton(iconSize: 20)
+    private let likeButton = MomentsActionButton(iconSize: 20)
+    private let commentButton = MomentsActionButton(iconSize: 18)
+    private let giftButton = MomentsActionButton(iconSize: 20)
+    private let shareButton = MomentsActionButton(iconSize: 21)
 
     /// Actions sit in a column on the photo's right edge; text-only moments show them in a row instead.
     private let overlayActionStack: UIStackView = {
@@ -251,7 +251,6 @@ final class MomentsTableViewCell: UITableViewCell {
 
         let singleTap = UITapGestureRecognizer(target: self, action: #selector(mediaTapped(_:)))
         singleTap.numberOfTapsRequired = 1
-        singleTap.require(toFail: doubleTap)
         mediaCollectionView.addGestureRecognizer(singleTap)
 
         [avatarImageView, contentStack, separatorView, pageIndicator, imageCounterLabel, overlayActionStack].forEach {
@@ -456,8 +455,18 @@ final class MomentsTableViewCell: UITableViewCell {
         let point = gesture.location(in: mediaCollectionView)
         guard let indexPath = mediaCollectionView.indexPathForItem(at: point),
               media.indices.contains(indexPath.item) else { return }
-        let source = (mediaCollectionView.cellForItem(at: indexPath) as? MomentsMediaCollectionViewCell)?.previewImageView
-        delegate?.vibeCellDidTapMedia(self, at: indexPath.item, sourceImageView: source)
+        delegate?.vibeCellDidTapMedia(self, at: indexPath.item, sourceImageView: mediaPreviewImageView(at: indexPath.item))
+    }
+
+    /// Visible photo tile used as the zoom source / destination for the media viewer.
+    func mediaPreviewImageView(at index: Int) -> UIImageView? {
+        guard media.indices.contains(index) else { return nil }
+        let indexPath = IndexPath(item: index, section: 0)
+        if mediaCollectionView.indexPathsForVisibleItems.contains(indexPath) == false {
+            mediaCollectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: false)
+            mediaCollectionView.layoutIfNeeded()
+        }
+        return (mediaCollectionView.cellForItem(at: indexPath) as? MomentsMediaCollectionViewCell)?.previewImageView
     }
 
     /// Own posts use the latest cached avatar so a profile photo change shows without a feed refetch.
@@ -522,7 +531,7 @@ final class MomentsTableViewCell: UITableViewCell {
 private final class MomentsActionButton: UIControl {
 
     enum Style {
-        /// Frosted circle, white icon and count, laid over the moment photo.
+        /// Dark circle, white icon and count, laid over the moment photo.
         case overPhoto
         /// Grey circle and dark icon on the white cell, for moments without a photo.
         case plain
@@ -608,15 +617,19 @@ private final class MomentsActionButton: UIControl {
     }
 
     func configure(icon: UIImage?, style: Style, count: Int, iconTint: UIColor? = nil) {
-        iconImageView.image = icon
+        iconImageView.image = style == .overPhoto ? Self.bolded(icon) : icon
         countLabel.text = count.vibeCountText
 
         switch style {
         case .overPhoto:
             blurView.isHidden = false
-            blurView.alpha = 0.7
-            circleView.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+            blurView.alpha = 0.45
+            circleView.backgroundColor = UIColor.black.withAlphaComponent(0.2)
             iconImageView.tintColor = AppColor.AppWhite
+            iconImageView.layer.shadowColor = UIColor.white.cgColor
+            iconImageView.layer.shadowOpacity = 0.35
+            iconImageView.layer.shadowRadius = 0.4
+            iconImageView.layer.shadowOffset = .zero
             countLabel.textColor = AppColor.AppWhite
             countLabel.font = UIFont.fredoka(.medium, size: 12)
             countLabel.layer.shadowOpacity = 0.6
@@ -624,6 +637,7 @@ private final class MomentsActionButton: UIControl {
             blurView.isHidden = true
             circleView.backgroundColor = AppColor.Iron.withAlphaComponent(0.35)
             iconImageView.tintColor = AppColor.MineShaft
+            iconImageView.layer.shadowOpacity = 0
             countLabel.textColor = AppColor.DoveGray
             countLabel.font = UIFont.fredoka(.regular, size: 12)
             countLabel.layer.shadowOpacity = 0
@@ -631,6 +645,27 @@ private final class MomentsActionButton: UIControl {
         if let iconTint {
             iconImageView.tintColor = iconTint
         }
+    }
+
+    /// Draws the template icon a little heavier so it reads on a photo.
+    private static func bolded(_ image: UIImage?) -> UIImage? {
+        guard let image else { return nil }
+        let weight: CGFloat = 0.35
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        format.opaque = false
+        let extra = weight * 2
+        let size = CGSize(width: image.size.width + extra, height: image.size.height + extra)
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let result = renderer.image { _ in
+            let origin = CGPoint(x: weight, y: weight)
+            for dx in [-weight, CGFloat(0), weight] {
+                for dy in [-weight, CGFloat(0), weight] {
+                    image.draw(in: CGRect(origin: CGPoint(x: origin.x + dx, y: origin.y + dy), size: image.size))
+                }
+            }
+        }
+        return result.withRenderingMode(.alwaysTemplate)
     }
 }
 

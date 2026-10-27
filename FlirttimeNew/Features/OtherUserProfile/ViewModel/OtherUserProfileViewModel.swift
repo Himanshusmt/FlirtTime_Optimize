@@ -283,6 +283,9 @@ class OtherUserProfileViewModel {
                 if let coins = result.remainingCoins {
                     CoinWallet.shared.update(coins)
                 }
+                if result.isMatched == true {
+                    FreeTierLimitsStore.shared.markHasMatch(userId: targetUserId)
+                }
                 if action == "like" || action == "super_like" {
                     FreeTierLimitsStore.shared.refresh()
                 }

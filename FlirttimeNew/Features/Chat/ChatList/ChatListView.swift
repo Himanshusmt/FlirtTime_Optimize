@@ -123,7 +123,9 @@ struct ChatListView: View {
                     }
                 }
                 if inboxSection == .calls {
-                    ChatCallsListView(viewModel: viewModel, searchText: searchText)
+                    ChatCallsListView(viewModel: viewModel, searchText: searchText) { call in
+                        startCallIfAllowed(call)
+                    }
                 } else {
                     chatListView
                 }
@@ -137,6 +139,11 @@ struct ChatListView: View {
         )
         .onChange(of: inboxSection) { section in
             if section == .calls {
+                guard FreeTierLimitsStore.shared.canMakeCall else {
+                    inboxSection = .chats
+                    navigator.onRequireSubscription?(.chat)
+                    return
+                }
                 viewModel.loadCallHistoryIfNeeded()
             }
         }
@@ -194,6 +201,10 @@ struct ChatListView: View {
         .onReceive(chatNotificationState.$pendingChatNavigation.compactMap { $0 }) { navData in
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             chatNotificationState.pendingChatNavigation = nil
+            guard canOpenChat(navData) else {
+                navigator.onRequireSubscription?(.chat)
+                return
+            }
 
             if let activeId = ChatNotificationState.shared.activeConversationId,
                !activeId.isEmpty, activeId == navData.chatId {
@@ -246,7 +257,8 @@ struct ChatListView: View {
             } else {
                 ChatListHeader(
                     onCoins: { navigator.onOpenCoinShop?() },
-                    onNotifications: { navigator.onOpenNotifications?() }
+                    onNotifications: { navigator.onOpenNotifications?() },
+                    onGoLive: { navigator.onGoLive?() }
                 )
             }
         }
@@ -268,7 +280,7 @@ struct ChatListView: View {
         ActiveUsersView(
             users: activeUsers,
             onUserTap: { chat in
-                navigator.navigateToChat(from: .activeUser(chat))
+                openChatIfAllowed(chat, unreadCount: nil, source: .activeUser(chat))
             },
             onlineUserIds: viewModel.onlineUserIds
         )
@@ -484,8 +496,43 @@ struct ChatListView: View {
                     userInfo: ["conversationId": chatId]
                 )
             }
-            navigator.navigateToChat(from: .existingChat(chat), unreadCount: unread)
+            openChatIfAllowed(chat, unreadCount: unread, source: .existingChat(chat))
         }
+    }
+
+    private func openChatIfAllowed(_ chat: ChatMessageRow, unreadCount: Int?, source: ChatNavigationSource) {
+        guard canOpenChat(chat) else {
+            navigator.onRequireSubscription?(.chat)
+            return
+        }
+        navigator.navigateToChat(from: source, unreadCount: unreadCount)
+    }
+
+    private func canOpenChat(_ chat: ChatMessageRow) -> Bool {
+        let isGroupOrChannel = chat.isGroup || (chat.type?.lowercased() == "channel")
+        return FreeTierLimitsStore.shared.canStartChat(
+            withUserIds: [
+                chat.getUserDetails()?.userId,
+                chat.otherParticipant?.userId,
+                chat.peer?.id
+            ],
+            isGroupOrChannel: isGroupOrChannel
+        )
+    }
+
+    private func canOpenChat(_ navData: ChatNavigationData) -> Bool {
+        FreeTierLimitsStore.shared.canStartChat(
+            withUserIds: [navData.userChatId, navData.user?.userId, navData.user?.id],
+            isGroupOrChannel: navData.isGroupChat || navData.isChannel
+        )
+    }
+
+    private func startCallIfAllowed(_ call: CallHistoryItem) {
+        guard FreeTierLimitsStore.shared.canMakeCall else {
+            navigator.onRequireSubscription?(.chat)
+            return
+        }
+        viewModel.startCall(from: call)
     }
     
     private func handleUnmuteChat(chat: ChatMessageRow) {
@@ -495,6 +542,11 @@ struct ChatListView: View {
     
     private func applyRequestedInboxSection(_ section: ChatInboxSection?) {
         guard let section else { return }
+        if section == .calls, !FreeTierLimitsStore.shared.canMakeCall {
+            navigator.requestedInboxSection = nil
+            navigator.onRequireSubscription?(.chat)
+            return
+        }
         inboxSection = section
         navigator.requestedInboxSection = nil
         if section == .calls {

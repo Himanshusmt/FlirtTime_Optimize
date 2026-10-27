@@ -686,6 +686,7 @@ final class CardDetailViewController: BaseViewController {
                     FreeTierLimitsStore.shared.refresh()
                 }
                 if result.isMatched == true {
+                    FreeTierLimitsStore.shared.markHasMatch(userId: self.profile.remoteUserId)
                     self.presentMatchScreen(reaction: reaction)
                 } else {
                     self.aCustomToastView.show(message: Self.successMessage(for: action))
@@ -732,10 +733,12 @@ final class CardDetailViewController: BaseViewController {
             guard !path.isEmpty else { return nil }
             return path.hasPrefix("http") ? path : ApiName.imgBaseURL + path
         }
+        FreeTierLimitsStore.shared.markHasMatch(userId: userID)
         ChatProfileRouter.openChat(userID: userID,
                                    name: profile.displayName,
                                    avatarPath: avatarURL,
                                    isVerified: profile.isVerified,
+                                   isMatched: true,
                                    from: self)
     }
 

@@ -262,6 +262,7 @@ final class QuickMomentViewController: UIViewController {
         }, for: .touchUpInside)
 
         let more = iconButton("ellipsis", label: "More options")
+        more.transform = CGAffineTransform(rotationAngle: .pi / 2)
         more.addAction(UIAction { [weak self, unowned more] _ in
             guard let self else { return }
             if self.isOwnMoments {
@@ -270,10 +271,7 @@ final class QuickMomentViewController: UIViewController {
                 self.showOptions(from: more)
             }
         }, for: .touchUpInside)
-        let close = iconButton("xmark", label: "Close")
-        close.addAction(UIAction { [weak self] _ in self?.dismiss(animated: true) }, for: .touchUpInside)
-
-        [profileButton, UIView(), more, close].forEach { header.addArrangedSubview($0) }
+        [profileButton, UIView(), more].forEach { header.addArrangedSubview($0) }
         header.alignment = .center
         header.spacing = 6
         NSLayoutConstraint.activate([
@@ -347,7 +345,7 @@ final class QuickMomentViewController: UIViewController {
         updateSendButton()
     }
 
-    /// "😍🔥 5  ·  💬 2 replies  ⌃": opens who reacted and replied.
+    /// "👁 12 views  ·  😍🔥 5  ·  💬 2 replies  ⌃": opens who viewed, reacted, and replied.
     private func buildOwnBottomBar() {
         var config = UIButton.Configuration.filled()
         config.cornerStyle = .capsule
@@ -676,16 +674,20 @@ final class QuickMomentViewController: UIViewController {
         imageView.accessibilityLabel = "\(owner) moment \(index + 1) of \(profile.moments.count). " + (moment.caption ?? "")
     }
 
-    /// "😍🔥 5  ·  💬 2 replies"
+    /// "👁 12 views  ·  😍🔥 5  ·  💬 2 replies"
     private func activityText(for moment: MomentsStory) -> String {
         let reactions = moment.reactionsCount ?? 0
         let replies = moment.repliesCount ?? 0
-        guard reactions > 0 || replies > 0 else { return "No reactions yet" }
+        let views = moment.viewsCount ?? 0
+        guard reactions > 0 || replies > 0 || views > 0 else { return "No reactions yet" }
         var parts: [String] = []
+        parts.append("👁 \(views.vibeCountText) \(views == 1 ? "view" : "views")")
         if reactions > 0 {
             parts.append("\(moment.topReactions.joined()) \(reactions.vibeCountText)")
         }
-        parts.append("💬 \(replies.vibeCountText) \(replies == 1 ? "reply" : "replies")")
+        if replies > 0 || reactions > 0 {
+            parts.append("💬 \(replies.vibeCountText) \(replies == 1 ? "reply" : "replies")")
+        }
         return parts.joined(separator: "  ·  ")
     }
 

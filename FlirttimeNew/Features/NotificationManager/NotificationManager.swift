@@ -162,6 +162,10 @@ final class NotificationManager {
             case .compliment: exploreTab = .compliments
             default: exploreTab = .likes
             }
+            if FreeTierLimitsStore.shared.isTabLocked(exploreTab) {
+                showSubscription(.chat, tabBar: tabBar, from: viewController)
+                return
+            }
             openExplore(tabBar, tab: exploreTab)
 
         case .gestureVerified, .imageVerified, .profileImageVerified:
@@ -195,6 +199,10 @@ final class NotificationManager {
             presenter(from: viewController, tabBar: tabBar)?.openPremium()
 
         case .message:
+            if !canOpenChatNotification(data) {
+                showSubscription(.chat, tabBar: tabBar, from: viewController)
+                return
+            }
             openChat(tabBar, data: data)
 
         case .momentLike:
@@ -211,12 +219,22 @@ final class NotificationManager {
                         sheet: .receivedGifts)
 
         case .momentReaction:
+            let momentOwnerId = stringValue(data, keys: ["senderId", "actor_id", "user_id", "authorId"])
+            let isOwn = isCurrentUser(momentOwnerId)
+            if !isOwn, !FreeTierLimitsStore.shared.canViewOthersQuickMoments(userId: momentOwnerId) {
+                showSubscription(.chat, tabBar: tabBar, from: viewController)
+                return
+            }
             openQuickMoment(tabBar, momentId: stringValue(data, keys: ["quickMomentId", "momentId", "navTargetId", "entityId"]))
 
         case .profileVisit:
             openProfileVisit(tabBar, data: data)
 
         case .call, .missedCall:
+            if !FreeTierLimitsStore.shared.canMakeCall {
+                showSubscription(.chat, tabBar: tabBar, from: viewController)
+                return
+            }
             openCalls(tabBar)
 
         default:
@@ -289,11 +307,32 @@ final class NotificationManager {
         _ = container.view
     }
 
-    private func openChat(_ tabBar: AppTabBarController, data: [AnyHashable: Any]) {
-        let conversationId = stringValue(data, keys: ["conversationId", "navTargetId", "entityId"])
-        let senderId = stringValue(data, keys: ["senderId", "user_id", "actor_id"]) ?? ""
-        let senderName = stringValue(data, keys: ["senderName", "title"]) ?? ""
+    private func canOpenChatNotification(_ data: [AnyHashable: Any]) -> Bool {
+        let senderId = nestedString(data, keys: [
+            "senderId", "user_id", "actor_id", "fromUserId", "peerId", "otherUserId"
+        ])
+        let conversationId = nestedString(data, keys: [
+            "conversationId", "conversation_id", "navTargetId", "entityId"
+        ])
+        let peerFromConversation = conversationPeerId(conversationId)
+        return FreeTierLimitsStore.shared.canAccessChatModule
+            && FreeTierLimitsStore.shared.canStartChat(withUserIds: [senderId, peerFromConversation])
+    }
 
+    private func conversationPeerId(_ conversationId: String?) -> String? {
+        guard let conversationId, !conversationId.isEmpty else { return nil }
+        let chat = ConversationRepository().getConversationListSync().first {
+            ($0.id ?? "").caseInsensitiveCompare(conversationId) == .orderedSame
+        }
+        return chat?.getUserDetails()?.userId ?? chat?.otherParticipant?.userId ?? chat?.peer?.id
+    }
+
+    private func openChat(_ tabBar: AppTabBarController, data: [AnyHashable: Any]) {
+        let conversationId = nestedString(data, keys: ["conversationId", "conversation_id", "navTargetId", "entityId"])
+        let senderId = nestedString(data, keys: ["senderId", "user_id", "actor_id", "fromUserId"]) ?? ""
+        let senderName = nestedString(data, keys: ["senderName", "title"]) ?? ""
+
+        guard FreeTierLimitsStore.shared.canAccessChatModule else { return }
         select(tabBar, .messages)
         guard let conversationId, !conversationId.isEmpty else { return }
 
@@ -312,11 +351,49 @@ final class NotificationManager {
         container.openChatDetailFromNotification(navData: navData)
     }
 
+    private func showSubscription(_ type: SubscriptionPopUpType,
+                                 tabBar: AppTabBarController,
+                                 from viewController: BaseViewController?) {
+        presenter(from: viewController, tabBar: tabBar)?.presentSubscriptionPopUp(type)
+    }
+
+    private func isCurrentUser(_ userId: String?) -> Bool {
+        guard let userId = userId?.trimmingCharacters(in: .whitespacesAndNewlines), !userId.isEmpty else {
+            return true
+        }
+        let mine = [
+            UserDataManager.shared.appUser?.id,
+            UserDataManager.shared.userID.map(String.init)
+        ].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+        return mine.contains(userId.lowercased())
+    }
+
     private func stringValue(_ data: [AnyHashable: Any], keys: [String]) -> String? {
-        for key in keys {
-            if let value = data[key] as? String {
-                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty { return trimmed }
+        nestedString(data, keys: keys)
+    }
+
+    private func nestedString(_ data: [AnyHashable: Any], keys: [String]) -> String? {
+        let bags: [[AnyHashable: Any]] = [data]
+            + [data["data"], data["navigation"], data["metadata"], data["actor"], data["sender"], data["fromUser"]]
+            .compactMap { $0 as? [AnyHashable: Any] }
+        if let dataString = data["data"] as? String,
+           let raw = dataString.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: raw) as? [AnyHashable: Any] {
+            return nestedString(json, keys: keys) ?? scan(bags, keys: keys)
+        }
+        return scan(bags, keys: keys)
+    }
+
+    private func scan(_ bags: [[AnyHashable: Any]], keys: [String]) -> String? {
+        for bag in bags {
+            for key in keys {
+                if let value = bag[key] as? String {
+                    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty { return trimmed }
+                }
+                if let value = bag[key] as? Int {
+                    return String(value)
+                }
             }
         }
         return nil

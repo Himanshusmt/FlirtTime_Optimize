@@ -89,8 +89,10 @@ final class ChatListNavigator: ObservableObject {
     var onChatDetailPopped: (() -> Void)?
     var onOpenCoinShop: (() -> Void)?
     var onOpenNotifications: (() -> Void)?
+    var onGoLive: (() -> Void)?
     var onAddQuickMoment: (() -> Void)?
     var onOpenQuickMoment: ((QuickMomentTrayItem, Bool, QuickMomentTray?) -> Void)?
+    var onRequireSubscription: ((SubscriptionPopUpType) -> Void)?
     /// Same gallery avatar Profile uses for the Quick Moments “Add new” bubble.
     @Published var ownAvatarPath: String?
     /// Set to open Chats or Calls from a notification tap.

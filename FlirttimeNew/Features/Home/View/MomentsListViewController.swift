@@ -593,7 +593,22 @@ extension MomentsListViewController: MomentsTableViewCellDelegate {
         let gallery = Self.galleryItems(from: vibe)
         guard !gallery.isEmpty else { return }
         let start = gallery.indices.contains(index) ? index : 0
-        let viewer = MediaViewerController(items: gallery, initialIndex: start, sourceView: sourceImageView)
+        let viewer = MediaViewerController(
+            items: gallery,
+            initialIndex: start,
+            sourceView: sourceImageView,
+            sourceCornerRadius: MomentsTableViewCell.mediaCornerRadius
+        )
+        viewer.sourceViewProvider = { [weak self, weak cell] mediaIndex in
+            if let cell, self?.tableView.indexPath(for: cell) != nil {
+                return cell.mediaPreviewImageView(at: mediaIndex)
+            }
+            guard let self,
+                  let current = self.tableView.cellForRow(at: IndexPath(row: row, section: 0)) as? MomentsTableViewCell else {
+                return nil
+            }
+            return current.mediaPreviewImageView(at: mediaIndex)
+        }
         present(viewer, animated: false)
     }
 

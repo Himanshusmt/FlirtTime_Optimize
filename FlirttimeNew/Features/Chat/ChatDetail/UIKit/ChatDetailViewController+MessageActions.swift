@@ -836,7 +836,8 @@ extension ChatDetailViewController: MessageCellActionsDelegate {
         let viewer = MediaViewerController(
             items: galleryItems,
             initialIndex: tappedIndex,
-            sourceView: sourceCell.mediaImageView
+            sourceView: sourceCell.mediaImageView,
+            showsPageIndicator: false
         )
         present(viewer, animated: false)
     }
