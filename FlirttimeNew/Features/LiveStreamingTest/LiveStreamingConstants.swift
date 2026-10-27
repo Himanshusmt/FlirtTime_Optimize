@@ -51,7 +51,7 @@ struct LiveStreamSignalingMessage: Codable {
 }
 
 struct LiveStreamingConfig {
-    static let defaultAppId = "8667905f0b344204aecc3c34a236b94b"
+    static let defaultAppId = "7905f0b344204aecc3c34a236b94b"
     static let defaultToken = "007eJxTYHieoWKyw6/5cxwXF7+FS/Cp4nML11XOD3ytlH1eL1bl904FBgszM3NLA9M0gyRjExMjA5PE1ORk42Rjk0QjY7MkS5OkHpcHWQ2BjAwP0nSZGRkgEMQXZihJLS7RzcksS40vLilKTczNzEtnYAAA8lwkig=="
     static let defaultChannelName = "test-live_streaming"
 
