@@ -39,6 +39,9 @@ final class ChatListContainerViewController: BaseViewController {
         navigator.onOpenNotifications = { [weak self] in
             self?.openNotifications()
         }
+        navigator.onGoLive = { [weak self] in
+            self?.openLiveStreaming()
+        }
         navigator.onAddQuickMoment = { [weak self] in
             self?.openAddQuickMoment()
         }
@@ -432,6 +435,36 @@ final class ChatListContainerViewController: BaseViewController {
                 self?.navigationController?.pushViewController(profileVC, animated: true)
             }
         }
+    }
+
+    private func openLiveStreaming() {
+        let alert = UIAlertController(
+            title: "Live Streaming",
+            message: "Would you like to start a live broadcast or join as a viewer?",
+            preferredStyle: .actionSheet
+        )
+
+        alert.addAction(UIAlertAction(title: "Go Live (Host)", style: .default) { [weak self] _ in
+            let liveVC = LiveStreamingViewController(isHost: true)
+            liveVC.modalPresentationStyle = .fullScreen
+            self?.present(liveVC, animated: true)
+        })
+
+        alert.addAction(UIAlertAction(title: "Watch Live (Viewer)", style: .default) { [weak self] _ in
+            let liveVC = LiveStreamingViewController(isHost: false)
+            liveVC.modalPresentationStyle = .fullScreen
+            self?.present(liveVC, animated: true)
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        present(alert, animated: true)
     }
 }
 

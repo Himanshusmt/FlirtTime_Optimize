@@ -257,7 +257,8 @@ struct ChatListView: View {
             } else {
                 ChatListHeader(
                     onCoins: { navigator.onOpenCoinShop?() },
-                    onNotifications: { navigator.onOpenNotifications?() }
+                    onNotifications: { navigator.onOpenNotifications?() },
+                    onGoLive: { navigator.onGoLive?() }
                 )
             }
         }

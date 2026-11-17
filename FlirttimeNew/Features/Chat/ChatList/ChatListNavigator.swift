@@ -89,6 +89,7 @@ final class ChatListNavigator: ObservableObject {
     var onChatDetailPopped: (() -> Void)?
     var onOpenCoinShop: (() -> Void)?
     var onOpenNotifications: (() -> Void)?
+    var onGoLive: (() -> Void)?
     var onAddQuickMoment: (() -> Void)?
     var onOpenQuickMoment: ((QuickMomentTrayItem, Bool, QuickMomentTray?) -> Void)?
     var onRequireSubscription: ((SubscriptionPopUpType) -> Void)?

@@ -122,7 +122,7 @@ final class CoinBalancePill: UIControl {
     func setBalance(_ newBalance: Int, animated: Bool = true) {
         let previous = balance
         balance = newBalance
-        amountLabel.text = newBalance.vibeCountText
+        amountLabel.text = newBalance.coinBalanceText
         accessibilityValue = "\(newBalance) coins"
 
         guard animated, let previous, previous != newBalance, !UIAccessibility.isReduceMotionEnabled else { return }
@@ -296,7 +296,7 @@ final class ProfileCoinsCard: UIControl {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func setBalance(_ balance: Int) {
-        amountLabel.text = "\(balance.vibeCountText) coins"
+        amountLabel.text = "\(balance.coinBalanceText) coins"
         accessibilityLabel = "My Coins, \(balance) coins. Get coins"
     }
 }
