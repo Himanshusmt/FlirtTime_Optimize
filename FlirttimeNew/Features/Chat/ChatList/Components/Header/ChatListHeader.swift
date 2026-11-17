@@ -31,6 +31,9 @@ private final class ChatHeaderNotifications: ObservableObject {
 }
 
 struct ChatListHeader: View {
+    /// Set to `true` to show the Go Live button in the chat list header.
+    private static let isGoLiveVisible = false
+
     var onCoins: () -> Void = {}
     var onNotifications: () -> Void = {}
     var onGoLive: () -> Void = {}
@@ -48,32 +51,34 @@ struct ChatListHeader: View {
 
             Spacer(minLength: 4)
 
-            Button(action: onGoLive) {
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 7, height: 7)
-                    SwiftUI.Image(systemName: "video.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Go Live")
-                        .font(.chatBold(size: 13))
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal, 10)
-                .frame(height: 38)
-                .background(
-                    LinearGradient(
-                        colors: [Color(red: 1.0, green: 0.18, blue: 0.42), Color(red: 0.95, green: 0.08, blue: 0.28)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            if Self.isGoLiveVisible {
+                Button(action: onGoLive) {
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 7, height: 7)
+                        SwiftUI.Image(systemName: "video.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Go Live")
+                            .font(.chatBold(size: 13))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 38)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 1.0, green: 0.18, blue: 0.42), Color(red: 0.95, green: 0.08, blue: 0.28)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .clipShape(Capsule())
-                .shadow(color: Color.red.opacity(0.35), radius: 6, x: 0, y: 2)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.red.opacity(0.35), radius: 6, x: 0, y: 2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Go Live")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Go Live")
 
             Button(action: onCoins) {
                 HStack(spacing: 6) {

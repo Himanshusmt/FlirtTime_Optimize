@@ -1608,7 +1608,6 @@
 				EC0CAF6F7E21E3A88387F7CD /* LiveStreamingViewController.swift */,
 				0DD04C4A8D12C4592F949F00 /* LiveVideoCanvasView.swift */,
 			);
-			name = LiveStreamingTest;
 			path = LiveStreamingTest;
 			sourceTree = "<group>";
 		};
@@ -4191,8 +4190,8 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				INFOPLIST_KEY_NSCameraUsageDescription = "To make video call, allow flirttime access to you camera.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "Allow Flirttime to access your contacts so you can share a contact in chat.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to provide better services.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Flirttime uses your location to help you discover people nearby and display their approximate distance from you. ";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Flirttime uses your location to help you discover people nearby and display their approximate distance from you. ";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
 				INFOPLIST_KEY_NSVoIPUsageDescription = "Flirttime uses VoIP so you can receive audio and video calls when the app is in the background or closed.";
@@ -4240,8 +4239,8 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				INFOPLIST_KEY_NSCameraUsageDescription = "To make video call, allow flirttime access to you camera.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "Allow Flirttime to access your contacts so you can share a contact in chat.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to provide better services.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to provide better services.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Flirttime uses your location to help you discover people nearby and display their approximate distance from you. ";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Flirttime uses your location to help you discover people nearby and display their approximate distance from you. ";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Flirttime uses your microphone for calls, voice messages and recording your profile voice intro.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To create your captivating profile, we require access to your photo library, allowing you to effortlessly select and upload photos that best reflect your unique personality.";
 				INFOPLIST_KEY_NSVoIPUsageDescription = "Flirttime uses VoIP so you can receive audio and video calls when the app is in the background or closed.";
